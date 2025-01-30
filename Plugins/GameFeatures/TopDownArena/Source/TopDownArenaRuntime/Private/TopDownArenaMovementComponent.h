@@ -1,0 +1,25 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+
+#pragma once
+
+#include "Character/LyraCharacterMovementComponent.h"
+
+#include "TopDownArenaMovementComponent.generated.h"
+
+class UObject;
+
+UCLASS()
+class UTopDownArenaMovementComponent : public ULyraCharacterMovementComponent
+{
+	GENERATED_BODY()
+
+public:
+
+	UTopDownArenaMovementComponent();
+
+	//~UMovementComponent interface
+	virtual float GetMaxSpeed() const override;
+	//~End of UMovementComponent interface
+
+	virtual void MoveSmooth(const FVector& InVelocity, float DeltaTime, FStepDownResult* StepDownResult = nullptr);
+};
