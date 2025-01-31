@@ -20,6 +20,4 @@ public:
 	//~UMovementComponent interface
 	virtual float GetMaxSpeed() const override;
 	//~End of UMovementComponent interface
-
-	virtual void MoveSmooth(const FVector& InVelocity, float DeltaTime, FStepDownResult* StepDownResult = nullptr);
 };

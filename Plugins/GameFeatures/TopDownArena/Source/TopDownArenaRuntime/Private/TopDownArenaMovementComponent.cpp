@@ -33,8 +33,3 @@ float UTopDownArenaMovementComponent::GetMaxSpeed() const
 
 	return Super::GetMaxSpeed();
 }
-
-void UTopDownArenaMovementComponent::MoveSmooth(const FVector& InVelocity, float DeltaTime, FStepDownResult* StepDownResult /*= nullptr*/)
-{
-	Super::MoveSmooth(InVelocity, DeltaTime, StepDownResult);
-}

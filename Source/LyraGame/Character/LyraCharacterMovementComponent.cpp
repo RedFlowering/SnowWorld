@@ -134,6 +134,11 @@ void ULyraCharacterMovementComponent::PhysCustom(float DeltaTime, int32 Iteratio
 	Super::PhysCustom(DeltaTime, Iterations);
 }
 
+void ULyraCharacterMovementComponent::MoveSmooth(const FVector& InVelocity, float DeltaTime, FStepDownResult* StepDownResult /*= nullptr*/)
+{
+	Super::MoveSmooth(InVelocity, DeltaTime, StepDownResult);
+}
+
 void ULyraCharacterMovementComponent::ComputeFloorDist(const FVector& CapsuleLocation, float LineDistance, float SweepDistance, FFindFloorResult& OutFloorResult, float SweepRadius, const FHitResult* DownwardSweepResult) const
 {
 	Super::ComputeFloorDist(CapsuleLocation, LineDistance, SweepDistance, OutFloorResult, SweepRadius, DownwardSweepResult);
