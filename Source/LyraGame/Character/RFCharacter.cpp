@@ -110,3 +110,8 @@ void ARFCharacter::OnUnEquipAnimation(bool bStart)
 		PostOverlayModeChanged();
 	}
 }
+
+void ARFCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+}

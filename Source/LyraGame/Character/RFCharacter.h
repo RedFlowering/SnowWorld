@@ -43,6 +43,8 @@ protected:
 public:
 	void OnEquipAnimation(bool bStart);
 	void OnUnEquipAnimation(bool bStart);
+	 
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|RF Character|Desired State", meta=(EditCondition="bOverrideDefaultOverlay"))
@@ -62,6 +64,6 @@ protected:
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RF Character")
-	TObjectPtr<URFCharacterMovementComponent> RFCharacterMovement;
+	TObjectPtr<URFCharacterMovementComponent> RFCharacterMovement = nullptr;
 };
 
