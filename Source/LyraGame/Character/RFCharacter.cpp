@@ -3,9 +3,7 @@
 #include "Character/RFCharacter.h"
 #include "RFCharacterMovementComponent.h"
 #include "LyraCharacterWithAbilities.h"
-#include "NiagaraFunctionLibrary.h"
 #include "AbilitySystem/LyraAbilitySystemComponent.h"
-#include "Evaluation/MovieSceneTimeWarping.h"
 #include "Settings/AlsCharacterSettings.h"
 #include "Utility/AlsConstants.h"
 
@@ -14,22 +12,6 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Character_Status_Aiming, "Status.Aiming");
 ARFCharacter::ARFCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<URFCharacterMovementComponent>(ALyraCharacter::CharacterMovementComponentName))
 {
 	RFCharacterMovement = Cast<URFCharacterMovementComponent>(AlsCharacterMovement);
-
-	WindNiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("WindNiagara"));
-	WindNiagaraComponent->SetupAttachment(RootComponent);
-	WindNiagaraComponent->SetRelativeLocationAndRotation(FVector(500.f, 0.f, 100.f), FRotator(0.f, -90.f, 0.f));
-	
-	LeftLegNiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("LeftLegNiagara"));
-	LeftLegNiagaraComponent->SetupAttachment(GetMesh(), FName("LeftLeg_BoostNozzleSocket"));
-	LeftLegNiagaraComponent->SetRelativeRotation(FRotator(0.f, 90.f, 0.f));
-	
-	RightLegNiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("RightLegNiagara"));
-	RightLegNiagaraComponent->SetupAttachment(GetMesh(), FName("RightLeg_BoostNozzleSocket"));
-	RightLegNiagaraComponent->SetRelativeRotation(FRotator(0.f, 90.f, 0.f));
-
-	WindNiagaraComponent->SetAutoActivate(false);
-	LeftLegNiagaraComponent->SetAutoActivate(false);
-	RightLegNiagaraComponent->SetAutoActivate(false);
 }
 
 void ARFCharacter::PostInitializeComponents()
@@ -127,33 +109,4 @@ void ARFCharacter::OnUnEquipAnimation(bool bStart)
 	{
 		PostOverlayModeChanged();
 	}
-}
-
-void ARFCharacter::PlayBoostEffect(bool activate)
-{
-	if(!LeftLegNiagaraComponent || !RightLegNiagaraComponent)
-		return;
-	
-	if(activate)
-	{
-		if(!LeftLegNiagaraComponent->IsActive())
-		{
-			LeftLegNiagaraComponent->Activate();
-		}
-		if(!RightLegNiagaraComponent->IsActive())
-		{
-			RightLegNiagaraComponent->Activate();
-		}
-		return;
-	}
-
-	if(LeftLegNiagaraComponent->IsActive())
-	{
-		LeftLegNiagaraComponent->Deactivate();
-	}
-	if(RightLegNiagaraComponent->IsActive())
-	{
-		RightLegNiagaraComponent->Deactivate();
-	}
-	
 }

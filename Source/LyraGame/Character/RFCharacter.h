@@ -4,7 +4,6 @@
 
 #include "LyraCharacterWithAbilities.h"
 #include "NativeGameplayTags.h"
-#include "NiagaraComponent.h"
 #include "RFCharacter.generated.h"
 
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Character_Status_Aiming);
@@ -44,8 +43,6 @@ protected:
 public:
 	void OnEquipAnimation(bool bStart);
 	void OnUnEquipAnimation(bool bStart);
-	
-	void PlayBoostEffect(bool activate);
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|RF Character|Desired State", meta=(EditCondition="bOverrideDefaultOverlay"))
@@ -60,23 +57,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|RF Character|Desired State")
 	bool bOverrideDefaultOverlay = false;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|RF Character|Desired State")
-	bool bUseSteering = true;
-
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "RF Character")
 	bool bChangingOverlayMode = false;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RF Character")
 	TObjectPtr<URFCharacterMovementComponent> RFCharacterMovement;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Niagara Component")
-	TObjectPtr<UNiagaraComponent> WindNiagaraComponent;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Niagara Component")
-	TObjectPtr<UNiagaraComponent> LeftLegNiagaraComponent;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Niagara Component")
-	TObjectPtr<UNiagaraComponent> RightLegNiagaraComponent;
 };
 
