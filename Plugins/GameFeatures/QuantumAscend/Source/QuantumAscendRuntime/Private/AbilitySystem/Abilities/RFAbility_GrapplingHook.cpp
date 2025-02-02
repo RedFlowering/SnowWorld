@@ -82,7 +82,7 @@ void URFAbility_GrapplingHook::ActivateAbility(const FGameplayAbilitySpecHandle 
 
 void URFAbility_GrapplingHook::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
 void URFAbility_GrapplingHook::TickAbility(float DeltaTime)
@@ -425,6 +425,8 @@ void URFAbility_GrapplingHook::InitGrapplingHook()
 	HookMove.LastDistance = FVector::ZeroVector;
 	HookMove.TeleportStartTime = -1.0;
 	OnGrappleInit.Broadcast();
+
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, /*bReplicateEndAbility=*/ true, /*bWasCancelled=*/ false);
 }
 
 void URFAbility_GrapplingHook::TeleportMovement()
@@ -508,9 +510,9 @@ void URFAbility_GrapplingHook::TeleportToTarget()
 
 void URFAbility_GrapplingHook::ServerTeleportToTarget_Implementation(FVector TargetLocation)
 {
-	float LandingRange = 100.0f;
+	float LandingExtent = 100.0f;
 
-	if (OwnerCharacter && !TargetLocation.Equals(OwnerCharacter->GetActorLocation(), LandingRange))
+	if (OwnerCharacter && !TargetLocation.Equals(OwnerCharacter->GetActorLocation(), LandingExtent))
 	{
 		OwnerCharacter->TeleportTo(TargetLocation, FRotator::ZeroRotator);
 	}
@@ -580,7 +582,7 @@ void URFAbility_GrapplingHook::ImmersiveMoveToTarget(float DeltaTime)
 	float PassedByPoint = FVector::DotProduct(TargetDirection, HookMove.LastDistance.GetSafeNormal());
 	HookMove.LastDistance = TargetDistance;
 
-	const float LandingExtent = 30.0f;
+	const float LandingExtent = 100.0f;
 
 	if (PassedByPoint < 0.0f || TargetDistance.IsNearlyZero(LandingExtent))
 	{
@@ -607,7 +609,7 @@ void URFAbility_GrapplingHook::BlinkMovement(float DeltaTime)
 	float PassedByPoint = FVector::DotProduct(TargetDirection, HookMove.LastDistance.GetSafeNormal());
 	HookMove.LastDistance = TargetDistance;
 
-	const float LandingExtent = 30.0f;
+	const float LandingExtent = 100.0f;
 
 	if (PassedByPoint < 0.0f || TargetDistance.IsNearlyZero(LandingExtent))
 	{
@@ -687,7 +689,7 @@ void URFAbility_GrapplingHook::PostMovement(float DeltaTime)
 		float PassedByPoint = FVector::DotProduct(TargetDirection, HookMove.LastDistance.GetSafeNormal());
 		HookMove.LastDistance = TargetDistance;
 
-		const float LandingExtent = 30.0f;
+		const float LandingExtent = 100.0f;
 
 		if (PassedByPoint < 0.0f || TargetDistance.IsNearlyZero(LandingExtent))
 		{
