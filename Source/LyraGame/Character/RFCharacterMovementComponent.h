@@ -23,7 +23,8 @@ enum class ERFMovementMode : uint8
 UENUM()
 enum class ERFCustomMovementMode : uint8
 {
-	MOVE_None		UMETA(DisplayName = "None"),
+	MOVE_None				UMETA(DisplayName = "None"),
+	MOVE_GrapplingHook		UMETA(DisplayName = "GrapplingHook"),
 };
 
 UCLASS(Config = Game)
@@ -51,7 +52,7 @@ public:
 
 protected:
 	virtual void UpdateBasedRotation(FRotator& FinalRotation, const FRotator& ReducedRotation) override;
-	
+
 	virtual void PhysicsRotation(float DeltaTime);
 
 	virtual void PhysWalking(float DeltaTime, int32 IterationsCount) override;
@@ -60,11 +61,22 @@ protected:
 
 	virtual void PhysCustom(float DeltaTime, int32 IterationsCount) override;
 
+	virtual void PhysGrpplingHook(float DeltaTime, int32 IterationCount);
+
+public:
+	UFUNCTION(BlueprintCallable, Category = "RFMovementCompontnt|GrapplingHook")
+	FVector GetGrapplingHookMovmentVector();
+
+	UFUNCTION(BlueprintCallable, Category = "RFMovementCompontnt|GrapplingHook")
+	void SetGrapplingHookMovementVector(FVector GrapplingVector);
+
 protected:
 	UPROPERTY()
 	TObjectPtr<ARFCharacter> OwnerCharacter = nullptr;
 	ERFMovementMode RFMovementMode = ERFMovementMode::MOVE_Walking;
-	
+
 	ERFCustomMovementMode RFCustomMovementMode = ERFCustomMovementMode::MOVE_None;
 
+private:
+	FVector GrapplingHookVector;
 };

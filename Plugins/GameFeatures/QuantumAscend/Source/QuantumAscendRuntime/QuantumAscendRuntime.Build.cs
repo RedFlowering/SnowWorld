@@ -26,18 +26,23 @@ public class QuantumAscendRuntime : ModuleRules
 			new string[]
 			{
 				"Core",
+				"LyraGame",
 				// ... add other public dependencies that you statically link with here ...
 			}
-			);
-			
-		
-		PrivateDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"CoreUObject",
-				"Engine",
-				"Slate",
-				"SlateCore",
+            );
+
+
+        PrivateDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "CoreUObject",
+                "Engine",
+                "Slate",
+                "SlateCore",
+				"GameplayAbilities",
+                "GameplayTags",
+                "GameplayTasks",
+                "Niagara"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

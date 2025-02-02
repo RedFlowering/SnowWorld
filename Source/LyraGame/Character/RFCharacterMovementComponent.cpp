@@ -2,9 +2,7 @@
 
 #include "Character/RFCharacterMovementComponent.h"
 #include "RFCharacter.h"
-#include "Curves/CurveVector.h"
-#include "Components/CapsuleComponent.h"
-#include "DynamicMesh/DynamicMesh3.h"
+#include "GameFramework/PhysicsVolume.h"
 #include "Net/UnrealNetwork.h"
 
 URFCharacterMovementComponent::URFCharacterMovementComponent()
@@ -380,8 +378,81 @@ void URFCharacterMovementComponent::PhysCustom(const float DeltaTime, int32 Iter
 	case ERFCustomMovementMode::MOVE_None:
 		Super::PhysCustom(DeltaTime, IterationsCount);
 		break;
+	case ERFCustomMovementMode::MOVE_GrapplingHook:
+		PhysGrpplingHook(DeltaTime, IterationsCount);
+		break;
 	default:
 		Super::PhysCustom(DeltaTime, IterationsCount);
 		break;
 	}
+}
+
+void URFCharacterMovementComponent::PhysGrpplingHook(float DeltaTime, int32 IterationCount)
+{
+	if (DeltaTime < MIN_TICK_TIME)
+	{
+		return;
+	}
+
+	RestorePreAdditiveRootMotionVelocity();
+
+	if (!HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
+	{
+		if (bCheatFlying && Acceleration.IsZero())
+		{
+			Velocity = FVector::ZeroVector;
+		}
+		const float Friction = 0.5f * GetPhysicsVolume()->FluidFriction;
+		CalcVelocity(DeltaTime, Friction, true, GetMaxBrakingDeceleration());
+	}
+
+	ApplyRootMotionToVelocity(DeltaTime);
+
+	IterationCount++;
+	bJustTeleported = false;
+
+	FVector OldLocation = UpdatedComponent->GetComponentLocation();
+	const FVector Adjusted = GrapplingHookVector; //Velocity * DeltaTime;
+	FHitResult Hit(1.f);
+	SafeMoveUpdatedComponent(Adjusted, UpdatedComponent->GetComponentQuat(), true, Hit);
+
+	if (Hit.Time < 1.f)
+	{
+		const FVector VelDir = Velocity.GetSafeNormal();
+		const float UpDown = VelDir | GetGravityDirection();
+
+		bool bSteppedUp = false;
+		if ((FMath::Abs(GetGravitySpaceZ(Hit.ImpactNormal)) < 0.2f) && (UpDown < 0.5f) && (UpDown > -0.2f) && CanStepUp(Hit))
+		{
+			const FVector::FReal StepZ = GetGravitySpaceZ(UpdatedComponent->GetComponentLocation());
+			bSteppedUp = StepUp(GetGravityDirection(), Adjusted * (1.f - Hit.Time), Hit);
+			if (bSteppedUp)
+			{
+				const FVector::FReal LocationZ = GetGravitySpaceZ(UpdatedComponent->GetComponentLocation()) + (GetGravitySpaceZ(OldLocation) - StepZ);
+				SetGravitySpaceZ(OldLocation, LocationZ);
+			}
+		}
+
+		if (!bSteppedUp)
+		{
+			//adjust and try again
+			HandleImpact(Hit, DeltaTime, Adjusted);
+			SlideAlongSurface(Adjusted, (1.f - Hit.Time), Hit.Normal, Hit, true);
+		}
+	}
+
+	if (!bJustTeleported && !HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
+	{
+		Velocity = (UpdatedComponent->GetComponentLocation() - OldLocation - Adjusted) / DeltaTime;
+	}
+}
+
+FVector URFCharacterMovementComponent::GetGrapplingHookMovmentVector()
+{
+	return GrapplingHookVector;
+}
+
+void URFCharacterMovementComponent::SetGrapplingHookMovementVector(FVector GrapplingVector)
+{
+	GrapplingHookVector = GrapplingVector;
 }
