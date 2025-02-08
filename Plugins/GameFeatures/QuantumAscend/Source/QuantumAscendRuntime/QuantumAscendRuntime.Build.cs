@@ -42,7 +42,8 @@ public class QuantumAscendRuntime : ModuleRules
 				"GameplayAbilities",
                 "GameplayTags",
                 "GameplayTasks",
-                "Niagara"
+                "Niagara",
+				"CableComponent"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

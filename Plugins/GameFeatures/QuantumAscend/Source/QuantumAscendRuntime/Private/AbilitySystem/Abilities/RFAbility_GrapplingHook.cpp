@@ -5,6 +5,8 @@
 #include "Character/RFCharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Components/CapsuleComponent.h"
+#include "Actors/HookActor.h"
+#include "Actors/RopeActor.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(RFAbility_GrapplingHook)
 
@@ -354,7 +356,7 @@ void URFAbility_GrapplingHook::MulticastSpawnGrapplingHookActor_Implementation(F
 		SpawnParams.Owner = OwnerCharacter;
 		SpawnParams.Instigator = OwnerCharacter->GetInstigator();
 
-		HookSetup.CachedRopeActor = World->SpawnActor<AActor>(HookSetup.RopeActorClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		HookSetup.CachedRopeActor = World->SpawnActor<ARopeActor>(HookSetup.RopeActorClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 
 		FRotator TargetRot = FRotator::ZeroRotator;
 
@@ -367,11 +369,12 @@ void URFAbility_GrapplingHook::MulticastSpawnGrapplingHookActor_Implementation(F
 			TargetRot = (TargetLocation - HookSetup.CachedRopeActor->GetActorLocation()).Rotation();
 		}
 
-		HookSetup.CachedHookActor = World->SpawnActor<AActor>(HookSetup.HookActorClass, HookSetup.CachedRopeActor->GetActorLocation(), TargetRot, SpawnParams);
+		HookSetup.CachedHookActor = World->SpawnActor<AHookActor>(HookSetup.HookActorClass, HookSetup.CachedRopeActor->GetActorLocation(), TargetRot, SpawnParams);
 
 		if (HookSetup.CachedRopeActor && HookSetup.CachedHookActor)
 		{
 			OnSpawnedHook.Broadcast(TargetLocation);
+			HookSetup.CachedRopeActor->UpdateCableEndpoint(HookSetup.CachedHookActor);
 		}
 		else
 		{

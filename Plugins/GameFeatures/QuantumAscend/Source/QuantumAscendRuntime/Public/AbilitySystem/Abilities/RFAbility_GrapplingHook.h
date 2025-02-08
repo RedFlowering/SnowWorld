@@ -8,6 +8,8 @@
 
 class ARFCharacter;
 class URFCharacterMovementComponent;
+class AHookActor;
+class ARopeActor;
 struct FGameplayAbilityActorInfo;
 struct FGameplayTagContainer;
 
@@ -63,19 +65,16 @@ struct FGrapplingHookSetup
 
 	// Setup
 	UPROPERTY(EditAnywhere, Category = "GrapplingHook|Setup")
-	TSubclassOf<AActor> RopeActorClass = nullptr;
+	TSubclassOf<ARopeActor> RopeActorClass = nullptr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "GrapplingHook|Setup")
-	TObjectPtr<AActor> CachedRopeActor = nullptr;
+	TObjectPtr<ARopeActor> CachedRopeActor = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "GrapplingHook|Setup")
-	TSubclassOf<AActor> HookActorClass = nullptr;
+	TSubclassOf<AHookActor> HookActorClass = nullptr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "GrapplingHook|Setup")
-	TObjectPtr<AActor> CachedHookActor = nullptr;
-
-	UPROPERTY(EditAnywhere, Category = "GrapplingHook|Setup")
-	TObjectPtr<AActor> CachedHookShooter = nullptr;
+	TObjectPtr<AHookActor> CachedHookActor = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GrapplingHook|Setup")
 	float GrappleMinDistance = 350.0f;
