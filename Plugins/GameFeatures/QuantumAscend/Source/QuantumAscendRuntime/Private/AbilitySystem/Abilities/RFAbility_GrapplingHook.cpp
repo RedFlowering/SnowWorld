@@ -190,7 +190,7 @@ void URFAbility_GrapplingHook::CancelGrapplingHook()
 		}
 		else if (!GetGrapplingReady())
 		{
-			ServerReleaseGrapplingHook();
+			ReleaseGrapplingHook();
 		}
 
 		break;
@@ -343,11 +343,6 @@ void URFAbility_GrapplingHook::SpawnGrapplingHookActor()
 
 void URFAbility_GrapplingHook::ServerSpawnGrapplingHookActor_Implementation(FVector TargetLocation)
 {
-	MulticastSpawnGrapplingHookActor(TargetLocation);
-}
-
-void URFAbility_GrapplingHook::MulticastSpawnGrapplingHookActor_Implementation(FVector TargetLocation)
-{
 	UWorld* World = GetWorld();
 
 	if (World && OwnerCharacter && HookSetup.RopeActorClass && HookSetup.HookActorClass)
@@ -355,44 +350,44 @@ void URFAbility_GrapplingHook::MulticastSpawnGrapplingHookActor_Implementation(F
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = OwnerCharacter;
 		SpawnParams.Instigator = OwnerCharacter->GetInstigator();
+		SpawnParams.bNoFail = true;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		HookSetup.CachedRopeActor = World->SpawnActor<ARopeActor>(HookSetup.RopeActorClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-
-		FRotator TargetRot = FRotator::ZeroRotator;
-
-		if (HookSetup.CachedRopeActor)
+		// Hook Actor
+		AHookActor* HookActor = World->SpawnActor<AHookActor>(HookSetup.HookActorClass, TargetLocation, FRotator::ZeroRotator, SpawnParams);
+		if (HookActor)
 		{
-			HookSetup.CachedRopeActor->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules(EAttachmentRule::KeepRelative, EAttachmentRule::KeepRelative, EAttachmentRule::KeepRelative, true), FName("hand_r"));
-
-			SpawnParams.Owner = HookSetup.CachedRopeActor;
-			SpawnParams.Instigator = HookSetup.CachedRopeActor->GetInstigator();
-			TargetRot = (TargetLocation - HookSetup.CachedRopeActor->GetActorLocation()).Rotation();
+			HookActor->SetReplicates(true);
+			HookSetup.CachedHookActor = HookActor;
 		}
 
-		HookSetup.CachedHookActor = World->SpawnActor<AHookActor>(HookSetup.HookActorClass, HookSetup.CachedRopeActor->GetActorLocation(), TargetRot, SpawnParams);
-
-		if (HookSetup.CachedRopeActor && HookSetup.CachedHookActor)
+		// Rope Actor
+		ARopeActor* RopeActor = World->SpawnActor<ARopeActor>(HookSetup.RopeActorClass, OwnerCharacter->GetActorLocation(), FRotator::ZeroRotator, SpawnParams);
+		if (RopeActor)
 		{
-			OnSpawnedHook.Broadcast(TargetLocation);
-			HookSetup.CachedRopeActor->UpdateCableEndpoint(HookSetup.CachedHookActor);
-		}
-		else
-		{
-			CancelGrapplingHook();
+			RopeActor->SetReplicates(true);
+			HookSetup.CachedRopeActor = RopeActor;
+			RopeActor->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, FName("hand_r"));
+			RopeActor->UpdateCableEndpoint(HookSetup.CachedHookActor);
 		}
 	}
 }
 
 void URFAbility_GrapplingHook::ReleaseGrapplingHook()
 {
+	ServerReleaseGrapplingHook();
+}
+
+void URFAbility_GrapplingHook::ServerReleaseGrapplingHook_Implementation()
+{
 	UWorld* World = GetWorld();
 
 	if (World)
 	{
-		if (HookSetup.CachedRopeActor)
+		if (HookSetup.CachedHookActor)
 		{
-			World->DestroyActor(HookSetup.CachedRopeActor);
-			HookSetup.CachedRopeActor = nullptr;
+			World->DestroyActor(HookSetup.CachedHookActor);
+			HookSetup.CachedHookActor = nullptr;
 		}
 
 		if (HookSetup.CachedRopeActor)
@@ -403,19 +398,9 @@ void URFAbility_GrapplingHook::ReleaseGrapplingHook()
 	}
 }
 
-void URFAbility_GrapplingHook::ServerReleaseGrapplingHook_Implementation()
-{
-	MulticastReleaseGrapplingHook();
-}
-
-void URFAbility_GrapplingHook::MulticastReleaseGrapplingHook_Implementation()
-{
-	ReleaseGrapplingHook();
-}
-
 void URFAbility_GrapplingHook::InitGrapplingHook()
 {
-	ServerReleaseGrapplingHook();
+	ReleaseGrapplingHook();
 
 	if (EGrappleStep::MoveStart <= HookMove.Step && OwnerMovementComponent)
 	{

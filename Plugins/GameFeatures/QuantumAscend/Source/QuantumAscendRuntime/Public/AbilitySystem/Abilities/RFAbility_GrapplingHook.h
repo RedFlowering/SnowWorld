@@ -216,17 +216,11 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerSpawnGrapplingHookActor(FVector TargetLocation);
 
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastSpawnGrapplingHookActor(FVector TargetLocation);
-
 	UFUNCTION()
 	void ReleaseGrapplingHook();
 
 	UFUNCTION(Server, Reliable)
 	void ServerReleaseGrapplingHook();
-
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastReleaseGrapplingHook();
 
 	UFUNCTION()
 	void InitGrapplingHook();
