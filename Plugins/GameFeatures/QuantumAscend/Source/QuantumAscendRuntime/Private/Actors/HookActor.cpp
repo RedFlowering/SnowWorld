@@ -1,26 +1,36 @@
 // Copyright 2025 RedFlowering.
 
 #include "Actors/HookActor.h"
+#include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Character/RFCharacter.h"
 
 AHookActor::AHookActor()
 {
     PrimaryActorTick.bCanEverTick = true;
 
-    // Hook Mesh
-    HookMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HookMesh"));
-    RootComponent = HookMesh;
-    HookMesh->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+	Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
+	Collision->InitSphereRadius(5.0f);
+	Collision->BodyInstance.SetCollisionProfileName("Projectile");
+	Collision->SetWalkableSlopeOverride(FWalkableSlopeOverride(WalkableSlope_Unwalkable, 0.f));
+	Collision->CanCharacterStepUpOn = ECB_No;
+	RootComponent = Collision;
 
-    // Projectile Movement
+	AnchorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("AnchorMesh"));
+	AnchorMesh->PrimaryComponentTick.bStartWithTickEnabled = 0;
+	AnchorMesh->PrimaryComponentTick.bAllowTickOnDedicatedServer = 0;
+	AnchorMesh->SetEnableGravity(true);
+	AnchorMesh->bApplyImpulseOnDamage = 0;
+	AnchorMesh->bReplicatePhysicsToAutonomousProxy = 0;
+	AnchorMesh->SetGenerateOverlapEvents(false);
+	AnchorMesh->SetCollisionProfileName(FName("NoCollision"));
+    AnchorMesh->SetupAttachment(GetRootComponent());
+
     ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
     ProjectileMovement->InitialSpeed = 2000.0f;
     ProjectileMovement->MaxSpeed = 2000.0f;
     ProjectileMovement->ProjectileGravityScale = 0.0f;
-
-    // Overlap 이벤트 바인딩
-    HookMesh->OnComponentBeginOverlap.AddDynamic(this, &AHookActor::OnHookOverlap);
 }
 
 void AHookActor::BeginPlay()
@@ -31,21 +41,49 @@ void AHookActor::BeginPlay()
 void AHookActor::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
+
+	if (bMoveStart)
+	{
+		FVector PointDir = TargetLocation - GetActorLocation();
+		FVector PointDirNormal = PointDir.GetSafeNormal();
+
+		if (LastDirection.IsNearlyZero())
+		{
+			LastDirection = PointDir;
+		}
+
+		float PassedByPoint = FVector::DotProduct(PointDirNormal, LastDirection.GetSafeNormal());
+		LastDirection = PointDir;
+
+		const float LandingExtent = 10.f;
+
+		if (PassedByPoint < 0.0f || PointDir.IsNearlyZero(LandingExtent))
+		{
+			HookActorToTarget();
+		}
+	}
 }
 
-void AHookActor::OnHookOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void AHookActor::MoveToTarget(FVector TargetPosition)
 {
-    if (OtherActor && OtherActor != this && OtherComp)
-    {
-        // ProjectileMovement 비활성화
-        if (ProjectileMovement)
-        {
-            ProjectileMovement->StopMovementImmediately();
-        }
+	TargetLocation = TargetPosition;
+	bMoveStart = true;
+}
 
-        // Hook Actor를 충돌 대상에 Attach
-        AttachToComponent(OtherComp, FAttachmentTransformRules::KeepWorldTransform);
+void AHookActor::HookActorToTarget()
+{
+	// If ProjectileMovement is active, handle stopping and deactivating it
+	if (ProjectileMovement && ProjectileMovement->IsActive())
+	{
+		ProjectileMovement->StopMovementImmediately();
+		ProjectileMovement->Deactivate();
+	}
 
-        UE_LOG(LogTemp, Log, TEXT("Hook attached to: %s"), *OtherActor->GetName());
-    }
+	SetActorLocation(TargetLocation);
+
+	LastDirection = FVector::ZeroVector;
+	TargetLocation = FVector::ZeroVector;
+
+	// Events will be delivered if the Ability that spawned this Actor has pre-bound them.
+	OnHookArrived.Broadcast();
 }

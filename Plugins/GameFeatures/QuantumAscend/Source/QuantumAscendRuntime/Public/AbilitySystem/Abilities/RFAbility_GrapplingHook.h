@@ -218,6 +218,9 @@ protected:
 	void ServerSpawnGrapplingHookActor(FVector TargetLocation);
 
 	UFUNCTION()
+    void OnHookArrivedHandler();
+
+	UFUNCTION()
 	void ReleaseGrapplingHook();
 
 	UFUNCTION(Server, Reliable)

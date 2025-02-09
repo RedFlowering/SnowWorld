@@ -19,12 +19,13 @@ URFAbilityTask_WaitTick* URFAbilityTask_WaitTick::WaitTick(UGameplayAbility* Own
 
 void URFAbilityTask_WaitTick::Activate()
 {
-	bTickingTask = true; // 매 프레임 Tick을 받도록 설정
+	// Set to receive a tick every frame
+	bTickingTask = true; 
 }
 
 void URFAbilityTask_WaitTick::TickTask(float DeltaTime)
 {
-	// Ability가 유효하면 OnTick 델리게이트를 호출합니다.
+	// If the Ability is valid, it calls the OnTick delegate.
 	if (ShouldBroadcastAbilityTaskDelegates())
 	{
 		OnTick.Broadcast(DeltaTime);
@@ -33,7 +34,7 @@ void URFAbilityTask_WaitTick::TickTask(float DeltaTime)
 
 void URFAbilityTask_WaitTick::OnDestroy(bool AbilityEnded)
 {
-	// AbilityTask가 파괴될 때 Tick을 중지
+	// Stop Tick when AbilityTask is destroyed
 	bTickingTask = false;
 	Super::OnDestroy(AbilityEnded);
 }
@@ -87,7 +88,7 @@ void URFAbility_GrapplingHook::ActivateAbility(const FGameplayAbilitySpecHandle 
 		}
 	}
 
-	// 커스텀 AbilityTask 생성 및 Tick 델리게이트 바인딩
+	// Creating a custom AbilityTask and binding a Tick delegate
 	URFAbilityTask_WaitTick* TickTask = URFAbilityTask_WaitTick::WaitTick(this);
 
 	if (TickTask)
@@ -186,7 +187,7 @@ void URFAbility_GrapplingHook::ShootGrapplingHook(AActor* TargetActor)
 		if (bIsSafeTeleport)
 		{
 			SpawnGrapplingHookActor();
-			SetGrapplingReady();
+			// SetGrapplingReady();
 		}
 		else
 		{
@@ -376,23 +377,53 @@ void URFAbility_GrapplingHook::ServerSpawnGrapplingHookActor_Implementation(FVec
 		SpawnParams.bNoFail = true;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+		// Using the player's right hand socket position as the Hook spawn location
+		FVector SpawnLocation = OwnerCharacter->GetMesh()->GetSocketLocation(FName("hand_r"));
+
+		// Compute rotation from SpawnLocation towards TargetLocation
+		FRotator HookRotation = (TargetLocation - SpawnLocation).Rotation();
+
 		// Hook Actor
-		AHookActor* HookActor = World->SpawnActor<AHookActor>(HookSetup.HookActorClass, OwnerCharacter->GetActorLocation(), FRotator::ZeroRotator, SpawnParams);
-		if (HookActor)
+		HookSetup.CachedHookActor = World->SpawnActor<AHookActor>(HookSetup.HookActorClass, SpawnLocation, HookRotation, SpawnParams);
+
+		if (HookSetup.CachedHookActor)
 		{
-			HookActor->SetReplicates(true);
-			HookSetup.CachedHookActor = HookActor;
+			OnSpawnedHook.Broadcast(TargetLocation);
+			HookSetup.CachedHookActor->SetReplicates(true);
+
+			HookSetup.CachedHookActor->MoveToTarget(TargetLocation);
+			HookSetup.CachedHookActor->OnHookArrived.AddDynamic(this, &URFAbility_GrapplingHook::OnHookArrivedHandler);
+		}
+		else
+		{
+			CancelGrapplingHook();
+			return;
 		}
 
 		// Rope Actor
-		ARopeActor* RopeActor = World->SpawnActor<ARopeActor>(HookSetup.RopeActorClass, OwnerCharacter->GetActorLocation(), FRotator::ZeroRotator, SpawnParams);
-		if (RopeActor)
+		HookSetup.CachedRopeActor = World->SpawnActor<ARopeActor>(HookSetup.RopeActorClass, SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+
+		if (HookSetup.CachedRopeActor && HookSetup.CachedHookActor)
 		{
-			RopeActor->SetReplicates(true);
-			HookSetup.CachedRopeActor = RopeActor;
-			RopeActor->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("hand_r"));
-			RopeActor->UpdateCableEndpoint(HookSetup.CachedHookActor);
+			HookSetup.CachedRopeActor->SetReplicates(true);
+			HookSetup.CachedRopeActor->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("hand_r"));
+			HookSetup.CachedRopeActor->UpdateCableEndpoint(HookSetup.CachedHookActor);
 		}
+		else
+		{
+			CancelGrapplingHook();
+			return;
+		}
+	}
+}
+
+void URFAbility_GrapplingHook::OnHookArrivedHandler()
+{
+	SetGrapplingReady();
+
+	if (HookSetup.CachedHookActor)
+	{
+		HookSetup.CachedHookActor->OnHookArrived.RemoveDynamic(this, &URFAbility_GrapplingHook::OnHookArrivedHandler);
 	}
 }
 
