@@ -70,7 +70,7 @@ FVector ULyraCharacterMovementComponent::ConsumeInputVector()
 
 void ULyraCharacterMovementComponent::SetMovementMode(EMovementMode NewMovementMode, uint8 NewCustomMode /*= 0*/)
 {
-	Super::SetMovementMode(NewMovementMode);
+	Super::SetMovementMode(NewMovementMode, NewCustomMode);
 }
 
 void ULyraCharacterMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)

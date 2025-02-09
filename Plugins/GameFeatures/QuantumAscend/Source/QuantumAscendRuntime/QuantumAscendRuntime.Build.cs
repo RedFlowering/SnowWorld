@@ -27,6 +27,7 @@ public class QuantumAscendRuntime : ModuleRules
 			{
 				"Core",
 				"LyraGame",
+				"ALS"
 				// ... add other public dependencies that you statically link with here ...
 			}
             );
@@ -43,7 +44,8 @@ public class QuantumAscendRuntime : ModuleRules
                 "GameplayTags",
                 "GameplayTasks",
                 "Niagara",
-				"CableComponent"
+				"CableComponent",
+				"CommonGame"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

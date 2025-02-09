@@ -7,6 +7,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Actors/HookActor.h"
 #include "Actors/RopeActor.h"
+#include "Player/LyraPlayerController.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(RFAbility_GrapplingHook)
 
@@ -51,7 +52,7 @@ bool URFAbility_GrapplingHook::CanActivateAbility(const FGameplayAbilitySpecHand
 		if (AbilityCharacter)
 		{
 			URFCharacterMovementComponent* AbilityMovementComponent =
-				Cast<URFCharacterMovementComponent>(AbilityCharacter->GetMovementComponent());
+				Cast<URFCharacterMovementComponent>(AbilityCharacter->GetCharacterMovement());
 
 			if (AbilityMovementComponent && (AbilityMovementComponent->IsMovingOnGround() || AbilityMovementComponent->IsFalling()))
 			{
@@ -69,7 +70,21 @@ void URFAbility_GrapplingHook::ActivateAbility(const FGameplayAbilitySpecHandle 
 
 	if (OwnerCharacter)
 	{
-		OwnerMovementComponent = Cast<URFCharacterMovementComponent>(OwnerCharacter->GetMovementComponent());
+		OwnerMovementComponent = Cast<URFCharacterMovementComponent>(OwnerCharacter->GetCharacterMovement());
+	}
+
+	ALyraPlayerController* OwnerPlayerController = Cast<ALyraPlayerController>(ActorInfo->PlayerController);
+
+	if (OwnerPlayerController)
+	{
+		FHitResult HitResult;
+
+		if (OwnerPlayerController->GetHitResultUnderCursor(ECC_Visibility, true, HitResult))
+		{
+			AActor* TargetActor = HitResult.GetActor();
+
+			ShootGrapplingHook(TargetActor);
+		}
 	}
 
 	// 커스텀 AbilityTask 생성 및 Tick 델리게이트 바인딩
@@ -159,19 +174,24 @@ FVector URFAbility_GrapplingHook::GetTargetLocation()
 
 void URFAbility_GrapplingHook::ShootGrapplingHook(AActor* TargetActor)
 {
-	if (HookMove.Step == EGrappleStep::Idle && !HookSetup.CachedHookActor && TargetActor)
+	if (HookMove.Step == EGrappleStep::Idle && !HookSetup.CachedHookActor && TargetActor && OwnerCharacter)
 	{
 		HookMove.Step = EGrappleStep::Hooked;
 		Target = TargetActor;
+		
+		OwnerCharacter->SetRightHandIK(Target->GetActorTransform());
+		OwnerCharacter->SetUseRightHandIK(true);
 
 		const bool bIsSafeTeleport = PerformTrace();
 		if (bIsSafeTeleport)
 		{
 			SpawnGrapplingHookActor();
+			SetGrapplingReady();
 		}
 		else
 		{
 			HookMove.Step = EGrappleStep::Idle;
+			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, /*bReplicateEndAbility=*/ true, /*bWasCancelled=*/ false);
 		}
 	}
 }
@@ -338,7 +358,10 @@ bool URFAbility_GrapplingHook::PerformTrace()
 
 void URFAbility_GrapplingHook::SpawnGrapplingHookActor()
 {
-	ServerSpawnGrapplingHookActor(Target->GetActorLocation());
+	if (Target)
+	{
+		ServerSpawnGrapplingHookActor(Target->GetActorLocation());
+	}
 }
 
 void URFAbility_GrapplingHook::ServerSpawnGrapplingHookActor_Implementation(FVector TargetLocation)
@@ -354,7 +377,7 @@ void URFAbility_GrapplingHook::ServerSpawnGrapplingHookActor_Implementation(FVec
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 		// Hook Actor
-		AHookActor* HookActor = World->SpawnActor<AHookActor>(HookSetup.HookActorClass, TargetLocation, FRotator::ZeroRotator, SpawnParams);
+		AHookActor* HookActor = World->SpawnActor<AHookActor>(HookSetup.HookActorClass, OwnerCharacter->GetActorLocation(), FRotator::ZeroRotator, SpawnParams);
 		if (HookActor)
 		{
 			HookActor->SetReplicates(true);
@@ -367,7 +390,7 @@ void URFAbility_GrapplingHook::ServerSpawnGrapplingHookActor_Implementation(FVec
 		{
 			RopeActor->SetReplicates(true);
 			HookSetup.CachedRopeActor = RopeActor;
-			RopeActor->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, FName("hand_r"));
+			RopeActor->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("hand_r"));
 			RopeActor->UpdateCableEndpoint(HookSetup.CachedHookActor);
 		}
 	}
@@ -413,6 +436,9 @@ void URFAbility_GrapplingHook::InitGrapplingHook()
 	HookMove.LastDistance = FVector::ZeroVector;
 	HookMove.TeleportStartTime = -1.0;
 	OnGrappleInit.Broadcast();
+
+	OwnerCharacter->SetRightHandIK(FTransform::Identity);
+	OwnerCharacter->SetUseRightHandIK(false);
 
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, /*bReplicateEndAbility=*/ true, /*bWasCancelled=*/ false);
 }
@@ -516,7 +542,7 @@ void URFAbility_GrapplingHook::ImmersiveMovement(float DeltaTime)
 		{
 			// Init
 			HookMove.Step = EGrappleStep::MoveStart;
-			OwnerMovementComponent->SetMovementMode(static_cast<EMovementMode>(ERFMovementMode::MOVE_Custom), static_cast<uint8>(ERFCustomMovementMode::MOVE_GrapplingHook));
+			OwnerMovementComponent->SetMovementMode(MOVE_Custom, 1);
 			OnMoveReady.Broadcast();
 		}
 		break;

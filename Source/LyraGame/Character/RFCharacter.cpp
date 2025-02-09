@@ -11,7 +11,7 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Character_Status_Aiming, "Status.Aiming");
 
 ARFCharacter::ARFCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<URFCharacterMovementComponent>(ALyraCharacter::CharacterMovementComponentName))
 {
-	RFCharacterMovement = Cast<URFCharacterMovementComponent>(AlsCharacterMovement);
+	RFCharacterMovement = Cast<URFCharacterMovementComponent>(GetCharacterMovement());
 }
 
 void ARFCharacter::PostInitializeComponents()
@@ -114,4 +114,44 @@ void ARFCharacter::OnUnEquipAnimation(bool bStart)
 void ARFCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+}
+
+void ARFCharacter::SetRightHandIK(FTransform IKTransform)
+{
+	RightHandIK.TargetTransform = IKTransform;
+}
+
+FTransform ARFCharacter::GetRightHandIK()
+{
+	return RightHandIK.TargetTransform;
+}
+
+void ARFCharacter::SetUseRightHandIK(bool bUseIK)
+{
+	RightHandIK.bUseHandIK = bUseIK;
+}
+
+bool ARFCharacter::GetUseRightHandIK()
+{
+	return RightHandIK.bUseHandIK;
+}
+
+void ARFCharacter::SetLeftHandIK(FTransform IKTransform)
+{
+	LeftHandIK.TargetTransform = IKTransform;
+}
+
+FTransform ARFCharacter::GetLeftHandIK()
+{
+	return LeftHandIK.TargetTransform;
+}
+
+void ARFCharacter::SetUseLefttHandIK(bool bUseIK)
+{
+	LeftHandIK.bUseHandIK = bUseIK;
+}
+
+bool ARFCharacter::GetUseLeftHandIK()
+{
+	return LeftHandIK.bUseHandIK;
 }
