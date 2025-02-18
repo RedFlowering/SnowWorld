@@ -24,10 +24,12 @@ public class QuantumAscendRuntime : ModuleRules
 		
 		PublicDependencyModuleNames.AddRange(
 			new string[]
-			{
-				"Core",
-				"LyraGame",
-				"ALS"
+            {
+                "Core",
+                "LyraGame",
+                "ALS",
+                "EnhancedInput",
+				"CableComponent",
 				// ... add other public dependencies that you statically link with here ...
 			}
             );
@@ -44,7 +46,6 @@ public class QuantumAscendRuntime : ModuleRules
                 "GameplayTags",
                 "GameplayTasks",
                 "Niagara",
-				"CableComponent",
 				"CommonGame"
 				// ... add private dependencies that you statically link with here ...	
 			}

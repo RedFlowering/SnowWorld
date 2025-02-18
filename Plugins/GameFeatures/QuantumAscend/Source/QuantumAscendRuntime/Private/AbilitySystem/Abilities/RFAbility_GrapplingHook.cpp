@@ -8,6 +8,10 @@
 #include "Actors/HookActor.h"
 #include "Actors/RopeActor.h"
 #include "Player/LyraPlayerController.h"
+#include "Character/LyraPawnExtensionComponent.h"
+#include "Character/LyraPawnData.h"
+#include "Input/LyraInputComponent.h"
+#include "Tags/RFGameplayTags.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(RFAbility_GrapplingHook)
 
@@ -76,7 +80,7 @@ void URFAbility_GrapplingHook::ActivateAbility(const FGameplayAbilitySpecHandle 
 
 	ALyraPlayerController* OwnerPlayerController = Cast<ALyraPlayerController>(ActorInfo->PlayerController);
 
-	if (OwnerPlayerController)
+	if (OwnerPlayerController && OwnerCharacter && OwnerMovementComponent)
 	{
 		FHitResult HitResult;
 
@@ -85,22 +89,33 @@ void URFAbility_GrapplingHook::ActivateAbility(const FGameplayAbilitySpecHandle 
 			AActor* TargetActor = HitResult.GetActor();
 
 			ShootGrapplingHook(TargetActor);
+
+			const ULyraPawnExtensionComponent* PawnExtComp = ULyraPawnExtensionComponent::FindPawnExtensionComponent(OwnerCharacter);
+			const ULyraPawnData* PawnData = PawnExtComp->GetPawnData<ULyraPawnData>();
+			const ULyraInputConfig* InputConfig = PawnData->InputConfig;
+			ULyraInputComponent* LyraIC = Cast<ULyraInputComponent>(OwnerCharacter->InputComponent);
+
+			if (PawnExtComp && PawnData && InputConfig && LyraIC)
+			{
+				LyraIC->BindNativeAction(InputConfig, RFGameplayTags::Ability_GrapplingHook_Pulling, ETriggerEvent::Started, this, &URFAbility_GrapplingHook::SetGrapplingReady, /*bLogIfNotFound=*/ false);
+				LyraIC->BindNativeAction(InputConfig, RFGameplayTags::Ability_GrapplingHook_Cancel, ETriggerEvent::Completed, this, &URFAbility_GrapplingHook::CancelGrapplingHook, /*bLogIfNotFound=*/ false);
+			}
 		}
-	}
 
-	// Creating a custom AbilityTask and binding a Tick delegate
-	URFAbilityTask_WaitTick* TickTask = URFAbilityTask_WaitTick::WaitTick(this);
+		// Creating a custom AbilityTask and binding a Tick delegate
+		URFAbilityTask_WaitTick* TickTask = URFAbilityTask_WaitTick::WaitTick(this);
 
-	if (TickTask)
-	{
-		TickTask->OnTick.AddDynamic(this, &URFAbility_GrapplingHook::TickAbility);
-		TickTask->ReadyForActivation();
+		if (TickTask)
+		{
+			TickTask->OnTick.AddDynamic(this, &URFAbility_GrapplingHook::TickAbility);
+			TickTask->ReadyForActivation();
+		}
 	}
 }
 
 void URFAbility_GrapplingHook::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+ 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
 void URFAbility_GrapplingHook::TickAbility(float DeltaTime)
@@ -177,7 +192,6 @@ void URFAbility_GrapplingHook::ShootGrapplingHook(AActor* TargetActor)
 {
 	if (HookMove.Step == EGrappleStep::Idle && !HookSetup.CachedHookActor && TargetActor && OwnerCharacter)
 	{
-		HookMove.Step = EGrappleStep::Hooked;
 		Target = TargetActor;
 		
 		OwnerCharacter->SetRightHandIK(Target->GetActorTransform());
@@ -187,7 +201,6 @@ void URFAbility_GrapplingHook::ShootGrapplingHook(AActor* TargetActor)
 		if (bIsSafeTeleport)
 		{
 			SpawnGrapplingHookActor();
-			// SetGrapplingReady();
 		}
 		else
 		{
@@ -199,43 +212,36 @@ void URFAbility_GrapplingHook::ShootGrapplingHook(AActor* TargetActor)
 
 void URFAbility_GrapplingHook::CancelGrapplingHook()
 {
-	HookMove.Step = EGrappleStep::Idle;
-
 	switch (HookSetup.GrapplingMovementMode)
 	{
 	case EGrapplingHookMoveMode::Teleport:
 	{
-		if (HookMove.Step >= EGrappleStep::MoveStart)
-		{
-			InitGrapplingHook();
-		}
-		else if (!GetGrapplingReady())
-		{
-			ReleaseGrapplingHook();
-		}
+		InitGrapplingHook();
 
 		break;
 	}
 	case EGrapplingHookMoveMode::Immersive:
 	{
-		if (OwnerMovementComponent && OwnerCharacter)
+		if (OwnerMovementComponent && HookMove.Step >= EGrappleStep::MoveStart)
 		{
 			const FVector Deceleration = OwnerMovementComponent->Velocity * -HookSetup.GrapplingHookDecelerationFactor;
 			OwnerMovementComponent->AddImpulse(Deceleration, true);
-			OwnerMovementComponent->SetMovementMode(static_cast<EMovementMode>(ERFMovementMode::MOVE_Falling));
 		}
+
+		InitGrapplingHook();
+
 		break;
 	}
 	case EGrapplingHookMoveMode::Blink:
 	{
-		if (OwnerMovementComponent)
+		if (OwnerMovementComponent && HookMove.Step >= EGrappleStep::MoveStart)
 		{
 			const FVector Deceleration = OwnerMovementComponent->Velocity * -HookSetup.GrapplingHookDecelerationFactor;
 			OwnerMovementComponent->AddImpulse(Deceleration, true);
-			OwnerMovementComponent->SetMovementMode(static_cast<EMovementMode>(ERFMovementMode::MOVE_Falling));
-
-			InitGrapplingHook();
 		}
+
+		InitGrapplingHook();
+
 		break;
 	}
 	default:
@@ -419,7 +425,12 @@ void URFAbility_GrapplingHook::ServerSpawnGrapplingHookActor_Implementation(FVec
 
 void URFAbility_GrapplingHook::OnHookArrivedHandler()
 {
-	SetGrapplingReady();
+	HookMove.Step = EGrappleStep::Hooked;
+
+	if (HookSetup.bUseAutoHook)
+	{
+		SetGrapplingReady();
+	}
 
 	if (HookSetup.CachedHookActor)
 	{
@@ -430,6 +441,11 @@ void URFAbility_GrapplingHook::OnHookArrivedHandler()
 void URFAbility_GrapplingHook::ReleaseGrapplingHook()
 {
 	ServerReleaseGrapplingHook();
+
+	OwnerCharacter->SetRightHandIK(FTransform::Identity);
+	OwnerCharacter->SetUseRightHandIK(false);
+
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, /*bReplicateEndAbility=*/ true, /*bWasCancelled=*/ false);
 }
 
 void URFAbility_GrapplingHook::ServerReleaseGrapplingHook_Implementation()
@@ -454,8 +470,6 @@ void URFAbility_GrapplingHook::ServerReleaseGrapplingHook_Implementation()
 
 void URFAbility_GrapplingHook::InitGrapplingHook()
 {
-	ReleaseGrapplingHook();
-
 	if (EGrappleStep::MoveStart <= HookMove.Step && OwnerMovementComponent)
 	{
 		OwnerMovementComponent->StopMovementImmediately();
@@ -468,10 +482,7 @@ void URFAbility_GrapplingHook::InitGrapplingHook()
 	HookMove.TeleportStartTime = -1.0;
 	OnGrappleInit.Broadcast();
 
-	OwnerCharacter->SetRightHandIK(FTransform::Identity);
-	OwnerCharacter->SetUseRightHandIK(false);
-
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, /*bReplicateEndAbility=*/ true, /*bWasCancelled=*/ false);
+	ReleaseGrapplingHook();
 }
 
 void URFAbility_GrapplingHook::TeleportMovement()

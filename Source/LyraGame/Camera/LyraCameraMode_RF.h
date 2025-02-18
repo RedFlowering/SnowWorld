@@ -74,6 +74,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pawn")
 	bool bUsePawnControlRotation = false;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pawn")
+	bool bUsePlatformerMode = false;
+
 protected:	
 	TObjectPtr<URFSpringArmComponentBase> SpringArm = nullptr;
 };

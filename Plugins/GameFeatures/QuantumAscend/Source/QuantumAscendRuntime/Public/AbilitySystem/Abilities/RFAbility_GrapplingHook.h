@@ -100,6 +100,9 @@ struct FGrapplingHookSetup
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GrapplingHook|Setup")
 	float BlinkPostTeleportTime = 0.2f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GrapplingHook|Setup")
+	bool bUseAutoHook = false;
+
 	// Movement Method (Blink, Immersive..)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GrapplingHook|Setup")
 	EGrapplingHookMoveMode GrapplingMovementMode = EGrapplingHookMoveMode::Immersive;

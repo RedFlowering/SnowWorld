@@ -80,7 +80,12 @@ FVector ULyraCameraMode_RF::GetPivotLocation() const
 			const float ActualHalfHeight = CapsuleComp->GetUnscaledCapsuleHalfHeight();
 			const float HeightAdjustment = (DefaultHalfHeight - ActualHalfHeight) + TargetCharacterCDO->BaseEyeHeight + AdjustPivotHeight;
 
-			const FVector ActualCapsuleRight = CapsuleComp->GetRightVector();
+			FVector ActualCapsuleRight = CapsuleComp->GetRightVector();
+
+			if (bUsePlatformerMode)
+			{
+				ActualCapsuleRight = CapsuleComp->GetForwardVector();
+			}
 
 			return (FVector::UpVector * HeightAdjustment) + (ActualCapsuleRight * AdjustPivotRight);
 		}

@@ -18,7 +18,7 @@ class UObject;
  *	Component used to manage input mappings and bindings using an input config data asset.
  */
 UCLASS(Config = Input)
-class ULyraInputComponent : public UEnhancedInputComponent
+class LYRAGAME_API ULyraInputComponent : public UEnhancedInputComponent
 {
 	GENERATED_BODY()
 
