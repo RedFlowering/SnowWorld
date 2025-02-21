@@ -201,7 +201,7 @@ public:
 
 	// Movement
 	UFUNCTION(BlueprintCallable, Category = "GrapplingHook")
-	void ShootGrapplingHook(AActor* TargetActor);
+	void ShootGrapplingHook(FVector TargetPos);
 
 	UFUNCTION(BlueprintCallable, Category = "GrapplingHook")
 	void CancelGrapplingHook();
@@ -215,10 +215,10 @@ protected:
 
 protected:
 	UFUNCTION()
-	void SpawnGrapplingHookActor();
+	void SpawnGrapplingHookActor(FVector TargetPos);
 
 	UFUNCTION(Server, Reliable)
-	void ServerSpawnGrapplingHookActor(FVector TargetLocation);
+	void ServerSpawnGrapplingHookActor(FVector TargetPos);
 
 	UFUNCTION()
     void OnHookArrivedHandler();
@@ -232,6 +232,9 @@ protected:
 	UFUNCTION()
 	void InitGrapplingHook();
 
+	UFUNCTION()
+	void HangingGrapplingHook();
+
 	// Teleport Movement
 protected:
 	UFUNCTION()
@@ -241,7 +244,7 @@ protected:
 	void TeleportToTarget();
 
 	UFUNCTION(Server, Reliable)
-	void ServerTeleportToTarget(FVector TargetLocation);
+	void ServerTeleportToTarget(FVector TargetPos);
 
 	// Immersive Movement
 protected:
@@ -273,8 +276,7 @@ protected:
 	TObjectPtr<URFCharacterMovementComponent> OwnerMovementComponent = nullptr;
 
 	UPROPERTY()
-	TObjectPtr<AActor> Target = nullptr;
-
+	FVector TargetLocation = FVector::ZeroVector;
 protected:
 	UPROPERTY()
 	FGrapplingHookMove HookMove;

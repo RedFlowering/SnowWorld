@@ -28,10 +28,11 @@ void ARopeActor::BeginPlay()
     Super::BeginPlay();
 }
 
-void ARopeActor::UpdateCableEndpoint(AActor* HookActor)
+void ARopeActor::UpdateCableEndpoint(AHookActor* HookActor)
 {
     if (Rope && HookActor)
     {
-        Rope->SetAttachEndTo(HookActor, FName(), FName());
+        Hook = Cast<AHookActor>(HookActor);
+        Rope->SetAttachEndTo(Hook, FName(), FName());
     }
 }

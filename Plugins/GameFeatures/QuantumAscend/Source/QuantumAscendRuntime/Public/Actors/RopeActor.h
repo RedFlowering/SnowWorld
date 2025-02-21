@@ -24,10 +24,13 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "RopeActor")
     TObjectPtr<UCableComponent> Rope = nullptr;
 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "RopeActor")
+    TObjectPtr<AHookActor> Hook = nullptr;
+
     // Attach Point for the Hook
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "RopeActor")
     TObjectPtr<USceneComponent> AttachPoint = nullptr;
 
     // Updates the cable's endpoint
-    void UpdateCableEndpoint(AActor* HookActor);
+    void UpdateCableEndpoint(AHookActor* HookActor);
 };
