@@ -52,14 +52,38 @@ void AHookActor::Tick(float DeltaTime)
 			LastDirection = PointDir;
 		}
 
+		UWorld* World = GetWorld();
+		bool IsHit = false;
+
+		if (World)
+		{
+			const FCollisionShape Shape = FCollisionShape::MakeCapsule(Collision->GetScaledSphereRadius(), Collision->GetScaledSphereRadius());
+			
+			FCollisionQueryParams TraceParams(FName(TEXT("SweepMultiTrace")), true, this);
+			TraceParams.bTraceComplex = true;
+			TraceParams.bFindInitialOverlaps = true;
+			TraceParams.bReturnPhysicalMaterial = false;
+			TraceParams.AddIgnoredActor(this);
+			TraceParams.AddIgnoredActor(GetOwner());
+
+			IsHit = World->OverlapBlockingTestByChannel(GetActorLocation(), FQuat(GetActorRotation()), CollisionChannel, Shape, TraceParams);
+
+#if WITH_EDITOR
+			if (UseDebugMode)
+			{
+				DrawDebugSphere(World, GetActorLocation(), Collision->GetScaledSphereRadius(), 1, IsHit ? FColor::Green : FColor::Red, false, DebugTraceLifeTime, 0.0f, 1.0f);
+			}
+#endif
+		}
+
 		float PassedByPoint = FVector::DotProduct(PointDirNormal, LastDirection.GetSafeNormal());
 		LastDirection = PointDir;
 
 		const float LandingExtent = 10.f;
 
-		if (PassedByPoint < 0.0f || PointDir.IsNearlyZero(LandingExtent))
+		if (PassedByPoint < 0.0f || PointDir.IsNearlyZero(LandingExtent) || IsHit)
 		{
-			HookActorToTarget();
+			ArrivalsToTarget();
 		}
 	}
 }
@@ -70,7 +94,7 @@ void AHookActor::MoveToTarget(FVector TargetPosition)
 	bMoveStart = true;
 }
 
-void AHookActor::HookActorToTarget()
+void AHookActor::ArrivalsToTarget()
 {
 	// If ProjectileMovement is active, handle stopping and deactivating it
 	if (ProjectileMovement && ProjectileMovement->IsActive())
@@ -79,7 +103,7 @@ void AHookActor::HookActorToTarget()
 		ProjectileMovement->Deactivate();
 	}
 
-	SetActorLocation(TargetLocation);
+	// SetActorLocation(TargetLocation);
 
 	LastDirection = FVector::ZeroVector;
 	TargetLocation = FVector::ZeroVector;

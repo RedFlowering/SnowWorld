@@ -27,8 +27,8 @@ public:
 	void MoveToTarget(FVector TargetLocation);
 
 protected:
-	void HookActorToTarget();
-
+	void ArrivalsToTarget();
+	
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "HookActor")
 	TObjectPtr<USphereComponent> Collision = nullptr;
@@ -43,6 +43,15 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "HookActor")
     FOnHookArrivedDelegate OnHookArrived;
+
+	UPROPERTY(EditAnywhere, Category = "HookActor|Trace")
+	TEnumAsByte<ECollisionChannel> CollisionChannel = ECollisionChannel::ECC_Pawn;
+
+	UPROPERTY(EditAnywhere, Category = "HookActor|Trace|Debug")
+	bool UseDebugMode = false;
+
+	UPROPERTY(EditAnywhere, Category = "HookActor|Trace|Debug")
+	float DebugTraceLifeTime = 0.5f;
 
 protected:
 	FVector TargetLocation = FVector::ZeroVector;

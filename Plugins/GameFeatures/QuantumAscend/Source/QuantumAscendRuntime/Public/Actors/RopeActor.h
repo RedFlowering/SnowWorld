@@ -6,7 +6,7 @@
 #include "RopeActor.generated.h"
 
 class UCableComponent;
-class AHookActor;
+class UPhysicsConstraintComponent;
 
 UCLASS()
 class QUANTUMASCENDRUNTIME_API ARopeActor : public AActor
@@ -17,7 +17,9 @@ public:
     ARopeActor();
 
 protected:
-    virtual void BeginPlay() override;
+	virtual void BeginPlay() override;
+
+	virtual void Tick(float DeltaSeconds) override;
 
 public:
     // Cable Component
@@ -25,12 +27,14 @@ public:
     TObjectPtr<UCableComponent> Rope = nullptr;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "RopeActor")
-    TObjectPtr<AHookActor> Hook = nullptr;
+    TObjectPtr<UPhysicsConstraintComponent> RopePhysicsConstraint = nullptr;
 
-    // Attach Point for the Hook
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "RopeActor")
-    TObjectPtr<USceneComponent> AttachPoint = nullptr;
+    TObjectPtr<UPrimitiveComponent> OwnerStart = nullptr;
+
+    TObjectPtr<UPrimitiveComponent> OwnerEnd = nullptr;
 
     // Updates the cable's endpoint
-    void UpdateCableEndpoint(AHookActor* HookActor);
+    void UpdateCable(UPrimitiveComponent* StartComponent, FName StartBoneName, UPrimitiveComponent* EndComponent, FName EndBoneName);
+
+    void DetachRope();
 };

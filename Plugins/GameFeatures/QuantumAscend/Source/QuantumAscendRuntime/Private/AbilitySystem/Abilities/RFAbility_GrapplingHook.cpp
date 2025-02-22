@@ -87,8 +87,8 @@ void URFAbility_GrapplingHook::ActivateAbility(const FGameplayAbilitySpecHandle 
 		if (OwnerPlayerController->GetHitResultUnderCursor(ECC_Visibility, true, HitResult))
 		{
 			// Fire the hook using the ImpactPoint as is
-			FVector TargetPos = HitResult.ImpactPoint;
-			TargetPos = OwnerMovementComponent->ConstrainLocationToPlane(TargetPos);
+			FVector TargetLocation = HitResult.ImpactPoint;
+			TargetLocation = OwnerMovementComponent->ConstrainLocationToPlane(TargetLocation);
 
 			FHitResult FinalHit;
 			FCollisionQueryParams TraceParams(SCENE_QUERY_STAT(GrapplingHookTrace), /*bTraceComplex=*/true, OwnerCharacter);
@@ -98,26 +98,25 @@ void URFAbility_GrapplingHook::ActivateAbility(const FGameplayAbilitySpecHandle 
 			UWorld* World = GetWorld();
 			if (World)
 			{
-				bool bHit = World->LineTraceSingleByChannel(FinalHit, OwnerCharacter->GetActorLocation(), TargetPos, ECC_Visibility, TraceParams);
+				bool IsHit = World->LineTraceSingleByChannel(FinalHit, OwnerCharacter->GetActorLocation(), TargetLocation, CollisionChannel, TraceParams);
 
 #if WITH_EDITOR
-				if (HookTrace.DebugMode)
+				if (UseDebugMode)
 				{
-					DrawDebugLine(World, OwnerCharacter->GetActorLocation(), TargetPos, bHit ? FColor::Green : FColor::Red, /*bPersistentLines=*/false, HookTrace.DebugTraceLifeTime);
+					DrawDebugLine(World, OwnerCharacter->GetActorLocation(), TargetLocation, IsHit ? FColor::Green : FColor::Red, /*bPersistentLines=*/false, DebugTraceLifeTime);
 				}
 #endif
 			}
 
 			if (FinalHit.bBlockingHit)
 			{
-				TargetLocation = FinalHit.ImpactPoint;
-			}
-			else
-			{
-				TargetLocation = TargetPos;
-			}
+				GrapplingTargetLocation = FinalHit.ImpactPoint;
 
-			ShootGrapplingHook(TargetLocation);
+				if (PerformTrace(GrapplingTargetLocation))
+				{
+					ShootGrapplingHook(GrapplingTargetLocation);
+				}
+			}
 
 			const ULyraPawnExtensionComponent* PawnExtComp = ULyraPawnExtensionComponent::FindPawnExtensionComponent(OwnerCharacter);
 			const ULyraPawnData* PawnData = PawnExtComp->GetPawnData<ULyraPawnData>();
@@ -126,7 +125,7 @@ void URFAbility_GrapplingHook::ActivateAbility(const FGameplayAbilitySpecHandle 
 
 			if (PawnExtComp && PawnData && InputConfig && LyraIC)
 			{
-				LyraIC->BindNativeAction(InputConfig, RFGameplayTags::Ability_GrapplingHook_Pulling, ETriggerEvent::Started, this, &URFAbility_GrapplingHook::SetGrapplingReady, /*bLogIfNotFound=*/ false);
+				LyraIC->BindNativeAction(InputConfig, RFGameplayTags::Ability_GrapplingHook_Pulling, ETriggerEvent::Started, this, &URFAbility_GrapplingHook::StartMoveToTarget, /*bLogIfNotFound=*/ false);
 				LyraIC->BindNativeAction(InputConfig, RFGameplayTags::Ability_GrapplingHook_Cancel, ETriggerEvent::Completed, this, &URFAbility_GrapplingHook::CancelGrapplingHook, /*bLogIfNotFound=*/ false);
 			}
 		}
@@ -149,249 +148,63 @@ void URFAbility_GrapplingHook::EndAbility(const FGameplayAbilitySpecHandle Handl
 
 void URFAbility_GrapplingHook::TickAbility(float DeltaTime)
 {
-	if (HookSetup.CachedHookActor && HookMove.Step >= EGrappleStep::MoveReady)
-	{
-		const float InitStartTime = -1.0f;
+	SwingMovement(GrapplingTargetLocation);
+}
 
-		if (FMath::IsNearlyEqual(HookMove.TeleportStartTime, InitStartTime))
+bool URFAbility_GrapplingHook::PerformTrace(FVector TargetPos)
+{
+	UWorld* World = GetWorld();
+
+	if (World && OwnerCharacter)
+	{
+		FVector StartLocation = OwnerCharacter->GetMesh()->GetBoneLocation(FName("hand_r"));
+		FVector EndLocation = TargetPos;
+
+		FHitResult HitResult;
+		FCollisionQueryParams TraceParams;
+		TraceParams.AddIgnoredActor(OwnerCharacter);  // 자신의 액터는 무시
+
+		bool IsHit = World->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, CollisionChannel, TraceParams);
+
+#if WITH_EDITOR
+		if(UseDebugMode)
 		{
-			if (UWorld* World = GetWorld())
+			if (IsHit)
 			{
-				HookMove.TeleportStartTime = World->GetTimeSeconds();
+				// 타깃에 명중한 경우 녹색 라인 출력
+				DrawDebugLine(GetWorld(), StartLocation, HitResult.Location, FColor::Green, false, DebugTraceLifeTime, 0, 2.f);
+				UE_LOG(LogTemp, Log, TEXT("Hit at location: %s"), *HitResult.Location.ToString());
+			}
+			else
+			{
+				// 명중하지 않은 경우 빨간색 라인 출력
+				DrawDebugLine(GetWorld(), StartLocation, EndLocation, FColor::Red, false, DebugTraceLifeTime, 0, 2.f);
+				UE_LOG(LogTemp, Log, TEXT("No hit"));
 			}
 		}
-
-		switch (HookSetup.GrapplingMovementMode)
-		{
-		case EGrapplingHookMoveMode::Teleport:
-		{
-			TeleportMovement();
-			break;
-		}
-		case EGrapplingHookMoveMode::Immersive:
-		{
-			ImmersiveMovement(DeltaTime);
-			break;
-		}
-		case EGrapplingHookMoveMode::Blink:
-		{
-			BlinkMovement(DeltaTime);
-			break;
-		}
-		default:
-			break;
-		}
+#endif
+		return IsHit;
 	}
-}
 
-void URFAbility_GrapplingHook::ChangeGrapplingHookMode(EGrapplingHookMoveMode Mode)
-{
-	if (HookMove.Step == EGrappleStep::Idle)
-	{
-		HookSetup.GrapplingMovementMode = Mode;
-	}
-}
-
-bool URFAbility_GrapplingHook::IsGrapplingIdle()
-{
-	return HookMove.Step == EGrappleStep::Idle;
-}
-
-void URFAbility_GrapplingHook::SetGrapplingReady()
-{
-	if (HookMove.Step < EGrappleStep::MoveReady)
-	{
-		HookMove.Step = EGrappleStep::MoveReady;
-	}
-}
-
-bool URFAbility_GrapplingHook::GetGrapplingReady()
-{
-	return HookMove.Step == EGrappleStep::MoveReady;
-}
-
-FVector URFAbility_GrapplingHook::GetTargetLocation()
-{
-	return TargetLocation;
+	return false;
 }
 
 void URFAbility_GrapplingHook::ShootGrapplingHook(FVector TargetPos)
 {
-	if (HookMove.Step == EGrappleStep::Idle && !HookSetup.CachedHookActor && OwnerCharacter)
+	if (OwnerCharacter)
 	{
 		OwnerCharacter->SetRightHandIK(FTransform(FRotator::ZeroRotator, TargetPos, FVector(1.0f, 1.0f, 1.0f)));
 		OwnerCharacter->SetUseRightHandIK(true);
-
-		SpawnGrapplingHookActor(TargetPos);
-	}
-}
-
-void URFAbility_GrapplingHook::CancelGrapplingHook()
-{
-	if (HookMove.Step <= EGrappleStep::MoveReady || HookMove.Step >= EGrappleStep::GrappleEnd)
-	{
-		switch (HookSetup.GrapplingMovementMode)
-		{
-		case EGrapplingHookMoveMode::Teleport:
-		{
-			InitGrapplingHook();
-
-			break;
-		}
-		case EGrapplingHookMoveMode::Immersive:
-		{
-			if (OwnerMovementComponent)
-			{
-				const FVector Deceleration = OwnerMovementComponent->Velocity * -HookSetup.GrapplingHookDecelerationFactor;
-				OwnerMovementComponent->AddImpulse(Deceleration, true);
-			}
-
-			InitGrapplingHook();
-
-			break;
-		}
-		case EGrapplingHookMoveMode::Blink:
-		{
-			if (OwnerMovementComponent)
-			{
-				const FVector Deceleration = OwnerMovementComponent->Velocity * -HookSetup.GrapplingHookDecelerationFactor;
-				OwnerMovementComponent->AddImpulse(Deceleration, true);
-			}
-
-			InitGrapplingHook();
-
-			break;
-		}
-		default:
-			break;
-		}
-	}
-}
-
-const FGrapplingHookSetup URFAbility_GrapplingHook::GetHookSetup()
-{
-	return HookSetup;
-}
-
-bool URFAbility_GrapplingHook::PerformTrace()
-{
-	// Obstacle Simple Check
-	const UWorld* World = GetWorld();
-
-	bool IsSafeTeleport = false;
-
-	if (World && OwnerCharacter)
-	{
-		UCapsuleComponent* CapsuleComponent = OwnerCharacter->GetCapsuleComponent();
-
-		if (CapsuleComponent)
-		{
-			// Trace Param
-			TArray<FHitResult> HitResults;
-
-			// Point Trace
-			const FCollisionShape CapsuleShape = FCollisionShape::MakeCapsule(CapsuleComponent->GetUnscaledCapsuleRadius(), CapsuleComponent->GetUnscaledCapsuleHalfHeight());
-
-			FVector HookStartLocation = OwnerCharacter->GetActorLocation();
-			FVector HookPointLocation = TargetLocation;
-
-			HookPointLocation.Z += TargetLocation.UpVector.GetSafeNormal().Z * CapsuleShape.GetCapsuleHalfHeight();
-
-			FQuat CapsuleRotation = FQuat::Identity;
-			FVector HookCenterLocation = HookStartLocation + ((HookPointLocation - HookStartLocation) / 2.0f);
-			float BoxSize = (HookPointLocation - HookStartLocation).Size() / 2.0f;
-			FVector BoxExtent(BoxSize, 5.0f, 5.0f);
-			FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(HookStartLocation, TargetLocation);
-			const FCollisionShape BoxShape = FCollisionShape::MakeBox(BoxExtent);
-
-			float CapsuleDistance = 2 * CapsuleShape.GetCapsuleRadius();
-			int32 NumCapsules = FMath::FloorToInt((HookPointLocation - HookStartLocation).Size() / CapsuleDistance);
-
-			FVector Start = HookStartLocation;
-			FVector End;
-			FHitResult HitResult;
-			FCollisionQueryParams CollisionParams;
-			CollisionParams.AddIgnoredActor(OwnerCharacter);
-
-			FCollisionQueryParams TraceParams(FName(TEXT("SweepMultiTrace")), true, OwnerCharacter);
-			TraceParams.bTraceComplex = true;
-			TraceParams.bFindInitialOverlaps = true;
-			TraceParams.bReturnPhysicalMaterial = false;
-
-			// Direction Calculation
-			FVector PointDir = HookPointLocation - HookStartLocation;
-			FVector PointDirNormal = PointDir.GetSafeNormal();
-
-			switch (HookTrace.CollisionShape)
-			{
-			case EGrapplingTraceShape::None:
-				IsSafeTeleport = !World->OverlapBlockingTestByChannel(HookPointLocation, CapsuleRotation, HookTrace.CollisionChannel, CapsuleShape, TraceParams);
-#if WITH_EDITOR
-				if (HookTrace.DebugMode)
-				{
-					DrawDebugCapsule(World, HookPointLocation, CapsuleShape.GetCapsuleHalfHeight(), CapsuleShape.GetCapsuleRadius(), CapsuleRotation, IsSafeTeleport ? FColor::Green : FColor::Red, false, HookTrace.DebugTraceLifeTime);
-				}
-#endif
-				break;
-			case EGrapplingTraceShape::LineTrace:
-				IsSafeTeleport = !World->OverlapBlockingTestByChannel(HookPointLocation, CapsuleRotation, HookTrace.CollisionChannel, CapsuleShape, TraceParams) &&
-					!World->LineTraceMultiByChannel(HitResults, HookStartLocation, HookPointLocation, HookTrace.CollisionChannel, TraceParams);
-#if WITH_EDITOR
-				if (HookTrace.DebugMode)
-				{
-					DrawDebugCapsule(World, HookPointLocation, CapsuleShape.GetCapsuleHalfHeight(), CapsuleShape.GetCapsuleRadius(), CapsuleRotation, IsSafeTeleport ? FColor::Green : FColor::Red, false, HookTrace.DebugTraceLifeTime);
-					DrawDebugLine(World, HookStartLocation, HookPointLocation, IsSafeTeleport ? FColor::Green : FColor::Red, false, HookTrace.DebugTraceLifeTime);
-				}
-#endif
-				break;
-			case EGrapplingTraceShape::CapsuleTrace:
-				for (int32 i = 0; i <= NumCapsules; ++i)
-				{
-					End = Start + (PointDirNormal * CapsuleDistance);
-					World->SweepSingleByChannel(HitResult, Start, End, FQuat::Identity, HookTrace.CollisionChannel, CapsuleShape, CollisionParams);
-					Start = End;
-
-#if WITH_EDITOR
-					if (HookTrace.DebugMode)
-					{
-						DrawDebugCapsule(World, Start, CapsuleShape.GetCapsuleHalfHeight(), CapsuleShape.GetCapsuleRadius(), CapsuleRotation, HitResult.bBlockingHit ? FColor::Red : FColor::Green, false, HookTrace.DebugTraceLifeTime);
-					}
-#endif
-
-					if (HitResult.bBlockingHit)
-						break;
-				}
-				IsSafeTeleport = !World->OverlapBlockingTestByChannel(HookPointLocation, CapsuleRotation, HookTrace.CollisionChannel, CapsuleShape, TraceParams) && !HitResult.bBlockingHit;
-
-				break;
-			case EGrapplingTraceShape::BoxTrace:
-				IsSafeTeleport = !World->OverlapBlockingTestByChannel(HookPointLocation, CapsuleRotation, HookTrace.CollisionChannel, CapsuleShape, TraceParams) &&
-					!World->OverlapBlockingTestByChannel(HookCenterLocation, FQuat(LookAtRotation), HookTrace.CollisionChannel, BoxShape, TraceParams);
-#if WITH_EDITOR
-				if (HookTrace.DebugMode)
-				{
-					DrawDebugCapsule(World, HookPointLocation, CapsuleShape.GetCapsuleHalfHeight(), CapsuleShape.GetCapsuleRadius(), CapsuleRotation, IsSafeTeleport ? FColor::Green : FColor::Red, false, HookTrace.DebugTraceLifeTime);
-					DrawDebugBox(World, HookCenterLocation, BoxExtent, FQuat(LookAtRotation), IsSafeTeleport ? FColor::Green : FColor::Red, false, HookTrace.DebugTraceLifeTime);
-				}
-#endif
-				break;
-			}
-		}
 	}
 
-	return IsSafeTeleport;
+	ServerShootGrpplingHook(TargetPos);
 }
 
-void URFAbility_GrapplingHook::SpawnGrapplingHookActor(FVector TargetPos)
-{
-	ServerSpawnGrapplingHookActor(TargetPos);
-}
-
-void URFAbility_GrapplingHook::ServerSpawnGrapplingHookActor_Implementation(FVector TargetPos)
+void URFAbility_GrapplingHook::ServerShootGrpplingHook_Implementation(FVector TargetPos)
 {
 	UWorld* World = GetWorld();
 
-	if (World && OwnerCharacter && HookSetup.RopeActorClass && HookSetup.HookActorClass)
+	if (World && OwnerCharacter && RopeActorClass && HookActorClass)
 	{
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = OwnerCharacter;
@@ -406,69 +219,30 @@ void URFAbility_GrapplingHook::ServerSpawnGrapplingHookActor_Implementation(FVec
 		FRotator HookRotation = (TargetPos - SpawnLocation).Rotation();
 
 		// Hook Actor
-		HookSetup.CachedHookActor = World->SpawnActor<AHookActor>(HookSetup.HookActorClass, SpawnLocation, HookRotation, SpawnParams);
+		CachedHookActor = World->SpawnActor<AHookActor>(HookActorClass, SpawnLocation, HookRotation, SpawnParams);
 
-		if (HookSetup.CachedHookActor)
+		if (CachedHookActor)
 		{
-			OnSpawnedHook.Broadcast(TargetPos);
-			HookSetup.CachedHookActor->SetReplicates(true);
-
-			HookSetup.CachedHookActor->MoveToTarget(TargetPos);
-			HookSetup.CachedHookActor->OnHookArrived.AddDynamic(this, &URFAbility_GrapplingHook::OnHookArrivedHandler);
-		}
-		else
-		{
-			CancelGrapplingHook();
-			return;
+			CachedHookActor->SetReplicates(true);
+			CachedHookActor->MoveToTarget(TargetPos);
+			CachedHookActor->OnHookArrived.AddDynamic(this, &URFAbility_GrapplingHook::OnHookArrivedHandler);
 		}
 
-		// Rope Actor
-		HookSetup.CachedRopeActor = World->SpawnActor<ARopeActor>(HookSetup.RopeActorClass, SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+		//Rope Actor
+		CachedRopeActor = World->SpawnActor<ARopeActor>(RopeActorClass, SpawnLocation, FRotator::ZeroRotator, SpawnParams);
 
-		if (HookSetup.CachedRopeActor && HookSetup.CachedHookActor)
+		if (CachedRopeActor && CachedHookActor)
 		{
-			HookSetup.CachedRopeActor->SetReplicates(true);
-			HookSetup.CachedRopeActor->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("hand_r"));
-			HookSetup.CachedRopeActor->UpdateCableEndpoint(HookSetup.CachedHookActor);
-		}
-		else
-		{
-			CancelGrapplingHook();
-			return;
+			CachedRopeActor->SetReplicates(true);
+			CachedRopeActor->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("hand_r"));
+			CachedRopeActor->UpdateCable(OwnerCharacter->GetMesh(), FName("hand_r"), Cast<UPrimitiveComponent>(CachedHookActor->Collision), NAME_None);
 		}
 	}
 }
 
-void URFAbility_GrapplingHook::OnHookArrivedHandler()
-{
-	HookMove.Step = EGrappleStep::Hooked;
-
-	// 케이블 길이를 고정하기 위한 처리: 캐릭터의 손 위치와 훅 액터 사이의 거리를 계산
-	if (OwnerCharacter && HookSetup.CachedRopeActor && HookSetup.CachedRopeActor->Rope && HookSetup.CachedHookActor)
-	{
-		FVector HandLocation = OwnerCharacter->GetMesh()->GetSocketLocation(FName("hand_r"));
-		float FixedLength = FVector::Dist(HandLocation, HookSetup.CachedHookActor->GetActorLocation());
-	}
-
-	if (HookSetup.bUseAutoHook)
-	{
-		SetGrapplingReady();
-	}
-
-	if (HookSetup.CachedHookActor)
-	{
-		HookSetup.CachedHookActor->OnHookArrived.RemoveDynamic(this, &URFAbility_GrapplingHook::OnHookArrivedHandler);
-	}
-}
-
-void URFAbility_GrapplingHook::ReleaseGrapplingHook()
+void URFAbility_GrapplingHook::ReleaseGrpplingHook()
 {
 	ServerReleaseGrapplingHook();
-
-	OwnerCharacter->SetRightHandIK(FTransform::Identity);
-	OwnerCharacter->SetUseRightHandIK(false);
-
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, /*bReplicateEndAbility=*/ true, /*bWasCancelled=*/ false);
 }
 
 void URFAbility_GrapplingHook::ServerReleaseGrapplingHook_Implementation()
@@ -477,175 +251,61 @@ void URFAbility_GrapplingHook::ServerReleaseGrapplingHook_Implementation()
 
 	if (World)
 	{
-		if (HookSetup.CachedHookActor)
+		if (CachedHookActor)
 		{
-			World->DestroyActor(HookSetup.CachedHookActor);
-			HookSetup.CachedHookActor = nullptr;
+			World->DestroyActor(CachedHookActor);
+			CachedHookActor = nullptr;
 		}
 
-		if (HookSetup.CachedRopeActor)
+		if (CachedRopeActor)
 		{
-			World->DestroyActor(HookSetup.CachedRopeActor);
-			HookSetup.CachedRopeActor = nullptr;
+			World->DestroyActor(CachedRopeActor);
+			CachedRopeActor = nullptr;
 		}
 	}
 }
 
-void URFAbility_GrapplingHook::InitGrapplingHook()
+void URFAbility_GrapplingHook::CancelGrapplingHook()
 {
-	if (EGrappleStep::MoveStart <= HookMove.Step && OwnerMovementComponent)
+	ReleaseGrpplingHook();
+
+	if (OwnerCharacter && OwnerMovementComponent)
 	{
-		OwnerMovementComponent->StopMovementImmediately();
-		OwnerMovementComponent->SetMovementMode(static_cast<EMovementMode>(ERFMovementMode::MOVE_Falling));
+		OwnerCharacter->SetRightHandIK(FTransform::Identity);
+		OwnerCharacter->SetUseRightHandIK(false);
+
+		OwnerMovementComponent->AirControl = 0.15f;
+		Step = EGrappleStep::Idle;
 	}
 
-	TargetLocation = FVector::ZeroVector;
-	HookMove.Step = EGrappleStep::Idle;
-	HookMove.LastDistance = FVector::ZeroVector;
-	HookMove.TeleportStartTime = -1.0;
-	OnGrappleInit.Broadcast();
-
-	ReleaseGrapplingHook();
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, /*bReplicateEndAbility=*/ true, /*bWasCancelled=*/ false);
 }
 
-void URFAbility_GrapplingHook::HangingGrapplingHook()
+void URFAbility_GrapplingHook::OnHookArrivedHandler()
 {
-	if (EGrappleStep::MoveStart <= HookMove.Step && OwnerMovementComponent)
-	{
-		OwnerMovementComponent->StopMovementImmediately();
-		OwnerMovementComponent->SetMovementMode(static_cast<EMovementMode>(ERFMovementMode::MOVE_Flying));
-	}
+	Step = EGrappleStep::Ready;
 }
 
-void URFAbility_GrapplingHook::TeleportMovement()
+void URFAbility_GrapplingHook::SwingMovement(FVector TargetPos)
 {
-	UWorld* World = GetWorld();
-	const float InitStartTime = -1.0f;
-
-	if (World && !FMath::IsNearlyEqual(HookMove.TeleportStartTime, InitStartTime))
+	if (TargetPos.Z > OwnerCharacter->GetActorLocation().Z)
 	{
-		const float CurrentTime = World->GetTimeSeconds();
-		const float ElapsedTime = static_cast<float>(CurrentTime - HookMove.TeleportStartTime);
-		const float PreTeleportTime = HookSetup.BlinkPreTeleportTime;
-		const float PostTeleportTime = HookSetup.BlinkPreTeleportTime + HookSetup.BlinkTeleportHoldTime;
+		switch (Step)
+		{
+		case EGrappleStep::Ready:
+		{
+			// Step = EGrappleStep::Start;
+			OwnerMovementComponent->AirControl = 2.0f;
 
-		switch (HookMove.Step)
-		{
-		case EGrappleStep::MoveReady:
-		{
-			HookMove.Step = EGrappleStep::MoveStart;
-			OnMoveReady.Broadcast();
-		}
-		break;
-		case EGrappleStep::MoveStart:
-		{
-			if (ElapsedTime >= PreTeleportTime)
-			{
-				HookMove.Step = EGrappleStep::Moving;
-				OnMoveStart.Broadcast();
-			}
-		}
-		break;
-		case EGrappleStep::Moving:
-		{
-			HookMove.Step = EGrappleStep::Moved;
-			TeleportToTarget();
-			OnMoving.Broadcast();
-		}
-		break;
-		case EGrappleStep::Moved:
-		{
-			if (ElapsedTime >= PostTeleportTime)
-			{
-				HookMove.Step = EGrappleStep::MoveEnd;
-				OnMoved.Broadcast();
-			}
-		}
-		break;
-		case EGrappleStep::MoveEnd:
-		{
-			HookMove.Step = EGrappleStep::GrappleEnd;
-			OnMoveEnd.Broadcast();
-		}
-		break;
-		case EGrappleStep::GrappleEnd:
-		{
-			HangingGrapplingHook();
-		}
-		break;
-		default:
-			break;
-		}
-	}
-	else
-	{
-		InitGrapplingHook();
-		OnMoveEnd.Broadcast();
-	}
-}
+			FVector MoveDir = OwnerCharacter->GetActorLocation() - TargetPos;
 
-void URFAbility_GrapplingHook::TeleportToTarget()
-{
-	if (OwnerMovementComponent)
-	{
-		OwnerMovementComponent->SetMovementMode(static_cast<EMovementMode>(ERFMovementMode::MOVE_None));
+			float SwingDot = FVector::DotProduct(OwnerMovementComponent->Velocity, MoveDir);
 
-		ServerTeleportToTarget(TargetLocation);
+			FVector SwingMove = -2.0f * MoveDir.GetSafeNormal() * SwingDot;
 
-		HookMove.Step = EGrappleStep::Moved;
-	}
-}
-
-void URFAbility_GrapplingHook::ServerTeleportToTarget_Implementation(FVector TargetPos)
-{
-	float LandingExtent = 100.0f;
-
-	if (OwnerCharacter && !TargetPos.Equals(OwnerCharacter->GetActorLocation(), LandingExtent))
-	{
-		OwnerCharacter->TeleportTo(TargetPos, FRotator::ZeroRotator);
-	}
-}
-
-void URFAbility_GrapplingHook::ImmersiveMovement(float DeltaTime)
-{
-	if (OwnerMovementComponent && OwnerCharacter)
-	{
-		switch (HookMove.Step)
-		{
-		case EGrappleStep::MoveReady:
-		{
-			// Init
-			HookMove.Step = EGrappleStep::MoveStart;
-			OwnerMovementComponent->SetMovementMode(MOVE_Custom, 1);
-			OnMoveReady.Broadcast();
-		}
-		break;
-		case EGrappleStep::MoveStart:
-		{
-			HookMove.Step = EGrappleStep::Moving;
-			OnMoveStart.Broadcast();
-		}
-		case EGrappleStep::Moving:
-		{
-			ImmersiveMoveToTarget(DeltaTime);
-			OnMoving.Broadcast();
-		}
-		break;
-		case EGrappleStep::Moved:
-		{
-			HookMove.Step = EGrappleStep::MoveEnd;
-			OnMoved.Broadcast();
-		}
-		break;
-		case EGrappleStep::MoveEnd:
-		{
-			HookMove.Step = EGrappleStep::GrappleEnd;
-			OnMoveEnd.Broadcast();
-		}
-		break;
-		case EGrappleStep::GrappleEnd:
-		{
-			HangingGrapplingHook();
+			//OwnerMovementComponent->SetMovementMode(EMovementMode::MOVE_Custom, 1);
+			//OwnerMovementComponent->SetGrapplingHookMovementVector(DesiredVelocity);
+			OwnerMovementComponent->AddForce(SwingMove);
 		}
 		break;
 		default:
@@ -654,193 +314,7 @@ void URFAbility_GrapplingHook::ImmersiveMovement(float DeltaTime)
 	}
 }
 
-void URFAbility_GrapplingHook::ImmersiveMoveToTarget(float DeltaTime)
+void URFAbility_GrapplingHook::StartMoveToTarget()
 {
-	if (OwnerCharacter && OwnerMovementComponent)
-	{
-		FVector CurrentLocation = OwnerCharacter->GetActorLocation();
-		FVector ToTarget = TargetLocation - CurrentLocation;
-		float DistanceRemaining = ToTarget.Size();
 
-		const float LandingTolerance = 100.0f;
-		if (DistanceRemaining <= LandingTolerance)
-		{
-			OwnerMovementComponent->SetGrapplingHookMovementVector(FVector::ZeroVector);
-			HookMove.Step = EGrappleStep::Moved;
-			return;
-		}
-
-		FVector TargetDirection = ToTarget.GetSafeNormal();
-		float MaxMoveDistance = HookSetup.GrapplingHookSpeed * DeltaTime;
-		FVector DesiredVelocity = TargetDirection * HookSetup.GrapplingHookSpeed;
-
-		if (MaxMoveDistance >= DistanceRemaining)
-		{
-			float ClampedSpeed = DistanceRemaining / DeltaTime;
-			DesiredVelocity = TargetDirection * ClampedSpeed;
-			HookMove.Step = EGrappleStep::Moved;
-		}
-
-		FVector MoveDelta = DesiredVelocity * DeltaTime;
-		FVector NextLocation = CurrentLocation + MoveDelta;
-
-		UCapsuleComponent* Capsule = OwnerCharacter->GetCapsuleComponent();
-
-		if (Capsule)
-		{
-			float CapsuleRadius = Capsule->GetUnscaledCapsuleRadius();
-			float CapsuleHalfHeight = Capsule->GetUnscaledCapsuleHalfHeight();
-
-			FHitResult ObstacleHit;
-			FCollisionQueryParams TraceParams(SCENE_QUERY_STAT(GrappleObstacleCheck), /*bTraceComplex=*/true, OwnerCharacter);
-			TraceParams.AddIgnoredActor(OwnerCharacter);
-
-			if (UWorld* World = GetWorld())
-			{
-				bool bHitObstacle = World->SweepSingleByChannel(ObstacleHit, CurrentLocation, NextLocation, FQuat::Identity, ECC_Visibility, FCollisionShape::MakeCapsule(CapsuleRadius, CapsuleHalfHeight), TraceParams);
-
-				if (bHitObstacle)
-				{
-					OwnerMovementComponent->SetGrapplingHookMovementVector(FVector::ZeroVector);
-					HookMove.Step = EGrappleStep::Moved;
-					InitGrapplingHook();
-					return;
-				}
-			}
-		}
-
-		OwnerMovementComponent->SetGrapplingHookMovementVector(DesiredVelocity);
-	}
-}
-
-void URFAbility_GrapplingHook::BlinkMovement(float DeltaTime)
-{
-	if (OwnerCharacter && OwnerMovementComponent)
-	{
-		FVector StartLocation = OwnerCharacter->GetActorLocation();
-		FVector EndLocation = TargetLocation;
-		FVector ToTarget = EndLocation - StartLocation;
-		float DistanceRemaining = ToTarget.Size();
-
-		// Thresholds to prevent overshooting
-		const float LandingTolerance = 100.0f;
-
-		// End trip when remaining distance is below threshold
-		if (DistanceRemaining <= LandingTolerance)
-		{
-			OwnerMovementComponent->SetGrapplingHookMovementVector(FVector::ZeroVector);
-			HookMove.Step = EGrappleStep::Moved;
-			HangingGrapplingHook();
-			return;
-		}
-
-		FVector TargetDirection = ToTarget.GetSafeNormal();
-
-		// Maximum distance to travel this frame (Speed * DeltaTime)
-		float MaxMoveDistance = HookSetup.GrapplingHookSpeed * DeltaTime;
-		FVector DesiredVelocity = TargetDirection * HookSetup.GrapplingHookSpeed; // Default speed
-
-		// Clamping if remaining distance is less than the distance to move this frame
-		if (MaxMoveDistance >= DistanceRemaining)
-		{
-			float ClampedSpeed = DistanceRemaining / DeltaTime;
-			DesiredVelocity = TargetDirection * ClampedSpeed;
-			HookMove.Step = EGrappleStep::Moved;
-			HangingGrapplingHook();
-		}
-
-		// Apply velocity-based movement (where velocity * DeltaTime is the actual distance travelled)
-		OwnerMovementComponent->SetGrapplingHookMovementVector(DesiredVelocity * DeltaTime);
-	}
-}
-
-void URFAbility_GrapplingHook::PreMovement(float DeltaTime)
-{
-	if (OwnerCharacter && OwnerMovementComponent)
-	{
-		const FVector StartLocation = OwnerCharacter->GetActorLocation();
-		const FVector EndLocation = GetTargetLocation();
-
-		const FVector TargetDistance = EndLocation - StartLocation;
-		const FVector TargetDirection = TargetDistance.GetSafeNormal();
-
-		OwnerMovementComponent->SetGrapplingHookMovementVector(TargetDirection * HookSetup.GrapplingHookSpeed * DeltaTime);
-	}
-}
-
-void URFAbility_GrapplingHook::BlinkTeleportMovement()
-{
-	if (OwnerCharacter)
-	{
-		if (FMath::IsNearlyZero(HookSetup.BlinkPostTeleportTime))
-		{
-			const FVector LandingPoint = GetTargetLocation();
-			ServerTeleportToTarget(LandingPoint);
-
-			OnMoved.Broadcast();
-
-			HookMove.Step = EGrappleStep::MoveEnd;
-			OnMoveEnd.Broadcast();
-		}
-		else
-		{
-			const FVector StartLocation = OwnerCharacter->GetActorLocation();
-			const FVector EndLocation = GetTargetLocation();
-
-			const FVector TargetDistance = EndLocation - StartLocation;
-			const FVector TargetDirection = TargetDistance.GetSafeNormal();
-
-			// Teleport to BlinkPostTeleportTime away from end location, but never further away than the current position
-			const float CurrentDistance = TargetDistance.Size();
-			float DesiredTeleportDistance = HookSetup.GrapplingHookSpeed * HookSetup.BlinkPostTeleportTime;
-			DesiredTeleportDistance = FMath::Min(DesiredTeleportDistance, CurrentDistance);
-
-			FVector TeleportLocation = EndLocation - TargetDirection * DesiredTeleportDistance;
-
-			ServerTeleportToTarget(TeleportLocation);
-
-			HookMove.Step = EGrappleStep::Moved;
-			OnMoved.Broadcast();
-		}
-	}
-}
-
-void URFAbility_GrapplingHook::PostMovement(float DeltaTime)
-{
-	if (OwnerCharacter && OwnerMovementComponent)
-	{
-		const FVector StartLocation = OwnerCharacter->GetActorLocation();
-		const FVector EndLocation = GetTargetLocation();
-		const FVector ToTarget = EndLocation - StartLocation;
-		float DistanceRemaining = ToTarget.Size();
-
-		// Setting a threshold distance to prevent overshooting
-		const float LandingTolerance = 100.0f;
-
-		// If the remaining distance is below the threshold, set the speed to 0 and end the movement state.
-		if (DistanceRemaining <= LandingTolerance)
-		{
-			OwnerMovementComponent->SetGrapplingHookMovementVector(FVector::ZeroVector);
-			HookMove.Step = EGrappleStep::MoveEnd;
-			return;
-		}
-
-		FVector TargetDirection = ToTarget.GetSafeNormal();
-
-		// Maximum distance to travel this frame (Speed * DeltaTime)
-		float MaxMoveDistance = HookSetup.GrapplingHookSpeed * DeltaTime;
-		FVector DesiredVelocity = TargetDirection * HookSetup.GrapplingHookSpeed; // Default speed
-
-		// If the remaining distance is less than the maximum distance to travel in this frame,
-		// adjust the speed to travel only the distance remaining in this frame.
-		if (MaxMoveDistance >= DistanceRemaining)
-		{
-			float ClampedSpeed = DistanceRemaining / DeltaTime;
-			DesiredVelocity = TargetDirection * ClampedSpeed;
-			HookMove.Step = EGrappleStep::MoveEnd;
-		}
-
-		// Apply velocity-based movement (frame compensation: multiply DeltaTime by the amount of movement)
-		OwnerMovementComponent->SetGrapplingHookMovementVector(DesiredVelocity * DeltaTime);
-	}
 }
