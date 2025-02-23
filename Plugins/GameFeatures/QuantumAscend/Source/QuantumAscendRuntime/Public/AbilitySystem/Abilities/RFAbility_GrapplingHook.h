@@ -137,6 +137,8 @@ public:
 	float DebugTraceLifeTime = 0.5f;
 
 	FVector GrapplingTargetLocation = FVector::ZeroVector;
+	float GrapplingTargetDistance = 0.0f;
+
 
 protected:
 	UPROPERTY()

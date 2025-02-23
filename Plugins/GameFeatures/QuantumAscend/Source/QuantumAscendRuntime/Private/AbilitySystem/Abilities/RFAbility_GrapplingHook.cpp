@@ -111,7 +111,7 @@ void URFAbility_GrapplingHook::ActivateAbility(const FGameplayAbilitySpecHandle 
 			if (FinalHit.bBlockingHit)
 			{
 				GrapplingTargetLocation = FinalHit.ImpactPoint;
-
+				GrapplingTargetDistance = FVector::Distance(GrapplingTargetLocation, OwnerCharacter->GetActorLocation());
 				if (PerformTrace(GrapplingTargetLocation))
 				{
 					ShootGrapplingHook(GrapplingTargetLocation);
@@ -275,6 +275,11 @@ void URFAbility_GrapplingHook::CancelGrapplingHook()
 		OwnerCharacter->SetUseRightHandIK(false);
 
 		OwnerMovementComponent->AirControl = 0.15f;
+		GrapplingTargetLocation = FVector::ZeroVector;
+		GrapplingTargetDistance = 0.0f;
+
+		OwnerMovementComponent->SetMovementMode(EMovementMode::MOVE_Walking);
+
 		Step = EGrappleStep::Idle;
 	}
 
@@ -303,9 +308,24 @@ void URFAbility_GrapplingHook::SwingMovement(FVector TargetPos)
 
 			FVector SwingMove = -2.0f * MoveDir.GetSafeNormal() * SwingDot;
 
-			//OwnerMovementComponent->SetMovementMode(EMovementMode::MOVE_Custom, 1);
-			//OwnerMovementComponent->SetGrapplingHookMovementVector(DesiredVelocity);
+			float MoveHeight = TargetPos.Z - OwnerCharacter->GetActorLocation().Z;
+
+			OwnerMovementComponent->SetMovementMode(EMovementMode::MOVE_Custom, 1);
 			OwnerMovementComponent->AddForce(SwingMove);
+
+			float Distance = FVector::Distance(GrapplingTargetLocation, OwnerCharacter->GetActorLocation());
+			float AdjustSize = Distance - GrapplingTargetDistance;
+
+			if (MoveHeight > 0.0f && AdjustSize > 1.0f)
+			{
+				FVector AdjustVector = (TargetPos - OwnerCharacter->GetActorLocation()).GetSafeNormal() * AdjustSize;
+				OwnerMovementComponent->SetGrapplingHookMovementVector(AdjustVector);
+				GEngine->AddOnScreenDebugMessage(1, 3.0f, FColor::Blue, FString::Printf(TEXT("UP : %f, OriginDist : %f, AdjustDist : %f"), AdjustSize, GrapplingTargetDistance, Distance));
+			}
+			else
+			{
+				GEngine->AddOnScreenDebugMessage(2, 3.0f, FColor::Red, FString::Printf(TEXT("DOWN : %f, OriginDist : %f, AdjustDist : %f"), AdjustSize, GrapplingTargetDistance, Distance));
+			}
 		}
 		break;
 		default:

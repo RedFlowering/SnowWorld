@@ -26,9 +26,6 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "RopeActor")
     TObjectPtr<UCableComponent> Rope = nullptr;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "RopeActor")
-    TObjectPtr<UPhysicsConstraintComponent> RopePhysicsConstraint = nullptr;
-
     TObjectPtr<UPrimitiveComponent> OwnerStart = nullptr;
 
     TObjectPtr<UPrimitiveComponent> OwnerEnd = nullptr;
