@@ -83,7 +83,10 @@ protected:
 
 public:
 	UFUNCTION()
-	bool PerformTrace(FVector TargetPos);
+	bool PerformHookTrace(FVector TargetPos);
+
+	UFUNCTION()
+	bool PerformTeleportTrace(FVector TargetPos, FVector& AvailablePos);
 
 	UFUNCTION()
 	void ShootGrapplingHook(FVector TargetPos);

@@ -112,7 +112,7 @@ void URFAbility_GrapplingHook::ActivateAbility(const FGameplayAbilitySpecHandle 
 			{
 				GrapplingTargetLocation = FinalHit.ImpactPoint;
 				GrapplingTargetDistance = FVector::Distance(GrapplingTargetLocation, OwnerCharacter->GetActorLocation());
-				if (PerformTrace(GrapplingTargetLocation))
+				if (PerformHookTrace(GrapplingTargetLocation))
 				{
 					ShootGrapplingHook(GrapplingTargetLocation);
 				}
@@ -151,7 +151,7 @@ void URFAbility_GrapplingHook::TickAbility(float DeltaTime)
 	SwingMovement(GrapplingTargetLocation);
 }
 
-bool URFAbility_GrapplingHook::PerformTrace(FVector TargetPos)
+bool URFAbility_GrapplingHook::PerformHookTrace(FVector TargetPos)
 {
 	UWorld* World = GetWorld();
 
@@ -184,6 +184,57 @@ bool URFAbility_GrapplingHook::PerformTrace(FVector TargetPos)
 		}
 #endif
 		return IsHit;
+	}
+
+	return false;
+}
+
+bool URFAbility_GrapplingHook::PerformTeleportTrace(FVector TargetPos, FVector& AvailablePos)
+{
+	UWorld* World = GetWorld();
+
+	if (World && OwnerCharacter)
+	{
+		FVector StartLocation = OwnerCharacter->GetMesh()->GetBoneLocation(FName("hand_r"));
+		FVector EndLocation = TargetPos;
+
+		const FCollisionShape CapsuleShape = FCollisionShape::MakeCapsule(OwnerCharacter->GetCapsuleComponent()->GetUnscaledCapsuleRadius(), OwnerCharacter->GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight());
+		
+		TArray<FHitResult> HitResults;
+		FHitResult HitResult;
+
+		float CapsuleDistance = 2.0f * CapsuleShape.GetCapsuleRadius();
+		int32 NumCapsules = FMath::FloorToInt((EndLocation - StartLocation).Size() / CapsuleDistance);
+
+		FCollisionQueryParams CollisionParams;
+		CollisionParams.AddIgnoredActor(OwnerCharacter);
+
+		FVector PointDir = EndLocation - StartLocation;
+		FVector PointDirNormal = PointDir.GetSafeNormal();
+		FVector Start = StartLocation;
+		FVector End;
+
+		for (int32 i = 0; i <= NumCapsules; ++i)
+		{
+			End = Start + (PointDirNormal * CapsuleDistance);
+			World->SweepSingleByChannel(HitResult, Start, End, FQuat::Identity, CollisionChannel, CapsuleShape, CollisionParams);
+			Start = End;
+
+#if WITH_EDITOR
+			if (UseDebugMode)
+			{
+				DrawDebugCapsule(World, Start, CapsuleShape.GetCapsuleHalfHeight(), CapsuleShape.GetCapsuleRadius(), FQuat::Identity, HitResult.bBlockingHit ? FColor::Red : FColor::Green, false, DebugTraceLifeTime);
+			}
+#endif
+
+			if (HitResult.bBlockingHit && i > 0)
+			{
+				AvailablePos = HitResults[i-1].TraceEnd;
+				return true;
+			}
+
+			HitResults.Add(HitResult);
+		}
 	}
 
 	return false;
@@ -373,5 +424,26 @@ void URFAbility_GrapplingHook::SwingMovement(FVector TargetPos)
 
 void URFAbility_GrapplingHook::StartMoveToTarget()
 {
+	FVector TeleportPos = FVector::ZeroVector;
+
+	switch (Step)
+	{
+		case EGrappleStep::Ready:
+		{
+			Step = EGrappleStep::Start;
+		}	// not break;
+		case EGrappleStep::Start:
+		{
+			if (OwnerCharacter && PerformTeleportTrace(GrapplingTargetLocation, TeleportPos))
+			{
+				OwnerCharacter->TeleportTo(TeleportPos, OwnerCharacter->GetActorRotation(), false, false);
+			}
+		}	// not break;
+		case EGrappleStep::Finish:
+		{
+			CancelGrapplingHook();
+		}
+		break;
+	}
 
 }
