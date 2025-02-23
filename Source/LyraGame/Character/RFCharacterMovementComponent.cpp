@@ -389,9 +389,21 @@ void URFCharacterMovementComponent::PhysCustom(const float DeltaTime, int32 Iter
 
 void URFCharacterMovementComponent::PhysGrpplingHook(float DeltaTime, int32 IterationCount)
 {
-	FVector Adjust = GrapplingHookVector;
+	FVector OldLocation = UpdatedComponent->GetComponentLocation();
+	FVector Adjusted = GrapplingHookVector;
 
-	Velocity = Velocity + Adjust;
+	FHitResult Hit(1.f);
+	SafeMoveUpdatedComponent(Adjusted, UpdatedComponent->GetComponentQuat(), true, Hit);
+
+	if (Hit.Time < 1.0f)
+	{
+		SlideAlongSurface(Adjusted, (1.f - Hit.Time), Hit.Normal, Hit, true);
+	}
+
+	if (!bJustTeleported && !HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
+	{
+		Velocity = Velocity + Adjusted;
+	}
 
 	Super::PhysFalling(DeltaTime, IterationCount);
 }

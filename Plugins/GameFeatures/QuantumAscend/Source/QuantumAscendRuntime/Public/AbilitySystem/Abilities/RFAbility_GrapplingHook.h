@@ -31,6 +31,7 @@ enum class EGrappleStep : uint8
 	Idle,
 	Ready,
 	Start,
+	Finish,
 };
 
 UCLASS()

@@ -267,6 +267,8 @@ void URFAbility_GrapplingHook::ServerReleaseGrapplingHook_Implementation()
 
 void URFAbility_GrapplingHook::CancelGrapplingHook()
 {
+	Step = EGrappleStep::Idle;
+
 	ReleaseGrpplingHook();
 
 	if (OwnerCharacter && OwnerMovementComponent)
@@ -279,8 +281,6 @@ void URFAbility_GrapplingHook::CancelGrapplingHook()
 		GrapplingTargetDistance = 0.0f;
 
 		OwnerMovementComponent->SetMovementMode(EMovementMode::MOVE_Walking);
-
-		Step = EGrappleStep::Idle;
 	}
 
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, /*bReplicateEndAbility=*/ true, /*bWasCancelled=*/ false);
@@ -299,33 +299,70 @@ void URFAbility_GrapplingHook::SwingMovement(FVector TargetPos)
 		{
 		case EGrappleStep::Ready:
 		{
-			// Step = EGrappleStep::Start;
-			OwnerMovementComponent->AirControl = 2.0f;
-
-			FVector MoveDir = OwnerCharacter->GetActorLocation() - TargetPos;
-
-			float SwingDot = FVector::DotProduct(OwnerMovementComponent->Velocity, MoveDir);
-
-			FVector SwingMove = -2.0f * MoveDir.GetSafeNormal() * SwingDot;
-
-			float MoveHeight = TargetPos.Z - OwnerCharacter->GetActorLocation().Z;
-
-			OwnerMovementComponent->SetMovementMode(EMovementMode::MOVE_Custom, 1);
-			OwnerMovementComponent->AddForce(SwingMove);
-
-			float Distance = FVector::Distance(GrapplingTargetLocation, OwnerCharacter->GetActorLocation());
-			float AdjustSize = Distance - GrapplingTargetDistance;
-
-			if (MoveHeight > 0.0f && AdjustSize > 1.0f)
+			if (OwnerCharacter && OwnerMovementComponent)
 			{
-				FVector AdjustVector = (TargetPos - OwnerCharacter->GetActorLocation()).GetSafeNormal() * AdjustSize;
-				OwnerMovementComponent->SetGrapplingHookMovementVector(AdjustVector);
-				GEngine->AddOnScreenDebugMessage(1, 3.0f, FColor::Blue, FString::Printf(TEXT("UP : %f, OriginDist : %f, AdjustDist : %f"), AdjustSize, GrapplingTargetDistance, Distance));
+				// 훅 위치 바라보기
+				FRotator LookAt = UKismetMathLibrary::FindLookAtRotation(OwnerCharacter->GetActorLocation(), TargetPos);
+				FRotator NewRot = FRotator(OwnerCharacter->GetActorRotation().Pitch, LookAt.Yaw, OwnerCharacter->GetActorRotation().Roll);
+				OwnerCharacter->SetActorRotation(NewRot);
+
+				// 세팅
+				OwnerMovementComponent->AirControl = 2.0f;
+				GrapplingTargetDistance = FVector::Distance(TargetPos, OwnerCharacter->GetActorLocation());
+
+				if (OwnerMovementComponent->IsFalling())
+				{
+					Step = EGrappleStep::Start;
+				}
 			}
 			else
 			{
-				GEngine->AddOnScreenDebugMessage(2, 3.0f, FColor::Red, FString::Printf(TEXT("DOWN : %f, OriginDist : %f, AdjustDist : %f"), AdjustSize, GrapplingTargetDistance, Distance));
+				Step = EGrappleStep::Finish;
 			}
+		}
+		break;
+		case EGrappleStep::Start:
+		{
+			if (OwnerCharacter && OwnerMovementComponent)
+			{
+				// 이동 계산
+				FVector MoveDir = OwnerCharacter->GetActorLocation() - TargetPos;
+				float SwingDot = FVector::DotProduct(OwnerMovementComponent->Velocity, MoveDir);
+				FVector SwingMove = -2.0f * MoveDir.GetSafeNormal() * SwingDot;
+
+				OwnerMovementComponent->SetMovementMode(EMovementMode::MOVE_Custom, 1);
+				OwnerMovementComponent->AddForce(SwingMove);
+
+				// 이동 방향 바라보기
+				FRotator LookAt = UKismetMathLibrary::FindLookAtRotation(OwnerCharacter->GetActorLocation(), OwnerMovementComponent->Velocity.GetSafeNormal() * 1000.0f);
+				FRotator NewRot = FRotator(OwnerCharacter->GetActorRotation().Pitch, LookAt.Yaw, OwnerCharacter->GetActorRotation().Roll);
+				OwnerCharacter->SetActorRotation(NewRot);
+
+				// 중력 보정
+				float Distance = FVector::Distance(GrapplingTargetLocation, OwnerCharacter->GetActorLocation());
+				float AdjustSize = Distance - GrapplingTargetDistance;
+
+				if (TargetPos.Z > OwnerCharacter->GetActorLocation().Z && AdjustSize > 0.0f)
+				{
+					FVector AdjustVector = (TargetPos - OwnerCharacter->GetActorLocation()).GetSafeNormal() * AdjustSize;
+					OwnerMovementComponent->SetGrapplingHookMovementVector(AdjustVector);
+					GEngine->AddOnScreenDebugMessage(1, 0.5f, FColor::Blue, FString::Printf(TEXT("UP : %f, OriginDist : %f, AdjustDist : %f"), AdjustSize, GrapplingTargetDistance, Distance));
+				}
+				else
+				{
+					OwnerMovementComponent->SetGrapplingHookMovementVector(FVector(0.0f, 0.0f, 0.0f));
+					GEngine->AddOnScreenDebugMessage(2, 0.5f, FColor::Red, FString::Printf(TEXT("DOWN : %f, OriginDist : %f, AdjustDist : %f"), AdjustSize, GrapplingTargetDistance, Distance));
+				}
+			}
+			else
+			{
+				Step = EGrappleStep::Finish;
+			}
+		}
+		break;
+		case EGrappleStep::Finish:
+		{
+			CancelGrapplingHook();
 		}
 		break;
 		default:
