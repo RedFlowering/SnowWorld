@@ -13,7 +13,7 @@ public class LyraEditorTarget : TargetRules
 
 		if (!bBuildAllModules)
 		{
-			NativePointerMemberBehaviorOverride = PointerMemberBehavior.AllowAndLog;
+			NativePointerMemberBehaviorOverride = PointerMemberBehavior.AllowSilently;
 		}
 
 		LyraGameTarget.ApplySharedLyraTargetSettings(this);
