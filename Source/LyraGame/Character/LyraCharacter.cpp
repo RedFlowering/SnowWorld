@@ -70,14 +70,25 @@ ALyraCharacter::ALyraCharacter(const FObjectInitializer& ObjectInitializer)
 	HealthComponent->OnDeathStarted.AddDynamic(this, &ThisClass::OnDeathStarted);
 	HealthComponent->OnDeathFinished.AddDynamic(this, &ThisClass::OnDeathFinished);
 
-	SpringArm = CreateDefaultSubobject<URFSpringArmComponentBase>(TEXT("RFSpringArmComponentBase"));
-	SpringArm->SetupAttachment(GetRootComponent());
-	SpringArm->TargetArmLength = 400.f;
-	SpringArm->bUsePawnControlRotation = false;
+	if (UseSpringArm)
+	{
+		SpringArm = CreateDefaultSubobject<URFSpringArmComponentBase>(TEXT("RFSpringArmComponentBase"));
+		SpringArm->SetupAttachment(GetRootComponent());
+		SpringArm->TargetArmLength = 400.f;
+		SpringArm->bUsePawnControlRotation = false;
 
-	CameraComponent = CreateDefaultSubobject<ULyraCameraComponent>(TEXT("CameraComponent"));
-	CameraComponent->SetRelativeLocation(FVector(-300.0f, 0.0f, 75.0f));
-	CameraComponent->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
+		CameraComponent = CreateDefaultSubobject<ULyraCameraComponent>(TEXT("CameraComponent"));
+		CameraComponent->SetRelativeLocation(FVector(-300.0f, 0.0f, 75.0f));
+		CameraComponent->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
+	}
+	else
+	{
+
+		CameraComponent = CreateDefaultSubobject<ULyraCameraComponent>(TEXT("CameraComponent"));
+		CameraComponent->SetRelativeLocation(FVector(-300.0f, 0.0f, 75.0f));
+		CameraComponent->SetupAttachment(GetRootComponent());
+	}
+
 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;

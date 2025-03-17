@@ -305,6 +305,7 @@ void URFAbility_GrapplingHook::CancelGrapplingHook()
 		GrapplingTargetDistance = 0.0f;
 
 		OwnerMovementComponent->SetMovementMode(EMovementMode::MOVE_Falling);
+		OwnerMovementComponent->SetGrapplingHookMovementVector(FVector::ZeroVector);
 	}
 
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, /*bReplicateEndAbility=*/ true, /*bWasCancelled=*/ false);

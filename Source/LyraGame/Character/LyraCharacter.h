@@ -189,7 +189,6 @@ protected:
 	virtual bool CanJumpInternal_Implementation() const;
 
 private:
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lyra|Character", Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<ULyraPawnExtensionComponent> PawnExtComponent;
 
@@ -210,6 +209,10 @@ private:
 
 	UPROPERTY()
 	FOnLyraTeamIndexChangedDelegate OnTeamChangedDelegate;
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lyra|Character", Meta = (AllowPrivateAccess = "true"))
+	bool UseSpringArm = false;
 
 protected:
 	// Called to determine what happens to the team ID when possession ends

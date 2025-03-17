@@ -25,6 +25,7 @@ enum class ERFCustomMovementMode : uint8
 {
 	MOVE_None				UMETA(DisplayName = "None"),
 	MOVE_GrapplingHook		UMETA(DisplayName = "GrapplingHook"),
+	MOVE_Climbing			UMETA(DisplayName = "Climbing"),
 };
 
 UCLASS(Config = Game)
@@ -46,6 +47,10 @@ public:
 
 	virtual void SetMovementMode(EMovementMode NewMovementMode, uint8 NewCustomMode = 0) override;
 
+	ERFMovementMode GetMovementMode();
+
+	ERFCustomMovementMode GetCustomMovementMode();
+
 	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
 
 	virtual void MoveSmooth(const FVector& InVelocity, float DeltaTime, FStepDownResult* StepDownResult = nullptr);
@@ -63,12 +68,20 @@ protected:
 
 	virtual void PhysGrpplingHook(float DeltaTime, int32 IterationCount);
 
+	virtual void PhysClimbing(float DeltaTime, int32 IterationCount);
+
 public:
 	UFUNCTION(BlueprintCallable, Category = "RFMovementCompontnt|GrapplingHook")
 	FVector GetGrapplingHookMovmentVector();
 
 	UFUNCTION(BlueprintCallable, Category = "RFMovementCompontnt|GrapplingHook")
 	void SetGrapplingHookMovementVector(FVector GrapplingVector);
+
+	UFUNCTION(BlueprintCallable, Category = "RFMovementCompontnt|Climbing")
+	FVector GetClimbingMovementVector();
+
+	UFUNCTION(BlueprintCallable, Category = "RFMovementCompontnt|Climbing")
+	void SetClimbingMovementVector(FVector GrapplingVector);
 
 protected:
 	UPROPERTY()
@@ -78,5 +91,7 @@ protected:
 	ERFCustomMovementMode RFCustomMovementMode = ERFCustomMovementMode::MOVE_None;
 
 private:
-	FVector GrapplingHookVector;
+	FVector GrapplingHookVector = FVector::ZeroVector;
+
+	FVector ClimbingVector = FVector::ZeroVector;
 };

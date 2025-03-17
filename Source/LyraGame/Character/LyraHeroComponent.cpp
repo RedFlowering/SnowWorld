@@ -395,7 +395,7 @@ void ULyraHeroComponent::Input_Move(const FInputActionValue& InputActionValue)
 
 		if (Value.Y != 0.0f)
 		{
-			const FVector MovementDirection = MovementRotation.RotateVector(FVector::ForwardVector);
+			const FVector MovementDirection = MovementRotation.RotateVector(FVector::UpVector);
 			Pawn->AddMovementInput(MovementDirection, Value.Y);
 		}
 	}

@@ -6,12 +6,16 @@
 #include "AbilitySystem/LyraAbilitySystemComponent.h"
 #include "Settings/AlsCharacterSettings.h"
 #include "Utility/AlsConstants.h"
+#include "SenseReceiverComponent.h"
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Character_Status_Aiming, "Status.Aiming");
 
 ARFCharacter::ARFCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<URFCharacterMovementComponent>(ALyraCharacter::CharacterMovementComponentName))
 {
 	RFCharacterMovement = Cast<URFCharacterMovementComponent>(GetCharacterMovement());
+
+	WallDetector = CreateDefaultSubobject<USenseReceiverComponent>(TEXT("WallDetector"));
+	WallDetector->SetupAttachment(GetRootComponent());
 }
 
 void ARFCharacter::PostInitializeComponents()

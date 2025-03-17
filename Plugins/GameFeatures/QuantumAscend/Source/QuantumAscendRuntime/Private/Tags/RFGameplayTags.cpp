@@ -8,8 +8,9 @@
 namespace RFGameplayTags
 {
 	// Ability 
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_GrapplingHook_Pulling, "InputTag.Pulling", "Pulling input.");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_GrapplingHook_Cancel, "InputTag.CancelGrappling", "GrapplingHook Cancel input.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_GrapplingHook_Pulling, "InputTag.Ability.Pulling", "Pulling input.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_GrapplingHook_Cancel, "InputTag.Ability.CancelGrappling", "GrapplingHook Cancel input.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Climbing, "InputTag.Ability.Climbing", "Climbing Up/Down input.");
 
 	FGameplayTag FindTagByString(const FString& TagString, bool bMatchPartialString)
 	{

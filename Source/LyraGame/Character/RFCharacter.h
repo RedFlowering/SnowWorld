@@ -9,6 +9,7 @@
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Character_Status_Aiming);
 
 class URFCharacterMovementComponent;
+class USenseReceiverComponent;
 
 USTRUCT()
 struct FHandIK
@@ -82,6 +83,9 @@ public:
 	bool GetUseLeftHandIK();
 
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "RF|Character", Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USenseReceiverComponent> WallDetector = nullptr;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|RF Character|Desired State", meta=(EditCondition="bOverrideDefaultOverlay"))
 	FGameplayTag OverrideDefaultOverlayMode{ AlsOverlayModeTags::Default };
 

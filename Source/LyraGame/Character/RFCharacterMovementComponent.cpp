@@ -51,6 +51,16 @@ void URFCharacterMovementComponent::SetMovementMode(EMovementMode NewMovementMod
 	RFCustomMovementMode = static_cast<ERFCustomMovementMode>(NewCustomMode);
 }
 
+ERFMovementMode URFCharacterMovementComponent::GetMovementMode()
+{
+	return RFMovementMode;
+}
+
+ERFCustomMovementMode URFCharacterMovementComponent::GetCustomMovementMode()
+{
+	return RFCustomMovementMode;
+}
+
 void URFCharacterMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
 {
 	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
@@ -324,7 +334,6 @@ void URFCharacterMovementComponent::PhysWalking(const float DeltaTime, int32 Ite
 			}
 		}
 
-
 		// Allow overlap events and such to change physics state and velocity
 		if (IsMovingOnGround())
 		{
@@ -381,6 +390,9 @@ void URFCharacterMovementComponent::PhysCustom(const float DeltaTime, int32 Iter
 	case ERFCustomMovementMode::MOVE_GrapplingHook:
 		PhysGrpplingHook(DeltaTime, IterationsCount);
 		break;
+	case ERFCustomMovementMode::MOVE_Climbing:
+		PhysClimbing(DeltaTime, IterationsCount);
+		break;
 	default:
 		Super::PhysCustom(DeltaTime, IterationsCount);
 		break;
@@ -408,6 +420,66 @@ void URFCharacterMovementComponent::PhysGrpplingHook(float DeltaTime, int32 Iter
 	Super::PhysFalling(DeltaTime, IterationCount);
 }
 
+void URFCharacterMovementComponent::PhysClimbing(float DeltaTime, int32 IterationCount)
+{
+	if (DeltaTime < MIN_TICK_TIME)
+	{
+		return;
+	}
+
+	RestorePreAdditiveRootMotionVelocity();
+
+	if (!HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
+	{
+		if (bCheatFlying && Acceleration.IsZero())
+		{
+			Velocity = FVector::ZeroVector;
+		}
+		const float Friction = 0.5f * GetPhysicsVolume()->FluidFriction;
+		CalcVelocity(DeltaTime, Friction, true, GetMaxBrakingDeceleration());
+	}
+
+	ApplyRootMotionToVelocity(DeltaTime);
+
+	IterationCount++;
+	bJustTeleported = false;
+
+	FVector OldLocation = UpdatedComponent->GetComponentLocation();
+	const FVector Adjusted = ClimbingVector; // Velocity * DeltaTime;
+	FHitResult Hit(1.f);
+	SafeMoveUpdatedComponent(Adjusted, UpdatedComponent->GetComponentQuat(), true, Hit);
+
+	if (Hit.Time < 1.f)
+	{
+		const FVector VelDir = Velocity.GetSafeNormal();
+		const float UpDown = VelDir | GetGravityDirection();
+
+		bool bSteppedUp = false;
+		if ((FMath::Abs(GetGravitySpaceZ(Hit.ImpactNormal)) < 0.2f) && (UpDown < 0.5f) && (UpDown > -0.2f) && CanStepUp(Hit))
+		{
+			const FVector::FReal StepZ = GetGravitySpaceZ(UpdatedComponent->GetComponentLocation());
+			bSteppedUp = StepUp(GetGravityDirection(), Adjusted * (1.f - Hit.Time), Hit);
+			if (bSteppedUp)
+			{
+				const FVector::FReal LocationZ = GetGravitySpaceZ(UpdatedComponent->GetComponentLocation()) + (GetGravitySpaceZ(OldLocation) - StepZ);
+				SetGravitySpaceZ(OldLocation, LocationZ);
+			}
+		}
+
+		if (!bSteppedUp)
+		{
+			//adjust and try again
+			HandleImpact(Hit, DeltaTime, Adjusted);
+			SlideAlongSurface(Adjusted, (1.f - Hit.Time), Hit.Normal, Hit, true);
+		}
+	}
+
+	if (!bJustTeleported && !HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
+	{
+		Velocity = (UpdatedComponent->GetComponentLocation() - OldLocation - Adjusted) / DeltaTime;
+	}
+}
+
 FVector URFCharacterMovementComponent::GetGrapplingHookMovmentVector()
 {
 	return GrapplingHookVector;
@@ -416,4 +488,14 @@ FVector URFCharacterMovementComponent::GetGrapplingHookMovmentVector()
 void URFCharacterMovementComponent::SetGrapplingHookMovementVector(FVector GrapplingVector)
 {
 	GrapplingHookVector = GrapplingVector;
+}
+
+FVector URFCharacterMovementComponent::GetClimbingMovementVector()
+{
+	return ClimbingVector;
+}
+
+void URFCharacterMovementComponent::SetClimbingMovementVector(FVector GrapplingVector)
+{
+	ClimbingVector = GrapplingVector;
 }
