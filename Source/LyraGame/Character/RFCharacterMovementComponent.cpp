@@ -495,7 +495,7 @@ FVector URFCharacterMovementComponent::GetClimbingMovementVector()
 	return ClimbingVector;
 }
 
-void URFCharacterMovementComponent::SetClimbingMovementVector(FVector GrapplingVector)
+void URFCharacterMovementComponent::SetClimbingMovementVector(FVector ClimbVector)
 {
-	ClimbingVector = GrapplingVector;
+	ClimbingVector = ClimbVector;
 }

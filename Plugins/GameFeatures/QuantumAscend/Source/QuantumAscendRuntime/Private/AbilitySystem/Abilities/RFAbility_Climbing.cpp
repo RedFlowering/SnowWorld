@@ -104,7 +104,7 @@ bool URFAbility_Climbing::DetectClimbableWall(FHitResult& OutHit)
 
 bool URFAbility_Climbing::IsMovingTowardWall()
 {
-    float MoveWall = ClimbMoveVector.X;
+    float MoveWall = ClimbInputVector.X;
 
     // WallNormal == 벽의 법선 벡터
     // MoveWall == 플레이어의 이동방향
@@ -123,9 +123,12 @@ void URFAbility_Climbing::MoveAlongWall(float DeltaTime)
     if (DetectClimbableWall(WallHit) && OwnerCharacter && OwnerMovementComponent)
     {
         StartClimbing = true;
-        // 클라이밍 모드 활성화
-        OwnerMovementComponent->SetMovementMode(EMovementMode::MOVE_Custom, 2); // Climbing Movement Mode
-        OwnerMovementComponent->Velocity = FVector::ZeroVector;
+        if (OwnerMovementComponent->GetCustomMovementMode() != ERFCustomMovementMode::MOVE_Climbing)
+        {
+            // 클라이밍 모드 활성화
+            OwnerMovementComponent->SetMovementMode(EMovementMode::MOVE_Custom, 2); // Climbing Movement Mode
+            OwnerMovementComponent->Velocity = FVector::ZeroVector;
+        }
 
         // 벽을 따라 이동
         //FVector RightVector = FVector::CrossProduct(FVector::UpVector, WallNormal);
@@ -135,16 +138,36 @@ void URFAbility_Climbing::MoveAlongWall(float DeltaTime)
 
         // 벽을 따라 위/아래 이동
         FVector UpVector = FVector::UpVector;
-        float UpMoveInput = ClimbMoveVector.Z; // 위/아래 입력 감지
+        float UpMoveInput = ClimbInputVector.Z; // 위/아래 입력 감지
 
-        OwnerMovementComponent->SetClimbingMovementVector(ClimbSpeed * UpVector * UpMoveInput);
 
         // 클라이밍 애니메이션 재생 (몽타주 사용 가능)
         UAnimInstance* AnimInstance = OwnerCharacter->GetMesh()->GetAnimInstance();
 
-        if (AnimInstance && ClimbingMontage && !AnimInstance->Montage_IsPlaying(ClimbingMontage))
+        if (AnimInstance)
         {
-            AnimInstance->Montage_Play(ClimbingMontage);
+            if (ClimbInputVector == FVector::ZeroVector && ClimbingIdleMontage && !AnimInstance->Montage_IsPlaying(ClimbingIdleMontage))
+            {
+                // Idle
+                OwnerMovementComponent->SetClimbingMovementVector(FVector::ZeroVector);
+                AnimInstance->Montage_Play(ClimbingIdleMontage);
+            }
+            else
+            {
+                // Move
+                if (UpMoveInput > 0.0f && ClimbingUpMontage && !AnimInstance->Montage_IsPlaying(ClimbingUpMontage))
+                {
+                    // Up Move
+                    OwnerMovementComponent->SetClimbingMovementVector(ClimbUpSpeed * UpVector * UpMoveInput);
+                    AnimInstance->Montage_Play(ClimbingUpMontage);
+                }
+                else if(UpMoveInput < 0.0f && ClimbingDownMontage && !AnimInstance->Montage_IsPlaying(ClimbingDownMontage))
+                {
+                    // Down Move
+                    OwnerMovementComponent->SetClimbingMovementVector(ClimbDownSpeed * UpVector * UpMoveInput);
+                    AnimInstance->Montage_Play(ClimbingDownMontage);
+                }
+            }
         }
     }
     else
@@ -162,8 +185,8 @@ void URFAbility_Climbing::MoveInputVector(const FInputActionValue& InputActionVa
     {
         FVector2D InputValue = InputActionValue.Get<FVector2D>(); // 2D 축 입력 받기
 
-        ClimbMoveVector.Z = InputValue.Y;
-        ClimbMoveVector.X = InputValue.X;
+        ClimbInputVector.Z = InputValue.Y;
+        ClimbInputVector.X = InputValue.X;
 
         if (IsMovingTowardWall())
         {
@@ -176,7 +199,7 @@ void URFAbility_Climbing::StopInputVector(const FInputActionValue& InputActionVa
 {
     if (OwnerMovementComponent && OwnerMovementComponent->GetCustomMovementMode() == ERFCustomMovementMode::MOVE_Climbing && OwnerMovementComponent->GetClimbingMovementVector() != FVector::ZeroVector)
     {
-        ClimbMoveVector = FVector::ZeroVector;
+        ClimbInputVector = FVector::ZeroVector;
         OwnerMovementComponent->Velocity = FVector::ZeroVector;
     }
 }
@@ -197,15 +220,22 @@ bool URFAbility_Climbing::CanClimbOver()
 
 void URFAbility_Climbing::CancelClimbing()
 {
-    if (OwnerMovementComponent)
+    if (OwnerCharacter && OwnerMovementComponent)
     {
         StartClimbing = false;
         WallNormal = FVector::ZeroVector;
         WallImpactPoint = FVector::ZeroVector;
-        ClimbMoveVector = FVector::ZeroVector;
+        ClimbInputVector = FVector::ZeroVector;
 
         OwnerMovementComponent->SetMovementMode(MOVE_Falling); // 원래 상태로 복원
         OwnerMovementComponent->SetClimbingMovementVector(FVector::ZeroVector);
+
+        UAnimInstance* AnimInstance = OwnerCharacter->GetMesh()->GetAnimInstance();
+
+        if (AnimInstance)
+        {
+            AnimInstance->StopAllMontages(1.0f);
+        }
     }
 
     // EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, /*bReplicateEndAbility=*/ true, /*bWasCancelled=*/ false);

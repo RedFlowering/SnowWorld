@@ -81,7 +81,7 @@ public:
 	FVector GetClimbingMovementVector();
 
 	UFUNCTION(BlueprintCallable, Category = "RFMovementCompontnt|Climbing")
-	void SetClimbingMovementVector(FVector GrapplingVector);
+	void SetClimbingMovementVector(FVector ClimbVector);
 
 protected:
 	UPROPERTY()

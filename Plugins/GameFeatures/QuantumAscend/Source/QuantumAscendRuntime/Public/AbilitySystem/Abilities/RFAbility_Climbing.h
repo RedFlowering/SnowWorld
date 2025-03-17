@@ -63,15 +63,23 @@ protected:
 protected:
     FVector WallNormal = FVector::ZeroVector;
     FVector WallImpactPoint = FVector::ZeroVector;
-    FVector ClimbMoveVector = FVector::ZeroVector;
+    FVector ClimbInputVector = FVector::ZeroVector;
     bool StartClimbing = false;
 
 public:
 	UPROPERTY(EditAnywhere, Category = "Climbing|Setup")
-    TObjectPtr<UAnimMontage> ClimbingMontage = nullptr;
+    TObjectPtr<UAnimMontage> ClimbingIdleMontage = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "Climbing|Setup")
-    float ClimbSpeed = 10.0f;
+    TObjectPtr<UAnimMontage> ClimbingUpMontage = nullptr;
 
+    UPROPERTY(EditAnywhere, Category = "Climbing|Setup")
+    TObjectPtr<UAnimMontage> ClimbingDownMontage = nullptr;
+
+	UPROPERTY(EditAnywhere, Category = "Climbing|Setup")
+    float ClimbUpSpeed = 10.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Climbing|Setup")
+    float ClimbDownSpeed = 10.0f;
 };
 
