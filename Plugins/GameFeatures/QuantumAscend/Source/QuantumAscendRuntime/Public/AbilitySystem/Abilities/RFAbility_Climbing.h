@@ -9,6 +9,8 @@ struct FInputActionValue;
 class ARFCharacter;
 class URFCharacterMovementComponent;
 class UAnimMontage;
+class UNiagaraSystem;
+class UNiagaraComponent;
 
 UCLASS(Abstract)
 class QUANTUMASCENDRUNTIME_API URFAbility_Climbing : public ULyraGameplayAbility
@@ -76,10 +78,25 @@ public:
     UPROPERTY(EditAnywhere, Category = "Climbing|Setup")
     TObjectPtr<UAnimMontage> ClimbingDownMontage = nullptr;
 
+    UPROPERTY(EditAnywhere, Category = "Climbing|Setup")
+    TObjectPtr<UNiagaraSystem> ClimbingDownEffect = nullptr;
+
+    UPROPERTY(EditAnywhere, Category = "Climbing|Setup")
+    FVector DownEffectLocation = FVector::ZeroVector;
+
+    UPROPERTY(EditAnywhere, Category = "Climbing|Setup")
+    FVector DownEffectRotation = FVector::ZeroVector;
+
+    UPROPERTY(EditAnywhere, Category = "Climbing|Setup")
+    FVector DownEffectScale = FVector::ZeroVector;
+
 	UPROPERTY(EditAnywhere, Category = "Climbing|Setup")
     float ClimbUpSpeed = 10.0f;
 
     UPROPERTY(EditAnywhere, Category = "Climbing|Setup")
     float ClimbDownSpeed = 10.0f;
+
+private:
+    TObjectPtr<UNiagaraComponent> ClimbingDownNiagara = nullptr;
 };
 

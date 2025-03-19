@@ -560,7 +560,8 @@ void AAlsCharacter::NotifyLocomotionModeChanged(const FGameplayTag& PreviousLoco
 	}
 	else if (LocomotionMode == AlsLocomotionModeTags::InAir &&
 	         LocomotionAction == AlsLocomotionActionTags::Rolling &&
-	         Settings->Rolling.bInterruptRollingWhenInAir)
+	         Settings->Rolling.bInterruptRollingWhenInAir && 
+			 Settings->Ragdolling.bStartRagdollingOnAir)
 	{
 		// If the character is currently rolling, then enable ragdolling.
 

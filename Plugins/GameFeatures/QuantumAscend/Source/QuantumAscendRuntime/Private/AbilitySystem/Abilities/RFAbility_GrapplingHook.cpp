@@ -13,6 +13,8 @@
 #include "Input/LyraInputComponent.h"
 #include "Tags/RFGameplayTags.h"
 #include "AbilitySystem/Abilities/RFAbilityTask_WaitTick.h"
+#include "Niagara/Classes/NiagaraSystem.h"
+#include "Niagara/Public/NiagaraFunctionLibrary.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(RFAbility_GrapplingHook)
 
@@ -53,7 +55,7 @@ void URFAbility_GrapplingHook::ActivateAbility(const FGameplayAbilitySpecHandle 
 
 	ALyraPlayerController* OwnerPlayerController = Cast<ALyraPlayerController>(ActorInfo->PlayerController);
 
-	if (OwnerPlayerController && OwnerCharacter && OwnerMovementComponent)
+	if (OwnerPlayerController && OwnerCharacter && OwnerMovementComponent && IsLocallyControlled())
 	{
 		FHitResult HitResult;
 
@@ -101,15 +103,15 @@ void URFAbility_GrapplingHook::ActivateAbility(const FGameplayAbilitySpecHandle 
 				LyraIC->BindNativeAction(InputConfig, RFGameplayTags::Ability_GrapplingHook_Pulling, ETriggerEvent::Started, this, &URFAbility_GrapplingHook::StartMoveToTarget, /*bLogIfNotFound=*/ false);
 				LyraIC->BindNativeAction(InputConfig, RFGameplayTags::Ability_GrapplingHook_Cancel, ETriggerEvent::Completed, this, &URFAbility_GrapplingHook::CancelGrapplingHook, /*bLogIfNotFound=*/ false);
 			}
-		}
 
-		// Creating a custom AbilityTask and binding a Tick delegate
-		URFAbilityTask_WaitTick* TickTask = URFAbilityTask_WaitTick::WaitTick(this);
+			// Creating a custom AbilityTask and binding a Tick delegate
+			URFAbilityTask_WaitTick* TickTask = URFAbilityTask_WaitTick::WaitTick(this);
 
-		if (TickTask)
-		{
-			TickTask->OnTick.AddDynamic(this, &URFAbility_GrapplingHook::TickAbility);
-			TickTask->ReadyForActivation();
+			if (TickTask)
+			{
+				TickTask->OnTick.AddDynamic(this, &URFAbility_GrapplingHook::TickAbility);
+				TickTask->ReadyForActivation();
+			}
 		}
 	}
 }
@@ -371,12 +373,10 @@ void URFAbility_GrapplingHook::SwingMovement(FVector TargetPos)
 				{
 					FVector AdjustVector = (TargetPos - OwnerCharacter->GetActorLocation()).GetSafeNormal() * AdjustSize;
 					OwnerMovementComponent->SetGrapplingHookMovementVector(AdjustVector);
-					GEngine->AddOnScreenDebugMessage(1, 0.5f, FColor::Blue, FString::Printf(TEXT("UP : %f, OriginDist : %f, AdjustDist : %f"), AdjustSize, GrapplingTargetDistance, Distance));
 				}
 				else
 				{
 					OwnerMovementComponent->SetGrapplingHookMovementVector(FVector(0.0f, 0.0f, 0.0f));
-					GEngine->AddOnScreenDebugMessage(2, 0.5f, FColor::Red, FString::Printf(TEXT("DOWN : %f, OriginDist : %f, AdjustDist : %f"), AdjustSize, GrapplingTargetDistance, Distance));
 				}
 			}
 			else
@@ -408,9 +408,11 @@ void URFAbility_GrapplingHook::StartMoveToTarget()
 		}	// not break;
 		case EGrappleStep::Start:
 		{
-			if (OwnerCharacter && PerformTeleportTrace(GrapplingTargetLocation, TeleportPos))
+			if (OwnerCharacter && PerformTeleportTrace(GrapplingTargetLocation, TeleportPos) && DashEffect && GetWorld())
 			{
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DashEffect, OwnerCharacter->GetActorLocation() + DashEffectLocation, FRotator(DashEffectRotation.X, DashEffectRotation.Z, DashEffectRotation.Y), OwnerCharacter->GetActorScale3D() * DashEffectScale);
 				OwnerCharacter->TeleportTo(TeleportPos, OwnerCharacter->GetActorRotation(), false, false);
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DashEffect, OwnerCharacter->GetActorLocation() + DashEffectLocation, FRotator(DashEffectRotation.X, DashEffectRotation.Z, DashEffectRotation.Y), OwnerCharacter->GetActorScale3D() * DashEffectScale);
 			}
 		}	// not break;
 		case EGrappleStep::Finish:

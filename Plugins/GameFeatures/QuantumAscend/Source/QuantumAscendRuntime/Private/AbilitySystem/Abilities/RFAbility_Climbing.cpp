@@ -10,6 +10,9 @@
 #include "Input/LyraInputComponent.h"
 #include "Tags/RFGameplayTags.h"
 #include "AbilitySystem/Abilities/RFAbilityTask_WaitTick.h"
+#include "Niagara/Classes/NiagaraSystem.h"
+#include "Niagara/Public/NiagaraFunctionLibrary.h"
+#include "Niagara/Public/NiagaraComponent.h"
 
 URFAbility_Climbing::URFAbility_Climbing(const FObjectInitializer& ObjectInitializer /*= FObjectInitializer::Get()*/)
 {
@@ -41,7 +44,7 @@ void URFAbility_Climbing::ActivateAbility(const FGameplayAbilitySpecHandle Handl
 {
     OwnerCharacter = Cast<ARFCharacter>(ActorInfo->AvatarActor.Get());
 
-    if (OwnerCharacter)
+    if (OwnerCharacter && IsLocallyControlled())
     {
         OwnerMovementComponent = Cast<URFCharacterMovementComponent>(OwnerCharacter->GetCharacterMovement());
 
@@ -151,6 +154,11 @@ void URFAbility_Climbing::MoveAlongWall(float DeltaTime)
                 // Idle
                 OwnerMovementComponent->SetClimbingMovementVector(FVector::ZeroVector);
                 AnimInstance->Montage_Play(ClimbingIdleMontage);
+
+                if (ClimbingDownNiagara)
+                {
+                    ClimbingDownNiagara->DestroyComponent();
+                }
             }
             else
             {
@@ -160,12 +168,31 @@ void URFAbility_Climbing::MoveAlongWall(float DeltaTime)
                     // Up Move
                     OwnerMovementComponent->SetClimbingMovementVector(ClimbUpSpeed * UpVector * UpMoveInput);
                     AnimInstance->Montage_Play(ClimbingUpMontage);
+
+                    if (ClimbingDownNiagara)
+                    {
+                        ClimbingDownNiagara->DestroyComponent();
+                    }
                 }
                 else if(UpMoveInput < 0.0f && ClimbingDownMontage && !AnimInstance->Montage_IsPlaying(ClimbingDownMontage))
                 {
                     // Down Move
                     OwnerMovementComponent->SetClimbingMovementVector(ClimbDownSpeed * UpVector * UpMoveInput);
                     AnimInstance->Montage_Play(ClimbingDownMontage);
+
+                    if (ClimbingDownEffect && GetWorld())
+                    {
+                        FFXSystemSpawnParameters Params;
+                        Params.WorldContextObject = GetWorld();
+                        Params.SystemTemplate = ClimbingDownEffect;
+                        Params.Location = DownEffectLocation;
+                        Params.Rotation = FRotator(DownEffectRotation.X, DownEffectRotation.Z, DownEffectRotation.Y);
+                        Params.Scale = DownEffectScale;
+                        Params.AttachToComponent = OwnerCharacter->GetRootComponent();
+                        Params.AttachPointName = NAME_None;
+                        Params.LocationType = EAttachLocation::SnapToTarget;
+                        ClimbingDownNiagara = UNiagaraFunctionLibrary::SpawnSystemAttachedWithParams(Params);
+                    }
                 }
             }
         }
@@ -235,6 +262,11 @@ void URFAbility_Climbing::CancelClimbing()
         if (AnimInstance)
         {
             AnimInstance->StopAllMontages(1.0f);
+        }
+
+        if (ClimbingDownNiagara)
+        {
+            ClimbingDownNiagara->DestroyComponent();
         }
     }
 

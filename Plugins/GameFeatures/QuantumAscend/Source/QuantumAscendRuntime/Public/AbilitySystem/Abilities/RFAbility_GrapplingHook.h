@@ -9,6 +9,7 @@ class ARFCharacter;
 class ARopeActor;
 class AHookActor;
 class URFCharacterMovementComponent;
+class UNiagaraSystem;
 struct FGameplayAbilityActorInfo;
 struct FGameplayTagContainer;
 
@@ -96,6 +97,18 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "GrapplingHook|Setup")
 	TObjectPtr<AHookActor> CachedHookActor = nullptr;
+
+	UPROPERTY(EditAnywhere, Category = "GrapplingHook|Setup")
+	TObjectPtr<UNiagaraSystem> DashEffect = nullptr;
+
+	UPROPERTY(EditAnywhere, Category = "GrapplingHook|Setup")
+    FVector DashEffectLocation = FVector::ZeroVector;
+
+    UPROPERTY(EditAnywhere, Category = "GrapplingHook|Setup")
+    FVector DashEffectRotation = FVector::ZeroVector;
+
+    UPROPERTY(EditAnywhere, Category = "GrapplingHook|Setup")
+    FVector DashEffectScale = FVector::ZeroVector;
 
 	UPROPERTY(EditAnywhere, Category = "GrapplingHook|Trace")
 	TEnumAsByte<ECollisionChannel> CollisionChannel = ECollisionChannel::ECC_Pawn;

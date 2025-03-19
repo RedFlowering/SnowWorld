@@ -13,6 +13,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ALS")
 	uint8 bStartRagdollingOnLand : 1 {true};
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ALS")
+	uint8 bStartRagdollingOnAir : 1 {true};
+
 	// Ragdolling will start if the character lands with a speed greater than the specified value.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ALS",
 		Meta = (ClampMin = 0, EditCondition = "bStartRagdollingOnLand", ForceUnits = "cm/s"))
