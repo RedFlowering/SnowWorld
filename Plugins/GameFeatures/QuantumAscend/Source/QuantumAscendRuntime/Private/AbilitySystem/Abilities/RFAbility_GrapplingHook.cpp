@@ -13,8 +13,7 @@
 #include "Input/LyraInputComponent.h"
 #include "Tags/RFGameplayTags.h"
 #include "AbilitySystem/Abilities/RFAbilityTask_WaitTick.h"
-#include "Niagara/Classes/NiagaraSystem.h"
-#include "Niagara/Public/NiagaraFunctionLibrary.h"
+#include "AbilitySystemComponent.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(RFAbility_GrapplingHook)
 
@@ -142,7 +141,7 @@ bool URFAbility_GrapplingHook::PerformHookTrace(FVector TargetPos)
 		bool IsHit = World->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, CollisionChannel, TraceParams);
 
 #if WITH_EDITOR
-		if(UseDebugMode)
+		if (UseDebugMode)
 		{
 			if (IsHit)
 			{
@@ -174,7 +173,7 @@ bool URFAbility_GrapplingHook::PerformTeleportTrace(FVector TargetPos, FVector& 
 		FVector EndLocation = TargetPos;
 
 		const FCollisionShape CapsuleShape = FCollisionShape::MakeCapsule(OwnerCharacter->GetCapsuleComponent()->GetUnscaledCapsuleRadius(), OwnerCharacter->GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight());
-		
+
 		TArray<FHitResult> HitResults;
 		FHitResult HitResult;
 
@@ -204,7 +203,7 @@ bool URFAbility_GrapplingHook::PerformTeleportTrace(FVector TargetPos, FVector& 
 
 			if (HitResult.bBlockingHit && i > 0)
 			{
-				AvailablePos = HitResults[i-1].TraceEnd;
+				AvailablePos = HitResults[i - 1].TraceEnd;
 				return true;
 			}
 
@@ -223,10 +222,10 @@ void URFAbility_GrapplingHook::ShootGrapplingHook(FVector TargetPos)
 		OwnerCharacter->SetUseRightHandIK(true);
 	}
 
-	ServerShootGrpplingHook(TargetPos);
+	ServerShootGrapplingHook(TargetPos);
 }
 
-void URFAbility_GrapplingHook::ServerShootGrpplingHook_Implementation(FVector TargetPos)
+void URFAbility_GrapplingHook::ServerShootGrapplingHook_Implementation(FVector TargetPos)
 {
 	UWorld* World = GetWorld();
 
@@ -402,24 +401,35 @@ void URFAbility_GrapplingHook::StartMoveToTarget()
 
 	switch (Step)
 	{
-		case EGrappleStep::Ready:
+	case EGrappleStep::Ready:
+	{
+		Step = EGrappleStep::Start;
+	}	// not Break;
+	case EGrappleStep::Start:
+	{
+		if (OwnerCharacter && PerformTeleportTrace(GrapplingTargetLocation, TeleportPos) && GetWorld())
 		{
-			Step = EGrappleStep::Start;
-		}	// not break;
-		case EGrappleStep::Start:
-		{
-			if (OwnerCharacter && PerformTeleportTrace(GrapplingTargetLocation, TeleportPos) && DashEffect && GetWorld())
-			{
-				UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DashEffect, OwnerCharacter->GetActorLocation() + DashEffectLocation, FRotator(DashEffectRotation.X, DashEffectRotation.Z, DashEffectRotation.Y), OwnerCharacter->GetActorScale3D() * DashEffectScale);
-				OwnerCharacter->TeleportTo(TeleportPos, OwnerCharacter->GetActorRotation(), false, false);
-				UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DashEffect, OwnerCharacter->GetActorLocation() + DashEffectLocation, FRotator(DashEffectRotation.X, DashEffectRotation.Z, DashEffectRotation.Y), OwnerCharacter->GetActorScale3D() * DashEffectScale);
-			}
-		}	// not break;
-		case EGrappleStep::Finish:
-		{
-			CancelGrapplingHook();
-		}
-		break;
-	}
+			FGameplayCueParameters CueParams;
+			CueParams.Location = OwnerCharacter->GetActorLocation();
+			CueParams.Instigator = OwnerCharacter;
 
+			UAbilitySystemComponent* Ability = GetAbilitySystemComponentFromActorInfo();
+
+			if (Ability)
+			{
+				Ability->ExecuteGameplayCue(DashStartCueTag, CueParams);
+
+				OwnerCharacter->TeleportTo(TeleportPos, OwnerCharacter->GetActorRotation(), false, false);
+
+				CueParams.Location = OwnerCharacter->GetActorLocation();
+				Ability->ExecuteGameplayCue(DashEndCueTag, CueParams);
+			}
+		}
+	}	// not Break;
+	case EGrappleStep::Finish:
+	{
+		CancelGrapplingHook();
+	}
+	break;
+	}
 }

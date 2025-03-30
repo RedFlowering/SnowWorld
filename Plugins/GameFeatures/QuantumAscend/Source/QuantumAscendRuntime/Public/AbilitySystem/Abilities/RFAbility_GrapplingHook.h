@@ -1,6 +1,6 @@
 // Copyright 2025 RedFlowering.
 
-#pragma once 
+#pragma once
 
 #include "AbilitySystem/Abilities/LyraGameplayAbility.h"
 #include "RFAbility_GrapplingHook.generated.h"
@@ -9,7 +9,6 @@ class ARFCharacter;
 class ARopeActor;
 class AHookActor;
 class URFCharacterMovementComponent;
-class UNiagaraSystem;
 struct FGameplayAbilityActorInfo;
 struct FGameplayTagContainer;
 
@@ -65,7 +64,7 @@ public:
 	void ShootGrapplingHook(FVector TargetPos);
 
 	UFUNCTION(Server, Reliable)
-	void ServerShootGrpplingHook(FVector TargetPos);
+	void ServerShootGrapplingHook(FVector TargetPos);
 
 	UFUNCTION()
 	void ReleaseGrpplingHook();
@@ -98,17 +97,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "GrapplingHook|Setup")
 	TObjectPtr<AHookActor> CachedHookActor = nullptr;
 
-	UPROPERTY(EditAnywhere, Category = "GrapplingHook|Setup")
-	TObjectPtr<UNiagaraSystem> DashEffect = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GrapplingHook|Setup")
+	FGameplayTag DashStartCueTag;
 
-	UPROPERTY(EditAnywhere, Category = "GrapplingHook|Setup")
-    FVector DashEffectLocation = FVector::ZeroVector;
-
-    UPROPERTY(EditAnywhere, Category = "GrapplingHook|Setup")
-    FVector DashEffectRotation = FVector::ZeroVector;
-
-    UPROPERTY(EditAnywhere, Category = "GrapplingHook|Setup")
-    FVector DashEffectScale = FVector::ZeroVector;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GrapplingHook|Setup")
+	FGameplayTag DashEndCueTag;
 
 	UPROPERTY(EditAnywhere, Category = "GrapplingHook|Trace")
 	TEnumAsByte<ECollisionChannel> CollisionChannel = ECollisionChannel::ECC_Pawn;
