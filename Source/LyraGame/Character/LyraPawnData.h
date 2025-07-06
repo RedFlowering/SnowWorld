@@ -6,6 +6,8 @@
 
 #include "LyraPawnData.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class APawn;
 class ULyraAbilitySet;
 class ULyraAbilityTagRelationshipMapping;
@@ -19,14 +21,14 @@ class UObject;
  *
  *	Non-mutable data asset that contains properties used to define a pawn.
  */
-UCLASS(BlueprintType, Const, Meta = (DisplayName = "Lyra Pawn Data", ShortTooltip = "Data asset used to define a Pawn."))
-class LYRAGAME_API ULyraPawnData : public UPrimaryDataAsset
+UCLASS(MinimalAPI, BlueprintType, Const, Meta = (DisplayName = "Lyra Pawn Data", ShortTooltip = "Data asset used to define a Pawn."))
+class ULyraPawnData : public UPrimaryDataAsset
 {
 	GENERATED_BODY()
 
 public:
 
-	ULyraPawnData(const FObjectInitializer& ObjectInitializer);
+	UE_API ULyraPawnData(const FObjectInitializer& ObjectInitializer);
 
 public:
 
@@ -50,3 +52,5 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Camera")
 	TSubclassOf<ULyraCameraMode> DefaultCameraMode;
 };
+
+#undef UE_API

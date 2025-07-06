@@ -4,9 +4,11 @@
 
 #include "Engine/World.h"
 #include "GameplayTagContainer.h"
-#include "RFSpringArmComponentBase.h"
+#include "BaseSpringArmComponent.h"
 
 #include "LyraCameraMode.generated.h"
+
+#define UE_API LYRAGAME_API
 
 class AActor;
 class UCanvas;
@@ -76,20 +78,20 @@ public:
  *
  *	Base class for all camera modes.
  */
-UCLASS(Abstract, NotBlueprintable)
-class LYRAGAME_API ULyraCameraMode : public UObject
+UCLASS(MinimalAPI, Abstract, NotBlueprintable)
+class ULyraCameraMode : public UObject
 {
 	GENERATED_BODY()
 
 public:
 
-	ULyraCameraMode();
+	UE_API ULyraCameraMode();
 
-	ULyraCameraComponent* GetLyraCameraComponent() const;
+	UE_API ULyraCameraComponent* GetLyraCameraComponent() const;
 
-	virtual UWorld* GetWorld() const override;
+	UE_API virtual UWorld* GetWorld() const override;
 
-	AActor* GetTargetActor() const;
+	UE_API AActor* GetTargetActor() const;
 
 	const FLyraCameraModeView& GetCameraModeView() const { return View; }
 
@@ -101,26 +103,26 @@ public:
 	// Called when this camera mode is deactivated on the camera mode stack.
 	virtual void OnDeactivation() {};
 
-	void UpdateCameraMode(float DeltaTime);
+	UE_API void UpdateCameraMode(float DeltaTime);
 
 	float GetBlendTime() const { return BlendTime; }
 	float GetBlendWeight() const { return BlendWeight; }
-	void SetBlendWeight(float Weight);
+	UE_API void SetBlendWeight(float Weight);
 
 	FGameplayTag GetCameraTypeTag() const
 	{
 		return CameraTypeTag;
 	}
 
-	virtual void DrawDebug(UCanvas* Canvas) const;
+	UE_API virtual void DrawDebug(UCanvas* Canvas) const;
 
 protected:
 
-	virtual FVector GetPivotLocation() const;
-	virtual FRotator GetPivotRotation() const;
+	UE_API virtual FVector GetPivotLocation() const;
+	UE_API virtual FRotator GetPivotRotation() const;
 
-	virtual void UpdateView(float DeltaTime);
-	virtual void UpdateBlending(float DeltaTime);
+	UE_API virtual void UpdateView(float DeltaTime);
+	UE_API virtual void UpdateBlending(float DeltaTime);
 
 protected:
 	// A tag that can be queried by gameplay code that cares when a kind of camera mode is active
@@ -215,3 +217,5 @@ protected:
 	UPROPERTY()
 	TArray<TObjectPtr<ULyraCameraMode>> CameraModeStack;
 };
+
+#undef UE_API

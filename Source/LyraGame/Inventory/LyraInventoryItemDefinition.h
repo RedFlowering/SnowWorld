@@ -14,8 +14,8 @@ struct FFrame;
 //////////////////////////////////////////////////////////////////////
 
 // Represents a fragment of an item definition
-UCLASS(DefaultToInstanced, EditInlineNew, Abstract)
-class LYRAGAME_API ULyraInventoryItemFragment : public UObject
+UCLASS(MinimalAPI, DefaultToInstanced, EditInlineNew, Abstract)
+class ULyraInventoryItemFragment : public UObject
 {
 	GENERATED_BODY()
 

@@ -11,8 +11,8 @@
 class AActor;
 class UIndicatorDescriptor;
 
-UINTERFACE(BlueprintType)
-class LYRAGAME_API UIndicatorWidgetInterface : public UInterface
+UINTERFACE(MinimalAPI, BlueprintType)
+class UIndicatorWidgetInterface : public UInterface
 {
 	GENERATED_BODY()
 };

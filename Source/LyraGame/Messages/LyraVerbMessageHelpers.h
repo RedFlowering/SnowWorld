@@ -6,6 +6,8 @@
 
 #include "LyraVerbMessageHelpers.generated.h"
 
+#define UE_API LYRAGAME_API
+
 struct FGameplayCueParameters;
 struct FLyraVerbMessage;
 
@@ -15,21 +17,23 @@ class UObject;
 struct FFrame;
 
 
-UCLASS()
-class LYRAGAME_API ULyraVerbMessageHelpers : public UBlueprintFunctionLibrary
+UCLASS(MinimalAPI)
+class ULyraVerbMessageHelpers : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Lyra")
-	static APlayerState* GetPlayerStateFromObject(UObject* Object);
+	static UE_API APlayerState* GetPlayerStateFromObject(UObject* Object);
 
 	UFUNCTION(BlueprintCallable, Category = "Lyra")
-	static APlayerController* GetPlayerControllerFromObject(UObject* Object);
+	static UE_API APlayerController* GetPlayerControllerFromObject(UObject* Object);
 
 	UFUNCTION(BlueprintCallable, Category = "Lyra")
-	static FGameplayCueParameters VerbMessageToCueParameters(const FLyraVerbMessage& Message);
+	static UE_API FGameplayCueParameters VerbMessageToCueParameters(const FLyraVerbMessage& Message);
 
 	UFUNCTION(BlueprintCallable, Category = "Lyra")
-	static FLyraVerbMessage CueParametersToVerbMessage(const FGameplayCueParameters& Params);
+	static UE_API FLyraVerbMessage CueParametersToVerbMessage(const FGameplayCueParameters& Params);
 };
+
+#undef UE_API

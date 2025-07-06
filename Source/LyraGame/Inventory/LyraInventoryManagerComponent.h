@@ -7,6 +7,8 @@
 
 #include "LyraInventoryManagerComponent.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class ULyraInventoryItemDefinition;
 class ULyraInventoryItemInstance;
 class ULyraInventoryManagerComponent;
@@ -129,41 +131,43 @@ struct TStructOpsTypeTraits<FLyraInventoryList> : public TStructOpsTypeTraitsBas
 /**
  * Manages an inventory
  */
-UCLASS(BlueprintType)
-class LYRAGAME_API ULyraInventoryManagerComponent : public UActorComponent
+UCLASS(MinimalAPI, BlueprintType)
+class ULyraInventoryManagerComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:
-	ULyraInventoryManagerComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	UE_API ULyraInventoryManagerComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category=Inventory)
-	bool CanAddItemDefinition(TSubclassOf<ULyraInventoryItemDefinition> ItemDef, int32 StackCount = 1);
+	UE_API bool CanAddItemDefinition(TSubclassOf<ULyraInventoryItemDefinition> ItemDef, int32 StackCount = 1);
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category=Inventory)
-	ULyraInventoryItemInstance* AddItemDefinition(TSubclassOf<ULyraInventoryItemDefinition> ItemDef, int32 StackCount = 1);
+	UE_API ULyraInventoryItemInstance* AddItemDefinition(TSubclassOf<ULyraInventoryItemDefinition> ItemDef, int32 StackCount = 1);
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category=Inventory)
-	void AddItemInstance(ULyraInventoryItemInstance* ItemInstance);
+	UE_API void AddItemInstance(ULyraInventoryItemInstance* ItemInstance);
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category=Inventory)
-	void RemoveItemInstance(ULyraInventoryItemInstance* ItemInstance);
+	UE_API void RemoveItemInstance(ULyraInventoryItemInstance* ItemInstance);
 
 	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintPure=false)
-	TArray<ULyraInventoryItemInstance*> GetAllItems() const;
+	UE_API TArray<ULyraInventoryItemInstance*> GetAllItems() const;
 
 	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintPure)
-	ULyraInventoryItemInstance* FindFirstItemStackByDefinition(TSubclassOf<ULyraInventoryItemDefinition> ItemDef) const;
+	UE_API ULyraInventoryItemInstance* FindFirstItemStackByDefinition(TSubclassOf<ULyraInventoryItemDefinition> ItemDef) const;
 
-	int32 GetTotalItemCountByDefinition(TSubclassOf<ULyraInventoryItemDefinition> ItemDef) const;
-	bool ConsumeItemsByDefinition(TSubclassOf<ULyraInventoryItemDefinition> ItemDef, int32 NumToConsume);
+	UE_API int32 GetTotalItemCountByDefinition(TSubclassOf<ULyraInventoryItemDefinition> ItemDef) const;
+	UE_API bool ConsumeItemsByDefinition(TSubclassOf<ULyraInventoryItemDefinition> ItemDef, int32 NumToConsume);
 
 	//~UObject interface
-	virtual bool ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
-	virtual void ReadyForReplication() override;
+	UE_API virtual bool ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
+	UE_API virtual void ReadyForReplication() override;
 	//~End of UObject interface
 
 private:
 	UPROPERTY(Replicated)
 	FLyraInventoryList InventoryList;
 };
+
+#undef UE_API

@@ -6,6 +6,8 @@
 
 #include "LyraIndicatorManagerComponent.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class AController;
 class UIndicatorDescriptor;
 class UObject;
@@ -14,21 +16,21 @@ struct FFrame;
 /**
  * @class ULyraIndicatorManagerComponent
  */
-UCLASS(BlueprintType, Blueprintable)
-class LYRAGAME_API ULyraIndicatorManagerComponent : public UControllerComponent
+UCLASS(MinimalAPI, BlueprintType, Blueprintable)
+class ULyraIndicatorManagerComponent : public UControllerComponent
 {
 	GENERATED_BODY()
 
 public:
-	ULyraIndicatorManagerComponent(const FObjectInitializer& ObjectInitializer);
+	UE_API ULyraIndicatorManagerComponent(const FObjectInitializer& ObjectInitializer);
 
-	static ULyraIndicatorManagerComponent* GetComponent(AController* Controller);
+	static UE_API ULyraIndicatorManagerComponent* GetComponent(AController* Controller);
 
 	UFUNCTION(BlueprintCallable, Category = Indicator)
-	void AddIndicator(UIndicatorDescriptor* IndicatorDescriptor);
+	UE_API void AddIndicator(UIndicatorDescriptor* IndicatorDescriptor);
 	
 	UFUNCTION(BlueprintCallable, Category = Indicator)
-	void RemoveIndicator(UIndicatorDescriptor* IndicatorDescriptor);
+	UE_API void RemoveIndicator(UIndicatorDescriptor* IndicatorDescriptor);
 
 	DECLARE_EVENT_OneParam(ULyraIndicatorManagerComponent, FIndicatorEvent, UIndicatorDescriptor* Descriptor)
 	FIndicatorEvent OnIndicatorAdded;
@@ -40,3 +42,5 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<UIndicatorDescriptor>> Indicators;
 };
+
+#undef UE_API

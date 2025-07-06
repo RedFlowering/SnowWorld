@@ -7,6 +7,8 @@
 
 #include "LyraLocalPlayer.generated.h"
 
+#define UE_API LYRAGAME_API
+
 struct FGenericTeamId;
 
 class APlayerController;
@@ -21,57 +23,57 @@ struct FSwapAudioOutputResult;
 /**
  * ULyraLocalPlayer
  */
-UCLASS()
-class LYRAGAME_API ULyraLocalPlayer : public UCommonLocalPlayer, public ILyraTeamAgentInterface
+UCLASS(MinimalAPI)
+class ULyraLocalPlayer : public UCommonLocalPlayer, public ILyraTeamAgentInterface
 {
 	GENERATED_BODY()
 
 public:
 
-	ULyraLocalPlayer();
+	UE_API ULyraLocalPlayer();
 
 	//~UObject interface
-	virtual void PostInitProperties() override;
+	UE_API virtual void PostInitProperties() override;
 	//~End of UObject interface
 
 	//~UPlayer interface
-	virtual void SwitchController(class APlayerController* PC) override;
+	UE_API virtual void SwitchController(class APlayerController* PC) override;
 	//~End of UPlayer interface
 
 	//~ULocalPlayer interface
-	virtual bool SpawnPlayActor(const FString& URL, FString& OutError, UWorld* InWorld) override;
-	virtual void InitOnlineSession() override;
+	UE_API virtual bool SpawnPlayActor(const FString& URL, FString& OutError, UWorld* InWorld) override;
+	UE_API virtual void InitOnlineSession() override;
 	//~End of ULocalPlayer interface
 
 	//~ILyraTeamAgentInterface interface
-	virtual void SetGenericTeamId(const FGenericTeamId& NewTeamID) override;
-	virtual FGenericTeamId GetGenericTeamId() const override;
-	virtual FOnLyraTeamIndexChangedDelegate* GetOnTeamIndexChangedDelegate() override;
+	UE_API virtual void SetGenericTeamId(const FGenericTeamId& NewTeamID) override;
+	UE_API virtual FGenericTeamId GetGenericTeamId() const override;
+	UE_API virtual FOnLyraTeamIndexChangedDelegate* GetOnTeamIndexChangedDelegate() override;
 	//~End of ILyraTeamAgentInterface interface
 
 	/** Gets the local settings for this player, this is read from config files at process startup and is always valid */
 	UFUNCTION()
-	ULyraSettingsLocal* GetLocalSettings() const;
+	UE_API ULyraSettingsLocal* GetLocalSettings() const;
 
 	/** Gets the shared setting for this player, this is read using the save game system so may not be correct until after user login */
 	UFUNCTION()
-	ULyraSettingsShared* GetSharedSettings() const;
+	UE_API ULyraSettingsShared* GetSharedSettings() const;
 
 	/** Starts an async request to load the shared settings, this will call OnSharedSettingsLoaded after loading or creating new ones */
-	void LoadSharedSettingsFromDisk(bool bForceLoad = false);
+	UE_API void LoadSharedSettingsFromDisk(bool bForceLoad = false);
 
 protected:
-	void OnSharedSettingsLoaded(ULyraSettingsShared* LoadedOrCreatedSettings);
+	UE_API void OnSharedSettingsLoaded(ULyraSettingsShared* LoadedOrCreatedSettings);
 
-	void OnAudioOutputDeviceChanged(const FString& InAudioOutputDeviceId);
+	UE_API void OnAudioOutputDeviceChanged(const FString& InAudioOutputDeviceId);
 	
 	UFUNCTION()
-	void OnCompletedAudioDeviceSwap(const FSwapAudioOutputResult& SwapResult);
+	UE_API void OnCompletedAudioDeviceSwap(const FSwapAudioOutputResult& SwapResult);
 
-	void OnPlayerControllerChanged(APlayerController* NewController);
+	UE_API void OnPlayerControllerChanged(APlayerController* NewController);
 
 	UFUNCTION()
-	void OnControllerChangedTeam(UObject* TeamAgent, int32 OldTeam, int32 NewTeam);
+	UE_API void OnControllerChangedTeam(UObject* TeamAgent, int32 OldTeam, int32 NewTeam);
 
 private:
 	UPROPERTY(Transient)
@@ -88,3 +90,5 @@ private:
 	UPROPERTY()
 	TWeakObjectPtr<APlayerController> LastBoundPC;
 };
+
+#undef UE_API

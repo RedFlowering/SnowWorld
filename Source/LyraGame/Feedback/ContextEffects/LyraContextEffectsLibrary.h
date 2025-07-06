@@ -8,6 +8,8 @@
 
 #include "LyraContextEffectsLibrary.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class UNiagaraSystem;
 class USoundBase;
 struct FFrame;
@@ -26,7 +28,7 @@ enum class EContextEffectsLibraryLoadState : uint8 {
  *
  */
 USTRUCT(BlueprintType)
-struct LYRAGAME_API FLyraContextEffects
+struct FLyraContextEffects
 {
 	GENERATED_BODY()
 
@@ -44,8 +46,8 @@ struct LYRAGAME_API FLyraContextEffects
 /**
  *
  */
-UCLASS()
-class LYRAGAME_API ULyraActiveContextEffects : public UObject
+UCLASS(MinimalAPI)
+class ULyraActiveContextEffects : public UObject
 {
 	GENERATED_BODY()
 
@@ -68,8 +70,8 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FLyraContextEffectLibraryLoadingComplete, TArr
 /**
  * 
  */
-UCLASS(BlueprintType)
-class LYRAGAME_API ULyraContextEffectsLibrary : public UObject
+UCLASS(MinimalAPI, BlueprintType)
+class ULyraContextEffectsLibrary : public UObject
 {
 	GENERATED_BODY()
 	
@@ -79,12 +81,12 @@ public:
 	TArray<FLyraContextEffects> ContextEffects;
 
 	UFUNCTION(BlueprintCallable)
-	void GetEffects(const FGameplayTag Effect, const FGameplayTagContainer Context, TArray<USoundBase*>& Sounds, TArray<UNiagaraSystem*>& NiagaraSystems);
+	UE_API void GetEffects(const FGameplayTag Effect, const FGameplayTagContainer Context, TArray<USoundBase*>& Sounds, TArray<UNiagaraSystem*>& NiagaraSystems);
 
 	UFUNCTION(BlueprintCallable)
-	void LoadEffects();
+	UE_API void LoadEffects();
 
-	EContextEffectsLibraryLoadState GetContextEffectsLibraryLoadState();
+	UE_API EContextEffectsLibraryLoadState GetContextEffectsLibraryLoadState();
 
 private:
 	void LoadEffectsInternal();
@@ -97,3 +99,5 @@ private:
 	UPROPERTY(Transient)
 	EContextEffectsLibraryLoadState EffectsLoadState = EContextEffectsLibraryLoadState::Unloaded;
 };
+
+#undef UE_API

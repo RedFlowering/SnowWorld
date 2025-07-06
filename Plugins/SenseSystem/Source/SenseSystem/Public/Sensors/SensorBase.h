@@ -6,6 +6,7 @@
 #include "UObject/ObjectMacros.h"
 #include "Templates/SubclassOf.h"
 #include "Templates/Less.h"
+#include "Math/NumericLimits.h"
 #include "HAL/ThreadSafeCounter.h"
 #include "HAL/ThreadSafeBool.h"
 #include "Async/TaskGraphInterfaces.h"
@@ -21,8 +22,8 @@
 #include "SensedStimulStruct.h"
 
 #if WITH_EDITORONLY_DATA
-	#include "SceneManagement.h"
-	#include "SceneView.h"
+#include "SceneManagement.h"
+#include "SceneView.h"
 #endif
 
 #include "SensorBase.generated.h"
@@ -37,9 +38,9 @@ UENUM(Meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
 enum class ECallStimulusFlag : uint8
 {
 	CallOnCurrentSensed = 0x1,
-	CallOnNewSensed     = 0x2,
-	CallOnLost          = 0x4,
-	CallOnForget        = 0x8	
+	CallOnNewSensed = 0x2,
+	CallOnLost = 0x4,
+	CallOnForget = 0x8
 };
 
 // clang-format on
@@ -177,7 +178,8 @@ private:
 
 		template<typename U, typename = std::enable_if_t<TPointerIsConvertibleFromTo<U, FSenseDetectPool>::Value>>
 		FDeleterSdp(const TDefaultDelete<U>&)
-		{}
+		{
+		}
 		template<typename U, typename = std::enable_if_t<TPointerIsConvertibleFromTo<U, FSenseDetectPool>::Value>>
 		FDeleterSdp& operator=(const TDefaultDelete<U>&)
 		{
@@ -236,7 +238,7 @@ class FUpdateSensorTask : public FNonAbandonableTask
 
 public:
 	FUpdateSensorTask(class USensorBase* InSensor) : Sensor(InSensor) {}
-	~FUpdateSensorTask(){};
+	~FUpdateSensorTask() {};
 
 private:
 	class USensorBase* Sensor;
@@ -255,6 +257,9 @@ class SENSESYSTEM_API USensorBase : public UObject
 {
 	GENERATED_BODY()
 public:
+
+	using ElementIndexType = int32;
+
 	USensorBase(const FObjectInitializer& ObjectInitializer);
 	virtual ~USensorBase() override;
 
@@ -341,7 +346,7 @@ public:
 
 	/** Sensor Tag, Unique Sensor Identifier */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sensor") //EditInstanceOnly
-	FName SensorTag = NAME_None;
+		FName SensorTag = NAME_None;
 
 	/** Sensor Type */
 	UPROPERTY(BlueprintReadOnly, Category = "Sensor")
@@ -364,7 +369,7 @@ public:
 	EOnSenseEvent DetectDepth = EOnSenseEvent::SenseForget;
 
 	/** CallStimulusFlag */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sensor", meta = (Bitmask, BitmaskEnum = "ECallStimulusFlag"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sensor", meta = (Bitmask, BitmaskEnum = "/Script/SenseSystem.ECallStimulusFlag"))
 	uint8 CallStimulusFlag =										 //
 		static_cast<uint8>(ECallStimulusFlag::CallOnCurrentSensed) | //
 		static_cast<uint8>(ECallStimulusFlag::CallOnNewSensed) |	 //
@@ -380,7 +385,7 @@ public:
 
 	/** Response Channels */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sensor", meta = (DisplayName = "SenseChannels"))
-	TArray<FChannelSetup> ChannelSetup = {FChannelSetup(1)};
+	TArray<FChannelSetup> ChannelSetup = { FChannelSetup(1) };
 
 
 	UPROPERTY()
@@ -699,8 +704,8 @@ public:
 	virtual bool UpdateSensor();
 
 	/**  */
-	virtual void ReportSenseStimulusEvent(USenseStimulusBase* SenseStimulus);
-	virtual void ReportSenseStimulusEvent(uint16 InStimulusID);
+	virtual ElementIndexType ReportSenseStimulusEvent(USenseStimulusBase* SenseStimulus);
+	virtual void ReportSenseStimulusEvent(ElementIndexType InStimulusID);
 
 	/** check ready for sense tests */
 	bool IsValidForTest() const;
@@ -709,6 +714,9 @@ public:
 	bool IsValidForTest_Short() const;
 
 	void TreadSafePostUpdate();
+
+	void ForceLostCurrentSensed(const EOnSenseEvent Ost, const bool bOverrideSenseState = true) const;
+	void ForceLostSensedStimulus(const USenseStimulusBase* SenseStimulus);
 
 protected:
 	void OnSensorUpdateReceiver(EOnSenseEvent SenseEvent, const FChannelSetup& InChannelSetup) const;
@@ -750,11 +758,11 @@ private:
 	bool SensorsTestForSpecifyComponents_V3(const IContainerTree* ContainerTree, ConType&& ObjIDs) const;
 	float UpdtDetectPoolAndReturnMinScore() const;
 	bool UpdtSensorTestForIDInternal(
-		uint16 Idx,
+		ElementIndexType Idx,
 		const IContainerTree* ContainerTree,
 		const float CurrentTime,
 		const float MinScore,
-		TArray<uint16>& ChannelContainsIDs) const;
+		TArray<ElementIndexType>& ChannelContainsIDs) const;
 
 public:
 	/** Check Async Sensor Task IsWorkDone */
@@ -766,8 +774,8 @@ public:
 	void ResetInitialization();
 
 private:
-	ESenseTestResult Sensor_Run_Test(float MinScore, const float CurrentTime, FSensedStimulus& Stimulus, TArray<uint16>& Out) const;
-	void CheckWithCurrent(FSensedStimulus& SS, TArray<uint16>& Out) const;
+	ESenseTestResult Sensor_Run_Test(float MinScore, const float CurrentTime, FSensedStimulus& Stimulus, TArray<ElementIndexType>& Out) const;
+	void CheckWithCurrent(FSensedStimulus& SS, TArray<ElementIndexType>& Out) const;
 
 
 	// NotUProperty
@@ -789,7 +797,7 @@ private:
 	static bool IsZeroBox(const FBox& InBox);
 
 protected:
-	TMap<uint16, uint32> PendingUpdate;
+	TMap<ElementIndexType, uint32> PendingUpdate;
 	FThreadSafeBool bIsHavePendingUpdate;
 
 	virtual float GetCurrentGameTimeInSeconds() const;
@@ -827,10 +835,10 @@ bool USensorBase::SensorsTestForSpecifyComponents_V3(const IContainerTree* Conta
 	if (LIKELY(SensorTests.Num() != 0))
 	{
 		const float MinScore = UpdtDetectPoolAndReturnMinScore();
-		TArray<uint16> ChannelContainsIDs;
+		TArray<ElementIndexType> ChannelContainsIDs;
 		ChannelContainsIDs.Reserve(ChannelSetup.Num());
 
-		for (const uint16 ItID : ObjIDs)
+		for (const ElementIndexType ItID : ObjIDs)
 		{
 			if (UpdtSensorTestForIDInternal(ItID, ContainerTree, CurrentTime, MinScore, ChannelContainsIDs))
 			{
@@ -1017,15 +1025,16 @@ FORCEINLINE const TArray<FSensedStimulus>& FChannelSetup::GetSensedStimulusBySen
 {
 	switch (SenseEvent)
 	{
-		case ESensorArrayByType::SensedNew: return NewSensed;
-		case ESensorArrayByType::SenseCurrent: return CurrentSensed;
-		case ESensorArrayByType::SenseCurrentLost: return LostCurrentSensed;
-		case ESensorArrayByType::SenseForget: return ForgetSensed;
-		case ESensorArrayByType::SenseLost: return LostAllSensed;
+	case ESensorArrayByType::SensedNew: return NewSensed;
+	case ESensorArrayByType::SenseCurrent: return CurrentSensed;
+	case ESensorArrayByType::SenseCurrentLost: return LostCurrentSensed;
+	case ESensorArrayByType::SenseForget: return ForgetSensed;
+	case ESensorArrayByType::SenseLost: return LostAllSensed;
 	}
 	checkNoEntry();
 	return CurrentSensed;
 }
+
 FORCEINLINE TArray<FSensedStimulus>& FChannelSetup::GetSensedStimulusBySenseEvent(const ESensorArrayByType SenseEvent)
 {
 	switch (SenseEvent)
@@ -1068,10 +1077,10 @@ FORCEINLINE bool USensorBase::IsCallOnSense(const EOnSenseEvent SenseEvent) cons
 {
 	switch (SenseEvent)
 	{
-		case EOnSenseEvent::SenseNew: return CallStimulusFlag & static_cast<uint8>(ECallStimulusFlag::CallOnNewSensed);
-		case EOnSenseEvent::SenseCurrent: return CallStimulusFlag & static_cast<uint8>(ECallStimulusFlag::CallOnCurrentSensed);
-		case EOnSenseEvent::SenseLost: return CallStimulusFlag & static_cast<uint8>(ECallStimulusFlag::CallOnLost);
-		case EOnSenseEvent::SenseForget: return CallStimulusFlag & static_cast<uint8>(ECallStimulusFlag::CallOnForget);
+	case EOnSenseEvent::SenseNew: return CallStimulusFlag & static_cast<uint8>(ECallStimulusFlag::CallOnNewSensed);
+	case EOnSenseEvent::SenseCurrent: return CallStimulusFlag & static_cast<uint8>(ECallStimulusFlag::CallOnCurrentSensed);
+	case EOnSenseEvent::SenseLost: return CallStimulusFlag & static_cast<uint8>(ECallStimulusFlag::CallOnLost);
+	case EOnSenseEvent::SenseForget: return CallStimulusFlag & static_cast<uint8>(ECallStimulusFlag::CallOnForget);
 	}
 	checkNoEntry();
 	return false;

@@ -8,14 +8,16 @@
 
 #include "LyraReplaySubsystem.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class UDemoNetDriver;
 class APlayerController;
 class ULocalPlayer;
 struct FFrame;
 
 /** An available replay for display in the UI */
-UCLASS(BlueprintType)
-class LYRAGAME_API ULyraReplayListEntry : public UObject
+UCLASS(MinimalAPI, BlueprintType)
+class ULyraReplayListEntry : public UObject
 {
 	GENERATED_BODY()
 
@@ -44,8 +46,8 @@ public:
 };
 
 /** Results of querying for replays list of results for the UI */
-UCLASS(BlueprintType)
-class LYRAGAME_API ULyraReplayList : public UObject
+UCLASS(MinimalAPI, BlueprintType)
+class ULyraReplayList : public UObject
 {
 	GENERATED_BODY()
 
@@ -55,44 +57,44 @@ public:
 };
 
 /** Subsystem to handle recording/loading replays */
-UCLASS()
-class LYRAGAME_API ULyraReplaySubsystem : public UGameInstanceSubsystem
+UCLASS(MinimalAPI)
+class ULyraReplaySubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
 public:
-	ULyraReplaySubsystem();
+	UE_API ULyraReplaySubsystem();
 
 	/** Returns true if this platform supports replays at all */
 	UFUNCTION(BlueprintCallable, Category = Replays, BlueprintPure = false)
-	static bool DoesPlatformSupportReplays();
+	static UE_API bool DoesPlatformSupportReplays();
 
 	/** Returns the trait tag for platform support, used in options */
-	static FGameplayTag GetPlatformSupportTraitTag();
+	static UE_API FGameplayTag GetPlatformSupportTraitTag();
 
 	/** Loads the appropriate map and plays a replay */
 	UFUNCTION(BlueprintCallable, Category=Replays)
-	void PlayReplay(ULyraReplayListEntry* Replay);
+	UE_API void PlayReplay(ULyraReplayListEntry* Replay);
 
 	/** Starts recording a client replay, and handles any file cleanup needed */
 	UFUNCTION(BlueprintCallable, Category = Replays)
-	void RecordClientReplay(APlayerController* PlayerController);
+	UE_API void RecordClientReplay(APlayerController* PlayerController);
 
 	/** Starts deleting local replays starting with the oldest until there are NumReplaysToKeep or fewer */
 	UFUNCTION(BlueprintCallable, Category = Replays)
-	void CleanupLocalReplays(ULocalPlayer* LocalPlayer, int32 NumReplaysToKeep);
+	UE_API void CleanupLocalReplays(ULocalPlayer* LocalPlayer, int32 NumReplaysToKeep);
 
 	/** Move forward or back in currently playing replay */
 	UFUNCTION(BlueprintCallable, Category=Replays)
-	void SeekInActiveReplay(float TimeInSeconds);
+	UE_API void SeekInActiveReplay(float TimeInSeconds);
 
 	/** Gets length of current replay */
 	UFUNCTION(BlueprintCallable, Category = Replays, BlueprintPure = false)
-	float GetReplayLengthInSeconds() const;
+	UE_API float GetReplayLengthInSeconds() const;
 
 	/** Gets current playback time */
 	UFUNCTION(BlueprintCallable, Category=Replays, BlueprintPure=false)
-	float GetReplayCurrentTime() const;
+	UE_API float GetReplayCurrentTime() const;
 
 private:
 	TSharedPtr<INetworkReplayStreamer> CurrentReplayStreamer;
@@ -107,3 +109,5 @@ private:
 	void OnEnumerateStreamsCompleteForDelete(const FEnumerateStreamsResult& Result);
 	void OnDeleteReplay(const FDeleteFinishedStreamResult& DeleteResult);
 };
+
+#undef UE_API

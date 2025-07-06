@@ -6,23 +6,25 @@
 
 #include "LyraCharacterWithAbilities.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class UAbilitySystemComponent;
 class ULyraAbilitySystemComponent;
 class UObject;
 
 // ALyraCharacter typically gets the ability system component from the possessing player state
 // This represents a character with a self-contained ability system component.
-UCLASS(Blueprintable)
-class LYRAGAME_API ALyraCharacterWithAbilities : public ALyraCharacter
+UCLASS(MinimalAPI, Blueprintable)
+class ALyraCharacterWithAbilities : public ALyraCharacter
 {
 	GENERATED_BODY()
 
 public:
-	ALyraCharacterWithAbilities(const FObjectInitializer& ObjectInitializer);
+	UE_API ALyraCharacterWithAbilities(const FObjectInitializer& ObjectInitializer);
 
-	virtual void PostInitializeComponents() override;
+	UE_API virtual void PostInitializeComponents() override;
 
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	UE_API virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 private:
 
@@ -37,3 +39,5 @@ private:
 	UPROPERTY()
 	TObjectPtr<const class ULyraCombatSet> CombatSet;
 };
+
+#undef UE_API

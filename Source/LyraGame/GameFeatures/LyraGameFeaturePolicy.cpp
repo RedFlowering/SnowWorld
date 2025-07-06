@@ -59,9 +59,9 @@ void ULyraGameFeaturePolicy::GetGameFeatureLoadingMode(bool& bLoadClientData, bo
 	bLoadServerData = !IsRunningClientOnly();
 }
 
-bool ULyraGameFeaturePolicy::IsPluginAllowed(const FString& PluginURL) const
+bool ULyraGameFeaturePolicy::IsPluginAllowed(const FString& PluginURL, FString* OutReason) const
 {
-	return Super::IsPluginAllowed(PluginURL);
+	return Super::IsPluginAllowed(PluginURL, OutReason);
 }
 
 //////////////////////////////////////////////////////////////////////

@@ -10,6 +10,8 @@
 
 #include "LyraCharacter.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class AActor;
 class AController;
 class ALyraPlayerController;
@@ -19,7 +21,7 @@ class IRepChangedPropertyTracker;
 class UAbilitySystemComponent;
 class UInputComponent;
 class ULyraAbilitySystemComponent;
-class URFSpringArmComponentBase;
+class UBaseSpringArmComponent;
 class ULyraCameraComponent;
 class ULyraHealthComponent;
 class ULyraPawnExtensionComponent;
@@ -93,102 +95,103 @@ struct TStructOpsTypeTraits<FSharedRepMovement> : public TStructOpsTypeTraitsBas
  *	Responsible for sending events to pawn components.
  *	New behavior should be added via pawn components when possible.
  */
-UCLASS(Config = Game, Meta = (ShortTooltip = "The base character pawn class used by this project."))
-class LYRAGAME_API ALyraCharacter : public AAlsCharacter, public IAbilitySystemInterface, public IGameplayCueInterface, public IGameplayTagAssetInterface, public ILyraTeamAgentInterface
+UCLASS(MinimalAPI, Config = Game, Meta = (ShortTooltip = "The base character pawn class used by this project."))
+class ALyraCharacter : public AAlsCharacter, public IAbilitySystemInterface, public IGameplayCueInterface, public IGameplayTagAssetInterface, public ILyraTeamAgentInterface
 {
 	GENERATED_BODY()
 
 public:
 
-	ALyraCharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	UE_API ALyraCharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	UFUNCTION(BlueprintCallable, Category = "Lyra|Character")
-	ALyraPlayerController* GetLyraPlayerController() const;
+	UE_API ALyraPlayerController* GetLyraPlayerController() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Lyra|Character")
-	ALyraPlayerState* GetLyraPlayerState() const;
+	UE_API ALyraPlayerState* GetLyraPlayerState() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Lyra|Character")
-	ULyraAbilitySystemComponent* GetLyraAbilitySystemComponent() const;
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	UE_API ULyraAbilitySystemComponent* GetLyraAbilitySystemComponent() const;
+	UE_API virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
-	virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
-	virtual bool HasMatchingGameplayTag(FGameplayTag TagToCheck) const override;
-	virtual bool HasAllMatchingGameplayTags(const FGameplayTagContainer& TagContainer) const override;
-	virtual bool HasAnyMatchingGameplayTags(const FGameplayTagContainer& TagContainer) const override;
+	UE_API virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
+	UE_API virtual bool HasMatchingGameplayTag(FGameplayTag TagToCheck) const override;
+	UE_API virtual bool HasAllMatchingGameplayTags(const FGameplayTagContainer& TagContainer) const override;
+	UE_API virtual bool HasAnyMatchingGameplayTags(const FGameplayTagContainer& TagContainer) const override;
 
-	void ToggleCrouch();
+	UE_API void ToggleCrouch();
 
 	//~AActor interface
-	virtual void PreInitializeComponents() override;
-	virtual void BeginPlay() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-	virtual void Reset() override;
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	virtual void PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker) override;
+	UE_API virtual void PreInitializeComponents() override;
+	UE_API virtual void BeginPlay() override;
+	UE_API virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	UE_API virtual void Reset() override;
+	UE_API virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	UE_API virtual void PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker) override;
 	//~End of AActor interface
 
 	//~APawn interface
-	virtual void NotifyControllerChanged() override;
+	UE_API virtual void NotifyControllerChanged() override;
 	//~End of APawn interface
 
 	//~ILyraTeamAgentInterface interface
-	virtual void SetGenericTeamId(const FGenericTeamId& NewTeamID) override;
-	virtual FGenericTeamId GetGenericTeamId() const override;
-	virtual FOnLyraTeamIndexChangedDelegate* GetOnTeamIndexChangedDelegate() override;
+	UE_API virtual void SetGenericTeamId(const FGenericTeamId& NewTeamID) override;
+	UE_API virtual FGenericTeamId GetGenericTeamId() const override;
+	UE_API virtual FOnLyraTeamIndexChangedDelegate* GetOnTeamIndexChangedDelegate() override;
 	//~End of ILyraTeamAgentInterface interface
 
 	/** RPCs that is called on frames when default property replication is skipped. This replicates a single movement update to everyone. */
 	UFUNCTION(NetMulticast, unreliable)
-	void FastSharedReplication(const FSharedRepMovement& SharedRepMovement);
+	UE_API void FastSharedReplication(const FSharedRepMovement& SharedRepMovement);
 
 	// Last FSharedRepMovement we sent, to avoid sending repeatedly.
 	FSharedRepMovement LastSharedReplication;
 
-	virtual bool UpdateSharedReplication();
+	UE_API virtual bool UpdateSharedReplication();
 
 protected:
 
-	virtual void OnAbilitySystemInitialized();
-	virtual void OnAbilitySystemUninitialized();
+	UE_API virtual void OnAbilitySystemInitialized();
+	UE_API virtual void OnAbilitySystemUninitialized();
 
-	virtual void PossessedBy(AController* NewController) override;
-	virtual void UnPossessed() override;
+	UE_API virtual void PossessedBy(AController* NewController) override;
+	UE_API virtual void UnPossessed() override;
 
-	virtual void OnRep_Controller() override;
-	virtual void OnRep_PlayerState() override;
+	UE_API virtual void OnRep_Controller() override;
+	UE_API virtual void OnRep_PlayerState() override;
 
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	UE_API virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
-	void InitializeGameplayTags();
+	UE_API void InitializeGameplayTags();
 
-	virtual void FellOutOfWorld(const class UDamageType& dmgType) override;
+	UE_API virtual void FellOutOfWorld(const class UDamageType& dmgType) override;
 
 	// Begins the death sequence for the character (disables collision, disables movement, etc...)
 	UFUNCTION()
-	virtual void OnDeathStarted(AActor* OwningActor);
+	UE_API virtual void OnDeathStarted(AActor* OwningActor);
 
 	// Ends the death sequence for the character (detaches controller, destroys pawn, etc...)
 	UFUNCTION()
-	virtual void OnDeathFinished(AActor* OwningActor);
+	UE_API virtual void OnDeathFinished(AActor* OwningActor);
 
-	void DisableMovementAndCollision();
-	void DestroyDueToDeath();
-	void UninitAndDestroy();
+	UE_API void DisableMovementAndCollision();
+	UE_API void DestroyDueToDeath();
+	UE_API void UninitAndDestroy();
 
 	// Called when the death sequence for the character has completed
 	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName="OnDeathFinished"))
-	void K2_OnDeathFinished();
+	UE_API void K2_OnDeathFinished();
 
-	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode) override;
-	void SetMovementModeTag(EMovementMode MovementMode, uint8 CustomMovementMode, bool bTagEnabled);
+	UE_API virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode) override;
+	UE_API void SetMovementModeTag(EMovementMode MovementMode, uint8 CustomMovementMode, bool bTagEnabled);
 
-	virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
-	virtual void OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+	UE_API virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+	UE_API virtual void OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
 
-	virtual bool CanJumpInternal_Implementation() const;
+	UE_API virtual bool CanJumpInternal_Implementation() const;
 
 private:
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lyra|Character", Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<ULyraPawnExtensionComponent> PawnExtComponent;
 
@@ -196,7 +199,7 @@ private:
 	TObjectPtr<ULyraHealthComponent> HealthComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lyra|Character", Meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<URFSpringArmComponentBase> SpringArm;
+	TObjectPtr<UBaseSpringArmComponent> SpringArm;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lyra|Character", Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<ULyraCameraComponent> CameraComponent;
@@ -224,11 +227,13 @@ protected:
 
 private:
 	UFUNCTION()
-	void OnControllerChangedTeam(UObject* TeamAgent, int32 OldTeam, int32 NewTeam);
+	UE_API void OnControllerChangedTeam(UObject* TeamAgent, int32 OldTeam, int32 NewTeam);
 
 	UFUNCTION()
-	void OnRep_ReplicatedAcceleration();
+	UE_API void OnRep_ReplicatedAcceleration();
 
 	UFUNCTION()
-	void OnRep_MyTeamID(FGenericTeamId OldTeamID);
+	UE_API void OnRep_MyTeamID(FGenericTeamId OldTeamID);
 };
+
+#undef UE_API

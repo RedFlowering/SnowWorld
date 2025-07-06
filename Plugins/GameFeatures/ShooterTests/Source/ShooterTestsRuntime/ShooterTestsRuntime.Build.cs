@@ -15,10 +15,13 @@ public class ShooterTestsRuntime : ModuleRules
 				"LyraGame",
 				"GameplayTags",
 				"GameplayAbilities",
-				"ModularGameplay"
+				"ModularGameplay",
+				"AsyncMessageSystem"
 				// ... add other public dependencies that you statically link with here ...
 			}
 		);
+		
+		//PrivateIncludePathModuleNames.AddRange(new string[]{"AsyncMessageSystem"});
 
 		PrivateDependencyModuleNames.AddRange(
 			new string[]

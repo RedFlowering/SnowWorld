@@ -25,11 +25,6 @@ public:
 	void InitializeInputData(const UEnhancedPlayerMappableKeyProfile* KeyProfile, const FKeyMappingRow& MappingData, const FPlayerMappableKeyQueryOptions& QueryOptions);
 
 	FText GetKeyTextFromSlot(const EPlayerMappableKeySlot InSlot) const;
-
-	UE_DEPRECATED(5.3, "GetPrimaryKeyText has been deprecated, please use GetKeyTextFromSlot instead")
-	FText GetPrimaryKeyText() const;
-	UE_DEPRECATED(5.3, "GetSecondaryKeyText has been deprecated, please use GetKeyTextFromSlot instead")
-	FText GetSecondaryKeyText() const;
 	
 	virtual void StoreInitial() override;
 	virtual void ResetToDefault() override;
@@ -61,7 +56,7 @@ protected:
 	FPlayerMappableKeyQueryOptions QueryOptions;
 
 	/** The profile identifier that this key setting is from */
-	FGameplayTag ProfileIdentifier;
+	FString ProfileIdentifier;
 
 	/** Store the initial key mappings that are set on this for each slot */
 	TMap<EPlayerMappableKeySlot, FKey> InitialKeyMappings;

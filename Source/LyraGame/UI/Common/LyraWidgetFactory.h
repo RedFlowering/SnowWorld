@@ -6,13 +6,15 @@
 
 #include "LyraWidgetFactory.generated.h"
 
+#define UE_API LYRAGAME_API
+
 template <class TClass> class TSubclassOf;
 
 class UUserWidget;
 struct FFrame;
 
-UCLASS(Abstract, Blueprintable, BlueprintType, EditInlineNew)
-class LYRAGAME_API ULyraWidgetFactory : public UObject
+UCLASS(MinimalAPI, Abstract, Blueprintable, BlueprintType, EditInlineNew)
+class ULyraWidgetFactory : public UObject
 {
 	GENERATED_BODY()
 
@@ -20,5 +22,7 @@ public:
 	ULyraWidgetFactory() { }
 
 	UFUNCTION(BlueprintNativeEvent)
-	TSubclassOf<UUserWidget> FindWidgetClassForData(const UObject* Data) const;
+	UE_API TSubclassOf<UUserWidget> FindWidgetClassForData(const UObject* Data) const;
 };
+
+#undef UE_API

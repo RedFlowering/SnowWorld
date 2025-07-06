@@ -8,6 +8,8 @@
 
 #include "LyraContextEffectsSubsystem.generated.h"
 
+#define UE_API LYRAGAME_API
+
 enum EPhysicalSurface : int;
 
 class AActor;
@@ -22,8 +24,8 @@ struct FGameplayTagContainer;
 /**
  *
  */
-UCLASS(config = Game, defaultconfig, meta = (DisplayName = "LyraContextEffects"))
-class LYRAGAME_API ULyraContextEffectsSettings : public UDeveloperSettings
+UCLASS(MinimalAPI, config = Game, defaultconfig, meta = (DisplayName = "LyraContextEffects"))
+class ULyraContextEffectsSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 
@@ -36,8 +38,8 @@ public:
 /**
  *
  */
-UCLASS()
-class LYRAGAME_API ULyraContextEffectsSet : public UObject
+UCLASS(MinimalAPI)
+class ULyraContextEffectsSet : public UObject
 {
 	GENERATED_BODY()
 
@@ -50,15 +52,15 @@ public:
 /**
  * 
  */
-UCLASS()
-class LYRAGAME_API ULyraContextEffectsSubsystem : public UWorldSubsystem
+UCLASS(MinimalAPI)
+class ULyraContextEffectsSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 	
 public:
 	/** */
 	UFUNCTION(BlueprintCallable, Category = "ContextEffects")
-	void SpawnContextEffects(
+	UE_API void SpawnContextEffects(
 		const AActor* SpawningActor
 		, USceneComponent* AttachToComponent
 		, const FName AttachPoint
@@ -74,15 +76,15 @@ public:
 
 	/** */
 	UFUNCTION(BlueprintCallable, Category = "ContextEffects")
-	bool GetContextFromSurfaceType(TEnumAsByte<EPhysicalSurface> PhysicalSurface, FGameplayTag& Context);
+	UE_API bool GetContextFromSurfaceType(TEnumAsByte<EPhysicalSurface> PhysicalSurface, FGameplayTag& Context);
 
 	/** */
 	UFUNCTION(BlueprintCallable, Category = "ContextEffects")
-	void LoadAndAddContextEffectsLibraries(AActor* OwningActor, TSet<TSoftObjectPtr<ULyraContextEffectsLibrary>> ContextEffectsLibraries);
+	UE_API void LoadAndAddContextEffectsLibraries(AActor* OwningActor, TSet<TSoftObjectPtr<ULyraContextEffectsLibrary>> ContextEffectsLibraries);
 
 	/** */
 	UFUNCTION(BlueprintCallable, Category = "ContextEffects")
-	void UnloadAndRemoveContextEffectsLibraries(AActor* OwningActor);
+	UE_API void UnloadAndRemoveContextEffectsLibraries(AActor* OwningActor);
 
 private:
 
@@ -90,3 +92,5 @@ private:
 	TMap<TObjectPtr<AActor>, TObjectPtr<ULyraContextEffectsSet>> ActiveActorEffectsMap;
 
 };
+
+#undef UE_API

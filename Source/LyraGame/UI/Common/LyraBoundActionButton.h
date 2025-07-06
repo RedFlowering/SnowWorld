@@ -6,19 +6,21 @@
 
 #include "LyraBoundActionButton.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class UCommonButtonStyle;
 class UObject;
 
 /**
  * 
  */
-UCLASS(Abstract, meta = (DisableNativeTick))
-class LYRAGAME_API ULyraBoundActionButton : public UCommonBoundActionButton
+UCLASS(MinimalAPI, Abstract, meta = (DisableNativeTick))
+class ULyraBoundActionButton : public UCommonBoundActionButton
 {
 	GENERATED_BODY()
 	
 protected:
-	virtual void NativeConstruct() override;
+	UE_API virtual void NativeConstruct() override;
 
 private:
 	void HandleInputMethodChanged(ECommonInputType NewInputMethod);
@@ -32,3 +34,5 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Styles")
 	TSubclassOf<UCommonButtonStyle> TouchStyle;
 };
+
+#undef UE_API

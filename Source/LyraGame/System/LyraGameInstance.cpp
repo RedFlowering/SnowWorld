@@ -7,6 +7,7 @@
 #include "Components/GameFrameworkComponentManager.h"
 #include "HAL/IConsoleManager.h"
 #include "LyraGameplayTags.h"
+#include "Misc/Paths.h"
 #include "Player/LyraPlayerController.h"
 #include "Player/LyraLocalPlayer.h"
 #include "GameFramework/PlayerState.h"

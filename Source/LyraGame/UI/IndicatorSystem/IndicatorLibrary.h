@@ -6,20 +6,24 @@
 
 #include "IndicatorLibrary.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class AController;
 class ULyraIndicatorManagerComponent;
 class UObject;
 struct FFrame;
 
-UCLASS()
-class LYRAGAME_API UIndicatorLibrary : public UBlueprintFunctionLibrary
+UCLASS(MinimalAPI)
+class UIndicatorLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 
 public:
-	UIndicatorLibrary();
+	UE_API UIndicatorLibrary();
 	
 	/**  */
 	UFUNCTION(BlueprintCallable, Category = Indicator)
-	static ULyraIndicatorManagerComponent* GetIndicatorManagerComponent(AController* Controller);
+	static UE_API ULyraIndicatorManagerComponent* GetIndicatorManagerComponent(AController* Controller);
 };
+
+#undef UE_API

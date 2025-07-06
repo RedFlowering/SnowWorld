@@ -7,6 +7,8 @@
 
 #include "LyraPlayerStart.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class AController;
 class UObject;
 
@@ -22,27 +24,27 @@ enum class ELyraPlayerStartLocationOccupancy
  * 
  * Base player starts that can be used by a lot of modes.
  */
-UCLASS(Config = Game)
-class LYRAGAME_API ALyraPlayerStart : public APlayerStart
+UCLASS(MinimalAPI, Config = Game)
+class ALyraPlayerStart : public APlayerStart
 {
 	GENERATED_BODY()
 
 public:
-	ALyraPlayerStart(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	UE_API ALyraPlayerStart(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	const FGameplayTagContainer& GetGameplayTags() { return StartPointTags; }
 
-	ELyraPlayerStartLocationOccupancy GetLocationOccupancy(AController* const ControllerPawnToFit) const;
+	UE_API ELyraPlayerStartLocationOccupancy GetLocationOccupancy(AController* const ControllerPawnToFit) const;
 
 	/** Did this player start get claimed by a controller already? */
-	bool IsClaimed() const;
+	UE_API bool IsClaimed() const;
 
 	/** If this PlayerStart was not claimed, claim it for ClaimingController */
-	bool TryClaim(AController* OccupyingController);
+	UE_API bool TryClaim(AController* OccupyingController);
 
 protected:
 	/** Check if this PlayerStart is still claimed */
-	void CheckUnclaimed();
+	UE_API void CheckUnclaimed();
 
 	/** The controller that claimed this PlayerStart */
 	UPROPERTY(Transient)
@@ -59,3 +61,5 @@ protected:
 	/** Handle to track expiration recurring timer */
 	FTimerHandle ExpirationTimerHandle;
 };
+
+#undef UE_API

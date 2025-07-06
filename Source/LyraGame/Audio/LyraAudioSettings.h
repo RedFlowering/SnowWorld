@@ -12,7 +12,7 @@ class USoundEffectSubmixPreset;
 class USoundSubmix;
 
 USTRUCT()
-struct LYRAGAME_API FLyraSubmixEffectChainMap
+struct FLyraSubmixEffectChainMap
 {
 	GENERATED_BODY()
 
@@ -27,8 +27,8 @@ struct LYRAGAME_API FLyraSubmixEffectChainMap
 /**
  * 
  */
-UCLASS(config = Game, defaultconfig, meta = (DisplayName = "LyraAudioSettings"))
-class LYRAGAME_API ULyraAudioSettings : public UDeveloperSettings
+UCLASS(MinimalAPI, config = Game, defaultconfig, meta = (DisplayName = "LyraAudioSettings"))
+class ULyraAudioSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 

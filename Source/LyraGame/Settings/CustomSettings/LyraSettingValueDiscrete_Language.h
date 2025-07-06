@@ -6,33 +6,37 @@
 
 #include "LyraSettingValueDiscrete_Language.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class FText;
 class UObject;
 
-UCLASS()
-class LYRAGAME_API ULyraSettingValueDiscrete_Language : public UGameSettingValueDiscrete
+UCLASS(MinimalAPI)
+class ULyraSettingValueDiscrete_Language : public UGameSettingValueDiscrete
 {
 	GENERATED_BODY()
 	
 public:
 
-	ULyraSettingValueDiscrete_Language();
+	UE_API ULyraSettingValueDiscrete_Language();
 
 	/** UGameSettingValue */
-	virtual void StoreInitial() override;
-	virtual void ResetToDefault() override;
-	virtual void RestoreToInitial() override;
+	UE_API virtual void StoreInitial() override;
+	UE_API virtual void ResetToDefault() override;
+	UE_API virtual void RestoreToInitial() override;
 
 	/** UGameSettingValueDiscrete */
-	virtual void SetDiscreteOptionByIndex(int32 Index) override;
-	virtual int32 GetDiscreteOptionIndex() const override;
-	virtual TArray<FText> GetDiscreteOptions() const override;
+	UE_API virtual void SetDiscreteOptionByIndex(int32 Index) override;
+	UE_API virtual int32 GetDiscreteOptionIndex() const override;
+	UE_API virtual TArray<FText> GetDiscreteOptions() const override;
 
 protected:
 	/** UGameSettingValue */
-	virtual void OnInitialized() override;
-	virtual void OnApply() override;
+	UE_API virtual void OnInitialized() override;
+	UE_API virtual void OnApply() override;
 
 protected:
 	TArray<FString> AvailableCultureNames;
 };
+
+#undef UE_API

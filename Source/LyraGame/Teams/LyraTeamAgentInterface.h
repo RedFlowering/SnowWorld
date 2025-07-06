@@ -8,6 +8,8 @@
 #include "UObject/WeakObjectPtr.h"
 #include "LyraTeamAgentInterface.generated.h"
 
+#define UE_API LYRAGAME_API
+
 template <typename InterfaceType> class TScriptInterface;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnLyraTeamIndexChangedDelegate, UObject*, ObjectChangingTeam, int32, OldTeamID, int32, NewTeamID);
@@ -23,19 +25,19 @@ inline FGenericTeamId IntegerToGenericTeamId(int32 ID)
 }
 
 /** Interface for actors which can be associated with teams */
-UINTERFACE(meta=(CannotImplementInterfaceInBlueprint))
+UINTERFACE(MinimalAPI, meta=(CannotImplementInterfaceInBlueprint))
 class ULyraTeamAgentInterface : public UGenericTeamAgentInterface
 {
 	GENERATED_UINTERFACE_BODY()
 };
 
-class LYRAGAME_API ILyraTeamAgentInterface : public IGenericTeamAgentInterface
+class ILyraTeamAgentInterface : public IGenericTeamAgentInterface
 {
 	GENERATED_IINTERFACE_BODY()
 
 	virtual FOnLyraTeamIndexChangedDelegate* GetOnTeamIndexChangedDelegate() { return nullptr; }
 
-	static void ConditionalBroadcastTeamChanged(TScriptInterface<ILyraTeamAgentInterface> This, FGenericTeamId OldTeamID, FGenericTeamId NewTeamID);
+	static UE_API void ConditionalBroadcastTeamChanged(TScriptInterface<ILyraTeamAgentInterface> This, FGenericTeamId OldTeamID, FGenericTeamId NewTeamID);
 	
 	FOnLyraTeamIndexChangedDelegate& GetTeamChangedDelegateChecked()
 	{
@@ -44,3 +46,5 @@ class LYRAGAME_API ILyraTeamAgentInterface : public IGenericTeamAgentInterface
 		return *Result;
 	}
 };
+
+#undef UE_API

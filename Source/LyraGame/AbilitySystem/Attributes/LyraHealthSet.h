@@ -8,6 +8,8 @@
 
 #include "LyraHealthSet.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class UObject;
 struct FFrame;
 
@@ -26,14 +28,14 @@ struct FGameplayEffectModCallbackData;
  *	Class that defines attributes that are necessary for taking damage.
  *	Attribute examples include: health, shields, and resistances.
  */
-UCLASS(BlueprintType)
-class LYRAGAME_API ULyraHealthSet : public ULyraAttributeSet
+UCLASS(MinimalAPI, BlueprintType)
+class ULyraHealthSet : public ULyraAttributeSet
 {
 	GENERATED_BODY()
 
 public:
 
-	ULyraHealthSet();
+	UE_API ULyraHealthSet();
 
 	ATTRIBUTE_ACCESSORS(ULyraHealthSet, Health);
 	ATTRIBUTE_ACCESSORS(ULyraHealthSet, MaxHealth);
@@ -52,19 +54,19 @@ public:
 protected:
 
 	UFUNCTION()
-	void OnRep_Health(const FGameplayAttributeData& OldValue);
+	UE_API void OnRep_Health(const FGameplayAttributeData& OldValue);
 
 	UFUNCTION()
-	void OnRep_MaxHealth(const FGameplayAttributeData& OldValue);
+	UE_API void OnRep_MaxHealth(const FGameplayAttributeData& OldValue);
 
-	virtual bool PreGameplayEffectExecute(FGameplayEffectModCallbackData& Data) override;
-	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
+	UE_API virtual bool PreGameplayEffectExecute(FGameplayEffectModCallbackData& Data) override;
+	UE_API virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 
-	virtual void PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue) const override;
-	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
-	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
+	UE_API virtual void PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue) const override;
+	UE_API virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
+	UE_API virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
 
-	void ClampAttribute(const FGameplayAttribute& Attribute, float& NewValue) const;
+	UE_API void ClampAttribute(const FGameplayAttribute& Attribute, float& NewValue) const;
 
 private:
 
@@ -95,3 +97,5 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category="Lyra|Health", Meta=(HideFromModifiers, AllowPrivateAccess=true))
 	FGameplayAttributeData Damage;
 };
+
+#undef UE_API

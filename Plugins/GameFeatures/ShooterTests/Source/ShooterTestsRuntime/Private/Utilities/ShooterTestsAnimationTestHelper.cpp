@@ -2,8 +2,10 @@
 
 #include "ShooterTestsAnimationTestHelper.h"
 
+#include "Animation/AnimInstance.h"
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/AnimMontage.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "UObject/UObjectIterator.h"
 

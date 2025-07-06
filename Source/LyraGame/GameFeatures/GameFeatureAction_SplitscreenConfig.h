@@ -16,7 +16,7 @@ struct FWorldContext;
 // UGameFeatureAction_SplitscreenConfig
 
 /**
- * GameFeatureAction responsible for granting abilities (and attributes) to actors of a specified type.
+ * GameFeatureAction responsible for configuring Splitscreen.
  */
 UCLASS(MinimalAPI, meta = (DisplayName = "Splitscreen Config"))
 class UGameFeatureAction_SplitscreenConfig final : public UGameFeatureAction_WorldActionBase

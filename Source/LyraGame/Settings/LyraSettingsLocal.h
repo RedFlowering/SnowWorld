@@ -84,13 +84,53 @@ public:
 	DECLARE_EVENT(ULyraSettingsLocal, FPerfStatSettingsChanged);
 	FPerfStatSettingsChanged& OnPerfStatDisplayStateChanged() { return PerfStatSettingsChangedEvent; }
 
+	// Latency flash indicators
+	static bool DoesPlatformSupportLatencyMarkers();
+	
+	DECLARE_EVENT(ULyraSettingsLocal, FLatencyFlashInidicatorSettingChanged);
+	UFUNCTION()
+	void SetEnableLatencyFlashIndicators(const bool bNewVal);
+	UFUNCTION()
+	bool GetEnableLatencyFlashIndicators() const { return bEnableLatencyFlashIndicators; }
+	FLatencyFlashInidicatorSettingChanged& OnLatencyFlashInidicatorSettingsChangedEvent() { return LatencyFlashInidicatorSettingsChangedEvent; }
+
+	// Latency tracking stats
+	static bool DoesPlatformSupportLatencyTrackingStats();
+	
+	DECLARE_EVENT(ULyraSettingsLocal, FLatencyStatEnabledSettingChanged);
+	FLatencyStatEnabledSettingChanged& OnLatencyStatIndicatorSettingsChangedEvent() { return LatencyStatIndicatorSettingsChangedEvent; }
+	
+	UFUNCTION()
+	void SetEnableLatencyTrackingStats(const bool bNewVal);
+	UFUNCTION()
+	bool GetEnableLatencyTrackingStats() const { return bEnableLatencyTrackingStats; }
+
 private:
+
+	void ApplyLatencyTrackingStatSetting();
+	
 	// List of stats to display in the HUD
 	UPROPERTY(Config)
 	TMap<ELyraDisplayablePerformanceStat, ELyraStatDisplayMode> DisplayStatList;
 
 	// Event for display stat widget containers to bind to
 	FPerfStatSettingsChanged PerfStatSettingsChangedEvent;
+
+	// If true, enable latency flash markers which can be used to measure input latency.
+	UPROPERTY(Config)
+	bool bEnableLatencyFlashIndicators = false;
+
+	// Event for when the latency flash indicator setting had changed for player input to bind to.
+	FLatencyFlashInidicatorSettingChanged LatencyFlashInidicatorSettingsChangedEvent;
+
+	// Event for when the latency stats being toggled on or off has changed
+	FLatencyStatEnabledSettingChanged LatencyStatIndicatorSettingsChangedEvent;
+
+	// If true, then the game will track latency stats via ILatencyMarkerModule modules.
+	// This enables you to view some more latency oriented performance stats.
+	// The default value is set to true if the platform supports it, false otherwise.
+	UPROPERTY(Config)
+	bool bEnableLatencyTrackingStats;
 
 	//////////////////////////////////////////////////////////////////
 	// Brightness/Gamma

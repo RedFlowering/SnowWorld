@@ -44,7 +44,7 @@ struct FLyraHUDElementEntry
 // UGameFeatureAction_AddWidget
 
 /**
- * GameFeatureAction responsible for granting abilities (and attributes) to actors of a specified type.
+ * GameFeatureAction responsible for adding widgets.
  */
 UCLASS(MinimalAPI, meta = (DisplayName = "Add Widgets"))
 class UGameFeatureAction_AddWidgets final : public UGameFeatureAction_WorldActionBase

@@ -166,6 +166,4 @@ public:
 private:
 	/** Method to perform any of our axis based actions over the span of 5 seconds. */
 	void PerformAxisAction(TFunction<void(const APawn* Pawn)> Action);
-
-	FDateTime StartTime{ 0 };
 };

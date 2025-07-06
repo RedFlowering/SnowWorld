@@ -7,6 +7,8 @@
 
 #include "IndicatorDescriptor.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class SWidget;
 class UIndicatorDescriptor;
 class ULyraIndicatorManagerComponent;
@@ -33,8 +35,8 @@ enum class EActorCanvasProjectionMode : uint8
  * Describes and controls an active indicator.  It is highly recommended that your widget implements
  * IActorIndicatorWidget so that it can 'bind' to the associated data.
  */
-UCLASS(BlueprintType)
-class LYRAGAME_API UIndicatorDescriptor : public UObject
+UCLASS(MinimalAPI, BlueprintType)
+class UIndicatorDescriptor : public UObject
 {
 	GENERATED_BODY()
 	
@@ -182,10 +184,10 @@ public:
 
 public:
 	ULyraIndicatorManagerComponent* GetIndicatorManagerComponent() { return ManagerPtr.Get(); }
-	void SetIndicatorManagerComponent(ULyraIndicatorManagerComponent* InManager);
+	UE_API void SetIndicatorManagerComponent(ULyraIndicatorManagerComponent* InManager);
 	
 	UFUNCTION(BlueprintCallable)
-	void UnregisterIndicator();
+	UE_API void UnregisterIndicator();
 
 private:
 	UPROPERTY()
@@ -237,3 +239,5 @@ private:
 	TWeakPtr<SWidget> Content;
 	TWeakPtr<SWidget> CanvasHost;
 };
+
+#undef UE_API

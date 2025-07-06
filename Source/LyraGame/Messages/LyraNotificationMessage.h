@@ -14,7 +14,7 @@ class APlayerState;
 
 // A message destined for a transient log (e.g., an elimination feed or inventory pickup stream)
 USTRUCT(BlueprintType)
-struct LYRAGAME_API FLyraNotificationMessage
+struct FLyraNotificationMessage
 {
 	GENERATED_BODY()
 

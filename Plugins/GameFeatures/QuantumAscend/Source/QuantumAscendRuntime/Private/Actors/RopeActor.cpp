@@ -1,4 +1,4 @@
-// Copyright 2025 RedFlowering.
+// Copyright 2025 Snow Game Studio.
 
 #include "Actors/RopeActor.h"
 #include "CableComponent.h"

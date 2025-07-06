@@ -8,6 +8,8 @@
 
 #include "LyraContextEffectsInterface.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class UAnimSequenceBase;
 class UObject;
 class USceneComponent;
@@ -26,14 +28,14 @@ enum EEffectsContextMatchType: int
 /**
  *
  */
- UINTERFACE(Blueprintable)
- class LYRAGAME_API ULyraContextEffectsInterface : public UInterface
+ UINTERFACE(MinimalAPI, Blueprintable)
+ class ULyraContextEffectsInterface : public UInterface
  {
 	 GENERATED_BODY()
 
  };
  
- class LYRAGAME_API ILyraContextEffectsInterface : public IInterface
+ class ILyraContextEffectsInterface : public IInterface
  {
 	 GENERATED_BODY()
 
@@ -41,7 +43,7 @@ enum EEffectsContextMatchType: int
 
 	/** */
  	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	void AnimMotionEffect(const FName Bone
+	UE_API void AnimMotionEffect(const FName Bone
 		, const FGameplayTag MotionEffect
 		, USceneComponent* StaticMeshComponent
 		, const FVector LocationOffset
@@ -55,3 +57,4 @@ enum EEffectsContextMatchType: int
 		, float AudioPitch = 1);
  };
 
+#undef UE_API

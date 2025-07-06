@@ -7,6 +7,8 @@
 
 #include "LyraGameState.generated.h"
 
+#define UE_API LYRAGAME_API
+
 struct FLyraVerbMessage;
 
 class APlayerState;
@@ -21,30 +23,30 @@ struct FFrame;
  *
  *	The base game state class used by this project.
  */
-UCLASS(Config = Game)
-class LYRAGAME_API ALyraGameState : public AModularGameStateBase, public IAbilitySystemInterface
+UCLASS(MinimalAPI, Config = Game)
+class ALyraGameState : public AModularGameStateBase, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
 public:
 
-	ALyraGameState(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	UE_API ALyraGameState(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	//~AActor interface
-	virtual void PreInitializeComponents() override;
-	virtual void PostInitializeComponents() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-	virtual void Tick(float DeltaSeconds) override;
+	UE_API virtual void PreInitializeComponents() override;
+	UE_API virtual void PostInitializeComponents() override;
+	UE_API virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	UE_API virtual void Tick(float DeltaSeconds) override;
 	//~End of AActor interface
 
 	//~AGameStateBase interface
-	virtual void AddPlayerState(APlayerState* PlayerState) override;
-	virtual void RemovePlayerState(APlayerState* PlayerState) override;
-	virtual void SeamlessTravelTransitionCheckpoint(bool bToTransitionMap) override;
+	UE_API virtual void AddPlayerState(APlayerState* PlayerState) override;
+	UE_API virtual void RemovePlayerState(APlayerState* PlayerState) override;
+	UE_API virtual void SeamlessTravelTransitionCheckpoint(bool bToTransitionMap) override;
 	//~End of AGameStateBase interface
 
 	//~IAbilitySystemInterface
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	UE_API virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	//~End of IAbilitySystemInterface
 
 	// Gets the ability system component used for game wide things
@@ -54,21 +56,21 @@ public:
 	// Send a message that all clients will (probably) get
 	// (use only for client notifications like eliminations, server join messages, etc... that can handle being lost)
 	UFUNCTION(NetMulticast, Unreliable, BlueprintCallable, Category = "Lyra|GameState")
-	void MulticastMessageToClients(const FLyraVerbMessage Message);
+	UE_API void MulticastMessageToClients(const FLyraVerbMessage Message);
 
 	// Send a message that all clients will be guaranteed to get
 	// (use only for client notifications that cannot handle being lost)
 	UFUNCTION(NetMulticast, Reliable, BlueprintCallable, Category = "Lyra|GameState")
-	void MulticastReliableMessageToClients(const FLyraVerbMessage Message);
+	UE_API void MulticastReliableMessageToClients(const FLyraVerbMessage Message);
 
 	// Gets the server's FPS, replicated to clients
-	float GetServerFPS() const;
+	UE_API float GetServerFPS() const;
 
 	// Indicate the local player state is recording a replay
-	void SetRecorderPlayerState(APlayerState* NewPlayerState);
+	UE_API void SetRecorderPlayerState(APlayerState* NewPlayerState);
 
 	// Gets the player state that recorded the replay, if valid
-	APlayerState* GetRecorderPlayerState() const;
+	UE_API APlayerState* GetRecorderPlayerState() const;
 
 	// Delegate called when the replay player state changes
 	DECLARE_MULTICAST_DELEGATE_OneParam(FOnRecorderPlayerStateChanged, APlayerState*);
@@ -93,6 +95,8 @@ protected:
 	TObjectPtr<APlayerState> RecorderPlayerState;
 
 	UFUNCTION()
-	void OnRep_RecorderPlayerState();
+	UE_API void OnRep_RecorderPlayerState();
 
 };
+
+#undef UE_API

@@ -7,7 +7,7 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "LyraCameraMode.h"
-#include "RFSpringArmComponentBase.h"
+#include "BaseSpringArmComponent.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(LyraCameraComponent)
 
@@ -41,7 +41,7 @@ void ULyraCameraComponent::GetCameraView(float DeltaTime, FMinimalViewInfo& Desi
 
 	CameraModeStack->EvaluateStack(DeltaTime, CameraModeView, CameraModeArm);
 
-	if (URFSpringArmComponentBase* SpringArm = GetTargetActor()->FindComponentByClass<URFSpringArmComponentBase>())
+	if (UBaseSpringArmComponent* SpringArm = GetTargetActor()->FindComponentByClass<UBaseSpringArmComponent>())
 	{
 		SpringArm->TargetOffset = CameraModeArm.Location;
 		SpringArm->SetRelativeRotation(CameraModeArm.Rotation);

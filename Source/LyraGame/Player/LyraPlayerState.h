@@ -9,6 +9,8 @@
 
 #include "LyraPlayerState.generated.h"
 
+#define UE_API LYRAGAME_API
+
 struct FLyraVerbMessage;
 
 class AController;
@@ -45,48 +47,48 @@ enum class ELyraPlayerConnectionType : uint8
  *
  *	Base player state class used by this project.
  */
-UCLASS(Config = Game)
-class LYRAGAME_API ALyraPlayerState : public AModularPlayerState, public IAbilitySystemInterface, public ILyraTeamAgentInterface
+UCLASS(MinimalAPI, Config = Game)
+class ALyraPlayerState : public AModularPlayerState, public IAbilitySystemInterface, public ILyraTeamAgentInterface
 {
 	GENERATED_BODY()
 
 public:
-	ALyraPlayerState(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	UE_API ALyraPlayerState(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	UFUNCTION(BlueprintCallable, Category = "Lyra|PlayerState")
-	ALyraPlayerController* GetLyraPlayerController() const;
+	UE_API ALyraPlayerController* GetLyraPlayerController() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Lyra|PlayerState")
 	ULyraAbilitySystemComponent* GetLyraAbilitySystemComponent() const { return AbilitySystemComponent; }
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	UE_API virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 	template <class T>
 	const T* GetPawnData() const { return Cast<T>(PawnData); }
 
-	void SetPawnData(const ULyraPawnData* InPawnData);
+	UE_API void SetPawnData(const ULyraPawnData* InPawnData);
 
 	//~AActor interface
-	virtual void PreInitializeComponents() override;
-	virtual void PostInitializeComponents() override;
+	UE_API virtual void PreInitializeComponents() override;
+	UE_API virtual void PostInitializeComponents() override;
 	//~End of AActor interface
 
 	//~APlayerState interface
-	virtual void Reset() override;
-	virtual void ClientInitialize(AController* C) override;
-	virtual void CopyProperties(APlayerState* PlayerState) override;
-	virtual void OnDeactivated() override;
-	virtual void OnReactivated() override;
+	UE_API virtual void Reset() override;
+	UE_API virtual void ClientInitialize(AController* C) override;
+	UE_API virtual void CopyProperties(APlayerState* PlayerState) override;
+	UE_API virtual void OnDeactivated() override;
+	UE_API virtual void OnReactivated() override;
 	//~End of APlayerState interface
 
 	//~ILyraTeamAgentInterface interface
-	virtual void SetGenericTeamId(const FGenericTeamId& NewTeamID) override;
-	virtual FGenericTeamId GetGenericTeamId() const override;
-	virtual FOnLyraTeamIndexChangedDelegate* GetOnTeamIndexChangedDelegate() override;
+	UE_API virtual void SetGenericTeamId(const FGenericTeamId& NewTeamID) override;
+	UE_API virtual FGenericTeamId GetGenericTeamId() const override;
+	UE_API virtual FOnLyraTeamIndexChangedDelegate* GetOnTeamIndexChangedDelegate() override;
 	//~End of ILyraTeamAgentInterface interface
 
-	static const FName NAME_LyraAbilityReady;
+	static UE_API const FName NAME_LyraAbilityReady;
 
-	void SetPlayerConnectionType(ELyraPlayerConnectionType NewType);
+	UE_API void SetPlayerConnectionType(ELyraPlayerConnectionType NewType);
 	ELyraPlayerConnectionType GetPlayerConnectionType() const { return MyPlayerConnectionType; }
 
 	/** Returns the Squad ID of the squad the player belongs to. */
@@ -103,41 +105,41 @@ public:
 		return GenericTeamIdToInteger(MyTeamID);
 	}
 
-	void SetSquadID(int32 NewSquadID);
+	UE_API void SetSquadID(int32 NewSquadID);
 
 	// Adds a specified number of stacks to the tag (does nothing if StackCount is below 1)
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category=Teams)
-	void AddStatTagStack(FGameplayTag Tag, int32 StackCount);
+	UE_API void AddStatTagStack(FGameplayTag Tag, int32 StackCount);
 
 	// Removes a specified number of stacks from the tag (does nothing if StackCount is below 1)
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category=Teams)
-	void RemoveStatTagStack(FGameplayTag Tag, int32 StackCount);
+	UE_API void RemoveStatTagStack(FGameplayTag Tag, int32 StackCount);
 
 	// Returns the stack count of the specified tag (or 0 if the tag is not present)
 	UFUNCTION(BlueprintCallable, Category=Teams)
-	int32 GetStatTagStackCount(FGameplayTag Tag) const;
+	UE_API int32 GetStatTagStackCount(FGameplayTag Tag) const;
 
 	// Returns true if there is at least one stack of the specified tag
 	UFUNCTION(BlueprintCallable, Category=Teams)
-	bool HasStatTag(FGameplayTag Tag) const;
+	UE_API bool HasStatTag(FGameplayTag Tag) const;
 
 	// Send a message to just this player
 	// (use only for client notifications like accolades, quest toasts, etc... that can handle being occasionally lost)
 	UFUNCTION(Client, Unreliable, BlueprintCallable, Category = "Lyra|PlayerState")
-	void ClientBroadcastMessage(const FLyraVerbMessage Message);
+	UE_API void ClientBroadcastMessage(const FLyraVerbMessage Message);
 
 	// Gets the replicated view rotation of this player, used for spectating
-	FRotator GetReplicatedViewRotation() const;
+	UE_API FRotator GetReplicatedViewRotation() const;
 
 	// Sets the replicated view rotation, only valid on the server
-	void SetReplicatedViewRotation(const FRotator& NewRotation);
+	UE_API void SetReplicatedViewRotation(const FRotator& NewRotation);
 
 private:
-	void OnExperienceLoaded(const ULyraExperienceDefinition* CurrentExperience);
+	UE_API void OnExperienceLoaded(const ULyraExperienceDefinition* CurrentExperience);
 
 protected:
 	UFUNCTION()
-	void OnRep_PawnData();
+	UE_API void OnRep_PawnData();
 
 protected:
 
@@ -177,8 +179,10 @@ private:
 
 private:
 	UFUNCTION()
-	void OnRep_MyTeamID(FGenericTeamId OldTeamID);
+	UE_API void OnRep_MyTeamID(FGenericTeamId OldTeamID);
 
 	UFUNCTION()
-	void OnRep_MySquadID();
+	UE_API void OnRep_MySquadID();
 };
+
+#undef UE_API

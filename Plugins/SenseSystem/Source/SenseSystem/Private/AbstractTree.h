@@ -341,7 +341,7 @@ public:
 	IndexQtType Self_ID = MaxIndexQt;
 	IndexQtType Parent = MaxIndexQt;
 
-	uint16 ContainsCount = 0;
+	int32 ContainsCount = 0;
 	BoxType TreeBox;
 	TArray<ElementNodeType, TInlineAllocator<InlineNodeNum>> Nodes; // 16 + InlineAllocator aligned
 
@@ -461,23 +461,24 @@ public:
 
 /** Tree Base */
 template<
-	typename ElementType,		   //
-	typename PointType,			   //
-	typename IndexQtType = uint16, //
-	uint32 DimensionSize = 2U>	   //
+	typename ElementType,			   //
+	typename PointType,				   //
+	typename ElementIndexType = int32, //
+	typename IndexQtType = int32,	   //
+	uint32 DimensionSize = 2U>		   //
 class TTree_Base
 {
 public:
-	static constexpr uint32 InlineAllocatorSize = //
-		(DimensionSize == 2U)					  //
-		? (std::is_same_v<IndexQtType, uint32>	  //
+	static constexpr uint32 InlineAllocatorSize =									 //
+		(DimensionSize == 2U)														 //
+		? (std::is_same_v<IndexQtType, uint32> || std::is_same_v<IndexQtType, int32> //
 			   ? 28U
-			   : (std::is_same_v<IndexQtType, uint16> ? 36U : 0U)) //
-		: (std::is_same_v<IndexQtType, uint32>					   //
+			   : (std::is_same_v<IndexQtType, uint16> ? 36U : 0U))					 //
+		: (std::is_same_v<IndexQtType, uint32> || std::is_same_v<IndexQtType, int32> //
 			   ? 10U
 			   : (std::is_same_v<IndexQtType, uint16> ? 24U : 0U));
 
-	using TreeElementIdxType = uint16;
+	using TreeElementIdxType = ElementIndexType;
 	using TreeNodeType = TTreeNode<TreeElementIdxType, IndexQtType, PointType, DimensionSize, InlineAllocatorSize>;
 	using BoxType = typename TreeNodeType::BoxType;
 	using Real = typename PointType::FReal;
@@ -720,9 +721,9 @@ public:
 	}
 
 
-	void Update(const uint16 ObjID, const VectorOrBox New)
+	void Update(const TreeElementIdxType ObjID, const VectorOrBox New)
 	{
-		check(ObjID != MAX_uint16);
+		check(ObjID != TNumericLimits<TreeElementIdxType>::Max());
 		check(IsValidRoot());
 		const auto& Old = GetElementBox(ObjID);
 
@@ -767,10 +768,10 @@ public:
 		}
 	}
 
-	void Remove(const uint16 ObjID)
+	void Remove(const TreeElementIdxType ObjID)
 	{
 		check(IsValidRoot());
-		check(ObjID != MAX_uint16);
+		check(ObjID != TNumericLimits<TreeElementIdxType>::Max());
 
 #if WITH_EDITOR
 		check(GetRootBox().IsInside(GetElementBox(ObjID)));
@@ -830,18 +831,18 @@ public:
 		if (IsValidRoot() && GetRootBox().IsIntersect(Box))
 		{
 			const IndexQtType MaxIntersect = GetMaxIntersectTree_Internal(Root, Box);
-			if (MaxIntersect != MAX_uint16)
+			if (MaxIntersect != TNumericLimits<IndexQtType>::Max())
 			{
 				return MaxIntersect;
 			}
 		}
-		return MAX_uint16;
+		return TNumericLimits<IndexQtType>::Max();
 	}
 
 	TreeElementIdxType FindNearest(const TreeElementIdxType ObjID) const
 	{
 		check(IsValidRoot());
-		check(ObjID != MAX_uint16);
+		check(ObjID != TNumericLimits<TreeElementIdxType>::Max());
 
 		IndexQtType TreeIdx = GetElementTreeID(ObjID);
 		while (Pool[TreeIdx].Num() - 1 <= 0) //self exclude
@@ -851,7 +852,7 @@ public:
 
 		const auto& V = GetElement(ObjID);
 		Real MinVal = MAX_flt;
-		uint16 MinIdx = MaxIndexQt;
+		TreeElementIdxType MinIdx = TNumericLimits<TreeElementIdxType>::Max();
 
 		auto FindNearestLambda = [&](const TreeElementIdxType Idx)
 		{
@@ -1524,7 +1525,7 @@ private:
 		return Self_ID;
 	}
 
-	//auto Lambda = [](TreeElementIdxType& Obj) {  uint16 do some; }
+	//auto Lambda = [](TreeElementIdxType& Obj) {  idx do some; }
 	template<typename CallLambdaType = TFunctionRef<void(TreeElementIdxType)>>
 	void CallChildLambdaIdx_Recursive(const IndexQtType Self_ID, CallLambdaType CallLambda, const BoxType& Box) const
 	{

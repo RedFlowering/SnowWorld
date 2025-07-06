@@ -49,8 +49,10 @@ void FShooterTestsPawnTestActions::RotateRight()
 
 void FShooterTestsPawnTestActions::PerformAxisAction(TFunction<void(const APawn* Pawn)> Action)
 {
+	FDateTime StartTime{ 0 };
+
 	// Perform move actions over the duration of 5 seconds
-	PerformAction(Action, [this]() -> bool {
+	PerformAction(Action, [this, StartTime]() mutable -> bool {
 		if (StartTime.GetTicks() == 0)
 		{
 			StartTime = FDateTime::UtcNow();

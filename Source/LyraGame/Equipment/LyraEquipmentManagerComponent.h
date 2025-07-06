@@ -8,6 +8,8 @@
 
 #include "LyraEquipmentManagerComponent.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class UActorComponent;
 class ULyraAbilitySystemComponent;
 class ULyraEquipmentDefinition;
@@ -109,38 +111,38 @@ struct TStructOpsTypeTraits<FLyraEquipmentList> : public TStructOpsTypeTraitsBas
 /**
  * Manages equipment applied to a pawn
  */
-UCLASS(BlueprintType, Const)
-class LYRAGAME_API ULyraEquipmentManagerComponent : public UPawnComponent
+UCLASS(MinimalAPI, BlueprintType, Const)
+class ULyraEquipmentManagerComponent : public UPawnComponent
 {
 	GENERATED_BODY()
 
 public:
-	ULyraEquipmentManagerComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	UE_API ULyraEquipmentManagerComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
-	ULyraEquipmentInstance* EquipItem(TSubclassOf<ULyraEquipmentDefinition> EquipmentDefinition);
+	UE_API ULyraEquipmentInstance* EquipItem(TSubclassOf<ULyraEquipmentDefinition> EquipmentDefinition);
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
-	void UnequipItem(ULyraEquipmentInstance* ItemInstance);
+	UE_API void UnequipItem(ULyraEquipmentInstance* ItemInstance);
 
 	//~UObject interface
-	virtual bool ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
+	UE_API virtual bool ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 	//~End of UObject interface
 
 	//~UActorComponent interface
 	//virtual void EndPlay() override;
-	virtual void InitializeComponent() override;
-	virtual void UninitializeComponent() override;
-	virtual void ReadyForReplication() override;
+	UE_API virtual void InitializeComponent() override;
+	UE_API virtual void UninitializeComponent() override;
+	UE_API virtual void ReadyForReplication() override;
 	//~End of UActorComponent interface
 
 	/** Returns the first equipped instance of a given type, or nullptr if none are found */
 	UFUNCTION(BlueprintCallable, BlueprintPure)
-	ULyraEquipmentInstance* GetFirstInstanceOfType(TSubclassOf<ULyraEquipmentInstance> InstanceType);
+	UE_API ULyraEquipmentInstance* GetFirstInstanceOfType(TSubclassOf<ULyraEquipmentInstance> InstanceType);
 
  	/** Returns all equipped instances of a given type, or an empty array if none are found */
  	UFUNCTION(BlueprintCallable, BlueprintPure)
-	TArray<ULyraEquipmentInstance*> GetEquipmentInstancesOfType(TSubclassOf<ULyraEquipmentInstance> InstanceType) const;
+	UE_API TArray<ULyraEquipmentInstance*> GetEquipmentInstancesOfType(TSubclassOf<ULyraEquipmentInstance> InstanceType) const;
 
 	template <typename T>
 	T* GetFirstInstanceOfType()
@@ -152,3 +154,5 @@ private:
 	UPROPERTY(Replicated)
 	FLyraEquipmentList EquipmentList;
 };
+
+#undef UE_API

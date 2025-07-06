@@ -76,7 +76,7 @@ void ULyraCameraMode_ThirdPerson::UpdateForTarget(float DeltaTime)
 
 	if (const ACharacter* TargetCharacter = Cast<ACharacter>(GetTargetActor()))
 	{
-		if (TargetCharacter->bIsCrouched)
+		if (TargetCharacter->IsCrouched())
 		{
 			const ACharacter* TargetCharacterCDO = TargetCharacter->GetClass()->GetDefaultObject<ACharacter>();
 			const float CrouchedHeightAdjustment = TargetCharacterCDO->CrouchedEyeHeight - TargetCharacterCDO->BaseEyeHeight;

@@ -6,6 +6,8 @@
 
 #include "LyraWeaponSpawner.generated.h"
 
+#define UE_API LYRAGAME_API
+
 namespace EEndPlayReason { enum Type : int; }
 
 class APawn;
@@ -19,25 +21,25 @@ struct FFrame;
 struct FGameplayTag;
 struct FHitResult;
 
-UCLASS(Blueprintable,BlueprintType)
-class LYRAGAME_API ALyraWeaponSpawner : public AActor
+UCLASS(MinimalAPI, Blueprintable,BlueprintType)
+class ALyraWeaponSpawner : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	ALyraWeaponSpawner();
+	UE_API ALyraWeaponSpawner();
 
 protected:
 	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	UE_API virtual void BeginPlay() override;
+	UE_API virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:	
 	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	UE_API virtual void Tick(float DeltaTime) override;
 
-	void OnConstruction(const FTransform& Transform) override;
+	UE_API void OnConstruction(const FTransform& Transform) override;
 
 protected:
 	//Data asset used to configure a Weapon Spawner
@@ -78,37 +80,39 @@ public:
 	FTimerHandle CheckOverlapsDelayTimerHandle;
 
 	UFUNCTION()
-	void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepHitResult);
+	UE_API void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepHitResult);
 
 	//Check for pawns standing on pad when the weapon is spawned. 
-	void CheckForExistingOverlaps();
+	UE_API void CheckForExistingOverlaps();
 
 	UFUNCTION(BlueprintNativeEvent)
-	void AttemptPickUpWeapon(APawn* Pawn);
+	UE_API void AttemptPickUpWeapon(APawn* Pawn);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Lyra|WeaponPickup")
-	bool GiveWeapon(TSubclassOf<ULyraInventoryItemDefinition> WeaponItemClass, APawn* ReceivingPawn);
+	UE_API bool GiveWeapon(TSubclassOf<ULyraInventoryItemDefinition> WeaponItemClass, APawn* ReceivingPawn);
 
-	void StartCoolDown();
+	UE_API void StartCoolDown();
 
 	UFUNCTION(BlueprintCallable, Category = "Lyra|WeaponPickup")
-	void ResetCoolDown();
+	UE_API void ResetCoolDown();
 
 	UFUNCTION()
-	void OnCoolDownTimerComplete();
+	UE_API void OnCoolDownTimerComplete();
 
-	void SetWeaponPickupVisibility(bool bShouldBeVisible);
-
-	UFUNCTION(BlueprintNativeEvent, Category = "Lyra|WeaponPickup")
-	void PlayPickupEffects();
+	UE_API void SetWeaponPickupVisibility(bool bShouldBeVisible);
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Lyra|WeaponPickup")
-	void PlayRespawnEffects();
+	UE_API void PlayPickupEffects();
+
+	UFUNCTION(BlueprintNativeEvent, Category = "Lyra|WeaponPickup")
+	UE_API void PlayRespawnEffects();
 
 	UFUNCTION()
-	void OnRep_WeaponAvailability();
+	UE_API void OnRep_WeaponAvailability();
 
 	/** Searches an item definition type for a matching stat and returns the value, or 0 if not found */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Lyra|WeaponPickup")
-	static int32 GetDefaultStatFromItemDef(const TSubclassOf<ULyraInventoryItemDefinition> WeaponItemClass, FGameplayTag StatTag);
+	static UE_API int32 GetDefaultStatFromItemDef(const TSubclassOf<ULyraInventoryItemDefinition> WeaponItemClass, FGameplayTag StatTag);
 };
+
+#undef UE_API

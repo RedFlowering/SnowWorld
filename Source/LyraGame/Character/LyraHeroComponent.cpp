@@ -251,7 +251,7 @@ void ULyraHeroComponent::InitializePlayerInput(UInputComponent* PlayerInputCompo
 			{
 				for (const FInputMappingContextAndPriority& Mapping : DefaultInputMappings)
 				{
-					if (UInputMappingContext* IMC = Mapping.InputMapping.Get())
+					if (UInputMappingContext* IMC = Mapping.InputMapping.LoadSynchronous())
 					{
 						if (Mapping.bRegisterWithSettings)
 						{
@@ -395,7 +395,7 @@ void ULyraHeroComponent::Input_Move(const FInputActionValue& InputActionValue)
 
 		if (Value.Y != 0.0f)
 		{
-			const FVector MovementDirection = MovementRotation.RotateVector(FVector::UpVector);
+			const FVector MovementDirection = MovementRotation.RotateVector(FVector::ForwardVector);
 			Pawn->AddMovementInput(MovementDirection, Value.Y);
 		}
 	}

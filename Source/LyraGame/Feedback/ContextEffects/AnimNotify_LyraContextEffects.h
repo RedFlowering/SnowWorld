@@ -8,11 +8,13 @@
 #include "Engine/EngineTypes.h"
 #include "AnimNotify_LyraContextEffects.generated.h"
 
+#define UE_API LYRAGAME_API
+
 /**
  *
  */
 USTRUCT(BlueprintType)
-struct LYRAGAME_API FLyraContextEffectAnimNotifyVFXSettings
+struct FLyraContextEffectAnimNotifyVFXSettings
 {
 	GENERATED_BODY()
 
@@ -26,7 +28,7 @@ struct LYRAGAME_API FLyraContextEffectAnimNotifyVFXSettings
  *
  */
 USTRUCT(BlueprintType)
-struct LYRAGAME_API FLyraContextEffectAnimNotifyAudioSettings
+struct FLyraContextEffectAnimNotifyAudioSettings
 {
 	GENERATED_BODY()
 
@@ -44,7 +46,7 @@ struct LYRAGAME_API FLyraContextEffectAnimNotifyAudioSettings
  *
  */
 USTRUCT(BlueprintType)
-struct LYRAGAME_API FLyraContextEffectAnimNotifyTraceSettings
+struct FLyraContextEffectAnimNotifyTraceSettings
 {
 	GENERATED_BODY()
 
@@ -65,7 +67,7 @@ struct LYRAGAME_API FLyraContextEffectAnimNotifyTraceSettings
  *
  */
 USTRUCT(BlueprintType)
-struct LYRAGAME_API FLyraContextEffectAnimNotifyPreviewSettings
+struct FLyraContextEffectAnimNotifyPreviewSettings
 {
 	GENERATED_BODY()
 
@@ -90,32 +92,32 @@ struct LYRAGAME_API FLyraContextEffectAnimNotifyPreviewSettings
 /**
  * 
  */
-UCLASS(const, hidecategories=Object, CollapseCategories, Config = Game, meta=(DisplayName="Play Context Effects"))
-class LYRAGAME_API UAnimNotify_LyraContextEffects : public UAnimNotify
+UCLASS(MinimalAPI, const, hidecategories=Object, CollapseCategories, Config = Game, meta=(DisplayName="Play Context Effects"))
+class UAnimNotify_LyraContextEffects : public UAnimNotify
 {
 	GENERATED_BODY()
 
 public:
-	UAnimNotify_LyraContextEffects();
+	UE_API UAnimNotify_LyraContextEffects();
 
 	// Begin UObject interface
-	virtual void PostLoad() override;
+	UE_API virtual void PostLoad() override;
 #if WITH_EDITOR
-	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+	UE_API virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 	// End UObject interface
 
 	// Begin UAnimNotify interface
-	virtual FString GetNotifyName_Implementation() const override;
-	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference) override;
+	UE_API virtual FString GetNotifyName_Implementation() const override;
+	UE_API virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference) override;
 #if WITH_EDITOR
-	virtual void ValidateAssociatedAssets() override;
+	UE_API virtual void ValidateAssociatedAssets() override;
 #endif
 	// End UAnimNotify interface
 
 #if WITH_EDITOR
 	UFUNCTION(BlueprintCallable)
-	void SetParameters(FGameplayTag EffectIn, FVector LocationOffsetIn, FRotator RotationOffsetIn, 
+	UE_API void SetParameters(FGameplayTag EffectIn, FVector LocationOffsetIn, FRotator RotationOffsetIn, 
 		FLyraContextEffectAnimNotifyVFXSettings VFXPropertiesIn, FLyraContextEffectAnimNotifyAudioSettings AudioPropertiesIn,
 		bool bAttachedIn, FName SocketNameIn, bool bPerformTraceIn, FLyraContextEffectAnimNotifyTraceSettings TracePropertiesIn);
 #endif
@@ -167,3 +169,5 @@ public:
 
 
 };
+
+#undef UE_API

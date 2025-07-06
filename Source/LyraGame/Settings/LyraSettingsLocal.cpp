@@ -2,16 +2,14 @@
 
 #include "LyraSettingsLocal.h"
 #include "Engine/Engine.h"
-#include "EnhancedActionKeyMapping.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Engine/World.h"
 #include "Misc/App.h"
 #include "CommonInputSubsystem.h"
 #include "GenericPlatform/GenericPlatformFramePacer.h"
 #include "Player/LyraLocalPlayer.h"
+#include "Performance/LatencyMarkerModule.h"
 #include "Performance/LyraPerformanceStatTypes.h"
-#include "PlayerMappableInputConfig.h"
-#include "EnhancedInputSubsystems.h"
 #include "ICommonUIModule.h"
 #include "CommonUISettings.h"
 #include "SoundControlBusMix.h"
@@ -25,11 +23,16 @@
 #include "AudioModulationStatics.h"
 #include "Audio/LyraAudioSettings.h"
 #include "Audio/LyraAudioMixEffectsSubsystem.h"
-#include "EnhancedActionKeyMapping.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(LyraSettingsLocal)
 
 UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Platform_Trait_BinauralSettingControlledByOS, "Platform.Trait.BinauralSettingControlledByOS");
+
+namespace PerfStatTags
+{
+	UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Platform_Trait_SupportsLatencyStats, "Platform.Trait.SupportsLatencyStats");
+	UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Platform_Trait_SupportsLatencyMarkers, "Platform.Trait.SupportsLatencyMarkers");
+}
 
 //////////////////////////////////////////////////////////////////////
 
@@ -335,7 +338,6 @@ namespace LyraSettingsHelpers
 
 //////////////////////////////////////////////////////////////////////
 
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
 ULyraSettingsLocal::ULyraSettingsLocal()
 {
 	if (!HasAnyFlags(RF_ClassDefaultObject) && FSlateApplication::IsInitialized())
@@ -343,9 +345,10 @@ ULyraSettingsLocal::ULyraSettingsLocal()
 		OnApplicationActivationStateChangedHandle = FSlateApplication::Get().OnApplicationActivationStateChanged().AddUObject(this, &ThisClass::OnAppActivationStateChanged);
 	}
 
+	bEnableScalabilitySettings = ULyraPlatformSpecificRenderingSettings::Get()->bSupportsGranularVideoQualitySettings;
+
 	SetToDefaults();
 }
-PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void ULyraSettingsLocal::SetToDefaults()
 {
@@ -354,6 +357,7 @@ void ULyraSettingsLocal::SetToDefaults()
 	bUseHeadphoneMode = false;
 	bUseHDRAudioMode = false;
 	bSoundControlBusMixLoaded = false;
+	bEnableLatencyTrackingStats = ULyraSettingsLocal::DoesPlatformSupportLatencyTrackingStats();
 
 	const ULyraPlatformSpecificRenderingSettings* PlatformSettings = ULyraPlatformSpecificRenderingSettings::Get();
 	UserChosenDeviceProfileSuffix = PlatformSettings->DefaultDeviceProfileSuffix;
@@ -382,6 +386,7 @@ void ULyraSettingsLocal::LoadSettings(bool bForceReload)
 	bDesiredHeadphoneMode = bUseHeadphoneMode;
 	SetHeadphoneModeEnabled(bUseHeadphoneMode);
 
+	ApplyLatencyTrackingStatSetting();
 
 	DesiredUserChosenDeviceProfileSuffix = UserChosenDeviceProfileSuffix;
 
@@ -580,6 +585,67 @@ void ULyraSettingsLocal::SetPerfStatDisplayState(ELyraDisplayablePerformanceStat
 		DisplayStatList.FindOrAdd(Stat) = DisplayMode;
 	}
 	PerfStatSettingsChangedEvent.Broadcast();
+}
+
+bool ULyraSettingsLocal::DoesPlatformSupportLatencyMarkers()
+{
+	return ICommonUIModule::GetSettings().GetPlatformTraits().HasTag(PerfStatTags::TAG_Platform_Trait_SupportsLatencyMarkers);
+}
+
+void ULyraSettingsLocal::SetEnableLatencyFlashIndicators(const bool bNewVal)
+{
+	if (bNewVal != bEnableLatencyFlashIndicators)
+	{
+		bEnableLatencyFlashIndicators = bNewVal;
+		LatencyFlashInidicatorSettingsChangedEvent.Broadcast();
+	}	
+}
+
+void ULyraSettingsLocal::SetEnableLatencyTrackingStats(const bool bNewVal)
+{
+	if (bNewVal != bEnableLatencyTrackingStats)
+	{
+		bEnableLatencyTrackingStats = bNewVal;
+
+		ApplyLatencyTrackingStatSetting();
+
+		LatencyStatIndicatorSettingsChangedEvent.Broadcast();
+	}
+}
+
+void ULyraSettingsLocal::ApplyLatencyTrackingStatSetting()
+{
+	// Since this function will be called on load of the settings, we check if the slate app is initalized.
+	// If it isn't then we are not in a target which can even have latency stats (like a headless cooker) so we
+	// will exit early and do nothing.
+	if (!FSlateApplication::IsInitialized())
+	{
+		return;
+	}
+	
+	// Don't bother doing anything if the platform doesn't even support tracking stats.
+	if (!DoesPlatformSupportLatencyTrackingStats())
+	{
+		return;
+	}
+	
+	// Actually enable or disable the latency marker modules based on this setting
+	TArray<ILatencyMarkerModule*> LatencyMarkerModules = IModularFeatures::Get().GetModularFeatureImplementations<ILatencyMarkerModule>(ILatencyMarkerModule::GetModularFeatureName());
+	for (ILatencyMarkerModule* LatencyMarkerModule : LatencyMarkerModules)
+	{
+		LatencyMarkerModule->SetEnabled(bEnableLatencyTrackingStats);
+	}
+
+	UE_CLOG(!LatencyMarkerModules.IsEmpty(),
+		LogConsoleResponse,
+		Log,
+		TEXT("%s %d Latency Marker Module(s)"),
+		bEnableLatencyTrackingStats ? TEXT("Enabled") : TEXT("Disabled"), LatencyMarkerModules.Num());
+}
+
+bool ULyraSettingsLocal::DoesPlatformSupportLatencyTrackingStats()
+{
+	return ICommonUIModule::GetSettings().GetPlatformTraits().HasTag(PerfStatTags::TAG_Platform_Trait_SupportsLatencyStats);
 }
 
 float ULyraSettingsLocal::GetDisplayGamma() const
@@ -923,6 +989,7 @@ void ULyraSettingsLocal::RunAutoBenchmark(bool bSaveImmediately)
 	
 	// Always apply, optionally save
 	ApplyScalabilitySettings();
+	ApplyLatencyTrackingStatSetting();
 
 	if (bSaveImmediately)
 	{
@@ -1522,6 +1589,13 @@ void ULyraSettingsLocal::UpdateGameModeDeviceProfileAndFps()
 					{
 						UE_LOG(LogConsoleResponse, Log, TEXT("Overriding device profile to %s"), *ActualProfileToApply);
 						Manager.SetOverrideDeviceProfile(NewDeviceProfile);
+
+						if (!bEnableScalabilitySettings)
+						{
+							// We don't support persistence of the scalability settings but at least we may
+							// provide up to date values if anybody queries them using the settings API.
+							ScalabilityQuality = Scalability::GetQualityLevels();
+						}
 					}
 				}
 			}

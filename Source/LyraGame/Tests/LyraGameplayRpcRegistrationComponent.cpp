@@ -4,6 +4,7 @@
 #include "Player/LyraPlayerController.h"
 #include "Character/LyraPawn.h"
 #include "Player/LyraPlayerState.h"
+#include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/GameInstance.h"
 #include "Misc/CommandLine.h"

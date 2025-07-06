@@ -26,6 +26,7 @@ public class TopDownArenaRuntime : ModuleRules
 			new string[]
 			{
 				"Core",
+				"ALS",
 				"LyraGame",
 				// ... add other public dependencies that you statically link with here ...
 			}

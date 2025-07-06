@@ -6,6 +6,8 @@
 
 #include "LyraRuntimeOptions.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class UObject;
 struct FFrame;
 
@@ -22,16 +24,18 @@ struct FFrame;
  *
  * Variables are registered with the console under the 'ro' namespace. E.g. ro.bDisableSomething
  */
-UCLASS(config = RuntimeOptions, BlueprintType)
-class LYRAGAME_API ULyraRuntimeOptions : public URuntimeOptionsBase
+UCLASS(MinimalAPI, config = RuntimeOptions, BlueprintType)
+class ULyraRuntimeOptions : public URuntimeOptionsBase
 {
 	GENERATED_BODY()
 
 public:
-	static const ULyraRuntimeOptions& Get();
+	static UE_API const ULyraRuntimeOptions& Get();
 
-	ULyraRuntimeOptions();
+	UE_API ULyraRuntimeOptions();
 
 	UFUNCTION(BlueprintPure, Category = Options)
-	static ULyraRuntimeOptions* GetRuntimeOptions();
+	static UE_API ULyraRuntimeOptions* GetRuntimeOptions();
 };
+
+#undef UE_API

@@ -6,6 +6,8 @@
 
 #include "LyraGameData.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class UGameplayEffect;
 class UObject;
 
@@ -14,17 +16,17 @@ class UObject;
  *
  *	Non-mutable data asset that contains global game data.
  */
-UCLASS(BlueprintType, Const, Meta = (DisplayName = "Lyra Game Data", ShortTooltip = "Data asset containing global game data."))
-class LYRAGAME_API ULyraGameData : public UPrimaryDataAsset
+UCLASS(MinimalAPI, BlueprintType, Const, Meta = (DisplayName = "Lyra Game Data", ShortTooltip = "Data asset containing global game data."))
+class ULyraGameData : public UPrimaryDataAsset
 {
 	GENERATED_BODY()
 
 public:
 
-	ULyraGameData();
+	UE_API ULyraGameData();
 
 	// Returns the loaded game data.
-	static const ULyraGameData& Get();
+	static UE_API const ULyraGameData& Get();
 
 public:
 
@@ -40,3 +42,5 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Default Gameplay Effects")
 	TSoftClassPtr<UGameplayEffect> DynamicTagGameplayEffect;
 };
+
+#undef UE_API

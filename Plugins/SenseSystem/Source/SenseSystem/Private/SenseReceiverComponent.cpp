@@ -763,9 +763,9 @@ USenseManager* USenseReceiverComponent::GetSenseManager() const
 
 /************************************/
 
-void USenseReceiverComponent::BindOnReportStimulusEvent(const uint16 StimulusID, const FName SensorTag)
+void USenseReceiverComponent::BindOnReportStimulusEvent(const int32 StimulusID, const FName SensorTag)
 {
-	if (bEnableSenseReceiver && SensorTag != NAME_None && StimulusID != MAX_uint16 && IsValid(this))
+	if (bEnableSenseReceiver && SensorTag != NAME_None && StimulusID != TNumericLimits<ElementIndexType>::Max() && IsValid(this))
 	{
 		for (UPassiveSensor* const It : PassiveSensors)
 		{
@@ -1222,6 +1222,7 @@ void USenseReceiverComponent::RestoreSensorTestDefaults(TArray<FSenseSysRestoreO
 	{
 		UObject* Obj = NewObject<UObject>(this, It.Class, It.ObjectName, Flags, It.DefaultObject);
 		TArray<TObjectPtr<USensorBase>> SensorsArr = GetSensorsByType(It.SensorType);
+
 		switch (It.SensorType)
 		{
 			case ESensorType::None:

@@ -5,6 +5,8 @@
 #include "CommonUserWidget.h"
 #include "LyraSimulatedInputWidget.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class UEnhancedInputLocalPlayerSubsystem;
 class UInputAction;
 class UCommonHardwareVisibilityBorder;
@@ -14,33 +16,33 @@ class UEnhancedPlayerInput;
  *  A UMG widget with base functionality to inject input (keys or input actions)
  *  to the enhanced input subsystem.
  */
-UCLASS(meta=( DisplayName="Lyra Simulated Input Widget" ))
-class LYRAGAME_API ULyraSimulatedInputWidget : public UCommonUserWidget
+UCLASS(MinimalAPI, meta=( DisplayName="Lyra Simulated Input Widget" ))
+class ULyraSimulatedInputWidget : public UCommonUserWidget
 {
 	GENERATED_BODY()
 	
 public:
 	
-	ULyraSimulatedInputWidget(const FObjectInitializer& ObjectInitializer);
+	UE_API ULyraSimulatedInputWidget(const FObjectInitializer& ObjectInitializer);
 	
 	//~ Begin UWidget
 #if WITH_EDITOR
-	virtual const FText GetPaletteCategory() override;
+	UE_API virtual const FText GetPaletteCategory() override;
 #endif
 	//~ End UWidget interface
 
 	//~ Begin UUserWidget
-	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
-	virtual FReply NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
+	UE_API virtual void NativeConstruct() override;
+	UE_API virtual void NativeDestruct() override;
+	UE_API virtual FReply NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
 	//~ End UUserWidget interface
 	
 	/** Get the enhanced input subsystem based on the owning local player of this widget. Will return null if there is no owning player */
 	UFUNCTION(BlueprintCallable)
-	UEnhancedInputLocalPlayerSubsystem* GetEnhancedInputSubsystem() const;
+	UE_API UEnhancedInputLocalPlayerSubsystem* GetEnhancedInputSubsystem() const;
 
 	/** Get the current player input from the current input subsystem */
-	UEnhancedPlayerInput* GetPlayerInput() const;
+	UE_API UEnhancedPlayerInput* GetPlayerInput() const;
 
 	/**  */
 	UFUNCTION(BlueprintCallable)
@@ -55,26 +57,26 @@ public:
 	 * This calls "InputKey" on the current player.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void InputKeyValue(const FVector& Value);
+	UE_API void InputKeyValue(const FVector& Value);
 
 	/**
 	 * Injects the given vector as an input to the current simulated key.
 	 * This calls "InputKey" on the current player.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void InputKeyValue2D(const FVector2D& Value);
+	UE_API void InputKeyValue2D(const FVector2D& Value);
 
 	UFUNCTION(BlueprintCallable)
-	void FlushSimulatedInput();
+	UE_API void FlushSimulatedInput();
 	
 protected:
 
 	/** Set the KeyToSimulate based on a query from enhanced input about what keys are mapped to the associated action */
-	void QueryKeyToSimulate();
+	UE_API void QueryKeyToSimulate();
 
 	/** Called whenever control mappings change, so we have a chance to adapt our own keys */
 	UFUNCTION()
-	void OnControlMappingsRebuilt();
+	UE_API void OnControlMappingsRebuilt();
 
 	/** The common visibility border will allow you to specify UI for only specific platforms if desired */
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
@@ -91,3 +93,5 @@ protected:
 	/** The key that should be input via InputKey on the player input */
 	FKey KeyToSimulate;
 };
+
+#undef UE_API

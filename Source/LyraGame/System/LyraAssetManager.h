@@ -7,6 +7,8 @@
 #include "Templates/SubclassOf.h"
 #include "LyraAssetManager.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class UPrimaryDataAsset;
 
 class ULyraGameData;
@@ -25,17 +27,17 @@ struct FLyraBundles
  *	It is expected that most games will want to override AssetManager as it provides a good place for game-specific loading logic.
  *	This class is used by setting 'AssetManagerClassName' in DefaultEngine.ini.
  */
-UCLASS(Config = Game)
-class LYRAGAME_API ULyraAssetManager : public UAssetManager
+UCLASS(MinimalAPI, Config = Game)
+class ULyraAssetManager : public UAssetManager
 {
 	GENERATED_BODY()
 
 public:
 
-	ULyraAssetManager();
+	UE_API ULyraAssetManager();
 
 	// Returns the AssetManager singleton object.
-	static ULyraAssetManager& Get();
+	static UE_API ULyraAssetManager& Get();
 
 	// Returns the asset referenced by a TSoftObjectPtr.  This will synchronously load the asset if it's not already loaded.
 	template<typename AssetType>
@@ -46,10 +48,10 @@ public:
 	static TSubclassOf<AssetType> GetSubclass(const TSoftClassPtr<AssetType>& AssetPointer, bool bKeepInMemory = true);
 
 	// Logs all assets currently loaded and tracked by the asset manager.
-	static void DumpLoadedAssets();
+	static UE_API void DumpLoadedAssets();
 
-	const ULyraGameData& GetGameData();
-	const ULyraPawnData* GetDefaultPawnData() const;
+	UE_API const ULyraGameData& GetGameData();
+	UE_API const ULyraPawnData* GetDefaultPawnData() const;
 
 protected:
 	template <typename GameDataClass>
@@ -65,20 +67,20 @@ protected:
 	}
 
 
-	static UObject* SynchronousLoadAsset(const FSoftObjectPath& AssetPath);
-	static bool ShouldLogAssetLoads();
+	static UE_API UObject* SynchronousLoadAsset(const FSoftObjectPath& AssetPath);
+	static UE_API bool ShouldLogAssetLoads();
 
 	// Thread safe way of adding a loaded asset to keep in memory.
-	void AddLoadedAsset(const UObject* Asset);
+	UE_API void AddLoadedAsset(const UObject* Asset);
 
 	//~UAssetManager interface
-	virtual void StartInitialLoading() override;
+	UE_API virtual void StartInitialLoading() override;
 #if WITH_EDITOR
-	virtual void PreBeginPIE(bool bStartSimulate) override;
+	UE_API virtual void PreBeginPIE(bool bStartSimulate) override;
 #endif
 	//~End of UAssetManager interface
 
-	UPrimaryDataAsset* LoadGameDataOfClass(TSubclassOf<UPrimaryDataAsset> DataClass, const TSoftObjectPtr<UPrimaryDataAsset>& DataClassPath, FPrimaryAssetType PrimaryAssetType);
+	UE_API UPrimaryDataAsset* LoadGameDataOfClass(TSubclassOf<UPrimaryDataAsset> DataClass, const TSoftObjectPtr<UPrimaryDataAsset>& DataClassPath, FPrimaryAssetType PrimaryAssetType);
 
 protected:
 
@@ -96,13 +98,13 @@ protected:
 
 private:
 	// Flushes the StartupJobs array. Processes all startup work.
-	void DoAllStartupJobs();
+	UE_API void DoAllStartupJobs();
 
 	// Sets up the ability system
-	void InitializeGameplayCueManager();
+	UE_API void InitializeGameplayCueManager();
 
 	// Called periodically during loads, could be used to feed the status to a loading screen
-	void UpdateInitialGameContentLoadPercent(float GameContentPercent);
+	UE_API void UpdateInitialGameContentLoadPercent(float GameContentPercent);
 
 	// The list of tasks to execute on startup. Used to track startup progress.
 	TArray<FLyraAssetManagerStartupJob> StartupJobs;
@@ -169,3 +171,5 @@ TSubclassOf<AssetType> ULyraAssetManager::GetSubclass(const TSoftClassPtr<AssetT
 
 	return LoadedSubclass;
 }
+
+#undef UE_API

@@ -1,10 +1,10 @@
-// Copyright 2025 RedFlowering.
+// Copyright 2025 Snow Game Studio.
 
 #include "Actors/HookActor.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
-#include "Character/RFCharacter.h"
+#include "Character/BaseCharacter.h"
 
 AHookActor::AHookActor()
 {

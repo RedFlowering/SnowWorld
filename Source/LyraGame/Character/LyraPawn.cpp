@@ -51,7 +51,7 @@ void ALyraPawn::PossessedBy(AController* NewController)
 
 void ALyraPawn::UnPossessed()
 {
-	AController* const OldController = Controller;
+	AController* const OldController = GetController();
 
 	// Stop listening for changes from the old controller
 	const FGenericTeamId OldTeamID = MyTeamID;

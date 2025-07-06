@@ -7,6 +7,8 @@
 
 #include "LyraExperienceManagerComponent.generated.h"
 
+#define UE_API LYRAGAME_API
+
 namespace UE::GameFeatures { struct FResult; }
 
 class ULyraExperienceDefinition;
@@ -24,45 +26,45 @@ enum class ELyraExperienceLoadState
 	Deactivating
 };
 
-UCLASS()
-class LYRAGAME_API ULyraExperienceManagerComponent final : public UGameStateComponent, public ILoadingProcessInterface
+UCLASS(MinimalAPI)
+class ULyraExperienceManagerComponent final : public UGameStateComponent, public ILoadingProcessInterface
 {
 	GENERATED_BODY()
 
 public:
 
-	ULyraExperienceManagerComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	UE_API ULyraExperienceManagerComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	//~UActorComponent interface
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	UE_API virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	//~End of UActorComponent interface
 
 	//~ILoadingProcessInterface interface
-	virtual bool ShouldShowLoadingScreen(FString& OutReason) const override;
+	UE_API virtual bool ShouldShowLoadingScreen(FString& OutReason) const override;
 	//~End of ILoadingProcessInterface
 
 	// Tries to set the current experience, either a UI or gameplay one
-	void SetCurrentExperience(FPrimaryAssetId ExperienceId);
+	UE_API void SetCurrentExperience(FPrimaryAssetId ExperienceId);
 
 	// Ensures the delegate is called once the experience has been loaded,
 	// before others are called.
 	// However, if the experience has already loaded, calls the delegate immediately.
-	void CallOrRegister_OnExperienceLoaded_HighPriority(FOnLyraExperienceLoaded::FDelegate&& Delegate);
+	UE_API void CallOrRegister_OnExperienceLoaded_HighPriority(FOnLyraExperienceLoaded::FDelegate&& Delegate);
 
 	// Ensures the delegate is called once the experience has been loaded
 	// If the experience has already loaded, calls the delegate immediately
-	void CallOrRegister_OnExperienceLoaded(FOnLyraExperienceLoaded::FDelegate&& Delegate);
+	UE_API void CallOrRegister_OnExperienceLoaded(FOnLyraExperienceLoaded::FDelegate&& Delegate);
 
 	// Ensures the delegate is called once the experience has been loaded
 	// If the experience has already loaded, calls the delegate immediately
-	void CallOrRegister_OnExperienceLoaded_LowPriority(FOnLyraExperienceLoaded::FDelegate&& Delegate);
+	UE_API void CallOrRegister_OnExperienceLoaded_LowPriority(FOnLyraExperienceLoaded::FDelegate&& Delegate);
 
 	// This returns the current experience if it is fully loaded, asserting otherwise
 	// (i.e., if you called it too soon)
-	const ULyraExperienceDefinition* GetCurrentExperienceChecked() const;
+	UE_API const ULyraExperienceDefinition* GetCurrentExperienceChecked() const;
 
 	// Returns true if the experience is fully loaded
-	bool IsExperienceLoaded() const;
+	UE_API bool IsExperienceLoaded() const;
 
 private:
 	UFUNCTION()
@@ -100,3 +102,5 @@ private:
 	/** Delegate called when the experience has finished loading */
 	FOnLyraExperienceLoaded OnExperienceLoaded_LowPriority;
 };
+
+#undef UE_API

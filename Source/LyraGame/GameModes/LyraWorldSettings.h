@@ -5,27 +5,29 @@
 #include "GameFramework/WorldSettings.h"
 #include "LyraWorldSettings.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class ULyraExperienceDefinition;
 
 /**
  * The default world settings object, used primarily to set the default gameplay experience to use when playing on this map
  */
-UCLASS()
-class LYRAGAME_API ALyraWorldSettings : public AWorldSettings
+UCLASS(MinimalAPI)
+class ALyraWorldSettings : public AWorldSettings
 {
 	GENERATED_BODY()
 
 public:
 
-	ALyraWorldSettings(const FObjectInitializer& ObjectInitializer);
+	UE_API ALyraWorldSettings(const FObjectInitializer& ObjectInitializer);
 
 #if WITH_EDITOR
-	virtual void CheckForErrors() override;
+	UE_API virtual void CheckForErrors() override;
 #endif
 
 public:
 	// Returns the default experience to use when a server opens this map if it is not overridden by the user-facing experience
-	FPrimaryAssetId GetDefaultGameplayExperience() const;
+	UE_API FPrimaryAssetId GetDefaultGameplayExperience() const;
 
 protected:
 	// The default experience to use when a server opens this map if it is not overridden by the user-facing experience
@@ -41,3 +43,5 @@ public:
 	bool ForceStandaloneNetMode = false;
 #endif
 };
+
+#undef UE_API

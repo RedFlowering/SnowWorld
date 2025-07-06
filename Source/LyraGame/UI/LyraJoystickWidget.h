@@ -6,6 +6,8 @@
 
 #include "LyraJoystickWidget.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class UImage;
 class UObject;
 struct FGeometry;
@@ -19,21 +21,21 @@ struct FPointerEvent;
  *
  *  This is intended for use with and Enhanced Input player.
  */
-UCLASS(meta=( DisplayName="Lyra Joystick" ))
-class LYRAGAME_API ULyraJoystickWidget : public ULyraSimulatedInputWidget
+UCLASS(MinimalAPI, meta=( DisplayName="Lyra Joystick" ))
+class ULyraJoystickWidget : public ULyraSimulatedInputWidget
 {
 	GENERATED_BODY()
 	
 public:
 	
-	ULyraJoystickWidget(const FObjectInitializer& ObjectInitializer);
+	UE_API ULyraJoystickWidget(const FObjectInitializer& ObjectInitializer);
 
 	//~ Begin UUserWidget
-	virtual FReply NativeOnTouchStarted(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
-	virtual FReply NativeOnTouchMoved(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
-	virtual FReply NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
-	virtual void NativeOnMouseLeave(const FPointerEvent& InMouseEvent) override;
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+	UE_API virtual FReply NativeOnTouchStarted(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
+	UE_API virtual FReply NativeOnTouchMoved(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
+	UE_API virtual FReply NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
+	UE_API virtual void NativeOnMouseLeave(const FPointerEvent& InMouseEvent) override;
+	UE_API virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	//~ End UUserWidget interface
 	
 protected:
@@ -46,10 +48,10 @@ protected:
 	 * Move the foreground joystick image in association with the given input to give the appearance that it
 	 * is moving along with the player's finger
 	 */
-	void HandleTouchDelta(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent);
+	UE_API void HandleTouchDelta(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent);
 	
 	/** Flush any player input that has been injected and disable the use of this analog stick. */
-	void StopInputSimulation();
+	UE_API void StopInputSimulation();
 
 	/** How far can the inner image of the joystick be moved? */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
@@ -74,3 +76,5 @@ protected:
 	UPROPERTY(Transient)
 	FVector2D StickVector = FVector2D::ZeroVector;
 };
+
+#undef UE_API

@@ -67,7 +67,7 @@ UEnhancedPlayerMappableKeyProfile* ULyraSettingKeyboardInput::FindMappableKeyPro
 {
 	if (UEnhancedInputUserSettings* Settings = GetUserSettings())
 	{
-		return Settings->GetKeyProfileWithIdentifier(ProfileIdentifier);
+		return Settings->GetKeyProfileWithId(ProfileIdentifier);
 	}
 	
 	ensure(false);
@@ -109,7 +109,7 @@ void ULyraSettingKeyboardInput::InitializeInputData(const UEnhancedPlayerMappabl
 {
 	check(KeyProfile);
 
-	ProfileIdentifier = KeyProfile->GetProfileIdentifer();
+	ProfileIdentifier = KeyProfile->GetProfileIdString();
 	QueryOptions = InQueryOptions;
 	
 	for (const FPlayerKeyMapping& Mapping : MappingData.Mappings)
@@ -155,19 +155,6 @@ FText ULyraSettingKeyboardInput::GetKeyTextFromSlot(const EPlayerMappableKeySlot
 	
 	return EKeys::Invalid.GetDisplayName();
 }
-
-
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
-FText ULyraSettingKeyboardInput::GetPrimaryKeyText() const
-{
-	return GetKeyTextFromSlot(EPlayerMappableKeySlot::First);
-}
-
-FText ULyraSettingKeyboardInput::GetSecondaryKeyText() const
-{
-	return GetKeyTextFromSlot(EPlayerMappableKeySlot::Second);
-}
-PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void ULyraSettingKeyboardInput::ResetToDefault()
 {	

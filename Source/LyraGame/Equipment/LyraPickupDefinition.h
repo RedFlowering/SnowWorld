@@ -15,8 +15,8 @@ class UStaticMesh;
 /**
  * 
  */
-UCLASS(Blueprintable, BlueprintType, Const, Meta = (DisplayName = "Lyra Pickup Data", ShortTooltip = "Data asset used to configure a pickup."))
-class LYRAGAME_API ULyraPickupDefinition : public UDataAsset
+UCLASS(MinimalAPI, Blueprintable, BlueprintType, Const, Meta = (DisplayName = "Lyra Pickup Data", ShortTooltip = "Data asset used to configure a pickup."))
+class ULyraPickupDefinition : public UDataAsset
 {
 	GENERATED_BODY()
 	
@@ -52,8 +52,8 @@ public:
 };
 
 
-UCLASS(Blueprintable, BlueprintType, Const, Meta = (DisplayName = "Lyra Weapon Pickup Data", ShortTooltip = "Data asset used to configure a weapon pickup."))
-class LYRAGAME_API ULyraWeaponPickupDefinition : public ULyraPickupDefinition
+UCLASS(MinimalAPI, Blueprintable, BlueprintType, Const, Meta = (DisplayName = "Lyra Weapon Pickup Data", ShortTooltip = "Data asset used to configure a weapon pickup."))
+class ULyraWeaponPickupDefinition : public ULyraPickupDefinition
 {
 	GENERATED_BODY()
 

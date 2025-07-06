@@ -7,6 +7,8 @@
 
 #include "LyraPawn.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class AController;
 class UObject;
 struct FFrame;
@@ -14,29 +16,29 @@ struct FFrame;
 /**
  * ALyraPawn
  */
-UCLASS()
-class LYRAGAME_API ALyraPawn : public AModularPawn, public ILyraTeamAgentInterface
+UCLASS(MinimalAPI)
+class ALyraPawn : public AModularPawn, public ILyraTeamAgentInterface
 {
 	GENERATED_BODY()
 
 public:
 
-	ALyraPawn(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	UE_API ALyraPawn(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	//~AActor interface
-	virtual void PreInitializeComponents() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	UE_API virtual void PreInitializeComponents() override;
+	UE_API virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	//~End of AActor interface
 
 	//~APawn interface
-	virtual void PossessedBy(AController* NewController) override;
-	virtual void UnPossessed() override;
+	UE_API virtual void PossessedBy(AController* NewController) override;
+	UE_API virtual void UnPossessed() override;
 	//~End of APawn interface
 
 	//~ILyraTeamAgentInterface interface
-	virtual void SetGenericTeamId(const FGenericTeamId& NewTeamID) override;
-	virtual FGenericTeamId GetGenericTeamId() const override;
-	virtual FOnLyraTeamIndexChangedDelegate* GetOnTeamIndexChangedDelegate() override;
+	UE_API virtual void SetGenericTeamId(const FGenericTeamId& NewTeamID) override;
+	UE_API virtual FGenericTeamId GetGenericTeamId() const override;
+	UE_API virtual FOnLyraTeamIndexChangedDelegate* GetOnTeamIndexChangedDelegate() override;
 	//~End of ILyraTeamAgentInterface interface
 
 protected:
@@ -49,7 +51,7 @@ protected:
 
 private:
 	UFUNCTION()
-	void OnControllerChangedTeam(UObject* TeamAgent, int32 OldTeam, int32 NewTeam);
+	UE_API void OnControllerChangedTeam(UObject* TeamAgent, int32 OldTeam, int32 NewTeam);
 
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_MyTeamID)
@@ -60,5 +62,7 @@ private:
 
 private:
 	UFUNCTION()
-	void OnRep_MyTeamID(FGenericTeamId OldTeamID);
+	UE_API void OnRep_MyTeamID(FGenericTeamId OldTeamID);
 };
+
+#undef UE_API

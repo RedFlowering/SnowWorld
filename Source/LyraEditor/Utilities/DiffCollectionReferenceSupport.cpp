@@ -3,6 +3,7 @@
 #include "AssetRegistry/IAssetRegistry.h"
 #include "CollectionManagerModule.h"
 #include "HAL/IConsoleManager.h"
+#include "ICollectionContainer.h"
 #include "ICollectionManager.h"
 #include "Templates/Greater.h"
 #include "UObject/SoftObjectPath.h"
@@ -24,7 +25,7 @@ FAutoConsoleCommandWithWorldArgsAndOutputDevice GDiffCollectionReferenceSupport(
 		[](const TArray<FString>& Params, UWorld* World, FOutputDevice& Ar)
 {
 	IAssetRegistry& AssetRegistry = IAssetRegistry::GetChecked();;
-	ICollectionManager& CollectionManager = FCollectionManagerModule::GetModule().Get();
+	const TSharedRef<ICollectionContainer>& CollectionContainer = FCollectionManagerModule::GetModule().Get().GetProjectCollectionContainer();
 
 	if (Params.Num() < 2)
 	{
@@ -41,14 +42,14 @@ FAutoConsoleCommandWithWorldArgsAndOutputDevice GDiffCollectionReferenceSupport(
 	const bool bExcludeSecondInstanceOfMultiSupported = (Params.Num() >= 3) ? Params[2].ToBool() : true;
 
 	TArray<FSoftObjectPath> OldPaths;
-	if (!CollectionManager.GetAssetsInCollection(FName(*Params[0]), ECollectionShareType::CST_All, /*out*/ OldPaths))
+	if (!CollectionContainer->GetAssetsInCollection(FName(*Params[0]), ECollectionShareType::CST_All, /*out*/ OldPaths))
 	{
 		Ar.Log(FString::Printf(TEXT("Failed to find collection %s"), *Params[0]));
 		return;
 	}
 
 	TArray<FSoftObjectPath> NewPaths;
-	if (!CollectionManager.GetAssetsInCollection(FName(*Params[1]), ECollectionShareType::CST_All, /*out*/ NewPaths))
+	if (!CollectionContainer->GetAssetsInCollection(FName(*Params[1]), ECollectionShareType::CST_All, /*out*/ NewPaths))
 	{
 		Ar.Log(FString::Printf(TEXT("Failed to find collection %s"), *Params[1]));
 		return;

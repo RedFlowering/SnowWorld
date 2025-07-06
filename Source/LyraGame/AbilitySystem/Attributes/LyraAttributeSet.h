@@ -6,6 +6,8 @@
 
 #include "LyraAttributeSet.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class AActor;
 class ULyraAbilitySystemComponent;
 class UObject;
@@ -46,16 +48,18 @@ DECLARE_MULTICAST_DELEGATE_SixParams(FLyraAttributeEvent, AActor* /*EffectInstig
  *
  *	Base attribute set class for the project.
  */
-UCLASS()
-class LYRAGAME_API ULyraAttributeSet : public UAttributeSet
+UCLASS(MinimalAPI)
+class ULyraAttributeSet : public UAttributeSet
 {
 	GENERATED_BODY()
 
 public:
 
-	ULyraAttributeSet();
+	UE_API ULyraAttributeSet();
 
-	UWorld* GetWorld() const override;
+	UE_API UWorld* GetWorld() const override;
 
-	ULyraAbilitySystemComponent* GetLyraAbilitySystemComponent() const;
+	UE_API ULyraAbilitySystemComponent* GetLyraAbilitySystemComponent() const;
 };
+
+#undef UE_API

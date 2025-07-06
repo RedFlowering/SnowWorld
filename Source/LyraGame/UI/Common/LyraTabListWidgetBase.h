@@ -6,6 +6,8 @@
 
 #include "LyraTabListWidgetBase.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class UCommonButtonBase;
 class UCommonUserWidget;
 class UObject;
@@ -61,36 +63,36 @@ public:
 	void SetTabLabelInfo(const FLyraTabDescriptor& TabDescriptor);
 };
 
-UCLASS(Blueprintable, BlueprintType, Abstract, meta = (DisableNativeTick))
-class LYRAGAME_API ULyraTabListWidgetBase : public UCommonTabListWidgetBase
+UCLASS(MinimalAPI, Blueprintable, BlueprintType, Abstract, meta = (DisableNativeTick))
+class ULyraTabListWidgetBase : public UCommonTabListWidgetBase
 {
 	GENERATED_BODY()
 	
 public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Tab List")
-	bool GetPreregisteredTabInfo(const FName TabNameId, FLyraTabDescriptor& OutTabInfo);
+	UE_API bool GetPreregisteredTabInfo(const FName TabNameId, FLyraTabDescriptor& OutTabInfo);
 
 	/** Helper method to get at all the preregistered tab infos */
 	const TArray<FLyraTabDescriptor>& GetAllPreregisteredTabInfos() { return PreregisteredTabInfoArray; }
 
 	// Toggles whether or not a specified tab is hidden, can only be called before the switcher is associated
 	UFUNCTION(BlueprintCallable, Category = "Tab List")
-	void SetTabHiddenState(FName TabNameId, bool bHidden);
+	UE_API void SetTabHiddenState(FName TabNameId, bool bHidden);
 
 	UFUNCTION(BlueprintCallable, Category = "Tab List")
-	bool RegisterDynamicTab(const FLyraTabDescriptor& TabDescriptor);
+	UE_API bool RegisterDynamicTab(const FLyraTabDescriptor& TabDescriptor);
 
 	UFUNCTION(BlueprintCallable, Category = "Tab List")
-	bool IsFirstTabActive() const;
+	UE_API bool IsFirstTabActive() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Tab List")
-	bool IsLastTabActive() const;
+	UE_API bool IsLastTabActive() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Tab List")
-	bool IsTabVisible(FName TabId);
+	UE_API bool IsTabVisible(FName TabId);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Tab List")
-	int32 GetVisibleTabCount();
+	UE_API int32 GetVisibleTabCount();
 
 	/** Delegate broadcast when a new tab is created. Allows hook ups after creation. */
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnTabContentCreated, FName, TabId, UCommonUserWidget*, TabWidget);
@@ -103,18 +105,18 @@ public:
 
 protected:
 	// UUserWidget interface
-	virtual void NativeOnInitialized() override;
-	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
+	UE_API virtual void NativeOnInitialized() override;
+	UE_API virtual void NativeConstruct() override;
+	UE_API virtual void NativeDestruct() override;
 	// End UUserWidget
 
-	virtual void HandlePreLinkedSwitcherChanged() override;
-	virtual void HandlePostLinkedSwitcherChanged() override;
+	UE_API virtual void HandlePreLinkedSwitcherChanged() override;
+	UE_API virtual void HandlePostLinkedSwitcherChanged() override;
 
-	virtual void HandleTabCreation_Implementation(FName TabId, UCommonButtonBase* TabButton) override;
+	UE_API virtual void HandleTabCreation_Implementation(FName TabId, UCommonButtonBase* TabButton) override;
 
 private:
-	void SetupTabs();
+	UE_API void SetupTabs();
 
 	UPROPERTY(EditAnywhere, meta=(TitleProperty="TabId"))
 	TArray<FLyraTabDescriptor> PreregisteredTabInfoArray;
@@ -126,3 +128,5 @@ private:
 	UPROPERTY()
 	TMap<FName, FLyraTabDescriptor> PendingTabLabelInfoMap;
 };
+
+#undef UE_API

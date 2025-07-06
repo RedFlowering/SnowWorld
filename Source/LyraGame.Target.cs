@@ -33,9 +33,10 @@ public class LyraGameTarget : TargetRules
 		bool bIsDedicatedServer = Target.Type == TargetType.Server;
 		if (Target.BuildEnvironment == TargetBuildEnvironment.Unique)
 		{
-			Target.ShadowVariableWarningLevel = WarningLevel.Error;
+			Target.CppCompileWarningSettings.ShadowVariableWarningLevel = WarningLevel.Error;
 
 			Target.bUseLoggingInShipping = true;
+			Target.bTrackRHIResourceInfoForTest = true;
 
 			if (bIsShipping && !bIsDedicatedServer)
 			{

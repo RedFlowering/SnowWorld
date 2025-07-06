@@ -177,9 +177,9 @@ UGameSettingCollection* ULyraGameSettingRegistry::InitializeMouseAndKeyboardSett
 		static TSet<FName> CreatedMappingNames;
 		CreatedMappingNames.Reset();
 		
-		for (const TPair<FGameplayTag, TObjectPtr<UEnhancedPlayerMappableKeyProfile>>& ProfilePair : UserSettings->GetAllSavedKeyProfiles())
+		for (const TPair<FString, TObjectPtr<UEnhancedPlayerMappableKeyProfile>>& ProfilePair : UserSettings->GetAllAvailableKeyProfiles())
 		{
-			const FGameplayTag& ProfileName = ProfilePair.Key;
+			const FString& ProfileName = ProfilePair.Key;
 			const TObjectPtr<UEnhancedPlayerMappableKeyProfile>& Profile = ProfilePair.Value;
 
 			for (const TPair<FName, FKeyMappingRow>& RowPair : Profile->GetPlayerMappingRows())

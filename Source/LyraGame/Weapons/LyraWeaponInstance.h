@@ -8,6 +8,8 @@
 
 #include "LyraWeaponInstance.generated.h"
 
+#define UE_API LYRAGAME_API
+
 class UAnimInstance;
 class UObject;
 struct FFrame;
@@ -19,25 +21,25 @@ class UInputDeviceProperty;
  *
  * A piece of equipment representing a weapon spawned and applied to a pawn
  */
-UCLASS()
-class LYRAGAME_API ULyraWeaponInstance : public ULyraEquipmentInstance
+UCLASS(MinimalAPI)
+class ULyraWeaponInstance : public ULyraEquipmentInstance
 {
 	GENERATED_BODY()
 
 public:
-	ULyraWeaponInstance(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	UE_API ULyraWeaponInstance(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	//~ULyraEquipmentInstance interface
-	virtual void OnEquipped() override;
-	virtual void OnUnequipped() override;
+	UE_API virtual void OnEquipped() override;
+	UE_API virtual void OnUnequipped() override;
 	//~End of ULyraEquipmentInstance interface
 
 	UFUNCTION(BlueprintCallable)
-	void UpdateFiringTime();
+	UE_API void UpdateFiringTime();
 
 	// Returns how long it's been since the weapon was interacted with (fired or equipped)
 	UFUNCTION(BlueprintPure)
-	float GetTimeSinceLastInteractedWith() const;
+	UE_API float GetTimeSinceLastInteractedWith() const;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Animation)
@@ -56,15 +58,15 @@ protected:
 	
 	// Choose the best layer from EquippedAnimSet or UneuippedAnimSet based on the specified gameplay tags
 	UFUNCTION(BlueprintCallable, BlueprintPure=false, Category=Animation)
-	TSubclassOf<UAnimInstance> PickBestAnimLayer(bool bEquipped, const FGameplayTagContainer& CosmeticTags) const;
+	UE_API TSubclassOf<UAnimInstance> PickBestAnimLayer(bool bEquipped, const FGameplayTagContainer& CosmeticTags) const;
 
 	/** Returns the owning Pawn's Platform User ID */
 	UFUNCTION(BlueprintCallable)
-	const FPlatformUserId GetOwningUserId() const;
+	UE_API const FPlatformUserId GetOwningUserId() const;
 
 	/** Callback for when the owning pawn of this weapon dies. Removes all spawned device properties. */
 	UFUNCTION()
-	void OnDeathStarted(AActor* OwningActor);
+	UE_API void OnDeathStarted(AActor* OwningActor);
 
 	/**
 	 * Apply the ApplicableDeviceProperties to the owning pawn of this weapon.
@@ -72,10 +74,10 @@ protected:
 	 * Play the device properties in Looping mode so that they will share the lifetime of the
 	 * weapon being Equipped.
 	 */
-	void ApplyDeviceProperties();
+	UE_API void ApplyDeviceProperties();
 
 	/** Remove any device proeprties that were activated in ApplyDeviceProperties. */
-	void RemoveDeviceProperties();
+	UE_API void RemoveDeviceProperties();
 
 private:
 
@@ -86,3 +88,5 @@ private:
 	double TimeLastEquipped = 0.0;
 	double TimeLastFired = 0.0;
 };
+
+#undef UE_API

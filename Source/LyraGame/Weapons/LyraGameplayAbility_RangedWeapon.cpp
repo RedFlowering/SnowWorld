@@ -217,7 +217,7 @@ FTransform ULyraGameplayAbility_RangedWeapon::GetTargetingTransform(APawn* Sourc
 
 	const FVector ActorLoc = SourcePawn->GetActorLocation();
 	FQuat AimQuat = SourcePawn->GetActorQuat();
-	AController* Controller = SourcePawn->Controller;
+	AController* Controller = SourcePawn->GetController();
 	FVector SourceLoc;
 
 	double FocalDistance = 1024.0f;
@@ -587,8 +587,7 @@ void ULyraGameplayAbility_RangedWeapon::StartRangedWeaponTargeting()
 	}
 
 	// Send hit marker information
-	const bool bProjectileWeapon = false;
-	if (!bProjectileWeapon && (WeaponStateComponent != nullptr))
+	if (WeaponStateComponent != nullptr)
 	{
 		WeaponStateComponent->AddUnconfirmedServerSideHitMarkers(TargetData, FoundHits);
 	}

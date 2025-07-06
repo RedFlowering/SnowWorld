@@ -6,15 +6,19 @@
 
 #include "LyraPlayerMappableKeyProfile.generated.h"
 
-UCLASS()
-class LYRAGAME_API ULyraPlayerMappableKeyProfile : public UEnhancedPlayerMappableKeyProfile
+#define UE_API LYRAGAME_API
+
+UCLASS(MinimalAPI)
+class ULyraPlayerMappableKeyProfile : public UEnhancedPlayerMappableKeyProfile
 {
 	GENERATED_BODY()
 
 protected:
 
 	//~ Begin UEnhancedPlayerMappableKeyProfile interface
-	virtual void EquipProfile() override;
-	virtual void UnEquipProfile() override;
+	UE_API virtual void EquipProfile() override;
+	UE_API virtual void UnEquipProfile() override;
 	//~ End UEnhancedPlayerMappableKeyProfile interface
 };
+
+#undef UE_API
