@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
-class FHarmoniaKitRuntimeModule : public IModuleInterface
+class FHarmoniaBuildingSystemModule : public IModuleInterface
 {
 public:
 	//~IModuleInterface

@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class HarmoniaKitRuntime : ModuleRules
+public class HarmoniaBuildingSystem : ModuleRules
 {
-	public HarmoniaKitRuntime(ReadOnlyTargetRules Target) : base(Target)
+	public HarmoniaBuildingSystem(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
@@ -38,6 +38,7 @@ public class HarmoniaKitRuntime : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
+				"HarmoniaLoadManager",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

@@ -1,16 +1,16 @@
 // Copyright 2025 Snow Game Studio.
 
-#include "HarmoniaKitRuntimeModule.h"
+#include "HarmoniaBuildingSystemModule.h"
 
-#define LOCTEXT_NAMESPACE "FHarmoniKitRuntimeModule"
+#define LOCTEXT_NAMESPACE "FHarmoniaBuildingSystemModule"
 
-void FHarmoniaKitRuntimeModule::StartupModule()
+void FHarmoniaBuildingSystemModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory;
 	// the exact timing is specified in the .uplugin file per-module
 }
 
-void FHarmoniaKitRuntimeModule::ShutdownModule()
+void FHarmoniaBuildingSystemModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.
 	// For modules that support dynamic reloading, we call this function before unloading the module.
@@ -18,4 +18,4 @@ void FHarmoniaKitRuntimeModule::ShutdownModule()
 
 #undef LOCTEXT_NAMESPACE
 
-IMPLEMENT_MODULE(FHarmoniaKitRuntimeModule, HarmoniaKitRuntime)
+IMPLEMENT_MODULE(FHarmoniaBuildingSystemModule, HarmoniaBuildingSystem)
