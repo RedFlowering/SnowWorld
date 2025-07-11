@@ -2,10 +2,20 @@
 
 using UnrealBuildTool;
 
-public class HarmoniaInventorySystem: ModuleRules
+public class HarmoniaInventorySystem : ModuleRules
 {
     public HarmoniaInventorySystem(ReadOnlyTargetRules Target) : base(Target)
     {
-        PrivateDependencyModuleNames.AddRange(new string[] {"Core", "CoreUObject", "Engine"});
+        PrivateDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "Core",
+                "CoreUObject",
+                "Engine",
+                "UMG",
+                "Slate",
+                "SlateCore",
+                "HarmoniaCore",
+            });
     }
 }

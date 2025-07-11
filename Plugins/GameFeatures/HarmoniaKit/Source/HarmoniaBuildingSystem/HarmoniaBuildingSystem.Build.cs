@@ -38,6 +38,7 @@ public class HarmoniaBuildingSystem : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
+				"HarmoniaCore",
 				"HarmoniaLoadManager",
 				// ... add private dependencies that you statically link with here ...	
 			}

@@ -1,6 +1,6 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
-#include "Components/HarmoniaBuildingSystemComponent.h"
+#include "Components/HarmoniaBuildingComponent.h"
 // #include "BuildingPreviewActor.h"
 // #include "BuildingInstanceManagerComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -10,7 +10,7 @@
 // 로그용
 DEFINE_LOG_CATEGORY_STATIC(LogBuildingSystem, Log, All);
 
-UHarmoniaBuildingSystemComponent::UHarmoniaBuildingSystemComponent()
+UHarmoniaBuildingComponent::UHarmoniaBuildingComponent()
 {
     PrimaryComponentTick.bCanEverTick = true;
     // CurrentMode = EBuildingMode::None;

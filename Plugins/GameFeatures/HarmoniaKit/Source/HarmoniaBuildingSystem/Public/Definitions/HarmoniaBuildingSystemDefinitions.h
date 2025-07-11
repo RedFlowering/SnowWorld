@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/DataTable.h"
+#include "Definitions/HarmoniaCoreDefinitions.h"
 #include "HarmoniaBuildingSystemDefinitions.generated.h"
 
 UENUM(BlueprintType)
@@ -31,38 +32,18 @@ enum class EBuildingMode : uint8
 };
 
 USTRUCT(BlueprintType)
-struct FItemID
+struct FBuildingResourceCost
 {
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FName ID;
-
-    FItemID() : ID(NAME_None) {}
-    explicit FItemID(FName InID) : ID(InID) {}
-
-    FORCEINLINE bool operator==(const FItemID& Other) const { return ID == Other.ID; }
-    FORCEINLINE bool operator!=(const FItemID& Other) const { return ID != Other.ID; }
-
-    friend FORCEINLINE uint32 GetTypeHash(const FItemID& Item)
-    {
-        return GetTypeHash(Item.ID);
-    }
-};
-
-USTRUCT(BlueprintType)
-struct FItemCount
-{
-    GENERATED_BODY()
+    FItemID Item = FItemID();
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FItemID Item;
+    int32 Count = 0;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    int32 Count;
-
-    FItemCount() : Count(0) {}
-    FItemCount(FName InItemID, int32 InCount)
+    FBuildingResourceCost() : Count(0) {}
+    FBuildingResourceCost(FName InItemID, int32 InCount)
         : Item(InItemID), Count(InCount) {}
 };
 
@@ -72,16 +53,16 @@ struct FBuildingSnapPoint
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snap")
-    FName SocketName;
+    FName SocketName = FName();
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snap")
-    FVector LocalOffset;
+    FVector LocalOffset = FVector::ZeroVector;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snap")
-    FRotator LocalRotation;
+    FRotator LocalRotation = FRotator::ZeroRotator;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snap")
-    EBuildingPartType AcceptsType;
+    EBuildingPartType AcceptsType = EBuildingPartType::None;
 };
 
 USTRUCT(BlueprintType)
@@ -90,7 +71,7 @@ struct FBuildingPreviewMesh
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    UStaticMesh* Mesh;
+    TObjectPtr<UStaticMesh> Mesh = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FVector RelativeLocation = FVector::ZeroVector;
@@ -108,22 +89,22 @@ struct FBuildingPartData : public FTableRowBase
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FName ID;
+    FName ID = FName();
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    EBuildingPartType PartType;
+    EBuildingPartType PartType = EBuildingPartType::None;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FBuildingPreviewMesh PreviewMesh;
+    FBuildingPreviewMesh PreviewMesh = FBuildingPreviewMesh();
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FVector BoundsExtent;
+    FVector BoundsExtent = FVector::ZeroVector;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TArray<FBuildingSnapPoint> SnapPoints;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TArray<FItemCount> RequiredResources;
+    TArray<FBuildingResourceCost> RequiredResources;
 };
 
 USTRUCT(BlueprintType)
@@ -132,22 +113,22 @@ struct FBuildingInstanceMetadata
     GENERATED_BODY()
 
     UPROPERTY()
-    int32 InstanceIndex;
+    int32 InstanceIndex = 0;
 
     UPROPERTY()
-    FName PartID;
+    FName PartID = FName();
 
     UPROPERTY()
-    FVector Location;
+    FVector Location = FVector::ZeroVector;
 
     UPROPERTY()
-    FRotator Rotation;
+    FRotator Rotation = FRotator::ZeroRotator;
 
     UPROPERTY()
-    float Health;
+    float Health = 0.0f;
 
     UPROPERTY()
-    FString OwnerPlayerID;
+    FString OwnerPlayerID = FString();
 };
 
 USTRUCT(BlueprintType)

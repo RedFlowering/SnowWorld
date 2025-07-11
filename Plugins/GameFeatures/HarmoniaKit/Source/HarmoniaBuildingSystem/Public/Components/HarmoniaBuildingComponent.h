@@ -4,7 +4,7 @@
 
 #include "Components/ActorComponent.h"
 #include "Definitions/HarmoniaBuildingSystemDefinitions.h"
-#include "HarmoniaBuildingSystemComponent.generated.h"
+#include "HarmoniaBuildingComponent.generated.h"
 
 //class ABuildingPreviewActor;
 // class UBuildingInstanceManagerComponent;
@@ -13,12 +13,12 @@ class APlayerController;
 class UInputMappingContext;
 
 UCLASS(ClassGroup=(Custom), meta = ( BlueprintSpawnableComponent ))
-class HARMONIABUILDINGSYSTEM_API UHarmoniaBuildingSystemComponent : public UActorComponent
+class HARMONIABUILDINGSYSTEM_API UHarmoniaBuildingComponent : public UActorComponent
 {
     GENERATED_BODY()
 
 public:
-    UHarmoniaBuildingSystemComponent();
+    UHarmoniaBuildingComponent();
 
 //    // === 모드 제어 ===
 //    UFUNCTION(BlueprintCallable)
