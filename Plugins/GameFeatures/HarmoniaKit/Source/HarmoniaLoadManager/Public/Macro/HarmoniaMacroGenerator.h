@@ -2,9 +2,15 @@
 
 #pragma once
 
-class FHarmoniaMacroGenerator
+class UHarmoniaRegistryAsset;
+
+class HARMONIALOADMANAGER_API FHarmoniaMacroGenerator
 {
 public:
-    static void GenerateMacroHeaderFromConfig();
-    static void GenerateFunctionLibraryFromConfig();
+    static void ValidateAndGenerate(const UHarmoniaRegistryAsset* Registry);
+
+private:
+    static bool ValidateConfig(const UHarmoniaRegistryAsset* Registry);
+    static void GenerateMacroHeaderFromRegistry(const UHarmoniaRegistryAsset* Registry);
+    static void GenerateFunctionLibraryFromRegistry(const UHarmoniaRegistryAsset* Registry);
 };

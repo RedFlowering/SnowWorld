@@ -31,6 +31,7 @@ public class HarmoniaLoadManager : ModuleRules
                 "Engine",
                 "Projects",
                 "DeveloperSettings",
+                "GameplayTags",
 				// ... add private dependencies that you statically link with here ...	
 			}
             );
