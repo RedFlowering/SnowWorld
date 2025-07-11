@@ -117,7 +117,7 @@ void FHarmoniaMacroGenerator::GenerateMacroHeaderFromRegistry(const UHarmoniaReg
 
     const FString OutputPath = FPaths::Combine(
         IPluginManager::Get().FindPlugin("HarmoniaKit")->GetBaseDir(),
-        TEXT("Source/HarmoniaLoadManager/Public/Definitions/HarmoniaDataTableDefinitions.h")
+        TEXT("Source/HarmoniaLoadManager/Public/Definitions/HarmoniaMacroDefinitions.h")
     );
 
     FFileHelper::SaveStringToFile(Output, *OutputPath);
