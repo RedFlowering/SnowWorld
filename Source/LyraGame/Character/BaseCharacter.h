@@ -34,16 +34,16 @@ public:
 
 	virtual void PostInitializeComponents() override;
 
-	UFUNCTION(BlueprintCallable, Category = "RF Character")
+	UFUNCTION(BlueprintCallable, Category = "Base Character")
 	const FGameplayTag GetDefaultOverlayMode() const { return OverrideDefaultOverlayMode; }
 
-	UFUNCTION(BlueprintCallable, Category = "RF Character", Meta = (AutoCreateRefTerm = "NewModeTag", GameplayTagFilter  = "Als.OverlayMode"))
+	UFUNCTION(BlueprintCallable, Category = "Base Character", Meta = (AutoCreateRefTerm = "NewModeTag", GameplayTagFilter  = "Als.OverlayMode"))
 	void SetDesiredOverlayMode(const FGameplayTag& NewModeTag, bool bMulticast = true);
 
-	UFUNCTION(BlueprintCallable, Server, Reliable, Category = "Als Character", Meta = (AutoCreateRefTerm = "NewModeTag", GameplayTagFilter = "Als.OverlayMode"))
+	UFUNCTION(BlueprintCallable, Server, Reliable, Category = "Base Character", Meta = (AutoCreateRefTerm = "NewModeTag", GameplayTagFilter = "Als.OverlayMode"))
 	void ServerSetDesiredOverlayMode(const FGameplayTag& NewModeTag, bool bMulticast);
 
-	UFUNCTION(BlueprintCallable, NetMulticast, Reliable, Category = "Als Character", Meta = (AutoCreateRefTerm = "NewModeTag", GameplayTagFilter = "Als.OverlayMode"))
+	UFUNCTION(BlueprintCallable, NetMulticast, Reliable, Category = "Base Character", Meta = (AutoCreateRefTerm = "NewModeTag", GameplayTagFilter = "Als.OverlayMode"))
 	void MulticastSetDesiredOverlayMode(const FGameplayTag& NewModeTag);
 
 protected:
@@ -60,47 +60,47 @@ public:
 	 
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
-	UFUNCTION(BlueprintCallable, Category = "RF Character|Hand IK")
+	UFUNCTION(BlueprintCallable, Category = "Base Character|Hand IK")
 	void SetRightHandIK(FTransform IKTransform);
 
-	UFUNCTION(BlueprintCallable, Category = "RF Character|Hand IK")
+	UFUNCTION(BlueprintCallable, Category = "Base Character|Hand IK")
 	FTransform GetRightHandIK();
 
-	UFUNCTION(BlueprintCallable, Category = "RF Character|Hand IK")
+	UFUNCTION(BlueprintCallable, Category = "Base Character|Hand IK")
 	void SetUseRightHandIK(bool bUseIK);
 
-	UFUNCTION(BlueprintCallable, Category = "RF Character|Hand IK")
+	UFUNCTION(BlueprintCallable, Category = "Base Character|Hand IK")
 	bool GetUseRightHandIK();
 
-	UFUNCTION(BlueprintCallable, Category = "RF Character|Hand IK")
+	UFUNCTION(BlueprintCallable, Category = "Base Character|Hand IK")
 	void SetLeftHandIK(FTransform IKTransform);
 
-	UFUNCTION(BlueprintCallable, Category = "RF Character|Hand IK")
+	UFUNCTION(BlueprintCallable, Category = "Base Character|Hand IK")
 	FTransform GetLeftHandIK();
 
-	UFUNCTION(BlueprintCallable, Category = "RF Character|Hand IK")
+	UFUNCTION(BlueprintCallable, Category = "Base Character|Hand IK")
 	void SetUseLefttHandIK(bool bUseIK);
 
-	UFUNCTION(BlueprintCallable, Category = "RF Character|Hand IK")
+	UFUNCTION(BlueprintCallable, Category = "Base Character|Hand IK")
 	bool GetUseLeftHandIK();
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "RF|Character", Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Base|Character", Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USenseReceiverComponent> WallDetector = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|RF Character|Desired State", meta=(EditCondition="bOverrideDefaultOverlay"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|Base Character|Desired State", meta=(EditCondition="bOverrideDefaultOverlay"))
 	FGameplayTag OverrideDefaultOverlayMode{ AlsOverlayModeTags::Default };
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Settings|RF Character|Desired State")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Settings|Base Character|Desired State")
 	FGameplayTag DesiredOverlayMode = AlsOverlayModeTags::Default;
 
-	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, Category = "Settings|RF Character|Desired State")
+	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, Category = "Settings|Base Character|Desired State")
 	FGameplayTag PreviousOverlayMode = AlsOverlayModeTags::Default;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|RF Character|Desired State")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|Base Character|Desired State")
 	bool bOverrideDefaultOverlay = false;
 
-	UPROPERTY(Transient, BlueprintReadOnly, Category = "RF Character")
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Base Character")
 	bool bChangingOverlayMode = false;
 
 	FHandIK RightHandIK;
@@ -108,7 +108,7 @@ protected:
 	FHandIK LeftHandIK;
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RF Character")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Base Character")
 	TObjectPtr<UBaseCharacterMovementComponent> BaseCharacterMovement = nullptr;
 };
 
