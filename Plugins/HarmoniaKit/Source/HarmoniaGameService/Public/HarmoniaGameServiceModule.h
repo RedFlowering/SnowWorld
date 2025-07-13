@@ -1,11 +1,9 @@
-// Copyright 2025 Snow Game Studio.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Modules/ModuleInterface.h"
 
-class FHarmoniaWorldObjectSystem : public FDefaultModuleImpl
+class FHarmoniaGameService : public FDefaultModuleImpl
 {
 public:
 	virtual void StartupModule() override;

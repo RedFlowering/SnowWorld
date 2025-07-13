@@ -1,3 +1,5 @@
+// Copyright 2025 Snow Game Studio.
+
 using UnrealBuildTool;
 
 public class HarmoniaWorldObjectSystem: ModuleRules
