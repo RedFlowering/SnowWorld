@@ -4,9 +4,14 @@
 
 #include "Blueprint/UserWidget.h"
 #include "Definitions/HarmoniaCoreDefinitions.h"
+#include "Definitions/HarmoniaInventorySystemDefinitions.h"
+#include "InputCoreTypes.h"
+
 #include "HarmoniaInventorySlotWidget.generated.h"
 
-class UImage;
+class UHarmoniaInventoryWidget;
+class UHarmoniaInventorySlotIconWidget;
+class UHarmoniaInventoryComponent;
 class UTextBlock;
 class UProgressBar;
 
@@ -20,11 +25,16 @@ protected:
 
 public:
     UFUNCTION(BlueprintCallable)
-    void SetSlotData(const FItemID& InItemId, int32 InCount, float InDurability);
+    void SetSlotData(const FInventorySlot InSlot, UHarmoniaInventoryComponent* InComponent, UHarmoniaInventoryWidget* InParent);
+
+protected:
+    virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+    virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;
+    virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 
 public:
     UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UImage> ItemIcon = nullptr;
+    TObjectPtr<UHarmoniaInventorySlotIconWidget> ItemIconWidget = nullptr;
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UTextBlock> CountText = nullptr;
@@ -32,7 +42,11 @@ public:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UProgressBar> DurabilityBar = nullptr;
 
+protected:
     // ΩΩ∑‘ µ•¿Ã≈Õ
-    FItemID ItemId = FItemID();
-    int32 Count = 0;
+    FInventorySlot Slot = FInventorySlot();
+    FInventorySlotEx SlotEx = FInventorySlotEx();
+
+    TObjectPtr<UHarmoniaInventoryWidget> ParentWidget = nullptr;
+    TObjectPtr<UHarmoniaInventoryComponent> InventoryComponent = nullptr;
 };

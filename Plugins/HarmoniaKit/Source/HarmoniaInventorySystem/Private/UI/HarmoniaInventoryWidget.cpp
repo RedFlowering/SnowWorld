@@ -1,6 +1,7 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "UI/HarmoniaInventoryWidget.h"
+#include "Definitions/HarmoniaInventorySystemDefinitions.h"
 #include "Components/HarmoniaInventoryComponent.h"
 #include "Components/UniformGridPanel.h"
 
@@ -12,34 +13,35 @@ void UHarmoniaInventoryWidget::NativeConstruct()
 
 void UHarmoniaInventoryWidget::Refresh()
 {
-    if (!InventorySource || !SlotPanel || !SlotWidgetClass)
-        return;
+	if (InventoryComponent && SlotPanel && SlotWidgetClass)
+	{
+		SlotPanel->ClearChildren();
 
-    SlotPanel->ClearChildren();
+		const auto& Slots = InventoryComponent->InventoryData.Slots;
+		const int32 Columns = SlotMaxColumns;
+		int32 Index = 0;
 
-    const auto& Slots = InventorySource->Slots;
-    const int32 Columns = SlotMaxColumns;
-    int32 Index = 0;
+		for (const auto& SlotData : Slots)
+		{
+			if (Index != InventoryData.MaxSlotCount)
+			{
+				int32 Row = Index / Columns;
+				int32 Col = Index % Columns;
 
-    for (const auto& SlotData : Slots)
-    {
-        int32 Row = Index / Columns;
-        int32 Col = Index % Columns;
-
-        UHarmoniaInventorySlotWidget* SlotWidget = CreateWidget<UHarmoniaInventorySlotWidget>(GetWorld(), SlotWidgetClass);
-        if (SlotWidget)
-        {
-            SlotWidget->SetSlotData(SlotData.ItemID, SlotData.Count, SlotData.Durability);
-
-            UUniformGridSlot* GridSlot = SlotPanel->AddChildToUniformGrid(SlotWidget, Row, Col);
-
-            Index++;
-        }
-    }
+				UHarmoniaInventorySlotWidget* SlotWidget = CreateWidget<UHarmoniaInventorySlotWidget>(GetWorld(), SlotWidgetClass);
+				if (SlotWidget)
+				{
+					SlotWidget->SetSlotData(FInventorySlot(Index, SlotData.ItemID, SlotData.Count, SlotData.Durability), InventoryComponent, this);
+					SlotPanel->AddChildToUniformGrid(SlotWidget, Row, Col);
+					Index++;
+				}
+			}
+		}
+	}
 }
 
-void UHarmoniaInventoryWidget::SetInventorySource(UHarmoniaInventoryComponent* InComponent)
+void UHarmoniaInventoryWidget::SetInventoryComponent(UHarmoniaInventoryComponent* InComponent)
 {
-    InventorySource = InComponent;
+    InventoryComponent = InComponent;
     Refresh();
 }

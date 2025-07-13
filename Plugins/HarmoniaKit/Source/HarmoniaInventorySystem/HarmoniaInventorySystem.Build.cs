@@ -15,6 +15,7 @@ public class HarmoniaInventorySystem : ModuleRules
                 "UMG",
                 "Slate",
                 "SlateCore",
+                "InputCore",
                 "HarmoniaCore",
                 "HarmoniaLoadManager",
             });

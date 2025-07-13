@@ -25,6 +25,9 @@ public:
     UFUNCTION(BlueprintCallable, Category="Inventory")
     bool RemoveItem(const FItemData& Item, int32 Count);
 
+    UFUNCTION(BlueprintCallable)
+    void SwapSlots(int32 SlotA, int32 SlotB);
+
     UFUNCTION(BlueprintCallable, Category="Inventory")
     void Clear();
 
@@ -33,8 +36,5 @@ public:
 
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Inventory")
-    TArray<FInventorySlot> Slots;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Inventory")
-    int32 MaxSlotCount = 30;
+    FInventoryData InventoryData = FInventoryData();
 };

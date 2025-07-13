@@ -22,7 +22,7 @@ public:
     void Refresh();
 
     UFUNCTION(BlueprintCallable)
-    void SetInventorySource(UHarmoniaInventoryComponent* InComponent);
+    void SetInventoryComponent(UHarmoniaInventoryComponent* InComponent);
 
 public:
     UPROPERTY(meta = (BindWidget))
@@ -32,7 +32,10 @@ public:
     TSubclassOf<UHarmoniaInventorySlotWidget> SlotWidgetClass = nullptr;
 
     UPROPERTY()
-    TObjectPtr<UHarmoniaInventoryComponent> InventorySource = nullptr;
+    TObjectPtr<UHarmoniaInventoryComponent> InventoryComponent = nullptr;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Inventory")
+    FInventoryData InventoryData = FInventoryData();
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Inventory")
     int32 SlotMaxColumns = 10;

@@ -11,6 +11,9 @@ struct FInventorySlot
 {
     GENERATED_BODY()
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 Index = 0;
+
     // 아이템 고유 식별자
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FItemID ItemID = FItemID();
@@ -22,8 +25,8 @@ struct FInventorySlot
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float Durability = 0.0f;
 
-    FInventorySlot() : ItemID(), Count(0) {}
-    FInventorySlot(FItemID InId, int32 InCount) : ItemID(InId), Count(InCount) {}
+    FInventorySlot() : Index(0), ItemID(), Count(0), Durability(0.f) {}
+    FInventorySlot(int32 InIndex, FItemID InId, int32 InCount, float InDurability) : Index(InIndex), ItemID(InId), Count(InCount), Durability(InDurability) {}
 };
 
 // 인벤토리 전체 데이터

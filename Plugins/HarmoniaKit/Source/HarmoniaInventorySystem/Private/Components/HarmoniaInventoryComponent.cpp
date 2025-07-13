@@ -6,7 +6,7 @@ UHarmoniaInventoryComponent::UHarmoniaInventoryComponent()
 {
     // PrimaryComponentTick.bCanEverTick = false;
 
-    Slots.SetNum(MaxSlotCount);
+    InventoryData.Slots.SetNum(InventoryData.MaxSlotCount);
 }
 
 void UHarmoniaInventoryComponent::BeginPlay()
@@ -18,7 +18,7 @@ bool UHarmoniaInventoryComponent::AddItem(const FItemData& Item, int32 Count)
 {
     if (Count > 0)
     {
-        for (FInventorySlot& Slot : Slots)
+        for (FInventorySlot& Slot : InventoryData.Slots)
         {
             if (Slot.ItemID == Item.ItemId && Slot.Count > 0)
             {
@@ -28,14 +28,17 @@ bool UHarmoniaInventoryComponent::AddItem(const FItemData& Item, int32 Count)
             }
         }
 
-        for (FInventorySlot& Slot : Slots)
+        if (InventoryData.Slots.Num() != InventoryData.MaxSlotCount)
         {
-            if (Slot.Count == 0)
+            for (FInventorySlot& Slot : InventoryData.Slots)
             {
-                Slot.ItemID = Item.ItemId;
-                Slot.Durability = Item.Durabirity;
-                Slot.Count = Count;
-                return true;
+                if (Slot.Count == 0)
+                {
+                    Slot.ItemID = Item.ItemId;
+                    Slot.Durability = Item.Durabirity;
+                    Slot.Count = Count;
+                    return true;
+                }
             }
         }
     }
@@ -47,7 +50,7 @@ bool UHarmoniaInventoryComponent::RemoveItem(const FItemData& Item, int32 Count)
 {
     if (Count <= 0) return false;
 
-    for (FInventorySlot& Slot : Slots)
+    for (FInventorySlot& Slot : InventoryData.Slots)
     {
         if (Slot.ItemID == Item.ItemId && Slot.Count > 0)
         {
@@ -68,9 +71,17 @@ bool UHarmoniaInventoryComponent::RemoveItem(const FItemData& Item, int32 Count)
     return false;
 }
 
+void UHarmoniaInventoryComponent::SwapSlots(int32 SlotA, int32 SlotB)
+{
+    if (InventoryData.Slots.IsValidIndex(SlotA) && InventoryData.Slots.IsValidIndex(SlotB) && SlotA != SlotB)
+    {
+        InventoryData.Slots.Swap(SlotA, SlotB);
+    }
+}
+
 void UHarmoniaInventoryComponent::Clear()
 {
-    for (FInventorySlot& Slot : Slots)
+    for (FInventorySlot& Slot : InventoryData.Slots)
     {
         Slot.ItemID = FItemID();
         Slot.Count = 0;
@@ -80,7 +91,7 @@ void UHarmoniaInventoryComponent::Clear()
 int32 UHarmoniaInventoryComponent::GetTotalCount(const FItemData& Item) const
 {
     int32 Total = 0;
-    for (const FInventorySlot& Slot : Slots)
+    for (const FInventorySlot& Slot : InventoryData.Slots)
     {
         if (Slot.ItemID == Item.ItemId)
         {

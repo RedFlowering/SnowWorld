@@ -12,7 +12,7 @@ public class HarmoniaLoadManager : ModuleRules
         PublicIncludePaths.AddRange(
             new string[]
             {
-                Path.Combine(ModuleDirectory, "Private/Managers")
+                Path.Combine(ModuleDirectory, "Private/Macro")
             }
             );
 
