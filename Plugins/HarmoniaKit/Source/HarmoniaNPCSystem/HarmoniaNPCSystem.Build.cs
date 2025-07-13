@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class HarmoniaOnlineSubsystem: ModuleRules
+public class HarmoniaNPCSystem: ModuleRules
 {
-    public HarmoniaOnlineSubsystem(ReadOnlyTargetRules Target) : base(Target)
+    public HarmoniaNPCSystem(ReadOnlyTargetRules Target) : base(Target)
     {
         PrivateDependencyModuleNames.AddRange(new string[] {"Core", "CoreUObject", "Engine"});
     }

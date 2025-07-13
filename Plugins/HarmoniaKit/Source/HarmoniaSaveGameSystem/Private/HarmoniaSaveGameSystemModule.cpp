@@ -1,3 +1,5 @@
+// Copyright 2025 Snow Game Studio.
+
 #include "HarmoniaSaveGameSystemModule.h"
 #include "Modules/ModuleManager.h"
 

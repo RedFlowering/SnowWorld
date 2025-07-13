@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleInterface.h"
 
-class FHarmoniaSaveGameSystem : public FDefaultModuleImpl
+class FHarmoniaSkillSystem : public FDefaultModuleImpl
 {
 public:
 	virtual void StartupModule() override;
