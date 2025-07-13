@@ -100,17 +100,17 @@ void FHarmoniaMacroGenerator::GenerateMacroHeaderFromRegistry(const UHarmoniaReg
                 // Get<DataTable>()
                 Output += FString::Printf(TEXT("#define %s() HARMONIALOADMANAGER()->GetDataTableByKey(TEXT(\"%s\"))\n"), *MacroGet, *FunctionName);
 
-                // Find<Key>Row(RowName)
-                Output += FString::Printf(
-                    TEXT("#define %s(RowName) static_cast<const %s*>(%s() ? %s()->FindRow<%s>(RowName, TEXT(\"%s\")) : nullptr)\n"),
-                    *MacroFind, *StructName, *MacroGet, *MacroGet, *StructName, *MacroFind
-                );
+                //// Find<Key>Row(RowName)
+                //Output += FString::Printf(
+                //    TEXT("#define %s(RowName) static_cast<const %s*>(%s() ? %s()->FindRow<%s>(RowName, TEXT(\"%s\")) : nullptr)\n"),
+                //    *MacroFind, *StructName, *MacroGet, *MacroGet, *StructName, *MacroFind
+                //);
 
-                // GetAll<Key>Rows(OutRows)
-                Output += FString::Printf(
-                    TEXT("#define %s(OutRows) \\\n\tdo { \\\n\t\tOutRows.Empty(); \\\n\t\tif (UDataTable* Table = %s()) { \\\n\t\t\tfor (const auto& Elem : Table->GetRowMap()) { \\\n\t\t\t\tif (const %s* Row = reinterpret_cast<const %s*>(Elem.Value)) { \\\n\t\t\t\t\tOutRows.Add(Row); \\\n\t\t\t\t} \\\n\t\t\t} \\\n\t\t} \\\n\t} while(0)\n\n"),
-                    *MacroAll, *MacroGet, *StructName, *StructName
-                );
+                //// GetAll<Key>Rows(OutRows)
+                //Output += FString::Printf(
+                //    TEXT("#define %s(OutRows) \\\n\tdo { \\\n\t\tOutRows.Empty(); \\\n\t\tif (UDataTable* Table = %s()) { \\\n\t\t\tfor (const auto& Elem : Table->GetRowMap()) { \\\n\t\t\t\tif (const %s* Row = reinterpret_cast<const %s*>(Elem.Value)) { \\\n\t\t\t\t\tOutRows.Add(Row); \\\n\t\t\t\t} \\\n\t\t\t} \\\n\t\t} \\\n\t} while(0)\n\n"),
+                //    *MacroAll, *MacroGet, *StructName, *StructName
+                //);
 			}
         }
     }
@@ -170,23 +170,23 @@ void FHarmoniaMacroGenerator::GenerateFunctionLibraryFromRegistry(const UHarmoni
 
 				// Automatically generate BFL function signatures in headers
 				HeaderOutput += FString::Printf(TEXT("    UFUNCTION(BlueprintPure, Category = \"Harmonia|LoadManager\")\n    static UDataTable* %s();\n\n"), *FuncGet);
-				HeaderOutput += FString::Printf(TEXT("    UFUNCTION(BlueprintPure, Category = \"Harmonia|LoadManager\")\n    static %s %s(FName RowName);\n\n"), *StructName, *FuncFind);
-				HeaderOutput += FString::Printf(TEXT("    UFUNCTION(BlueprintPure, Category = \"Harmonia|LoadManager\")\n    static void %s(TArray<%s>& OutRows);\n\n"), *FuncAll, *StructName);
+				//HeaderOutput += FString::Printf(TEXT("    UFUNCTION(BlueprintPure, Category = \"Harmonia|LoadManager\")\n    static %s %s(FName RowName);\n\n"), *StructName, *FuncFind);
+				//HeaderOutput += FString::Printf(TEXT("    UFUNCTION(BlueprintPure, Category = \"Harmonia|LoadManager\")\n    static void %s(TArray<%s>& OutRows);\n\n"), *FuncAll, *StructName);
 
 				// Implementing CPP functions
 				SourceOutput += FString::Printf(TEXT("UDataTable* UHarmoniaDataTableBFL::%s()\n{\n    return HARMONIALOADMANAGER()->GetDataTableByKey(TEXT(\"%s\"));\n}\n\n"), *FuncGet, *Key);
 
-				// Find<Key>Row
-				SourceOutput += FString::Printf(
-					TEXT("%s UHarmoniaDataTableBFL::%s(FName RowName)\n{\n    if (UDataTable* Table = %s())\n    {\n        return *Table->FindRow<%s>(RowName, TEXT(\"%s\"));\n    }\n    return %s();\n}\n\n"),
-					*StructName, *FuncFind, *FuncGet, *StructName, *FuncFind, *StructName
-				);
+				//// Find<Key>Row
+				//SourceOutput += FString::Printf(
+				//	TEXT("%s UHarmoniaDataTableBFL::%s(FName RowName)\n{\n    if (UDataTable* Table = %s())\n    {\n        return *Table->FindRow<%s>(RowName, TEXT(\"%s\"));\n    }\n    return %s();\n}\n\n"),
+				//	*StructName, *FuncFind, *FuncGet, *StructName, *FuncFind, *StructName
+				//);
 
-				// GetAll<Key>Rows
-				SourceOutput += FString::Printf(
-					TEXT("void UHarmoniaDataTableBFL::%s(TArray<%s>& OutRows)\n{\n    OutRows.Empty();\n    if (UDataTable* Table = %s())\n    {\n        for (const auto& Elem : Table->GetRowMap())\n        {\n            if (%s* Row = reinterpret_cast<%s*>(Elem.Value))\n            {\n                OutRows.Add(*Row);\n            }\n        }\n    }\n}\n\n"),
-					*FuncAll, *StructName, *FuncGet, *StructName, *StructName
-				);
+				//// GetAll<Key>Rows
+				//SourceOutput += FString::Printf(
+				//	TEXT("void UHarmoniaDataTableBFL::%s(TArray<%s>& OutRows)\n{\n    OutRows.Empty();\n    if (UDataTable* Table = %s())\n    {\n        for (const auto& Elem : Table->GetRowMap())\n        {\n            if (%s* Row = reinterpret_cast<%s*>(Elem.Value))\n            {\n                OutRows.Add(*Row);\n            }\n        }\n    }\n}\n\n"),
+				//	*FuncAll, *StructName, *FuncGet, *StructName, *StructName
+				//);
 			}
 		}
     }

@@ -12,8 +12,8 @@ public class HarmoniaInstancingSystem: ModuleRules
                 "Core", 
                 "CoreUObject", 
                 "Engine",
-                "HarmoniaCore",
                 "HarmoniaLoadManager",
+                "HarmoniaItemSystem",
             });
     }
 }

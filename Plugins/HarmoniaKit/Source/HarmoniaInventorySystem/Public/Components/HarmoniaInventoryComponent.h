@@ -20,10 +20,10 @@ protected:
 
 public:
     UFUNCTION(BlueprintCallable, Category="Inventory")
-    bool AddItem(const FItemData& Item, int32 Count);
+    bool AddItem(const FHarmoniaID& ItemID, int32 Count, float Durabiliry);
 
     UFUNCTION(BlueprintCallable, Category="Inventory")
-    bool RemoveItem(const FItemData& Item, int32 Count);
+    bool RemoveItem(const FHarmoniaID& ItemID, int32 Count, float Durabiliry);
 
     UFUNCTION(BlueprintCallable)
     void SwapSlots(int32 SlotA, int32 SlotB);
@@ -32,7 +32,7 @@ public:
     void Clear();
 
     UFUNCTION(BlueprintCallable, Category="Inventory")
-    int32 GetTotalCount(const FItemData& Item) const;
+    int32 GetTotalCount(const FHarmoniaID& ItemID) const;
 
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Inventory")

@@ -25,6 +25,7 @@ void UHarmoniaInventorySlotWidget::SetSlotData(const FInventorySlot InSlot, UHar
     Slot.ItemID = InSlot.ItemID;
     Slot.Count = InSlot.Count;
     Slot.Durability = InSlot.Durability;
+    Slot.Icon = InSlot.Icon;
 
     InventoryComponent = InComponent;
     ParentWidget = InParent;
@@ -40,7 +41,7 @@ void UHarmoniaInventorySlotWidget::SetSlotData(const FInventorySlot InSlot, UHar
 
     if (ItemIconWidget)
     {
-        ItemIconWidget->SetSlotIcon(Slot.ItemID);
+        ItemIconWidget->SetSlotIcon(Slot.Icon.Get());
     }
 
     if (CountText)

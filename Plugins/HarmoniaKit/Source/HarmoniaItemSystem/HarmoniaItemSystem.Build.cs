@@ -6,6 +6,19 @@ public class HarmoniaItemSystem: ModuleRules
 {
     public HarmoniaItemSystem(ReadOnlyTargetRules Target) : base(Target)
     {
-        PrivateDependencyModuleNames.AddRange(new string[] {"Core", "CoreUObject", "Engine"});
+        PublicDependencyModuleNames.AddRange(
+        new string[]
+        {
+            "HarmoniaCore",
+            "HarmoniaInventorySystem",
+        });
+
+        PrivateDependencyModuleNames.AddRange(
+            new string[] 
+            {
+                "Core", 
+                "CoreUObject", 
+                "Engine",
+            });
     }
 }

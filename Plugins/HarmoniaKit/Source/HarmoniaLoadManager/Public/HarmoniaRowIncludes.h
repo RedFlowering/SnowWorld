@@ -3,4 +3,3 @@
 #pragma once
 #include "Engine/DataTable.h"
 #include "Definitions/HarmoniaMacroDefinitions.h"
-#include "Definitions/HarmoniaCoreDefinitions.h"

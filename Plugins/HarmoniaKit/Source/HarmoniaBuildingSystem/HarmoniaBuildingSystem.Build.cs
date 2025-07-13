@@ -26,7 +26,9 @@ public class HarmoniaBuildingSystem : ModuleRules
 			new string[]
 			{
 				"Core",
-				// ... add other public dependencies that you statically link with here ...
+				"HarmoniaCore",
+                "HarmoniaLoadManager",
+                "HarmoniaItemSystem",
 			}
 			);
 			
@@ -37,12 +39,9 @@ public class HarmoniaBuildingSystem : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"Slate",
-				"SlateCore",
-				"HarmoniaCore",
-				"HarmoniaLoadManager",
-				// ... add private dependencies that you statically link with here ...	
-			}
-			);
+                "SlateCore",
+            }
+            );
 		
 		
 		DynamicallyLoadedModuleNames.AddRange(

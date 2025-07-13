@@ -16,7 +16,7 @@ struct FInventorySlot
 
     // 아이템 고유 식별자
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FItemID ItemID = FItemID();
+    FHarmoniaID ItemID = FHarmoniaID();
 
     // 수량
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -25,8 +25,10 @@ struct FInventorySlot
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float Durability = 0.0f;
 
+    TSoftObjectPtr<UTexture2D> Icon = nullptr;
+
     FInventorySlot() : Index(0), ItemID(), Count(0), Durability(0.f) {}
-    FInventorySlot(int32 InIndex, FItemID InId, int32 InCount, float InDurability) : Index(InIndex), ItemID(InId), Count(InCount), Durability(InDurability) {}
+    FInventorySlot(int32 InIndex, FHarmoniaID InId, int32 InCount, float InDurability) : Index(InIndex), ItemID(InId), Count(InCount), Durability(InDurability) {}
 };
 
 // 인벤토리 전체 데이터
@@ -81,7 +83,7 @@ struct FInventoryChangeLog
     EInventoryChangeType ChangeType = EInventoryChangeType::Add;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FItemID ItemId = FItemID();
+    FHarmoniaID ItemId = FHarmoniaID();
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     int32 Count = 0;

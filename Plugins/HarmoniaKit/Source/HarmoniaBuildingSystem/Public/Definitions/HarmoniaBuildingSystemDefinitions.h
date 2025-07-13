@@ -4,6 +4,7 @@
 
 #include "Engine/DataTable.h"
 #include "Definitions/HarmoniaCoreDefinitions.h"
+
 #include "HarmoniaBuildingSystemDefinitions.generated.h"
 
 UENUM(BlueprintType)
@@ -37,7 +38,7 @@ struct FBuildingResourceCost
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FItemID Item = FItemID();
+    FHarmoniaID Item = FHarmoniaID();
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     int32 Count = 0;

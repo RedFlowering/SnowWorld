@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Blueprint/UserWidget.h"
-#include "Definitions/HarmoniaCoreDefinitions.h"
 #include "Definitions/HarmoniaInventorySystemDefinitions.h"
 #include "InputCoreTypes.h"
 

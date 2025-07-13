@@ -2,6 +2,7 @@
 
 #include "Managers/HarmoniaInstancedItemManager.h"
 #include "Definitions/HarmoniaMacroDefinitions.h"
+#include "Definitions/HarmoniaItemSystemDefinitions.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Controller.h"
 
@@ -12,34 +13,40 @@ AActor* UHarmoniaInstancedItemManager::SpawnWorldActor(const FHarmoniaInstancedO
 
     // ------ 예시 매핑 코드 시작 ------
     // (실전에서는 테이블 매니저/에셋 매니저 등에서 조회)
-    const FItemData* Item = FINDITEMROW(Data.DataId);
-    ItemActorClass = Item->WorldActorClass->GetClass();
-    // ------ 예시 매핑 코드 끝 ------
+    UDataTable* ItemDataTable = GETITEMDATATABLE();
 
-    if (!ItemActorClass)
+    if (ItemDataTable)
     {
-        UE_LOG(LogTemp, Warning, TEXT("UHarmoniaInstancedItemManager::SpawnWorldActor - No ActorClass for ItemId: %s"), *Data.DataId.ToString());
-        return nullptr;
+        const FItemData* Item = ItemDataTable->FindRow<FItemData>(Data.DataId, TEXT("FindItemRow"));
+        ItemActorClass = Item->WorldActorClass->GetClass();
+
+        if (!ItemActorClass)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("UHarmoniaInstancedItemManager::SpawnWorldActor - No ActorClass for ItemId: %s"), *Data.DataId.ToString());
+            return nullptr;
+        }
+
+        UWorld* World = GetWorld();
+        if (!World) return nullptr;
+
+        FActorSpawnParameters Params;
+        Params.Owner = Requestor;
+        Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+        AActor* SpawnedActor = World->SpawnActor<AActor>(ItemActorClass, Data.WorldTransform, Params);
+        if (SpawnedActor)
+        {
+            RegisterSpawnedActor(Data.InstanceGuid, SpawnedActor);
+
+            // (필요하다면) 액터에 아이템 데이터 주입 등 추가 처리
+            // ex) IWorldItemInterface::SetItemData(Data);
+
+            // (옵션) 상호작용 바인딩, 이펙트 등
+        }
+        return SpawnedActor;
     }
 
-    UWorld* World = GetWorld();
-    if (!World) return nullptr;
-
-    FActorSpawnParameters Params;
-    Params.Owner = Requestor;
-    Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-    AActor* SpawnedActor = World->SpawnActor<AActor>(ItemActorClass, Data.WorldTransform, Params);
-    if (SpawnedActor)
-    {
-        RegisterSpawnedActor(Data.InstanceGuid, SpawnedActor);
-
-        // (필요하다면) 액터에 아이템 데이터 주입 등 추가 처리
-        // ex) IWorldItemInterface::SetItemData(Data);
-
-        // (옵션) 상호작용 바인딩, 이펙트 등
-    }
-    return SpawnedActor;
+    return nullptr;
 }
 
 void UHarmoniaInstancedItemManager::DestroyWorldActor(AActor* Actor)

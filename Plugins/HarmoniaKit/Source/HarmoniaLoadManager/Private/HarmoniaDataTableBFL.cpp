@@ -10,27 +10,27 @@ UDataTable* UHarmoniaDataTableBFL::GetItemDataTable()
     return HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("Item"));
 }
 
-FItemData UHarmoniaDataTableBFL::FindItemRow(FName RowName)
-{
-    if (UDataTable* Table = GetItemDataTable())
-    {
-        return *Table->FindRow<FItemData>(RowName, TEXT("FindItemRow"));
-    }
-    return FItemData();
-}
-
-void UHarmoniaDataTableBFL::GetAllItemRows(TArray<FItemData>& OutRows)
-{
-    OutRows.Empty();
-    if (UDataTable* Table = GetItemDataTable())
-    {
-        for (const auto& Elem : Table->GetRowMap())
-        {
-            if (FItemData* Row = reinterpret_cast<FItemData*>(Elem.Value))
-            {
-                OutRows.Add(*Row);
-            }
-        }
-    }
-}
+//FItemData UHarmoniaDataTableBFL::FindItemRow(FName RowName)
+//{
+//    if (UDataTable* Table = GetItemDataTable())
+//    {
+//        return *Table->FindRow<FItemData>(RowName, TEXT("FindItemRow"));
+//    }
+//    return FItemData();
+//}
+//
+//void UHarmoniaDataTableBFL::GetAllItemRows(TArray<FItemData>& OutRows)
+//{
+//    OutRows.Empty();
+//    if (UDataTable* Table = GetItemDataTable())
+//    {
+//        for (const auto& Elem : Table->GetRowMap())
+//        {
+//            if (FItemData* Row = reinterpret_cast<FItemData*>(Elem.Value))
+//            {
+//                OutRows.Add(*Row);
+//            }
+//        }
+//    }
+//}
 
