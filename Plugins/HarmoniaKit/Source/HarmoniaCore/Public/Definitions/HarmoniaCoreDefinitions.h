@@ -72,6 +72,9 @@ struct FItemData : public FTableRowBase
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     float Durabirity = 0.f;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TSoftClassPtr<AActor> WorldActorClass;
+
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     TObjectPtr<UTexture2D> Icon = nullptr;
 
