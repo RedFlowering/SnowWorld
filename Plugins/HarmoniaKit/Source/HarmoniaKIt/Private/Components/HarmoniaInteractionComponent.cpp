@@ -32,31 +32,28 @@ AActor* UHarmoniaInteractionComponent::GetTargetActor()
 
 void UHarmoniaInteractionComponent::Interact()
 {
-    if (InteractionManager)
-    {
-        // 트레이스 통해 대상 획득
-        AActor* Target = GetTargetActor();
-        if (Target)
-        {
-            // 상호작용 컨텍스트 구성
-            FHarmoniaInteractionContext Context;
-            Context.Interactor = GetOwner();
-            Context.Interactable = Target;
-            Context.InteractionType = EHarmoniaInteractionType::Custom; // 혹은 상황별 지정
+    AActor* Target = GetTargetActor();
 
-            // 매니저에 상호작용 요청
-            if (GetOwner() && GetOwner()->HasAuthority())
-            {
-                // 서버에서만 직접 처리
-                InteractionManager->TryInteract(Context); 
-            }
-            else
-            {
-                // 클라이언트→서버 RPC 호출
-                Server_TryInteract(Context); 
-            }
-        }
-    }
+	if (InteractionManager && Target)
+	{
+		// 상호작용 컨텍스트 구성
+		FHarmoniaInteractionContext Context;
+		Context.Interactor = GetOwner();
+		Context.Interactable = Target;
+		Context.InteractionType = EHarmoniaInteractionType::Custom; // 혹은 상황별 지정
+
+		// 매니저에 상호작용 요청
+		if (GetOwner() && GetOwner()->HasAuthority())
+		{
+			// 서버에서만 직접 처리
+			InteractionManager->TryInteract(Context);
+		}
+		else
+		{
+			// 클라이언트→서버 RPC 호출
+			Server_TryInteract(Context);
+		}
+	}
 }
 
 void UHarmoniaInteractionComponent::Server_TryInteract_Implementation(const FHarmoniaInteractionContext& Context)

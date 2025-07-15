@@ -17,6 +17,7 @@ public class HarmoniaKit : ModuleRules
                 "Slate",
                 "SlateCore",
                 "HarmoniaLoadManager",
+                "HarmoniaWorldGenerator",
             });
     }
 }

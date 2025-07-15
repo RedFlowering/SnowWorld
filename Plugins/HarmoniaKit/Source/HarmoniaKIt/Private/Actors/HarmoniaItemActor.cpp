@@ -21,7 +21,7 @@ AHarmoniaItemActor::AHarmoniaItemActor()
 void AHarmoniaItemActor::BeginPlay()
 {
     Super::BeginPlay();
-    // (필요시: 메시/재질 등 동적 세팅)
+    // 메시/재질 등 동적 세팅
 }
 
 // 네트워크 동기화 프로퍼티 선언
