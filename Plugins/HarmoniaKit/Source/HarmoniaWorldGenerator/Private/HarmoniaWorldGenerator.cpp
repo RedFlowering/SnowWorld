@@ -1,17 +1,19 @@
 // Copyright 2025 Snow Game Studio.
 
-#include "HarmoniaWorldGeneratorSubsystem.h"
 #include "WorldGeneratorTypes.h"
 #include "PerlinNoiseHelper.h"
 
-/**
- * 코어 월드 생성 (지형 + 오브젝트)
- */
-void UHarmoniaWorldGeneratorSubsystem::GenerateWorld(const FWorldGeneratorConfig& Config, TArray<int32>& OutHeightData, TArray<FWorldObjectData>& OutObjects, TMap<EWorldObjectType, TSoftClassPtr<AActor>> ActorClassMap)
+void GenerateEarthLikeWorld(
+    const FWorldGeneratorConfig& Config,
+    TArray<FWorldObjectData>& OutObjects,
+    TArray<uint16>& OutHeightData, // Heightmap (Landscape 용)
+    TMap<EWorldObjectType, TSoftClassPtr<AActor>> ActorClassMap
+)
 {
     int32 SizeX = Config.SizeX;
     int32 SizeY = Config.SizeY;
 
+    // 1. 지형(높이맵) 생성
     OutHeightData.SetNumUninitialized(SizeX * SizeY);
 
     for (int32 Y = 0; Y < SizeY; ++Y)
@@ -25,21 +27,20 @@ void UHarmoniaWorldGeneratorSubsystem::GenerateWorld(const FWorldGeneratorConfig
             float Height01 = (HeightNorm + 1.f) * 0.5f;
             float FinalHeight = FMath::Max(Height01, Config.SeaLevel);
 
-            int32 HeightVal = (int32)FMath::Clamp(FinalHeight * 65535.f, 0.f, 65535.f);
+            uint16 HeightVal = (uint16)FMath::Clamp(FinalHeight * 65535.f, 0.f, 65535.f);
             OutHeightData[Y * SizeX + X] = HeightVal;
         }
     }
 
-    // 2. 오브젝트 자동 배치 (육지 위에만)
+    // 2. 오브젝트 자동 배치 (육지에만)
     FRandomStream Random(Config.Seed);
-    OutObjects.Empty();
     for (int32 i = 0; i < SizeX * SizeY * Config.ObjectDensity; ++i)
     {
         int32 X = Random.RandRange(0, SizeX - 1);
         int32 Y = Random.RandRange(0, SizeY - 1);
         float HeightNorm = (float)OutHeightData[Y * SizeX + X] / 65535.f;
 
-        if (HeightNorm > Config.SeaLevel + 0.02f)
+        if (HeightNorm > Config.SeaLevel + 0.02f) // 바다 위만
         {
             FVector Location(X * 100.f, Y * 100.f, HeightNorm * Config.MaxHeight);
             EWorldObjectType ObjType = (Random.FRand() > 0.7f) ? EWorldObjectType::Tree : EWorldObjectType::Rock;

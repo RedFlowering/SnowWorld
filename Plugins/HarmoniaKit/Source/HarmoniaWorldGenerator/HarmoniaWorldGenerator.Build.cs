@@ -6,6 +6,12 @@ public class HarmoniaWorldGenerator: ModuleRules
 {
     public HarmoniaWorldGenerator(ReadOnlyTargetRules Target) : base(Target)
     {
-        PrivateDependencyModuleNames.AddRange(new string[] {"Core", "CoreUObject", "Engine"});
+        PrivateDependencyModuleNames.AddRange(
+            new string[] 
+            {
+                "Core", 
+                "CoreUObject", 
+                "Engine"
+            });
     }
 }
