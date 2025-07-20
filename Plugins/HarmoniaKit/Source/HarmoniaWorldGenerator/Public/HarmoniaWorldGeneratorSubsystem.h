@@ -26,4 +26,6 @@ public:
      */
     UFUNCTION(BlueprintCallable, Category = "WorldGenerator")
     void GenerateWorld(const FWorldGeneratorConfig& Config, TArray<int32>& OutHeightData, TArray<FWorldObjectData>& OutObjects, TMap<EWorldObjectType, TSoftClassPtr<AActor>> ActorClassMap);
+
+    EWorldObjectType PickObjectType(const TMap<EWorldObjectType, float>& ProbMap, FRandomStream& Random);
 };

@@ -62,4 +62,8 @@ struct FWorldGeneratorConfig
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen")
     float SeaLevel = 0.42f; // 0~1
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen")
+    TMap<EWorldObjectType, float> ObjectTypeProbabilities;
 };
+

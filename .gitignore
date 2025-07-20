@@ -53,6 +53,7 @@
 # Precompiled Assets
 SourceArt/**/*.png
 SourceArt/**/*.tga
+ContentEx
 
 # Binary Files
 Binaries/*
