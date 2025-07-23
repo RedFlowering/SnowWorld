@@ -23,7 +23,7 @@ void UHarmoniaWorldGeneratorSubsystem::GenerateWorld(const FWorldGeneratorConfig
             float NormX = (float)X / (float)(SizeX - 1);
             float NormY = (float)Y / (float)(SizeY - 1);
 
-            float HeightNorm = PerlinNoiseHelper::GetEarthLikeHeight(NormX * 10, NormY * 10, Config.Seed);
+            float HeightNorm = PerlinNoiseHelper::GetEarthLikeHeight(NormX * 10, NormY * 10, Config.Seed, Config.NoiseSettings);
             float Height01 = (HeightNorm + 1.f) * 0.5f;
             float FinalHeight = FMath::Max(Height01, Config.SeaLevel);
 
@@ -69,18 +69,30 @@ void UHarmoniaWorldGeneratorSubsystem::GenerateWorld(const FWorldGeneratorConfig
 
 EWorldObjectType UHarmoniaWorldGeneratorSubsystem::PickObjectType(const TMap<EWorldObjectType, float>& ProbMap, FRandomStream& Random)
 {
-    float RandValue = Random.FRand();
-    float Cumulative = 0.0f;
+    if (ProbMap.Num() == 0)
+    {
+        return EWorldObjectType::None;
+    }
+
+    float TotalWeight = 0.f;
+
+    for (const auto& Elem : ProbMap)
+    {
+        TotalWeight += Elem.Value;
+    }
+
+    float RandValue = Random.FRandRange(0.f, TotalWeight);
+    float Cumulative = 0.f;
 
     for (const auto& Elem : ProbMap)
     {
         Cumulative += Elem.Value;
-        if (RandValue < Cumulative)
+        if (RandValue <= Cumulative)
         {
             return Elem.Key;
         }
     }
 
     // 혹시 합이 1이 안 되면 마지막 값 반환(실전에서는 예외 처리 추천)
-    return ProbMap.Num() > 0 ? ProbMap.CreateConstIterator()->Key : EWorldObjectType::None;
+    return ProbMap.CreateConstIterator()->Key;
 }

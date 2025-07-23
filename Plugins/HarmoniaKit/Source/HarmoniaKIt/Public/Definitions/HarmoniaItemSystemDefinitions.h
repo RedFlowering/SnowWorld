@@ -43,7 +43,7 @@ struct FItemData : public FTableRowBase
     float Weight = 0.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
-    float Durabirity = 0.f;
+    float Durability = 0.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TSoftClassPtr<AActor> WorldActorClass = nullptr;

@@ -23,7 +23,7 @@ void GenerateEarthLikeWorld(
             float NormX = (float)X / (float)(SizeX - 1);
             float NormY = (float)Y / (float)(SizeY - 1);
 
-            float HeightNorm = PerlinNoiseHelper::GetEarthLikeHeight(NormX * 10, NormY * 10, Config.Seed); // -1~1
+            float HeightNorm = PerlinNoiseHelper::GetEarthLikeHeight(NormX * 10, NormY * 10, Config.Seed, Config.NoiseSettings); // -1~1
             float Height01 = (HeightNorm + 1.f) * 0.5f;
             float FinalHeight = FMath::Max(Height01, Config.SeaLevel);
 
