@@ -109,7 +109,17 @@ ULyraInventoryItemInstance* FLyraInventoryList::AddEntry(TSubclassOf<ULyraInvent
 
 void FLyraInventoryList::AddEntry(ULyraInventoryItemInstance* Instance)
 {
-	unimplemented();
+	check(Instance != nullptr);
+	check(OwnerComponent);
+
+	AActor* OwningActor = OwnerComponent->GetOwner();
+	check(OwningActor->HasAuthority());
+
+	FLyraInventoryEntry& NewEntry = Entries.AddDefaulted_GetRef();
+	NewEntry.Instance = Instance;
+	NewEntry.StackCount = 1;
+
+	MarkItemDirty(NewEntry);
 }
 
 void FLyraInventoryList::RemoveEntry(ULyraInventoryItemInstance* Instance)

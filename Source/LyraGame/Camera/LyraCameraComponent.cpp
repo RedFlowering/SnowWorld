@@ -96,7 +96,7 @@ void ULyraCameraComponent::UpdateCameraModes()
 {
 	check(CameraModeStack);
 
-	if (CameraModeStack->IsStackActivate())
+	if (CameraModeStack->IsStackActive())
 	{
 		if (DetermineCameraModeDelegate.IsBound())
 		{
