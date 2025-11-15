@@ -6,7 +6,7 @@ namespace AlsPrivateMemberAccessor
 {
 	// Global pointer to a field or method.
 	template <typename AccessorName>
-	typename AccessorName::MemberType TMemberPointer;
+	AccessorName::MemberType TMemberPointer;
 
 	// Struct that is used to initialize TPointer.
 	template <typename AccessorName, typename AccessorName::MemberType MemberPointer>
@@ -24,30 +24,30 @@ namespace AlsPrivateMemberAccessor
 	template <typename AccessorName, typename AccessorName::MemberType MemberPointer>
 	TPointerInitializer<AccessorName, MemberPointer> TPointerInitializer<AccessorName, MemberPointer>::Instance;
 
-	// Function that helps access a field or call a method.
+	// Returns the value of the data member or invokes the member function referenced by this accessor.
 	template <typename AccessorName, typename ThisType, typename... ArgumentsType>
 	decltype(auto) Access(ThisType&& This, ArgumentsType&&... Arguments)
 	{
-		if constexpr (std::is_pointer_v<ThisType>)
+		if constexpr (std::is_pointer_v<std::remove_reference_t<ThisType>>)
 		{
-			if constexpr (sizeof...(Arguments) > 0)
+			if constexpr (sizeof...(ArgumentsType) > 0)
 			{
-				return (This->*TMemberPointer<AccessorName>)(Forward<ArgumentsType>(Arguments)...);
+				return (Forward<ThisType>(This)->*TMemberPointer<AccessorName>)(Forward<ArgumentsType>(Arguments)...);
 			}
 			else
 			{
-				return This->*TMemberPointer<AccessorName>;
+				return Forward<ThisType>(This)->*TMemberPointer<AccessorName>;
 			}
 		}
 		else
 		{
-			if constexpr (sizeof...(Arguments) > 0)
+			if constexpr (sizeof...(ArgumentsType) > 0)
 			{
-				return (This.*TMemberPointer<AccessorName>)(Forward<ArgumentsType>(Arguments)...);
+				return (Forward<ThisType>(This).*TMemberPointer<AccessorName>)(Forward<ArgumentsType>(Arguments)...);
 			}
 			else
 			{
-				return This.*TMemberPointer<AccessorName>;
+				return Forward<ThisType>(This).*TMemberPointer<AccessorName>;
 			}
 		}
 	}
@@ -66,4 +66,4 @@ namespace AlsPrivateMemberAccessor
 		} \
 	}; \
 	\
-	template struct AlsPrivateMemberAccessor::TPointerInitializer<AccessorName, MemberPointer>; \
+	template struct AlsPrivateMemberAccessor::TPointerInitializer<AccessorName, MemberPointer>;

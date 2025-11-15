@@ -74,6 +74,10 @@ protected:
 public:
 	AAlsCharacterExample();
 
+	virtual void PreInitializeComponents() override;
+
+	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
+
 	virtual void NotifyControllerChanged() override;
 
 	// Camera
@@ -86,7 +90,7 @@ protected:
 protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* Input) override;
 
-private:
+protected:
 	virtual void Input_OnLookMouse(const FInputActionValue& ActionValue);
 
 	virtual void Input_OnLook(const FInputActionValue& ActionValue);

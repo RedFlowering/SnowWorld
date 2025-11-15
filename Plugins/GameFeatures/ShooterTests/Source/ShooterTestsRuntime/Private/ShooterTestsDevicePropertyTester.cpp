@@ -7,6 +7,8 @@
 #include "Components/PrimitiveComponent.h"
 #include "Components/StaticMeshComponent.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(ShooterTestsDevicePropertyTester)
+
 DEFINE_LOG_CATEGORY_STATIC(LogShooterTestDeviceProperty, Log, All);
 
 AShooterTestsDevicePropertyTester::AShooterTestsDevicePropertyTester()

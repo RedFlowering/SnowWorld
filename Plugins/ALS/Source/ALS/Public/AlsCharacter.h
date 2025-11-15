@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ModularCharacter.h"
+#include "GameFramework/Character.h"
 #include "State/AlsLocomotionState.h"
 #include "State/AlsMantlingState.h"
 #include "State/AlsMovementBaseState.h"
@@ -8,6 +8,7 @@
 #include "State/AlsRollingState.h"
 #include "State/AlsViewState.h"
 #include "Utility/AlsGameplayTags.h"
+#include "ModularCharacter.h"
 #include "AlsCharacter.generated.h"
 
 struct FAlsMantlingParameters;
@@ -130,7 +131,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 
 	virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& ViewInfo) override;
 
@@ -441,7 +442,7 @@ protected:
 
 	virtual bool RefreshCustomGroundedNotMovingRotation(float DeltaTime);
 
-	float CalculateGroundedMovingRotationInterpolationSpeed() const;
+	float CalculateGroundedMovingRotationInterpolationHalfLife() const;
 
 	void RefreshGroundedAimingRotation(float DeltaTime);
 
@@ -457,9 +458,9 @@ protected:
 
 	void RefreshInAirAimingRotation(float DeltaTime);
 
-	void SetRotationSmooth(float TargetYawAngle, float DeltaTime, float InterpolationSpeed);
+	void SetRotationSmooth(float TargetYawAngle, float DeltaTime, float InterpolationHalfLife);
 
-	void SetRotationExtraSmooth(float TargetYawAngle, float DeltaTime, float InterpolationSpeed, float TargetYawAngleRotationSpeed);
+	void SetRotationExtraSmooth(float TargetYawAngle, float DeltaTime, float InterpolationHalfLife, float TargetYawAngleRotationSpeed);
 
 	void SetRotationInstant(float TargetYawAngle, ETeleportType Teleport = ETeleportType::None);
 

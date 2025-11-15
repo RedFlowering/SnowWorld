@@ -189,7 +189,7 @@ public:
 	void ActivateStack();
 	void DeactivateStack();
 
-	bool IsStackActive() const { return bIsActive; }
+	bool IsStackActivate() const { return bIsActive; }
 
 	void PushCameraMode(TSubclassOf<ULyraCameraMode> CameraModeClass);
 

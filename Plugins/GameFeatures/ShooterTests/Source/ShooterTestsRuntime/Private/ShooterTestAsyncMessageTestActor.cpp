@@ -12,6 +12,8 @@
 #include "NativeGameplayTags.h"
 #include "TimerManager.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(ShooterTestAsyncMessageTestActor)
+
 UE_DEFINE_GAMEPLAY_TAG(Message_Tag_Red, "Change.Color.Red")
 UE_DEFINE_GAMEPLAY_TAG(Message_Tag_Green, "Change.Color.Green")
 UE_DEFINE_GAMEPLAY_TAG(Message_Tag_Blue, "Change.Color.Blue")

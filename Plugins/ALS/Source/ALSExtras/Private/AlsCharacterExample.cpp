@@ -16,6 +16,16 @@ AAlsCharacterExample::AAlsCharacterExample()
 	Camera->SetRelativeRotation_Direct({0.0f, 90.0f, 0.0f});
 }
 
+void AAlsCharacterExample::PreInitializeComponents()
+{
+	Super::PreInitializeComponents();
+}
+
+void AAlsCharacterExample::EndPlay(EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+}
+
 void AAlsCharacterExample::NotifyControllerChanged()
 {
 	const auto* PreviousPlayer{Cast<APlayerController>(PreviousController)};

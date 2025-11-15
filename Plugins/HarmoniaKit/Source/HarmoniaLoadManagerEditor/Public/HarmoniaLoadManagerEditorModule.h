@@ -11,5 +11,5 @@ public:
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
 
-	void OnAssetSaved(UObject* Object);
+	void HandleObjectPreSave(UObject* Object, FObjectPreSaveContext Context);
 };

@@ -26,7 +26,7 @@ public:
 	TSoftObjectPtr<USoundBase> Sound;
 
 	// The icon to display	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(DisplayThumbnail="true", AllowedClasses="Texture,MaterialInterface,SlateTextureAtlasInterface", DisallowedClasses="MediaTexture"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(DisplayThumbnail="true", AllowedClasses="/Script/Engine.Texture,/Script/Engine.MaterialInterface,/Script/Engine.SlateTextureAtlasInterface", DisallowedClasses="/Script/MediaAssets.MediaTexture"))
 	TSoftObjectPtr<UObject> Icon;
 
 	// Duration (in seconds) to display this accolade
@@ -61,7 +61,7 @@ public:
 	TObjectPtr<USoundBase> Sound;
 
 	// The icon to display	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(DisplayThumbnail="true", AllowedClasses="Texture,MaterialInterface,SlateTextureAtlasInterface", DisallowedClasses="MediaTexture"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(DisplayThumbnail="true", AllowedClasses="/Script/Engine.Texture,/Script/Engine.MaterialInterface,/Script/Engine.SlateTextureAtlasInterface", DisallowedClasses="/Script/MediaAssets.MediaTexture"))
 	TObjectPtr<UObject> Icon;
 
 	// Tags associated with this accolade

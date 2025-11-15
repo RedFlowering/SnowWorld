@@ -189,7 +189,7 @@ void ALyraCharacter::NotifyControllerChanged()
 
 ALyraPlayerController* ALyraCharacter::GetLyraPlayerController() const
 {
-	return CastChecked<ALyraPlayerController>(GetController(), ECastCheckedType::NullAllowed);
+	return Cast<ALyraPlayerController>(GetController());
 }
 
 ALyraPlayerState* ALyraCharacter::GetLyraPlayerState() const

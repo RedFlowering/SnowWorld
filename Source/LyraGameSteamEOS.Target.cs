@@ -10,5 +10,15 @@ public class LyraGameSteamEOSTarget : LyraGameTarget
 	public LyraGameSteamEOSTarget(TargetInfo Target) : base(Target)
 	{
 		CustomConfig = "SteamEOS";
+
+		EnablePlugins.AddRange(
+			new string[]
+			{
+				"OnlineServicesEOS",
+				"OnlineSubsystemEOS"
+			}
+		);
+
+		OptionalPlugins.Add("EOSReservedHooks");
 	}
 }
