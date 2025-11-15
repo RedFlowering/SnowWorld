@@ -6,81 +6,115 @@
 #include "Definitions/HarmoniaBuildingSystemDefinitions.h"
 #include "HarmoniaBuildingComponent.generated.h"
 
-//class ABuildingPreviewActor;
-// class UBuildingInstanceManagerComponent;
+class AHarmoniaBuildingPreviewActor;
+class UHarmoniaBuildingInstanceManager;
 class APlayerController;
-// class USenseReceiverComponent;
+class UHarmoniaInventoryComponent;
 class UInputMappingContext;
+class UDataTable;
 
 UCLASS(ClassGroup=(Custom), meta = ( BlueprintSpawnableComponent ))
 class HARMONIAKIT_API UHarmoniaBuildingComponent : public UActorComponent
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    UHarmoniaBuildingComponent();
+	UHarmoniaBuildingComponent();
 
-//    // === ¸ğµå Á¦¾î ===
-//    UFUNCTION(BlueprintCallable)
-//    void EnterBuildingMode();
-//
-//    UFUNCTION(BlueprintCallable)
-//    void ExitBuildingMode();
-//
-//    UFUNCTION(BlueprintCallable)
-//    void SetBuildingMode(EBuildingMode NewMode);
-//
-//    UFUNCTION(BlueprintCallable)
-//    void SetSelectedPart(FName PartID);
-//
-//    // === Tick Ã³¸® ===
-//    virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-//
-//protected:
-//    virtual void BeginPlay() override;
-//
-//    // === ÀÔ·Â Ã³¸® ===
-//    void SetupInput();
-//    void HandlePlaceAction();
-//    void HandleRotateAction();
-//    void HandleCancelAction();
-//
-//    // === ÇÁ¸®ºä ¾×ÅÍ °ü¸® ===
-//    void SpawnPreviewActor();
-//    void UpdatePreviewTransform();
-//    void DestroyPreviewActor();
-//
-//    // === ¹èÄ¡ Ã³¸® ===
-//    void PlaceCurrentPart(); // <- ¿©±â¿¡ RequiredResources °Ë»ç Ãß°¡
-//    bool ValidatePlacement(FVector& OutLocation, FRotator& OutRotation);
-//
-//    // === ³»ºÎ À¯Æ¿ ===
-//    FBuildingPartData* GetCurrentPartData() const;
-//
-//private:
-//    // === »óÅÂ ===
-//    EBuildingMode CurrentMode;
-//    
-//    UPROPERTY()
-//    FName SelectedPartID;
-//
-//    // === ¿ÜºÎ ÂüÁ¶ ===
-//    UPROPERTY()
-//    APlayerController* CachedPC;
-//
-//    UPROPERTY()
-//    ABuildingPreviewActor* PreviewActor;
-//
-//    UPROPERTY()
-//    UBuildingInstanceManagerComponent* InstanceManager;
-//
-//    UPROPERTY()
-//    USenseReceiverComponent* SenseReceiver;
-//
-//    // === ¼³Á¤ ===
-//    UPROPERTY(EditDefaultsOnly, Category = "Building")
-//    TSubclassOf<ABuildingPreviewActor> PreviewActorClass;
-//
-//    UPROPERTY(EditDefaultsOnly, Category = "Input")
-//    UInputMappingContext* InputMapping;
+	// === ëª¨ë“œ ì œì–´ ===
+	UFUNCTION(BlueprintCallable, Category = "Building")
+	void EnterBuildingMode();
+
+	UFUNCTION(BlueprintCallable, Category = "Building")
+	void ExitBuildingMode();
+
+	UFUNCTION(BlueprintCallable, Category = "Building")
+	void SetBuildingMode(EBuildingMode NewMode);
+
+	UFUNCTION(BlueprintCallable, Category = "Building")
+	void SetSelectedPart(FName PartID);
+
+	// === í˜„ì¬ ì„ íƒëœ íŒŒíŠ¸ ì •ë³´ ===
+	UFUNCTION(BlueprintPure, Category = "Building")
+	FName GetSelectedPartID() const { return SelectedPartID; }
+
+	UFUNCTION(BlueprintPure, Category = "Building")
+	EBuildingMode GetCurrentMode() const { return CurrentMode; }
+
+	// === Tick ì²˜ë¦¬ ===
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+protected:
+	virtual void BeginPlay() override;
+
+	// === ì…ë ¥ ì²˜ë¦¬ ===
+	void SetupInput();
+	void HandlePlaceAction();
+	void HandleRotateAction();
+	void HandleCancelAction();
+
+	// === í”„ë¦¬ë·° ê´€ë ¨ í•¨ìˆ˜ ===
+	void SpawnPreviewActor();
+	void UpdatePreviewTransform();
+	void DestroyPreviewActor();
+
+	// === ë°°ì¹˜ ì²˜ë¦¬ ===
+	void PlaceCurrentPart();
+	bool ValidatePlacement(FVector& OutLocation, FRotator& OutRotation);
+
+	// === ìœ í‹¸ í•¨ìˆ˜ ===
+	FBuildingPartData* GetCurrentPartData() const;
+
+	// === ìì› ê²€ì‚¬ ===
+	bool CheckAndConsumeResources(const FBuildingPartData& PartData);
+
+private:
+	// === ìƒíƒœ ===
+	EBuildingMode CurrentMode;
+
+	UPROPERTY()
+	FName SelectedPartID;
+
+	// === ì™¸ë¶€ ì°¸ì¡° ===
+	UPROPERTY()
+	TObjectPtr<APlayerController> CachedPC;
+
+	UPROPERTY()
+	TObjectPtr<AHarmoniaBuildingPreviewActor> PreviewActor;
+
+	UPROPERTY()
+	TObjectPtr<UHarmoniaBuildingInstanceManager> InstanceManager;
+
+	UPROPERTY()
+	TObjectPtr<UHarmoniaInventoryComponent> InventoryComponent;
+
+	// === ì„¤ì • ===
+	UPROPERTY(EditDefaultsOnly, Category = "Building")
+	TSubclassOf<AHarmoniaBuildingPreviewActor> PreviewActorClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputMappingContext> InputMapping;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Building|DataTable")
+	FName BuildingDataTableKey = FName(TEXT("BuildingParts"));
+
+	// === ë°°ì¹˜ ê²€ì¦ ì„¤ì • ===
+	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
+	float MaxPlacementDistance = 500.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
+	float SnapDistance = 100.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
+	float GridSize = 100.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
+	bool bUseGridSnapping = true;
+
+	// í˜„ì¬ íšŒì „ ê°ë„ (ëˆ„ì )
+	float CurrentRotationYaw = 0.0f;
+
+	// ìºì‹œëœ ê±´ì¶•ë¬¼ ë°ì´í„° í…Œì´ë¸”
+	UPROPERTY()
+	TObjectPtr<UDataTable> CachedBuildingDataTable;
 };
