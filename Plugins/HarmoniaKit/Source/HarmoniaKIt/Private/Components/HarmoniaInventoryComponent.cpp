@@ -9,14 +9,14 @@
 
 UHarmoniaInventoryComponent::UHarmoniaInventoryComponent()
 {
-	SetIsReplicated(true);
-
-	InventoryData.Slots.SetNum(InventoryData.MaxSlotCount);
+	SetIsReplicatedByDefault(true);
 }
 
 void UHarmoniaInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	InventoryData.Slots.SetNum(InventoryData.MaxSlotCount);
 }
 
 void UHarmoniaInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
