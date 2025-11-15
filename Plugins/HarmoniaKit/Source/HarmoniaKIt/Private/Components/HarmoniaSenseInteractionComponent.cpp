@@ -194,9 +194,14 @@ void UHarmoniaSenseInteractionComponent::Server_TryInteract_Implementation(
 	Context.InteractionType = EHarmoniaInteractionType::Custom;
 
 	// Try to get specific interaction type from target
-	if (FSenseInteractionData* InteractionData = Target->GetInteractionConfigBySensorTag(SensorTag))
+	FSenseInteractionData Data;
+
+	if (Target->GetInteractionConfigBySensorTag(SensorTag, Data))
 	{
-		Context.InteractionType = InteractionData->Config.InteractionType;
+		if (FSenseInteractionData* InteractionData = &Data)
+		{
+			Context.InteractionType = InteractionData->Config.InteractionType;
+		}
 	}
 
 	// Perform interaction
@@ -348,80 +353,46 @@ void UHarmoniaSenseInteractionComponent::HandleInteractAction(const FInputAction
 // ============================================================================
 // Sense System Callbacks
 // ============================================================================
-
-void UHarmoniaSenseInteractionComponent::OnNewSenseDetected(
-	const USensorBase* SensorPtr,
-	int32 Channel,
-	const TArray<FSensedStimulus>& SensedStimuli)
+void UHarmoniaSenseInteractionComponent::OnNewSenseDetected(const USensorBase* SensorPtr, int32 Channel, const TArray<FSensedStimulus> SensedStimuli)
 {
-	if (!SensorPtr)
+	if (SensorPtr && MonitoredSensorTags.Contains(SensorPtr->SensorTag))
 	{
-		return;
+		const FName SensorTag = SensorPtr->SensorTag;
+		ProcessSensedStimuli(SensedStimuli, SensorTag, true);
 	}
-
-	// Check if we're monitoring this sensor
-	const FName SensorTag = SensorPtr->SensorTag;
-	if (!MonitoredSensorTags.Contains(SensorTag))
-	{
-		return;
-	}
-
-	ProcessSensedStimuli(SensedStimuli, SensorTag, true);
 }
 
-void UHarmoniaSenseInteractionComponent::OnSenseLost(
-	const USensorBase* SensorPtr,
-	int32 Channel,
-	const TArray<FSensedStimulus>& SensedStimuli)
+void UHarmoniaSenseInteractionComponent::OnSenseLost(const USensorBase* SensorPtr, int32 Channel, const TArray<FSensedStimulus> SensedStimuli)
 {
-	if (!SensorPtr)
+	if (SensorPtr)
 	{
-		return;
-	}
-
-	// Remove lost stimuli from tracking
-	for (const FSensedStimulus& Stimulus : SensedStimuli)
-	{
-		if (Stimulus.StimulusComponent.IsValid())
+		for (const FSensedStimulus& Stimulus : SensedStimuli)
 		{
-			if (UHarmoniaSenseInteractableComponent* Interactable =
-				Cast<UHarmoniaSenseInteractableComponent>(Stimulus.StimulusComponent.Get()))
+			if (Stimulus.StimulusComponent.IsValid())
 			{
-				RemoveInteractableTarget(Interactable);
-				OnInteractableLost.Broadcast(Interactable, SensorPtr->SensorTag);
+				if (UHarmoniaSenseInteractableComponent* Interactable = Cast<UHarmoniaSenseInteractableComponent>(Stimulus.StimulusComponent.Get()))
+				{
+					RemoveInteractableTarget(Interactable);
+					OnInteractableLost.Broadcast(Interactable, SensorPtr->SensorTag);
+				}
 			}
 		}
 	}
 }
 
-void UHarmoniaSenseInteractionComponent::OnSenseUpdated(
-	const USensorBase* SensorPtr,
-	int32 Channel,
-	const TArray<FSensedStimulus>& SensedStimuli)
+void UHarmoniaSenseInteractionComponent::OnSenseUpdated(const USensorBase* SensorPtr, int32 Channel, const TArray<FSensedStimulus> SensedStimuli)
 {
-	if (!SensorPtr)
+	if (SensorPtr && MonitoredSensorTags.Contains(SensorPtr->SensorTag))
 	{
-		return;
+		const FName SensorTag = SensorPtr->SensorTag;
+		ProcessSensedStimuli(SensedStimuli, SensorTag, false);
 	}
-
-	// Check if we're monitoring this sensor
-	const FName SensorTag = SensorPtr->SensorTag;
-	if (!MonitoredSensorTags.Contains(SensorTag))
-	{
-		return;
-	}
-
-	ProcessSensedStimuli(SensedStimuli, SensorTag, false);
 }
 
 // ============================================================================
 // Target Processing
 // ============================================================================
-
-void UHarmoniaSenseInteractionComponent::ProcessSensedStimuli(
-	const TArray<FSensedStimulus>& SensedStimuli,
-	FName SensorTag,
-	bool bIsNewSense)
+void UHarmoniaSenseInteractionComponent::ProcessSensedStimuli(const TArray<FSensedStimulus>& SensedStimuli, FName SensorTag, bool bIsNewSense)
 {
 	for (const FSensedStimulus& Stimulus : SensedStimuli)
 	{
@@ -431,11 +402,10 @@ void UHarmoniaSenseInteractionComponent::ProcessSensedStimuli(
 		}
 
 		// Check if the stimulus component is a sense-based interactable
-		if (UHarmoniaSenseInteractableComponent* Interactable =
-			Cast<UHarmoniaSenseInteractableComponent>(Stimulus.StimulusComponent.Get()))
+		if (UHarmoniaSenseInteractableComponent* Interactable = Cast<UHarmoniaSenseInteractableComponent>(Stimulus.StimulusComponent.Get()))
 		{
 			// Check if interactable is active
-			if (!Interactable->bIsActive)
+			if (!Interactable->bIsSenseActive)
 			{
 				continue;
 			}
@@ -452,10 +422,7 @@ void UHarmoniaSenseInteractionComponent::ProcessSensedStimuli(
 	}
 }
 
-void UHarmoniaSenseInteractionComponent::AddInteractableTarget(
-	UHarmoniaSenseInteractableComponent* Interactable,
-	const FSensedStimulus& Stimulus,
-	FName SensorTag)
+void UHarmoniaSenseInteractionComponent::AddInteractableTarget(UHarmoniaSenseInteractableComponent* Interactable, const FSensedStimulus& Stimulus, FName SensorTag)
 {
 	if (!Interactable)
 	{
@@ -477,8 +444,7 @@ void UHarmoniaSenseInteractionComponent::AddInteractableTarget(
 	// Calculate distance
 	const AActor* Owner = GetOwner();
 	const AActor* TargetActor = Interactable->GetOwner();
-	const float Distance = Owner && TargetActor ?
-		FVector::Dist(Owner->GetActorLocation(), TargetActor->GetActorLocation()) : 0.0f;
+	const float Distance = Owner && TargetActor ? FVector::Dist(Owner->GetActorLocation(), TargetActor->GetActorLocation()) : 0.0f;
 
 	// Update or add target
 	FInteractableTargetInfo TargetInfo;
@@ -612,25 +578,26 @@ void UHarmoniaSenseInteractionComponent::ProcessAutomaticInteractions(float Delt
 		}
 
 		// Get interaction config for this target
-		FSenseInteractionData* InteractionData =
-			TargetInfo.InteractableComponent->GetInteractionConfigBySensorTag(TargetInfo.SensorTag);
+		FSenseInteractionData Data;
+		FSenseInteractionData* InteractionData;
 
-		if (!InteractionData)
+		if (TargetInfo.InteractableComponent->GetInteractionConfigBySensorTag(TargetInfo.SensorTag, Data))
 		{
-			continue;
-		}
+			InteractionData = &Data;
 
-		// Check if automatic interaction should trigger
-		if (ShouldTriggerAutomaticInteraction(TargetInfo, InteractionData))
-		{
-			TryInteractWithTarget(TargetInfo.InteractableComponent);
+			if (InteractionData)
+			{
+				// Check if automatic interaction should trigger
+				if (ShouldTriggerAutomaticInteraction(TargetInfo, InteractionData))
+				{
+					TryInteractWithTarget(TargetInfo.InteractableComponent);
+				}
+			}
 		}
 	}
 }
 
-bool UHarmoniaSenseInteractionComponent::ShouldTriggerAutomaticInteraction(
-	const FInteractableTargetInfo& TargetInfo,
-	const FSenseInteractionData* InteractionData) const
+bool UHarmoniaSenseInteractionComponent::ShouldTriggerAutomaticInteraction(const FInteractableTargetInfo& TargetInfo, const FSenseInteractionData* InteractionData) const
 {
 	if (!InteractionData || !InteractionData->Config.bEnabled)
 	{

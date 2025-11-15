@@ -66,7 +66,7 @@ public:
 	 * Whether this interactable is currently active
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sense Interaction")
-	bool bIsActive = true;
+	bool bIsSenseActive = true;
 
 	/**
 	 * Debug visualization settings
@@ -94,13 +94,13 @@ public:
 	 * Get interaction config for a specific sensor tag
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Sense Interaction")
-	FSenseInteractionData* GetInteractionConfigBySensorTag(FName SensorTag);
+	bool GetInteractionConfigBySensorTag(FName SensorTag, FSenseInteractionData& OutData) const;
 
 	/**
 	 * Get interaction config by trigger type
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Sense Interaction")
-	FSenseInteractionData* GetInteractionConfigByTriggerType(ESenseInteractionTriggerType TriggerType);
+	bool GetInteractionConfigByTriggerType(ESenseInteractionTriggerType TriggerType, FSenseInteractionData& OutData) const;
 
 	/**
 	 * Add a new interaction configuration at runtime

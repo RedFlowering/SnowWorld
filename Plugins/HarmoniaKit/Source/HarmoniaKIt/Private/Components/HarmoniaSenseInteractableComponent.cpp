@@ -10,9 +10,6 @@ UHarmoniaSenseInteractableComponent::UHarmoniaSenseInteractableComponent(const F
 	: Super(ObjectInitializer)
 {
 	PrimaryComponentTick.bCanEverTick = false;
-
-	// Set default sense stimulus settings
-	bAutoRegisterSenseStimulus = true;
 }
 
 void UHarmoniaSenseInteractableComponent::BeginPlay()
@@ -31,11 +28,9 @@ void UHarmoniaSenseInteractableComponent::EndPlay(const EEndPlayReason::Type End
 // Interaction Interface Implementation
 // ============================================================================
 
-void UHarmoniaSenseInteractableComponent::OnInteract_Implementation(
-	const FHarmoniaInteractionContext& Context,
-	FHarmoniaInteractionResult& OutResult)
+void UHarmoniaSenseInteractableComponent::OnInteract_Implementation(const FHarmoniaInteractionContext& Context, FHarmoniaInteractionResult& OutResult)
 {
-	if (!bIsActive)
+	if (!bIsSenseActive)
 	{
 		OutResult.bSuccess = false;
 		OutResult.Message = TEXT("Interactable is not active");
@@ -82,29 +77,31 @@ void UHarmoniaSenseInteractableComponent::OnInteract_Implementation(
 // Sense Interaction Functions
 // ============================================================================
 
-FSenseInteractionData* UHarmoniaSenseInteractableComponent::GetInteractionConfigBySensorTag(FName SensorTag)
+bool UHarmoniaSenseInteractableComponent::GetInteractionConfigBySensorTag(FName SensorTag, FSenseInteractionData& OutData) const
 {
-	for (FSenseInteractionData& InteractionData : InteractionConfigs)
+	for (const FSenseInteractionData& InteractionData : InteractionConfigs)
 	{
 		if (InteractionData.Config.SensorTag == SensorTag)
 		{
-			return &InteractionData;
+			OutData = InteractionData; // บนป็ OK
+			return true;
 		}
 	}
-	return nullptr;
+	return false;
 }
 
-FSenseInteractionData* UHarmoniaSenseInteractableComponent::GetInteractionConfigByTriggerType(
-	ESenseInteractionTriggerType TriggerType)
+bool UHarmoniaSenseInteractableComponent::GetInteractionConfigByTriggerType(ESenseInteractionTriggerType TriggerType, FSenseInteractionData& OutData)  const
 {
-	for (FSenseInteractionData& InteractionData : InteractionConfigs)
+	for (const FSenseInteractionData& InteractionData : InteractionConfigs)
 	{
 		if (InteractionData.Config.TriggerType == TriggerType)
 		{
-			return &InteractionData;
+			OutData = InteractionData;
+			return true;
 		}
 	}
-	return nullptr;
+
+	return false;
 }
 
 void UHarmoniaSenseInteractableComponent::AddInteractionConfig(const FSenseInteractionConfig& Config)
@@ -128,9 +125,14 @@ bool UHarmoniaSenseInteractableComponent::RemoveInteractionConfig(FName SensorTa
 
 void UHarmoniaSenseInteractableComponent::SetInteractionEnabled(FName SensorTag, bool bEnabled)
 {
-	if (FSenseInteractionData* InteractionData = GetInteractionConfigBySensorTag(SensorTag))
+	FSenseInteractionData Data;
+
+	if (GetInteractionConfigBySensorTag(SensorTag, Data))
 	{
-		InteractionData->Config.bEnabled = bEnabled;
+		if (FSenseInteractionData* InteractionData = &Data)
+		{
+			InteractionData->Config.bEnabled = bEnabled;
+		}
 	}
 }
 
@@ -144,9 +146,14 @@ void UHarmoniaSenseInteractableComponent::SetAllInteractionsEnabled(bool bEnable
 
 void UHarmoniaSenseInteractableComponent::ResetInteractionData(FName SensorTag)
 {
-	if (FSenseInteractionData* InteractionData = GetInteractionConfigBySensorTag(SensorTag))
+	FSenseInteractionData Data;
+
+	if (GetInteractionConfigBySensorTag(SensorTag, Data))
 	{
-		InteractionData->Reset();
+		if (FSenseInteractionData* InteractionData = &Data)
+		{
+			InteractionData->Reset();
+		}
 	}
 }
 
@@ -160,7 +167,7 @@ void UHarmoniaSenseInteractableComponent::ResetAllInteractionData()
 
 bool UHarmoniaSenseInteractableComponent::IsInteractionAvailable(FName SensorTag) const
 {
-	if (!bIsActive)
+	if (!bIsSenseActive)
 	{
 		return false;
 	}

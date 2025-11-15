@@ -14,6 +14,16 @@ class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
 
+
+// ============================================================================
+// Delegate Signatures
+// ============================================================================
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInteractableSensedDelegate, UHarmoniaSenseInteractableComponent*, Interactable, FName, SensorTag);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInteractableLostDelegate, UHarmoniaSenseInteractableComponent*, Interactable, FName, SensorTag);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBestTargetChangedDelegate, UHarmoniaSenseInteractableComponent*, NewBestTarget, UHarmoniaSenseInteractableComponent*, OldBestTarget);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnInteractionCompletedDelegate, UHarmoniaSenseInteractableComponent*, Target, FName, SensorTag, const FHarmoniaInteractionResult&, Result);
+
 /**
  * Interactable Target Info
  * Contains information about a sensed interactable target
@@ -274,28 +284,19 @@ protected:
 	 * Called when a new sense is detected
 	 */
 	UFUNCTION()
-	virtual void OnNewSenseDetected(
-		const USensorBase* SensorPtr,
-		int32 Channel,
-		const TArray<FSensedStimulus>& SensedStimuli);
+	virtual void OnNewSenseDetected(const USensorBase* SensorPtr, int32 Channel, const TArray<FSensedStimulus> SensedStimuli);
 
 	/**
 	 * Called when a sense is lost
 	 */
 	UFUNCTION()
-	virtual void OnSenseLost(
-		const USensorBase* SensorPtr,
-		int32 Channel,
-		const TArray<FSensedStimulus>& SensedStimuli);
+	virtual void OnSenseLost(const USensorBase* SensorPtr, int32 Channel, const TArray<FSensedStimulus> SensedStimuli);
 
 	/**
 	 * Called for current sense updates
 	 */
 	UFUNCTION()
-	virtual void OnSenseUpdated(
-		const USensorBase* SensorPtr,
-		int32 Channel,
-		const TArray<FSensedStimulus>& SensedStimuli);
+	virtual void OnSenseUpdated(const USensorBase* SensorPtr, int32 Channel, const TArray<FSensedStimulus> SensedStimuli);
 
 	// ============================================================================
 	// Target Processing
@@ -358,28 +359,3 @@ protected:
 	/** Last best target (for change detection) */
 	TWeakObjectPtr<UHarmoniaSenseInteractableComponent> LastBestTarget = nullptr;
 };
-
-// ============================================================================
-// Delegate Signatures
-// ============================================================================
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
-	FOnInteractableSensedDelegate,
-	UHarmoniaSenseInteractableComponent*, Interactable,
-	FName, SensorTag);
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
-	FOnInteractableLostDelegate,
-	UHarmoniaSenseInteractableComponent*, Interactable,
-	FName, SensorTag);
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
-	FOnBestTargetChangedDelegate,
-	UHarmoniaSenseInteractableComponent*, NewBestTarget,
-	UHarmoniaSenseInteractableComponent*, OldBestTarget);
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
-	FOnInteractionCompletedDelegate,
-	UHarmoniaSenseInteractableComponent*, Target,
-	FName, SensorTag,
-	const FHarmoniaInteractionResult&, Result);

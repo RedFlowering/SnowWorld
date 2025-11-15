@@ -11,6 +11,18 @@ class UStaticMeshComponent;
 class UWidgetComponent;
 
 /**
+ * Visual state for interactable actors
+ */
+UENUM(BlueprintType)
+enum class EInteractableVisualState : uint8
+{
+	Idle UMETA(DisplayName="Idle"),
+	Highlighted UMETA(DisplayName="Highlighted"),
+	Active UMETA(DisplayName="Active"),
+	Disabled UMETA(DisplayName="Disabled")
+};
+
+/**
  * Sense-Based Interactable Actor
  *
  * Base class for actors that can be interacted with through the Sense System.
@@ -222,16 +234,4 @@ private:
 
 	/** Current number of actors sensing this */
 	int32 SensingActorCount = 0;
-};
-
-/**
- * Visual state for interactable actors
- */
-UENUM(BlueprintType)
-enum class EInteractableVisualState : uint8
-{
-	Idle UMETA(DisplayName="Idle"),
-	Highlighted UMETA(DisplayName="Highlighted"),
-	Active UMETA(DisplayName="Active"),
-	Disabled UMETA(DisplayName="Disabled")
 };

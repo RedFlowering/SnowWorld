@@ -191,7 +191,7 @@ void AHarmoniaSenseInteractableActor::DisableInteractable()
 {
 	if (InteractableComponent)
 	{
-		InteractableComponent->bIsActive = false;
+		InteractableComponent->bIsSenseActive = false;
 		InteractableComponent->SetAllInteractionsEnabled(false);
 	}
 
@@ -203,7 +203,7 @@ void AHarmoniaSenseInteractableActor::EnableInteractable()
 {
 	if (InteractableComponent)
 	{
-		InteractableComponent->bIsActive = true;
+		InteractableComponent->bIsSenseActive = true;
 		InteractableComponent->SetAllInteractionsEnabled(true);
 		InteractableComponent->ResetAllInteractionData();
 	}
