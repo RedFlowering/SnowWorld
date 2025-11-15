@@ -292,7 +292,7 @@ bool UHarmoniaBuildingComponent::CheckAndConsumeResources(const FBuildingPartDat
 		if (CurrentCount < Cost.Count)
 		{
 			UE_LOG(LogBuildingSystem, Warning, TEXT("Insufficient resource: %s (Required: %d, Have: %d)"),
-				*Cost.Item.ID.ToString(), Cost.Count, CurrentCount);
+				*Cost.Item.Id.ToString(), Cost.Count, CurrentCount);
 			return false;
 		}
 	}
@@ -303,13 +303,13 @@ bool UHarmoniaBuildingComponent::CheckAndConsumeResources(const FBuildingPartDat
 		bool bSuccess = InventoryComponent->RemoveItem(Cost.Item, Cost.Count, 0.0f);
 		if (!bSuccess)
 		{
-			UE_LOG(LogBuildingSystem, Error, TEXT("Failed to remove item: %s"), *Cost.Item.ID.ToString());
+			UE_LOG(LogBuildingSystem, Error, TEXT("Failed to remove item: %s"), *Cost.Item.Id.ToString());
 			// TODO: 롤백 로직 필요 (이미 제거된 아이템 복구)
 			return false;
 		}
 		else
 		{
-			UE_LOG(LogBuildingSystem, Log, TEXT("Consumed resource: %s x%d"), *Cost.Item.ID.ToString(), Cost.Count);
+			UE_LOG(LogBuildingSystem, Log, TEXT("Consumed resource: %s x%d"), *Cost.Item.Id.ToString(), Cost.Count);
 		}
 	}
 

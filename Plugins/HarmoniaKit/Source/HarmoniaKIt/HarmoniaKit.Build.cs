@@ -13,6 +13,7 @@ public class HarmoniaKit : ModuleRules
                 "CoreUObject",
                 "Engine",
                 "InputCore",
+                "EnhancedInput",
                 "UMG",
                 "Slate",
                 "SlateCore",
