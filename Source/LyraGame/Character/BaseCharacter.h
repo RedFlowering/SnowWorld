@@ -85,9 +85,6 @@ public:
 	bool GetUseLeftHandIK();
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Base|Character", Meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<USenseReceiverComponent> WallDetector = nullptr;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|Base Character|Desired State", meta=(EditCondition="bOverrideDefaultOverlay"))
 	FGameplayTag OverrideDefaultOverlayMode{ AlsOverlayModeTags::Default };
 

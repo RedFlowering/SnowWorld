@@ -13,9 +13,6 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Character_Status_Aiming, "Status.Aiming");
 ABaseCharacter::ABaseCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<UBaseCharacterMovementComponent>(ALyraCharacter::CharacterMovementComponentName))
 {
 	BaseCharacterMovement = Cast<UBaseCharacterMovementComponent>(GetCharacterMovement());
-
-	WallDetector = CreateDefaultSubobject<USenseReceiverComponent>(TEXT("WallDetector"));
-	WallDetector->SetupAttachment(GetRootComponent());
 }
 
 void ABaseCharacter::PostInitializeComponents()

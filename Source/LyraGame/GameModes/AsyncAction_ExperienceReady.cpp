@@ -64,7 +64,7 @@ void UAsyncAction_ExperienceReady::Step2_ListenToExperienceLoading(AGameStateBas
 	ULyraExperienceManagerComponent* ExperienceComponent = GameState->FindComponentByClass<ULyraExperienceManagerComponent>();
 	check(ExperienceComponent);
 
-	if (ExperienceComponent->IsExperienceLoaded())
+	if (ExperienceComponent && ExperienceComponent->IsExperienceLoaded())
 	{
 		UWorld* World = GameState->GetWorld();
 		check(World);
@@ -75,7 +75,7 @@ void UAsyncAction_ExperienceReady::Step2_ListenToExperienceLoading(AGameStateBas
 		//@TODO: Maybe just inject a random 0-1s delay in the experience load itself?
 		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateUObject(this, &ThisClass::Step4_BroadcastReady));
 	}
-	else
+	else if(ExperienceComponent)
 	{
 		ExperienceComponent->CallOrRegister_OnExperienceLoaded(FOnLyraExperienceLoaded::FDelegate::CreateUObject(this, &ThisClass::Step3_HandleExperienceLoaded));
 	}
