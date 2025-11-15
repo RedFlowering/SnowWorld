@@ -65,12 +65,12 @@ private:
 
 	// ISM을 관리할 루트 액터
 	UPROPERTY()
-	TObjectPtr<AActor> ISMManagerActor;
+	TObjectPtr<AActor> ISMManagerActor = nullptr;
 
 	// ISM 컴포넌트 초기화
 	void InitializeISMComponent(const FName& PartID, UStaticMesh* Mesh);
 
 	// 건축물 데이터 테이블 캐시
 	UPROPERTY()
-	TObjectPtr<UDataTable> BuildingDataTable;
+	TObjectPtr<UDataTable> BuildingDataTable = nullptr;
 };

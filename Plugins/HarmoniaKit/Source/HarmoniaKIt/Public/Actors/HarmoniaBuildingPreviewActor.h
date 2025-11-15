@@ -39,15 +39,15 @@ public:
 protected:
 	// 메시 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> PreviewMeshComponent;
+	TObjectPtr<UStaticMeshComponent> PreviewMeshComponent = nullptr;
 
 	// 배치 가능 상태 머티리얼
 	UPROPERTY(EditDefaultsOnly, Category = "Materials")
-	TObjectPtr<UMaterialInterface> ValidPlacementMaterial;
+	TObjectPtr<UMaterialInterface> ValidPlacementMaterial = nullptr;
 
 	// 배치 불가능 상태 머티리얼
 	UPROPERTY(EditDefaultsOnly, Category = "Materials")
-	TObjectPtr<UMaterialInterface> InvalidPlacementMaterial;
+	TObjectPtr<UMaterialInterface> InvalidPlacementMaterial = nullptr;
 
 	// 현재 배치 가능 여부
 	UPROPERTY(BlueprintReadOnly, Category = "State")

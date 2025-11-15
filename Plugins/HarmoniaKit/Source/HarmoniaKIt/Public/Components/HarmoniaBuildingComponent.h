@@ -21,7 +21,7 @@ class HARMONIAKIT_API UHarmoniaBuildingComponent : public UActorComponent
 public:
 	UHarmoniaBuildingComponent();
 
-	// === 모드 제어 ===
+	// 모드 제어
 	UFUNCTION(BlueprintCallable, Category = "Building")
 	void EnterBuildingMode();
 
@@ -34,71 +34,71 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Building")
 	void SetSelectedPart(FName PartID);
 
-	// === 현재 선택된 파트 정보 ===
+	// 현재 선택된 파트 정보
 	UFUNCTION(BlueprintPure, Category = "Building")
 	FName GetSelectedPartID() const { return SelectedPartID; }
 
 	UFUNCTION(BlueprintPure, Category = "Building")
 	EBuildingMode GetCurrentMode() const { return CurrentMode; }
 
-	// === Tick 처리 ===
+	// Tick 처리
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 protected:
 	virtual void BeginPlay() override;
 
-	// === 입력 처리 ===
+	// 입력 처리
 	void SetupInput();
 	void HandlePlaceAction();
 	void HandleRotateAction();
 	void HandleCancelAction();
 
-	// === 프리뷰 관련 함수 ===
+	// 프리뷰 관련 함수
 	void SpawnPreviewActor();
 	void UpdatePreviewTransform();
 	void DestroyPreviewActor();
 
-	// === 배치 처리 ===
+	// 배치 처리
 	void PlaceCurrentPart();
 	bool ValidatePlacement(FVector& OutLocation, FRotator& OutRotation);
 
-	// === 유틸 함수 ===
+	// 유틸 함수
 	FBuildingPartData* GetCurrentPartData() const;
 
-	// === 자원 검사 ===
+	// 자원 검사
 	bool CheckAndConsumeResources(const FBuildingPartData& PartData);
 
 private:
-	// === 상태 ===
-	EBuildingMode CurrentMode;
+	// 상태
+	EBuildingMode CurrentMode = EBuildingMode::None;
 
 	UPROPERTY()
 	FName SelectedPartID;
 
-	// === 외부 참조 ===
+	// 외부 참조
 	UPROPERTY()
-	TObjectPtr<APlayerController> CachedPC;
+	TObjectPtr<APlayerController> CachedPC = nullptr;
 
 	UPROPERTY()
-	TObjectPtr<AHarmoniaBuildingPreviewActor> PreviewActor;
+	TObjectPtr<AHarmoniaBuildingPreviewActor> PreviewActor = nullptr;
 
 	UPROPERTY()
-	TObjectPtr<UHarmoniaBuildingInstanceManager> InstanceManager;
+	TObjectPtr<UHarmoniaBuildingInstanceManager> InstanceManager = nullptr;
 
 	UPROPERTY()
-	TObjectPtr<UHarmoniaInventoryComponent> InventoryComponent;
+	TObjectPtr<UHarmoniaInventoryComponent> InventoryComponent = nullptr;
 
-	// === 설정 ===
+	// 설정
 	UPROPERTY(EditDefaultsOnly, Category = "Building")
-	TSubclassOf<AHarmoniaBuildingPreviewActor> PreviewActorClass;
+	TSubclassOf<AHarmoniaBuildingPreviewActor> PreviewActorClass = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	TObjectPtr<UInputMappingContext> InputMapping;
+	TObjectPtr<UInputMappingContext> InputMapping = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Building|DataTable")
 	FName BuildingDataTableKey = FName(TEXT("BuildingParts"));
 
-	// === 배치 검증 설정 ===
+	// 배치 검증 설정
 	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
 	float MaxPlacementDistance = 500.0f;
 
@@ -116,5 +116,5 @@ private:
 
 	// 캐시된 건축물 데이터 테이블
 	UPROPERTY()
-	TObjectPtr<UDataTable> CachedBuildingDataTable;
+	TObjectPtr<UDataTable> CachedBuildingDataTable = nullptr;
 };
