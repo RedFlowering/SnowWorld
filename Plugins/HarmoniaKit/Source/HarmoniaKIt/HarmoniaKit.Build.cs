@@ -19,6 +19,7 @@ public class HarmoniaKit : ModuleRules
                 "SlateCore",
                 "HarmoniaLoadManager",
                 "HarmoniaWorldGenerator",
+                "SenseSystem", // Sense-based interaction system
             });
     }
 }
