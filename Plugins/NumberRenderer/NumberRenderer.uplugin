@@ -1,0 +1,38 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.4",
+	"FriendlyName": "NumberRenderer",
+	"Description": "Number Instance Rendering System",
+	"Category": "Other",
+	"CreatedBy": "HGsofts",
+	"CreatedByURL": "https://www.hgsofts.com",
+	"DocsURL": "https://drive.google.com/file/d/1RxK3junTp4LMdgoEd5YTZ112fJPYRi7K/view?usp=sharing",
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/16f891500ac247f5b807ed13b38ade36",
+	"SupportURL": "hgsofts@outlook.com",
+	"EngineVersion": "5.7.0",
+	"CanContainContent": true,
+	"Installed": true,
+	"Modules": [
+		{
+			"Name": "NumberRenderer",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault",
+			"PlatformAllowList": [
+				"Win64",
+				"Mac",
+				"IOS",
+				"Android"
+			]
+		},
+		{
+			"Name": "NumberRendererEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [
+				"Win64",
+				"Mac"
+			]
+		}
+	]
+}

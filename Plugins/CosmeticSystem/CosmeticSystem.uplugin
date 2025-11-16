@@ -1,0 +1,47 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.6",
+	"FriendlyName": "CosmeticSystem",
+	"Description": "Cosmetics system combines modular character mesh parts.",
+	"Category": "Other",
+	"CreatedBy": "HGsofts",
+	"CreatedByURL": "https://www.hgsofts.com",
+	"DocsURL": "https://drive.google.com/file/d/1g9etHjRftDTn6BJMuk8uYdPg7e0-va5W/view?usp=sharing",
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/ef780cb83c8a4bac9ca3ff47daaf735d",
+	"SupportURL": "hgsofts@outlook.com",
+	"EngineVersion": "5.7.0",
+	"CanContainContent": true,
+	"Installed": true,
+	"Modules": [
+		{
+			"Name": "CosmeticSystem",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault",
+			"PlatformAllowList": [
+				"Win64",
+				"Mac",
+				"IOS",
+				"Android"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "GameplayAbilities",
+			"Enabled": true
+		},
+		{
+			"Name": "ModularGameplay",
+			"Enabled": true
+		},
+		{
+			"Name": "SkeletalMerging",
+			"Enabled": true
+		},
+		{
+			"Name": "HairStrands",
+			"Enabled": true
+		}
+	]
+}

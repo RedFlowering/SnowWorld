@@ -101,8 +101,6 @@ Config/*
 Platforms/*
 Content/*
 Packaged/*
-*.uplugin
-*.uproject
 *.usf
 *.ush
 gen_temp.txt
