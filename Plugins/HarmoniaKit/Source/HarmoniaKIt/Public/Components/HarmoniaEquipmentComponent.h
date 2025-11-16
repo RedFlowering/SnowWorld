@@ -94,7 +94,7 @@ public:
 	 * Get all equipped items
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Harmonia|Equipment")
-	TMap<EEquipmentSlot, FEquippedItem> GetAllEquippedItems() const;
+	TArray<FEquippedItem> GetAllEquippedItems() const;
 
 	/**
 	 * Get equipment data from DataTable
@@ -187,7 +187,7 @@ protected:
 
 	/** Equipment slots */
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedItems, BlueprintReadOnly, Category = "Harmonia|Equipment")
-	TMap<EEquipmentSlot, FEquippedItem> EquippedItems;
+	TArray<FEquippedItem> EquippedItems;
 
 	/** Equipment data table */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Harmonia|Equipment")
@@ -271,5 +271,5 @@ private:
 
 	// Spawned equipment meshes
 	UPROPERTY()
-	TMap<EEquipmentSlot, USkeletalMeshComponent*> EquipmentMeshes;
+	TArray<USkeletalMeshComponent*> EquipmentMeshes;
 };

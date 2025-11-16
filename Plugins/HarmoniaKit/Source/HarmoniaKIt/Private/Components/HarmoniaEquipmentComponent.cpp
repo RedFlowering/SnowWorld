@@ -11,7 +11,7 @@
 UHarmoniaEquipmentComponent::UHarmoniaEquipmentComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
-	SetIsReplicatedUsing(true);
+	SetIsReplicated(true);
 	bWantsInitializeComponent = true;
 }
 
@@ -70,9 +70,13 @@ bool UHarmoniaEquipmentComponent::EquipItem(const FHarmoniaID& EquipmentId, EEqu
 
 	// Unequip existing item in the slot
 	FHarmoniaID OldEquipmentId;
-	if (EquippedItems.Contains(TargetSlot))
+	FEquippedItem* ExistingItem = EquippedItems.FindByPredicate([TargetSlot](const FEquippedItem& Item)
 	{
-		OldEquipmentId = EquippedItems[TargetSlot].EquipmentId;
+		return Item.Slot == TargetSlot;
+	});
+	if (ExistingItem)
+	{
+		OldEquipmentId = ExistingItem->EquipmentId;
 		UnequipItem(TargetSlot);
 	}
 
@@ -93,7 +97,7 @@ bool UHarmoniaEquipmentComponent::EquipItem(const FHarmoniaID& EquipmentId, EEqu
 	ApplyVisualMesh(EquipmentData);
 
 	// Store equipped item
-	EquippedItems.Add(TargetSlot, NewEquippedItem);
+	EquippedItems.Add(NewEquippedItem);
 
 	// Broadcast event
 	OnEquipmentChanged.Broadcast(TargetSlot, OldEquipmentId, EquipmentId);
@@ -114,12 +118,17 @@ bool UHarmoniaEquipmentComponent::UnequipItem(EEquipmentSlot Slot)
 		return true;
 	}
 
-	if (!EquippedItems.Contains(Slot))
+	int32 ItemIndex = EquippedItems.FindLastByPredicate([Slot](const FEquippedItem& Item)
+	{
+		return Item.Slot == Slot;
+	});
+
+	if (ItemIndex == INDEX_NONE)
 	{
 		return false;
 	}
 
-	FEquippedItem& EquippedItem = EquippedItems[Slot];
+	FEquippedItem EquippedItem = EquippedItems[ItemIndex];
 	FHarmoniaID OldEquipmentId = EquippedItem.EquipmentId;
 
 	// Get equipment data
@@ -137,7 +146,7 @@ bool UHarmoniaEquipmentComponent::UnequipItem(EEquipmentSlot Slot)
 	}
 
 	// Remove from equipped items
-	EquippedItems.Remove(Slot);
+	EquippedItems.RemoveAt(ItemIndex);
 
 	// Broadcast event
 	OnEquipmentChanged.Broadcast(Slot, OldEquipmentId, FHarmoniaID());
@@ -154,32 +163,33 @@ bool UHarmoniaEquipmentComponent::SwapEquipment(EEquipmentSlot SlotA, EEquipment
 		return false;
 	}
 
-	FEquippedItem* ItemA = EquippedItems.Find(SlotA);
-	FEquippedItem* ItemB = EquippedItems.Find(SlotB);
+	int32 IndexA = EquippedItems.FindLastByPredicate([SlotA](const FEquippedItem& Item)
+	{
+		return Item.Slot == SlotA;
+	});
 
-	if (!ItemA && !ItemB)
+	int32 IndexB = EquippedItems.FindLastByPredicate([SlotB](const FEquippedItem& Item)
+	{
+		return Item.Slot == SlotB;
+	});
+
+	if (IndexA == INDEX_NONE && IndexB == INDEX_NONE)
 	{
 		return false;
 	}
 
 	// Simple swap
-	FEquippedItem TempItem = ItemA ? *ItemA : FEquippedItem();
-	if (ItemB)
+	if (IndexA != INDEX_NONE && IndexB != INDEX_NONE)
 	{
-		EquippedItems.Add(SlotA, *ItemB);
+		Swap(EquippedItems[IndexA], EquippedItems[IndexB]);
 	}
-	else
+	else if (IndexA != INDEX_NONE)
 	{
-		EquippedItems.Remove(SlotA);
+		EquippedItems[IndexA].Slot = SlotB;
 	}
-
-	if (TempItem.IsValid())
+	else if (IndexB != INDEX_NONE)
 	{
-		EquippedItems.Add(SlotB, TempItem);
-	}
-	else
-	{
-		EquippedItems.Remove(SlotB);
+		EquippedItems[IndexB].Slot = SlotA;
 	}
 
 	return true;
@@ -187,19 +197,23 @@ bool UHarmoniaEquipmentComponent::SwapEquipment(EEquipmentSlot SlotA, EEquipment
 
 FEquippedItem UHarmoniaEquipmentComponent::GetEquippedItem(EEquipmentSlot Slot) const
 {
-	if (EquippedItems.Contains(Slot))
+	const FEquippedItem* FoundItem = EquippedItems.FindByPredicate([Slot](const FEquippedItem& Item)
 	{
-		return EquippedItems[Slot];
-	}
-	return FEquippedItem();
+		return Item.Slot == Slot;
+	});
+	return FoundItem ? *FoundItem : FEquippedItem();
 }
 
 bool UHarmoniaEquipmentComponent::IsSlotEquipped(EEquipmentSlot Slot) const
 {
-	return EquippedItems.Contains(Slot) && EquippedItems[Slot].IsValid();
+	const FEquippedItem* FoundItem = EquippedItems.FindByPredicate([Slot](const FEquippedItem& Item)
+	{
+		return Item.Slot == Slot;
+	});
+	return FoundItem && FoundItem->IsValid();
 }
 
-TMap<EEquipmentSlot, FEquippedItem> UHarmoniaEquipmentComponent::GetAllEquippedItems() const
+TArray<FEquippedItem> UHarmoniaEquipmentComponent::GetAllEquippedItems() const
 {
 	return EquippedItems;
 }
@@ -229,10 +243,10 @@ float UHarmoniaEquipmentComponent::GetTotalStatModifier(const FString& Attribute
 	float TotalFlat = 0.f;
 	float TotalPercentage = 0.f;
 
-	for (const auto& Pair : EquippedItems)
+	for (const FEquippedItem& Item : EquippedItems)
 	{
 		FEquipmentData EquipmentData;
-		if (GetEquipmentData(Pair.Value.EquipmentId, EquipmentData))
+		if (GetEquipmentData(Item.EquipmentId, EquipmentData))
 		{
 			for (const FEquipmentStatModifier& Modifier : EquipmentData.StatModifiers)
 			{
@@ -262,13 +276,12 @@ void UHarmoniaEquipmentComponent::UnequipAll()
 		return;
 	}
 
-	// Copy keys to avoid modifying map during iteration
-	TArray<EEquipmentSlot> Slots;
-	EquippedItems.GetKeys(Slots);
+	// Make a copy to avoid modifying array during iteration
+	TArray<FEquippedItem> ItemsCopy = EquippedItems;
 
-	for (EEquipmentSlot Slot : Slots)
+	for (const FEquippedItem& Item : ItemsCopy)
 	{
-		UnequipItem(Slot);
+		UnequipItem(Item.Slot);
 	}
 }
 
@@ -283,12 +296,17 @@ void UHarmoniaEquipmentComponent::DamageEquipment(EEquipmentSlot Slot, float Dam
 		return;
 	}
 
-	if (!EquippedItems.Contains(Slot))
+	int32 ItemIndex = EquippedItems.FindLastByPredicate([Slot](const FEquippedItem& Item)
+	{
+		return Item.Slot == Slot;
+	});
+
+	if (ItemIndex == INDEX_NONE)
 	{
 		return;
 	}
 
-	FEquippedItem& EquippedItem = EquippedItems[Slot];
+	FEquippedItem& EquippedItem = EquippedItems[ItemIndex];
 	EquippedItem.CurrentDurability = FMath::Max(0.f, EquippedItem.CurrentDurability - DamageAmount);
 
 	// Auto-unequip if broken
@@ -306,12 +324,17 @@ void UHarmoniaEquipmentComponent::RepairEquipment(EEquipmentSlot Slot, float Rep
 		return;
 	}
 
-	if (!EquippedItems.Contains(Slot))
+	int32 ItemIndex = EquippedItems.FindLastByPredicate([Slot](const FEquippedItem& Item)
+	{
+		return Item.Slot == Slot;
+	});
+
+	if (ItemIndex == INDEX_NONE)
 	{
 		return;
 	}
 
-	FEquippedItem& EquippedItem = EquippedItems[Slot];
+	FEquippedItem& EquippedItem = EquippedItems[ItemIndex];
 	FEquipmentData EquipmentData;
 	if (GetEquipmentData(EquippedItem.EquipmentId, EquipmentData))
 	{
@@ -322,16 +345,20 @@ void UHarmoniaEquipmentComponent::RepairEquipment(EEquipmentSlot Slot, float Rep
 
 float UHarmoniaEquipmentComponent::GetEquipmentDurabilityPercent(EEquipmentSlot Slot) const
 {
-	if (!EquippedItems.Contains(Slot))
+	const FEquippedItem* FoundItem = EquippedItems.FindByPredicate([Slot](const FEquippedItem& Item)
+	{
+		return Item.Slot == Slot;
+	});
+
+	if (!FoundItem)
 	{
 		return 0.f;
 	}
 
-	const FEquippedItem& EquippedItem = EquippedItems[Slot];
 	FEquipmentData EquipmentData;
-	if (GetEquipmentData(EquippedItem.EquipmentId, EquipmentData) && EquipmentData.MaxDurability > 0.f)
+	if (GetEquipmentData(FoundItem->EquipmentId, EquipmentData) && EquipmentData.MaxDurability > 0.f)
 	{
-		return EquippedItem.CurrentDurability / EquipmentData.MaxDurability;
+		return FoundItem->CurrentDurability / EquipmentData.MaxDurability;
 	}
 
 	return 1.f;
@@ -344,7 +371,10 @@ float UHarmoniaEquipmentComponent::GetEquipmentDurabilityPercent(EEquipmentSlot 
 FEquipmentSaveData UHarmoniaEquipmentComponent::GetSaveData() const
 {
 	FEquipmentSaveData SaveData;
-	SaveData.EquippedItems = EquippedItems;
+	for (const FEquippedItem& Item : EquippedItems)
+	{
+		SaveData.EquippedItems.Add(Item.Slot, Item);
+	}
 	return SaveData;
 }
 
@@ -364,9 +394,13 @@ void UHarmoniaEquipmentComponent::LoadFromSaveData(const FEquipmentSaveData& Sav
 		EquipItem(Pair.Value.EquipmentId, Pair.Key);
 
 		// Restore durability
-		if (EquippedItems.Contains(Pair.Key))
+		FEquippedItem* FoundItem = EquippedItems.FindByPredicate([&Pair](const FEquippedItem& Item)
 		{
-			EquippedItems[Pair.Key].CurrentDurability = Pair.Value.CurrentDurability;
+			return Item.Slot == Pair.Key;
+		});
+		if (FoundItem)
+		{
+			FoundItem->CurrentDurability = Pair.Value.CurrentDurability;
 		}
 	}
 }
@@ -623,23 +657,27 @@ void UHarmoniaEquipmentComponent::ApplyVisualMesh(const FEquipmentData& Equipmen
 
 	EquipmentMeshComponent->SetSkeletalMesh(LoadedMesh);
 	EquipmentMeshComponent->SetupAttachment(OwnerMesh, EquipmentData.AttachSocketName);
-	EquipmentMeshComponent->SetMasterPoseComponent(OwnerMesh);
-	EquipmentMeshComponent->RegisterComponent();
+	EquipmentMeshComponent->SetLeaderPoseComponent(OwnerMesh);
 
-	// Store for later removal
-	EquipmentMeshes.Add(EquipmentData.EquipmentSlot, EquipmentMeshComponent);
+	// Tag with slot info for later removal
+	EquipmentMeshComponent->Rename(*FString::Printf(TEXT("EquipmentMesh_%d"), static_cast<int32>(EquipmentData.EquipmentSlot)));
+
+	EquipmentMeshComponent->RegisterComponent();
+	EquipmentMeshes.Add(EquipmentMeshComponent);
 }
 
 void UHarmoniaEquipmentComponent::RemoveVisualMesh(EEquipmentSlot Slot)
 {
-	if (EquipmentMeshes.Contains(Slot))
+	// Find and remove mesh component for this slot
+	for (int32 i = EquipmentMeshes.Num() - 1; i >= 0; --i)
 	{
-		USkeletalMeshComponent* MeshComponent = EquipmentMeshes[Slot];
-		if (MeshComponent)
+		USkeletalMeshComponent* MeshComponent = EquipmentMeshes[i];
+		if (MeshComponent && MeshComponent->GetName().Contains(FString::Printf(TEXT("EquipmentMesh_%d"), static_cast<int32>(Slot))))
 		{
 			MeshComponent->DestroyComponent();
+			EquipmentMeshes.RemoveAt(i);
+			break;
 		}
-		EquipmentMeshes.Remove(Slot);
 	}
 }
 

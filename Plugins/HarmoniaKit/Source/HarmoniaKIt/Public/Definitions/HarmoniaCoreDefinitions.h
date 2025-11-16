@@ -4,7 +4,7 @@
 
 #include "HarmoniaCoreDefinitions.generated.h"
 
-// ¾ÆÀÌÅÛ °íÀ¯ ½Äº°ÀÚ
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Äºï¿½ï¿½ï¿½
 USTRUCT(BlueprintType, meta = (DisplayName = "HarmoniaID"))
 struct HARMONIAKIT_API FHarmoniaID
 {
@@ -24,6 +24,16 @@ struct HARMONIAKIT_API FHarmoniaID
     FORCEINLINE bool operator!=(const FHarmoniaID& Other) const
     {
         return Id != Other.Id;
+    }
+
+    FORCEINLINE bool IsValid() const
+    {
+        return Id != NAME_None;
+    }
+
+    FORCEINLINE FString ToString() const
+    {
+        return Id.ToString();
     }
 
     friend inline uint32 GetTypeHash(const FHarmoniaID& Key)

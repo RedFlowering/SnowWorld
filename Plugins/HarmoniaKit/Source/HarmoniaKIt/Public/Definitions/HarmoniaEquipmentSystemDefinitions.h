@@ -4,6 +4,7 @@
 
 #include "Engine/DataTable.h"
 #include "GameplayTagContainer.h"
+#include "GameplayEffectTypes.h"
 #include "Definitions/HarmoniaCoreDefinitions.h"
 #include "HarmoniaEquipmentSystemDefinitions.generated.h"
 
