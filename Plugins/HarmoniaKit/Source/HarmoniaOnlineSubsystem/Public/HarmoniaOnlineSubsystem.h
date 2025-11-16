@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "HarmoniaOnlineTypes.h"
+#include "HarmoniaOnlineAsyncTasks.h"
 #include "HarmoniaOnlineSubsystem.generated.h"
 
 // 델리게이트 선언

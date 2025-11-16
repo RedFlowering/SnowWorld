@@ -33,6 +33,21 @@ Harmonia Online Subsystem은 친구 관리, 초대, 음성 대화 등의 커뮤�
 - 초대 목록 캐시
 - 음성 채널 정보 캐시
 
+### 5. 멀티스레드 및 비동기 처리
+- **모든 네트워크 작업은 백그라운드 스레드에서 실행됩니다**
+- UI 프리즈 없이 부드러운 게임 경험 제공
+- 게임 스레드에서 안전한 델리게이트 브로드캐스트
+- AsyncTask 기반의 효율적인 작업 관리
+
+비동기로 처리되는 주요 함수:
+- `Connect()` - 온라인 서비스 연결 (1.0초 시뮬레이션 지연)
+- `SearchUsers()` - 사용자 검색 (0.3초 시뮬레이션 지연)
+- `SendFriendRequest()` - 친구 요청 전송 (0.2초 시뮬레이션 지연)
+- `RefreshFriendList()` - 친구 목록 새로고침 (0.4초 시뮬레이션 지연)
+- `JoinVoiceChannel()` - 음성 채널 연결 (0.5초 시뮬레이션 지연)
+
+**중요**: 위 함수들을 호출해도 즉시 반환되며, 결과는 델리게이트를 통해 전달됩니다. UI는 반드시 델리게이트를 바인딩하여 비동기 작업 완료를 처리해야 합니다.
+
 ## 사용 방법
 
 ### 서브시스템 가져오기
@@ -370,19 +385,83 @@ Search Button Clicked
                  └─> Display Results
 ```
 
+## 비동기 처리 아키텍처
+
+### 작동 방식
+
+모든 네트워크 작업은 `HarmoniaAsyncHelpers` 유틸리티를 통해 비동기로 처리됩니다:
+
+1. **백그라운드 스레드**: 네트워크 요청 및 데이터 처리
+2. **게임 스레드**: 결과 수신 및 델리게이트 브로드캐스트
+
+```cpp
+// 내부적으로 이렇게 작동합니다:
+HarmoniaAsyncHelpers::SimulateNetworkOperation<ResultType>(
+    []() -> ResultType {
+        // 백그라운드 스레드에서 실행
+        // HTTP 요청, 데이터 파싱 등
+        return Result;
+    },
+    [this](const ResultType& Result) {
+        // 게임 스레드에서 실행
+        // 캐시 업데이트, 델리게이트 브로드캐스트
+        OnCompleted.Broadcast(Result);
+    },
+    0.5f // 시뮬레이션 지연 (실제 구현 시 제거)
+);
+```
+
+### 스레드 안전성
+
+- **캐싱된 데이터 읽기**: 게임 스레드에서만 접근하므로 안전
+- **델리게이트 브로드캐스트**: 항상 게임 스레드에서 실행됨
+- **비동기 작업**: AsyncTask가 스레드 관리를 자동으로 처리
+
 ## 서버 연동
 
-현재 구현은 **시뮬레이션 모드**로 작동합니다. 실제 온라인 서비스와 연동하려면 다음 함수들에 서버 API 호출을 추가해야 합니다:
+현재 구현은 **시뮬레이션 모드**로 작동합니다. 실제 온라인 서비스와 연동하려면 각 비동기 작업의 백그라운드 스레드 부분에 서버 API 호출을 추가해야 합니다.
 
-- `Connect()` - 인증 및 연결
-- `SearchUsers()` - 사용자 검색 API
-- `SendFriendRequest()` - 친구 요청 전송
-- `RefreshFriendList()` - 친구 목록 가져오기
-- `SendInviteInternal()` - 초대 전송
-- `CreateVoiceChannel()` - 음성 채널 생성
-- `JoinVoiceChannel()` - 음성 채널 참여
+### 구현 예시: HTTP 요청으로 변경
 
-각 함수의 `// TODO: 실제 서버 API 호출 구현` 주석 부분에 실제 구현을 추가하면 됩니다.
+```cpp
+// HarmoniaOnlineSubsystem.cpp의 SearchUsers 함수 내부
+HarmoniaAsyncHelpers::ExecuteAsync<FHarmoniaAsyncTaskResult<TArray<FHarmoniaUserSearchResult>>>(
+    [SearchQuery, MaxResults]() -> FHarmoniaAsyncTaskResult<TArray<FHarmoniaUserSearchResult>>
+    {
+        // TODO 주석 부분을 실제 HTTP 요청으로 대체:
+
+        // 1. HTTP 모듈 사용 (동기 방식)
+        TSharedRef<IHttpRequest> Request = FHttpModule::Get().CreateRequest();
+        Request->SetURL(FString::Printf(TEXT("https://api.example.com/users/search?q=%s"), *SearchQuery));
+        Request->SetVerb(TEXT("GET"));
+        Request->ProcessRequest(); // 백그라운드 스레드에서 블로킹 호출
+
+        // 2. 응답 파싱
+        FString ResponseStr = Request->GetResponse()->GetContentAsString();
+        TArray<FHarmoniaUserSearchResult> Results;
+        // JSON 파싱 로직...
+
+        return FHarmoniaAsyncTaskResult<TArray<FHarmoniaUserSearchResult>>(true, Results);
+    },
+    [this](const FHarmoniaAsyncTaskResult<TArray<FHarmoniaUserSearchResult>>& Result)
+    {
+        // 게임 스레드에서 실행 - 수정 불필요
+        OnUserSearchCompleted.Broadcast(Result.bSuccess, Result.Result);
+    }
+);
+```
+
+### 수정이 필요한 함수 및 위치
+
+| 함수 | 파일 위치 | TODO 주석 위치 | 구현 내용 |
+|------|----------|--------------|----------|
+| `Connect()` | HarmoniaOnlineSubsystem.cpp:548 | 인증 및 연결 | 로그인 API, 토큰 획득 |
+| `SearchUsers()` | HarmoniaOnlineSubsystem.cpp:76 | 사용자 검색 | 검색 API, JSON 파싱 |
+| `SendFriendRequest()` | HarmoniaOnlineSubsystem.cpp:129 | 친구 요청 전송 | POST 요청, 응답 확인 |
+| `RefreshFriendList()` | HarmoniaOnlineSubsystem.cpp:233 | 친구 목록 가져오기 | GET 요청, 목록 파싱 |
+| `JoinVoiceChannel()` | HarmoniaOnlineSubsystem.cpp:421 | 음성 채널 연결 | 음성 SDK 연동 |
+
+각 함수의 `// TODO: 실제 서버 API 호출 구현` 주석 부분에 실제 구현을 추가하면 됩니다. **비동기 구조는 그대로 유지**하고, 백그라운드 스레드에서 실행되는 람다 함수 내부만 수정하면 됩니다.
 
 ## 자동 업데이트
 

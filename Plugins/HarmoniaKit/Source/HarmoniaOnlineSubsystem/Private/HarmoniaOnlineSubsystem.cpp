@@ -69,24 +69,37 @@ void UHarmoniaOnlineSubsystem::SearchUsers(const FString& SearchQuery, int32 Max
 
 	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Searching for users: %s (Max: %d)"), *SearchQuery, MaxResults);
 
-	// TODO: 실제 서버 API 호출 구현
-	// 현재는 시뮬레이션된 결과 반환
-	TArray<FHarmoniaUserSearchResult> Results;
+	// 비동기로 사용자 검색 수행
+	HarmoniaAsyncHelpers::SimulateNetworkOperation<FHarmoniaAsyncTaskResult<TArray<FHarmoniaUserSearchResult>>>(
+		[SearchQuery, MaxResults]() -> FHarmoniaAsyncTaskResult<TArray<FHarmoniaUserSearchResult>>
+		{
+			// TODO: 실제 서버 API 호출 구현 (HTTP 요청 등)
+			// 백그라운드 스레드에서 실행됨 - UI 블로킹 없음
 
-	// 시뮬레이션: 검색어에 기반한 더미 데이터 생성
-	for (int32 i = 0; i < FMath::Min(MaxResults, 5); ++i)
-	{
-		FHarmoniaUserSearchResult Result;
-		Result.UserId = FString::Printf(TEXT("User_%s_%d"), *SearchQuery, i);
-		Result.DisplayName = FString::Printf(TEXT("%s_%d"), *SearchQuery, i);
-		Result.Status = (i % 2 == 0) ? EHarmoniaFriendStatus::Online : EHarmoniaFriendStatus::Offline;
-		Result.bIsFriend = false;
-		Result.bHasPendingRequest = false;
+			TArray<FHarmoniaUserSearchResult> Results;
 
-		Results.Add(Result);
-	}
+			// 시뮬레이션: 검색어에 기반한 더미 데이터 생성
+			for (int32 i = 0; i < FMath::Min(MaxResults, 5); ++i)
+			{
+				FHarmoniaUserSearchResult Result;
+				Result.UserId = FString::Printf(TEXT("User_%s_%d"), *SearchQuery, i);
+				Result.DisplayName = FString::Printf(TEXT("%s_%d"), *SearchQuery, i);
+				Result.Status = (i % 2 == 0) ? EHarmoniaFriendStatus::Online : EHarmoniaFriendStatus::Offline;
+				Result.bIsFriend = false;
+				Result.bHasPendingRequest = false;
 
-	OnUserSearchCompleted.Broadcast(true, Results);
+				Results.Add(Result);
+			}
+
+			return FHarmoniaAsyncTaskResult<TArray<FHarmoniaUserSearchResult>>(true, Results);
+		},
+		[this](const FHarmoniaAsyncTaskResult<TArray<FHarmoniaUserSearchResult>>& Result)
+		{
+			// 게임 스레드에서 실행됨 - 델리게이트 브로드캐스트 안전
+			OnUserSearchCompleted.Broadcast(Result.bSuccess, Result.Result);
+		},
+		0.3f // 네트워크 지연 시뮬레이션 (0.3초)
+	);
 }
 
 void UHarmoniaOnlineSubsystem::SendFriendRequest(const FString& UserId, const FString& Message)
@@ -109,9 +122,32 @@ void UHarmoniaOnlineSubsystem::SendFriendRequest(const FString& UserId, const FS
 
 	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Sending friend request to %s"), *UserId);
 
-	// TODO: 실제 서버 API 호출 구현
-	// 현재는 시뮬레이션
-	SimulateFriendRequestResponse(UserId, true);
+	// 비동기로 친구 요청 전송
+	HarmoniaAsyncHelpers::SimulateNetworkOperation<FHarmoniaAsyncTaskResult<bool>>(
+		[UserId, Message]() -> FHarmoniaAsyncTaskResult<bool>
+		{
+			// TODO: 실제 서버 API 호출 구현 (HTTP POST 요청 등)
+			// 백그라운드 스레드에서 실행됨
+
+			// 시뮬레이션: 항상 성공
+			return FHarmoniaAsyncTaskResult<bool>(true, true, TEXT(""));
+		},
+		[this, UserId](const FHarmoniaAsyncTaskResult<bool>& Result)
+		{
+			// 게임 스레드에서 실행됨
+			if (Result.bSuccess && Result.Result)
+			{
+				UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Friend request sent successfully to %s"), *UserId);
+				OnFriendRequestResult.Broadcast(true, TEXT("Friend request sent"));
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("HarmoniaOnlineSubsystem: Failed to send friend request to %s"), *UserId);
+				OnFriendRequestResult.Broadcast(false, TEXT("Failed to send friend request"));
+			}
+		},
+		0.2f // 네트워크 지연 시뮬레이션
+	);
 }
 
 void UHarmoniaOnlineSubsystem::AcceptFriendRequest(const FString& UserId)
@@ -190,9 +226,39 @@ void UHarmoniaOnlineSubsystem::RefreshFriendList()
 {
 	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Refreshing friend list"));
 
-	// TODO: 실제 서버 API 호출 구현
-	// 현재는 캐시 업데이트만 수행
-	UpdateFriendListCache();
+	// 비동기로 친구 목록 가져오기
+	HarmoniaAsyncHelpers::SimulateNetworkOperation<FHarmoniaAsyncTaskResult<TArray<FHarmoniaFriendInfo>>>(
+		[this]() -> FHarmoniaAsyncTaskResult<TArray<FHarmoniaFriendInfo>>
+		{
+			// TODO: 실제 서버 API 호출 구현 (HTTP GET 요청 등)
+			// 백그라운드 스레드에서 실행됨
+
+			// 시뮬레이션: 현재 캐시된 목록 반환 (실제로는 서버에서 가져와야 함)
+			TArray<FHarmoniaFriendInfo> FriendList = CachedFriendList;
+
+			// 일부 친구의 상태를 랜덤하게 변경 (서버에서 업데이트된 데이터라고 가정)
+			for (FHarmoniaFriendInfo& Friend : FriendList)
+			{
+				if (FMath::RandRange(0, 100) < 20) // 20% 확률로 상태 변경
+				{
+					Friend.Status = static_cast<EHarmoniaFriendStatus>(FMath::RandRange(0, 4));
+				}
+			}
+
+			return FHarmoniaAsyncTaskResult<TArray<FHarmoniaFriendInfo>>(true, FriendList);
+		},
+		[this](const FHarmoniaAsyncTaskResult<TArray<FHarmoniaFriendInfo>>& Result)
+		{
+			// 게임 스레드에서 실행됨
+			if (Result.bSuccess)
+			{
+				CachedFriendList = Result.Result;
+				OnFriendListUpdated.Broadcast(CachedFriendList);
+				UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Friend list refreshed (%d friends)"), CachedFriendList.Num());
+			}
+		},
+		0.4f // 네트워크 지연 시뮬레이션
+	);
 }
 
 bool UHarmoniaOnlineSubsystem::GetFriendInfo(const FString& UserId, FHarmoniaFriendInfo& OutFriendInfo) const
@@ -348,19 +414,43 @@ void UHarmoniaOnlineSubsystem::JoinVoiceChannel(const FString& ChannelId)
 	CurrentVoiceChannelId = ChannelId;
 	UpdateVoiceChannelStatus(ChannelId, EHarmoniaVoiceChatStatus::Connecting);
 
-	// TODO: 실제 음성 채널 연결 로직
-
-	// 시뮬레이션: 연결 성공
-	UpdateVoiceChannelStatus(ChannelId, EHarmoniaVoiceChatStatus::Connected);
-
-	// 채널 참가자 목록에 자신 추가
-	if (FHarmoniaVoiceChannelInfo* ChannelInfo = VoiceChannels.Find(ChannelId))
-	{
-		if (!ChannelInfo->ParticipantIds.Contains(CurrentUserId))
+	// 비동기로 음성 채널 연결
+	HarmoniaAsyncHelpers::SimulateNetworkOperation<FHarmoniaAsyncTaskResult<bool>>(
+		[ChannelId]() -> FHarmoniaAsyncTaskResult<bool>
 		{
-			ChannelInfo->ParticipantIds.Add(CurrentUserId);
-		}
-	}
+			// TODO: 실제 음성 채널 연결 로직 (음성 SDK 초기화 등)
+			// 백그라운드 스레드에서 실행됨
+
+			// 시뮬레이션: 연결 성공
+			return FHarmoniaAsyncTaskResult<bool>(true, true, TEXT(""));
+		},
+		[this, ChannelId](const FHarmoniaAsyncTaskResult<bool>& Result)
+		{
+			// 게임 스레드에서 실행됨
+			if (Result.bSuccess && Result.Result)
+			{
+				UpdateVoiceChannelStatus(ChannelId, EHarmoniaVoiceChatStatus::Connected);
+
+				// 채널 참가자 목록에 자신 추가
+				if (FHarmoniaVoiceChannelInfo* ChannelInfo = VoiceChannels.Find(ChannelId))
+				{
+					if (!ChannelInfo->ParticipantIds.Contains(CurrentUserId))
+					{
+						ChannelInfo->ParticipantIds.Add(CurrentUserId);
+					}
+				}
+
+				UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Successfully joined voice channel %s"), *ChannelId);
+			}
+			else
+			{
+				UpdateVoiceChannelStatus(ChannelId, EHarmoniaVoiceChatStatus::Disconnected);
+				CurrentVoiceChannelId.Empty();
+				UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to join voice channel %s"), *ChannelId);
+			}
+		},
+		0.5f // 음성 채널 연결은 시간이 더 걸릴 수 있음
+	);
 }
 
 void UHarmoniaOnlineSubsystem::LeaveVoiceChannel(const FString& ChannelId)
@@ -451,30 +541,50 @@ void UHarmoniaOnlineSubsystem::Connect()
 
 	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Connecting to online services..."));
 
-	// TODO: 실제 온라인 서비스 연결 로직
-	// 현재는 시뮬레이션
+	// 비동기로 온라인 서비스 연결
+	HarmoniaAsyncHelpers::SimulateNetworkOperation<FHarmoniaAsyncTaskResult<FString>>(
+		[]() -> FHarmoniaAsyncTaskResult<FString>
+		{
+			// TODO: 실제 온라인 서비스 연결 로직 (인증, 로그인 등)
+			// 백그라운드 스레드에서 실행됨
 
-	// 시뮬레이션: 더미 사용자 정보 설정
-	CurrentUserId = FGuid::NewGuid().ToString();
-	CurrentUserDisplayName = TEXT("TestUser");
-	bIsConnected = true;
+			// 시뮬레이션: 더미 사용자 정보 생성
+			FString UserId = FGuid::NewGuid().ToString();
+			return FHarmoniaAsyncTaskResult<FString>(true, UserId);
+		},
+		[this](const FHarmoniaAsyncTaskResult<FString>& Result)
+		{
+			// 게임 스레드에서 실행됨
+			if (Result.bSuccess)
+			{
+				CurrentUserId = Result.Result;
+				CurrentUserDisplayName = TEXT("TestUser");
+				bIsConnected = true;
 
-	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Connected as %s (ID: %s)"), *CurrentUserDisplayName, *CurrentUserId);
+				UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Connected as %s (ID: %s)"), *CurrentUserDisplayName, *CurrentUserId);
 
-	// 주기적인 친구 목록 업데이트 타이머 시작 (30초마다)
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().SetTimer(
-			FriendListUpdateTimerHandle,
-			this,
-			&UHarmoniaOnlineSubsystem::UpdateFriendListCache,
-			30.0f,
-			true
-		);
-	}
+				// 주기적인 친구 목록 업데이트 타이머 시작 (30초마다)
+				if (UWorld* World = GetWorld())
+				{
+					World->GetTimerManager().SetTimer(
+						FriendListUpdateTimerHandle,
+						this,
+						&UHarmoniaOnlineSubsystem::UpdateFriendListCache,
+						30.0f,
+						true
+					);
+				}
 
-	// 초기 친구 목록 로드
-	RefreshFriendList();
+				// 초기 친구 목록 로드 (비동기)
+				RefreshFriendList();
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to connect to online services"));
+			}
+		},
+		1.0f // 연결은 시간이 더 걸릴 수 있음
+	);
 }
 
 void UHarmoniaOnlineSubsystem::Disconnect()
