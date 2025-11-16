@@ -140,4 +140,20 @@ protected:
 	// Tags to block while attacking
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combo")
 	FGameplayTagContainer BlockedTags;
+
+	// ============================================================================
+	// Attack Component Integration
+	// ============================================================================
+
+	/**
+	 * Name of the attack component to trigger (leave empty to find first)
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attack")
+	FName AttackComponentName = NAME_None;
+
+	/**
+	 * Whether to trigger attack component on each combo step
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attack")
+	bool bTriggerAttackComponent = true;
 };
