@@ -169,7 +169,7 @@ void UHarmoniaGameplayAbility_ComboAttack::OnComboWindowExpired()
 	}
 }
 
-void UHarmoniaGameplayAbility_ComboAttack::OnMontageCompleted()
+void UHarmoniaGameplayAbility_ComboAttack::OnMontageCompleted(UAnimMontage* Montage, bool bInterrupted)
 {
 	bIsAttacking = false;
 
@@ -186,14 +186,14 @@ void UHarmoniaGameplayAbility_ComboAttack::OnMontageCompleted()
 	}
 }
 
-void UHarmoniaGameplayAbility_ComboAttack::OnMontageCancelled()
+void UHarmoniaGameplayAbility_ComboAttack::OnMontageCancelled(UAnimMontage* Montage, bool bInterrupted)
 {
 	bIsAttacking = false;
 	ResetCombo();
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 }
 
-void UHarmoniaGameplayAbility_ComboAttack::OnMontageBlendOut()
+void UHarmoniaGameplayAbility_ComboAttack::OnMontageBlendOut(UAnimMontage* Montage, bool bInterrupted)
 {
 	// Montage is blending out, but ability might continue for combo
 	bIsAttacking = false;

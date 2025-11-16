@@ -54,13 +54,13 @@ protected:
 
 	// Called when an attack montage completes
 	UFUNCTION()
-	virtual void OnMontageCompleted();
+	virtual void OnMontageCompleted(UAnimMontage* Montage, bool bInterrupted);
 
 	UFUNCTION()
-	virtual void OnMontageCancelled();
+	virtual void OnMontageCancelled(UAnimMontage* Montage, bool bInterrupted);
 
 	UFUNCTION()
-	virtual void OnMontageBlendOut();
+	virtual void OnMontageBlendOut(UAnimMontage* Montage, bool bInterrupted);
 
 protected:
 	// Current combo index
