@@ -62,6 +62,18 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Data_Damage, "Data.Damage", "Damage magnitude for SetByCaller");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Data_Healing, "Data.Healing", "Healing magnitude for SetByCaller");
 
+	// ============================================================
+	// Hit Reaction System Tags
+	// ============================================================
+
+	// State Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_HitReaction, "State.HitReaction", "Character is in hit reaction");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_HitStunned, "State.HitStunned", "Character is hit stunned");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Invincible, "State.Invincible", "Character is invincible");
+
+	// Event Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_HitReaction, "GameplayEvent.HitReaction", "Trigger hit reaction");
+
 	FGameplayTag FindTagByString(const FString& TagString, bool bMatchPartialString)
 	{
 		const UGameplayTagsManager& Manager = UGameplayTagsManager::Get();

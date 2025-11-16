@@ -100,6 +100,24 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 			// Broadcast damage event
 			OnDamageReceived.Broadcast(Instigator, Causer, &Data.EffectSpec, LocalDamage, OldHealth, NewHealth);
 
+			// Trigger hit reaction event if damage was dealt
+			if (LocalDamage > 0.0f && Instigator)
+			{
+				FGameplayEventData HitEventData;
+				HitEventData.Instigator = Instigator;
+				HitEventData.Target = GetOwningActor();
+				HitEventData.EventMagnitude = LocalDamage;
+
+				UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+				if (ASC)
+				{
+					ASC->HandleGameplayEvent(
+						FGameplayTag::RequestGameplayTag(FName("GameplayEvent.HitReaction")),
+						&HitEventData
+					);
+				}
+			}
+
 			// Check if health reached zero
 			if (NewHealth <= 0.0f && OldHealth > 0.0f)
 			{

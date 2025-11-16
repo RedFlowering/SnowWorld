@@ -334,3 +334,91 @@ struct HARMONIAKIT_API FHarmoniaAttackData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
 	bool bEnabled = true;
 };
+
+/**
+ * Hit Direction
+ * Direction from which the hit came
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaHitDirection : uint8
+{
+	Front UMETA(DisplayName = "Front"),
+	Back UMETA(DisplayName = "Back"),
+	Left UMETA(DisplayName = "Left"),
+	Right UMETA(DisplayName = "Right")
+};
+
+/**
+ * Hit Reaction Data
+ * Defines animation and behavior for hit reactions
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHitReactionData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	// Display name of this hit reaction
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Reaction")
+	FText DisplayName;
+
+	// Hit reaction type
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Reaction")
+	EHarmoniaHitReactionType ReactionType = EHarmoniaHitReactionType::Light;
+
+	// Animation montages for different hit directions
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> HitMontage_Front;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> HitMontage_Back;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> HitMontage_Left;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> HitMontage_Right;
+
+	// Duration of hit stun (player cannot act)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Reaction")
+	float StunDuration = 0.3f;
+
+	// Whether this hit reaction can be interrupted
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Reaction")
+	bool bCanBeInterrupted = true;
+
+	// Movement speed multiplier during hit reaction
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Reaction")
+	float MovementSpeedMultiplier = 0.5f;
+
+	// Whether to disable input during hit reaction
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Reaction")
+	bool bDisableInput = true;
+
+	// Gameplay tags to apply during hit reaction
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay Tags")
+	FGameplayTagContainer AppliedTags;
+
+	// Gameplay tags to block during hit reaction
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay Tags")
+	FGameplayTagContainer BlockedTags;
+
+	/**
+	 * Get animation montage for specific direction
+	 */
+	UAnimMontage* GetMontageForDirection(EHarmoniaHitDirection Direction) const
+	{
+		switch (Direction)
+		{
+		case EHarmoniaHitDirection::Front:
+			return HitMontage_Front;
+		case EHarmoniaHitDirection::Back:
+			return HitMontage_Back;
+		case EHarmoniaHitDirection::Left:
+			return HitMontage_Left;
+		case EHarmoniaHitDirection::Right:
+			return HitMontage_Right;
+		default:
+			return HitMontage_Front;
+		}
+	}
+};

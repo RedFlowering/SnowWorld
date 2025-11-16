@@ -443,3 +443,337 @@ Content/
 ## License
 
 Copyright 2025 Snow Game Studio.
+
+## 히트 리액션 시스템
+
+### 개요
+
+히트 리액션 시스템은 캐릭터가 데미지를 받았을 때 자동으로 반응하는 시스템입니다.
+
+### 주요 기능
+
+- **방향별 애니메이션**: 피격 방향에 따라 다른 애니메이션 재생 (앞/뒤/왼쪽/오른쪽)
+- **히트 스턴**: 일정 시간 동안 행동 불가 상태
+- **이동 속도 감소**: 히트 리액션 중 이동 속도 조절
+- **무적 프레임**: 연속 피격 방지를 위한 무적 시간
+- **자동 트리거**: 데미지를 받으면 자동으로 활성화
+- **인터럽트 지원**: 설정에 따라 현재 히트 리액션 중단 가능
+
+### 사용 방법
+
+#### 1. Hit Reaction Data Table 생성
+
+```
+Content Browser 우클릭
+└── Miscellaneous → Data Table
+    └── Row Structure: FHitReactionData
+    └── 이름: DT_HitReactions
+```
+
+#### 2. Data Table 설정 예시
+
+**Light (약한 피격)**
+```
+Row Name: Light
+├── Display Name: "Light Hit"
+├── Reaction Type: Light
+├── Hit Montage Front: AM_HitReact_Light_Front
+├── Hit Montage Back: AM_HitReact_Light_Back
+├── Hit Montage Left: AM_HitReact_Light_Left
+├── Hit Montage Right: AM_HitReact_Light_Right
+├── Stun Duration: 0.2
+├── Can Be Interrupted: true
+├── Movement Speed Multiplier: 0.8
+├── Disable Input: false
+└── Applied Tags: [State.HitReaction, State.HitStunned]
+```
+
+**Medium (중간 피격)**
+```
+Row Name: Medium
+├── Display Name: "Medium Hit"
+├── Reaction Type: Medium
+├── Hit Montage Front: AM_HitReact_Medium_Front
+├── Hit Montage Back: AM_HitReact_Medium_Back
+├── Hit Montage Left: AM_HitReact_Medium_Left
+├── Hit Montage Right: AM_HitReact_Medium_Right
+├── Stun Duration: 0.4
+├── Can Be Interrupted: true
+├── Movement Speed Multiplier: 0.5
+└── Disable Input: true
+```
+
+**Heavy (강한 피격)**
+```
+Row Name: Heavy
+├── Display Name: "Heavy Hit"
+├── Reaction Type: Heavy
+├── Hit Montage Front: AM_HitReact_Heavy_Front
+├── Hit Montage Back: AM_HitReact_Heavy_Back
+├── Hit Montage Left: AM_HitReact_Heavy_Left
+├── Hit Montage Right: AM_HitReact_Heavy_Right
+├── Stun Duration: 0.8
+├── Can Be Interrupted: false
+├── Movement Speed Multiplier: 0.3
+└── Disable Input: true
+```
+
+#### 3. Gameplay Ability 생성
+
+```cpp
+// Blueprint에서:
+1. Content Browser 우클릭
+2. Blueprint Class → HarmoniaGameplayAbility_HitReaction
+3. 이름: GA_HitReaction
+
+// 설정:
+Hit Reaction Data Table: DT_HitReactions
+Default Reaction Type: Light
+Auto Detect Hit Direction: true
+Direction Angle Threshold: 45.0
+Allow Interruption: true
+Minimum Interrupt Time: 0.1
+Apply Invincibility Frames: true
+Invincibility Duration: 0.5
+```
+
+#### 4. Ability System Component에 추가
+
+```cpp
+// C++ 코드
+void AYourCharacter::GiveAbilities()
+{
+    if (AbilitySystemComponent)
+    {
+        // 히트 리액션 어빌리티 추가
+        FGameplayAbilitySpec HitReactionSpec(
+            UHarmoniaGameplayAbility_HitReaction::StaticClass(),
+            1  // Level
+        );
+        AbilitySystemComponent->GiveAbility(HitReactionSpec);
+    }
+}
+```
+
+**또는 Blueprint:**
+```
+Event BeginPlay
+└── Get Ability System Component
+    └── Give Ability
+        └── Ability: GA_HitReaction
+        └── Level: 1
+```
+
+#### 5. 자동 트리거 설정
+
+히트 리액션은 **자동으로 트리거됩니다**:
+- 캐릭터가 데미지를 받으면 `HarmoniaAttributeSet`에서 자동으로 `GameplayEvent.HitReaction` 이벤트 발생
+- 이벤트를 받은 어빌리티가 자동 활성화
+
+**수동 트리거 (선택사항):**
+```cpp
+// C++에서 수동 트리거
+FGameplayEventData EventData;
+EventData.Instigator = AttackerActor;
+EventData.EventMagnitude = static_cast<float>(EHarmoniaHitReactionType::Medium);
+
+AbilitySystemComponent->HandleGameplayEvent(
+    HarmoniaGameplayTags::GameplayEvent_HitReaction,
+    &EventData
+);
+```
+
+### 히트 방향 계산
+
+시스템은 공격자 위치를 기반으로 자동으로 히트 방향을 계산합니다:
+
+```
+공격자 위치와 피격자의 Forward Vector 비교:
+
+           Front (0-45°)
+               ↑
+               |
+    Left ←----@----→ Right
+    (45-135°)  |  (45-135°)
+               |
+               ↓
+          Back (135-180°)
+```
+
+### 히트 리액션 타입별 사용 예시
+
+#### Light - 약한 공격
+- 빠른 근접 공격
+- 화살
+- 총알
+
+```cpp
+// Attack Component에서
+DamageConfig.BaseDamage = 10.0f;
+HitReactionConfig.ReactionType = EHarmoniaHitReactionType::Light;
+```
+
+#### Medium - 중간 공격
+- 일반 근접 무기
+- 마법 공격
+- 폭발
+
+```cpp
+DamageConfig.BaseDamage = 25.0f;
+HitReactionConfig.ReactionType = EHarmoniaHitReactionType::Medium;
+```
+
+#### Heavy - 강한 공격
+- 대형 무기 (도끼, 해머)
+- 보스 공격
+- 크리티컬 히트
+
+```cpp
+DamageConfig.BaseDamage = 50.0f;
+HitReactionConfig.ReactionType = EHarmoniaHitReactionType::Heavy;
+```
+
+#### Knockback - 넉백
+- 밀어내는 공격
+- 폭발
+- 충격파
+
+```cpp
+DamageConfig.BaseDamage = 30.0f;
+HitReactionConfig.ReactionType = EHarmoniaHitReactionType::Knockback;
+HitReactionConfig.ImpactForce = 2000.0f;
+```
+
+#### Stun - 스턴
+- 기절 공격
+- 전기 공격
+- 특수 스킬
+
+```cpp
+DamageConfig.BaseDamage = 15.0f;
+HitReactionConfig.ReactionType = EHarmoniaHitReactionType::Stun;
+// Stun Duration은 Data Table에서 설정
+```
+
+### 고급 설정
+
+#### 무적 프레임 활용
+
+연속 피격을 방지하기 위한 무적 시간:
+
+```cpp
+// GA_HitReaction Blueprint
+Apply Invincibility Frames: true
+Invincibility Duration: 0.5  // 0.5초 무적
+
+// 이 시간 동안 State.Invincible 태그 적용
+// 모든 공격이 이 태그를 체크하도록 설정 가능
+```
+
+#### 히트 리액션 인터럽트
+
+```cpp
+// 약한 히트는 강한 히트로 대체 가능
+Allow Interruption: true
+Minimum Interrupt Time: 0.1
+
+// 예시: Light 히트 중 Heavy 히트를 받으면
+// 0.1초 후부터 Heavy 히트로 전환됨
+```
+
+#### 입력 비활성화
+
+```cpp
+// Data Table에서
+Disable Input: true
+
+// 히트 리액션 중 플레이어 입력 무시
+// 주로 Medium, Heavy에서 사용
+```
+
+### Gameplay Tags
+
+히트 리액션 시스템은 다음 태그를 사용합니다:
+
+**State Tags:**
+- `State.HitReaction` - 히트 리액션 중
+- `State.HitStunned` - 스턴 상태
+- `State.Invincible` - 무적 상태
+
+**Event Tags:**
+- `GameplayEvent.HitReaction` - 히트 리액션 트리거
+
+**사용 예시:**
+```cpp
+// 공격 어빌리티에서 히트 중인 적은 공격 불가
+BlockedTags.AddTag(State_HitReaction);
+
+// 무적 중에는 데미지 무시
+if (TargetASC->HasMatchingGameplayTag(State_Invincible))
+{
+    return; // Skip damage
+}
+```
+
+### 디버깅
+
+**로그 활성화:**
+```cpp
+// HitReaction에서 로그 출력
+UE_LOG(LogTemp, Log, TEXT("HitReaction: Performing %s reaction in direction %d"),
+    *ReactionData.DisplayName.ToString(),
+    static_cast<int32>(Direction));
+```
+
+**일반적인 문제:**
+
+1. **히트 리액션이 재생되지 않음**
+   - Ability가 ASC에 추가되었는지 확인
+   - Data Table이 설정되었는지 확인
+   - 해당 방향의 Montage가 있는지 확인
+
+2. **방향이 잘못 계산됨**
+   - `Direction Angle Threshold` 조정 (기본 45도)
+   - Instigator 위치가 올바른지 확인
+
+3. **무적이 작동하지 않음**
+   - `Apply Invincibility Frames: true` 확인
+   - 공격 시스템에서 `State.Invincible` 체크 구현
+
+4. **연속 히트가 재생되지 않음**
+   - `Allow Interruption: true` 확인
+   - `Minimum Interrupt Time` 조정
+
+### 예제 시나리오
+
+#### 시나리오 1: 기본 근접 전투
+
+```
+1. 플레이어가 적을 공격
+2. 데미지 적용 (25 damage)
+3. HarmoniaAttributeSet에서 GameplayEvent.HitReaction 트리거
+4. GA_HitReaction 자동 활성화
+5. 피격 방향 계산 (Back)
+6. AM_HitReact_Medium_Back 재생
+7. 0.4초 스턴 적용
+8. 애니메이션 종료 후 어빌리티 종료
+```
+
+#### 시나리오 2: 보스 강공격
+
+```
+1. 보스가 플레이어에게 강공격 (50 damage, Heavy)
+2. HitReaction 트리거 (EventMagnitude = Heavy)
+3. AM_HitReact_Heavy_Front 재생
+4. 0.8초 스턴 + 입력 비활성화
+5. Movement Speed 30%로 감소
+6. 애니메이션 종료까지 인터럽트 불가
+7. 종료 후 모든 효과 제거
+```
+
+### 성능 최적화
+
+- **몽타주 미리 로드**: 자주 사용되는 히트 몽타주는 미리 로드
+- **무적 프레임 최소화**: 필요한 만큼만 사용 (0.3-0.5초)
+- **방향 계산 캐싱**: 동일 프레임에서 중복 계산 방지
+

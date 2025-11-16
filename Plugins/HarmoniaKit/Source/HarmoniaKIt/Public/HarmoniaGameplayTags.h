@@ -59,4 +59,16 @@ namespace HarmoniaGameplayTags
 	// Data Tags (for SetByCaller magnitudes)
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Damage);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Healing);
+
+	// ============================================================
+	// Hit Reaction System Tags
+	// ============================================================
+
+	// State Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_HitReaction);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_HitStunned);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Invincible);
+
+	// Event Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_HitReaction);
 }
