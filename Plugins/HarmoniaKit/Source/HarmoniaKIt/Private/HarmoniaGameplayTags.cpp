@@ -31,6 +31,49 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Attack_ComboNext, "GameplayEvent.Attack.ComboNext", "Trigger next combo in sequence");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Attack_ComboReset, "GameplayEvent.Attack.ComboReset", "Reset combo sequence");
 
+	// ============================================================
+	// Damage System Tags
+	// ============================================================
+
+	// Damage Types
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Damage_Type_Physical, "Damage.Type.Physical", "Physical damage type");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Damage_Type_Fire, "Damage.Type.Fire", "Fire damage type");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Damage_Type_Ice, "Damage.Type.Ice", "Ice damage type");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Damage_Type_Lightning, "Damage.Type.Lightning", "Lightning damage type");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Damage_Type_Poison, "Damage.Type.Poison", "Poison damage type");
+
+	// Damage Modifiers
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Damage_Critical, "Damage.Critical", "Critical hit damage");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Damage_Blocked, "Damage.Blocked", "Damage was blocked");
+
+	// Hit Reactions
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(HitReaction_Light, "HitReaction.Light", "Light hit reaction");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(HitReaction_Medium, "HitReaction.Medium", "Medium hit reaction");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(HitReaction_Heavy, "HitReaction.Heavy", "Heavy hit reaction");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(HitReaction_Knockback, "HitReaction.Knockback", "Knockback hit reaction");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(HitReaction_Stun, "HitReaction.Stun", "Stun hit reaction");
+
+	// Gameplay Cues - Hit Effects
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayCue_Hit_Physical, "GameplayCue.Hit.Physical", "Physical hit effect");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayCue_Hit_Critical, "GameplayCue.Hit.Critical", "Critical hit effect");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayCue_Hit_Blocked, "GameplayCue.Hit.Blocked", "Blocked hit effect");
+
+	// Data Tags (for SetByCaller magnitudes)
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Data_Damage, "Data.Damage", "Damage magnitude for SetByCaller");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Data_Healing, "Data.Healing", "Healing magnitude for SetByCaller");
+
+	// ============================================================
+	// Hit Reaction System Tags
+	// ============================================================
+
+	// State Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_HitReaction, "State.HitReaction", "Character is in hit reaction");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_HitStunned, "State.HitStunned", "Character is hit stunned");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Invincible, "State.Invincible", "Character is invincible");
+
+	// Event Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_HitReaction, "GameplayEvent.HitReaction", "Trigger hit reaction");
+
 	FGameplayTag FindTagByString(const FString& TagString, bool bMatchPartialString)
 	{
 		const UGameplayTagsManager& Manager = UGameplayTagsManager::Get();
