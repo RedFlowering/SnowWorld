@@ -1,4 +1,4 @@
-# Lyra 세이브/로드 시스템
+# HarmoniaKit 세이브/로드 시스템
 
 SnowWorld 게임을 위한 완전한 세이브/로드 시스템입니다.
 
@@ -30,9 +30,9 @@ SnowWorld 게임을 위한 완전한 세이브/로드 시스템입니다.
 ### 1. 세이브 시스템 가져오기
 
 ```cpp
-#include "System/LyraSaveGameSubsystem.h"
+#include "System/HarmoniaSaveGameSubsystem.h"
 
-ULyraSaveGameSubsystem* SaveSystem = GetGameInstance()->GetSubsystem<ULyraSaveGameSubsystem>();
+UHarmoniaSaveGameSubsystem* SaveSystem = GetGameInstance()->GetSubsystem<UHarmoniaSaveGameSubsystem>();
 ```
 
 ### 2. 게임 저장
@@ -78,9 +78,9 @@ SaveSystem->SetAutoSaveInterval(300.0f); // 5분
 // 저장 완료 이벤트
 SaveSystem->OnSaveGameComplete.AddDynamic(this, &UMyClass::OnSaveComplete);
 
-void UMyClass::OnSaveComplete(ELyraSaveGameResult Result, const FString& SaveSlotName)
+void UMyClass::OnSaveComplete(EHarmoniaSaveGameResult Result, const FString& SaveSlotName)
 {
-    if (Result == ELyraSaveGameResult::Success)
+    if (Result == EHarmoniaSaveGameResult::Success)
     {
         UE_LOG(LogTemp, Log, TEXT("Save successful: %s"), *SaveSlotName);
     }
@@ -89,9 +89,9 @@ void UMyClass::OnSaveComplete(ELyraSaveGameResult Result, const FString& SaveSlo
 // 로드 완료 이벤트
 SaveSystem->OnLoadGameComplete.AddDynamic(this, &UMyClass::OnLoadComplete);
 
-void UMyClass::OnLoadComplete(ELyraSaveGameResult Result, ULyraSaveGame* SaveGameObject)
+void UMyClass::OnLoadComplete(EHarmoniaSaveGameResult Result, UHarmoniaSaveGame* SaveGameObject)
 {
-    if (Result == ELyraSaveGameResult::Success)
+    if (Result == EHarmoniaSaveGameResult::Success)
     {
         UE_LOG(LogTemp, Log, TEXT("Load successful"));
     }
@@ -212,12 +212,12 @@ NetConnectionClassName="OnlineSubsystemSteam.SteamNetConnection"
 ### 1. 세이브 파일 호환성
 
 세이브 파일 버전이 다르면 로드 시 경고가 표시됩니다.
-`ULyraSaveGame::SaveVersion`을 업데이트하고 호환성 처리 로직을 추가하세요.
+`UHarmoniaSaveGame::SaveVersion`을 업데이트하고 호환성 처리 로직을 추가하세요.
 
 ### 2. 인벤토리 아이템
 
 현재 인벤토리 아이템은 `ItemDefinition` 경로로 저장됩니다.
-커스텀 데이터가 있는 경우 `FLyraSavedInventoryItem` 구조체를 확장하세요.
+커스텀 데이터가 있는 경우 `FHarmoniaSavedInventoryItem` 구조체를 확장하세요.
 
 ### 3. 빌딩 시스템
 
@@ -233,7 +233,7 @@ HarmoniaBuildingInstanceManager와의 통합은 해당 API에 따라 구현해�
 
 ### 새 데이터 추가하기
 
-1. **`FLyraPlayerSaveData` 또는 `FLyraWorldSaveData`에 필드 추가**:
+1. **`FHarmoniaPlayerSaveData` 또는 `FHarmoniaWorldSaveData`에 필드 추가**:
 
 ```cpp
 UPROPERTY(SaveGame)
@@ -243,12 +243,12 @@ int32 PlayerLevel = 1;
 2. **저장/로드 로직 업데이트**:
 
 ```cpp
-void ULyraSaveGameSubsystem::SavePlayerData(...)
+void UHarmoniaSaveGameSubsystem::SavePlayerData(...)
 {
     PlayerData.PlayerLevel = GetPlayerLevel(PlayerState);
 }
 
-void ULyraSaveGameSubsystem::LoadPlayerData(...)
+void UHarmoniaSaveGameSubsystem::LoadPlayerData(...)
 {
     SetPlayerLevel(PlayerState, PlayerData.PlayerLevel);
 }
@@ -257,7 +257,7 @@ void ULyraSaveGameSubsystem::LoadPlayerData(...)
 3. **세이브 버전 증가**:
 
 ```cpp
-// LyraSaveGame.h
+// HarmoniaSaveGame.h
 UPROPERTY(SaveGame)
 int32 SaveVersion = 2; // 1 -> 2로 증가
 ```
@@ -265,15 +265,17 @@ int32 SaveVersion = 2; // 1 -> 2로 증가
 ## 파일 구조
 
 ```
-Source/LyraGame/System/
-├── LyraSaveGame.h                  // 세이브 데이터 구조
-├── LyraSaveGame.cpp
-├── LyraSaveGameSubsystem.h         // 세이브/로드 시스템
-├── LyraSaveGameSubsystem.cpp
-├── LyraSaveGameLibrary.h           // 블루프린트 함수 라이브러리
-└── LyraSaveGameLibrary.cpp
+Plugins/HarmoniaKit/Source/HarmoniaKit/
+├── Public/System/
+│   ├── HarmoniaSaveGame.h                  // 세이브 데이터 구조
+│   ├── HarmoniaSaveGameSubsystem.h         // 세이브/로드 시스템
+│   └── HarmoniaSaveGameLibrary.h           // 블루프린트 함수 라이브러리
+└── Private/System/
+    ├── HarmoniaSaveGame.cpp
+    ├── HarmoniaSaveGameSubsystem.cpp
+    └── HarmoniaSaveGameLibrary.cpp
 ```
 
 ## 라이선스
 
-Copyright Epic Games, Inc. All Rights Reserved.
+Copyright 2025 Snow Game Studio. All Rights Reserved.

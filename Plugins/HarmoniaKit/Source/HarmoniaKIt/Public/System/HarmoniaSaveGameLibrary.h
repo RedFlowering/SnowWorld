@@ -1,17 +1,17 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
-#include "LyraSaveGameSubsystem.h"
-#include "LyraSaveGameLibrary.generated.h"
+#include "HarmoniaSaveGameSubsystem.h"
+#include "HarmoniaSaveGameLibrary.generated.h"
 
 /**
  * 블루프린트에서 세이브/로드 시스템을 쉽게 사용할 수 있도록 하는 함수 라이브러리
  */
 UCLASS()
-class LYRAGAME_API ULyraSaveGameLibrary : public UBlueprintFunctionLibrary
+class HARMONIAKIT_API UHarmoniaSaveGameLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 
@@ -23,7 +23,7 @@ public:
 	 * @param bUseSteamCloud 스팀 클라우드 사용 여부
 	 * @return 저장 성공 여부
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Lyra|SaveGame", meta = (WorldContext = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame", meta = (WorldContext = "WorldContextObject"))
 	static bool SaveGame(const UObject* WorldContextObject, const FString& SaveSlotName = TEXT("DefaultSave"), bool bUseSteamCloud = true);
 
 	/**
@@ -33,7 +33,7 @@ public:
 	 * @param bUseSteamCloud 스팀 클라우드에서 로드 여부
 	 * @return 로드 성공 여부
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Lyra|SaveGame", meta = (WorldContext = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame", meta = (WorldContext = "WorldContextObject"))
 	static bool LoadGame(const UObject* WorldContextObject, const FString& SaveSlotName = TEXT("DefaultSave"), bool bUseSteamCloud = true);
 
 	/**
@@ -42,7 +42,7 @@ public:
 	 * @param SaveSlotName 삭제할 슬롯 이름
 	 * @param bDeleteFromSteamCloud 스팀 클라우드에서도 삭제 여부
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Lyra|SaveGame", meta = (WorldContext = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame", meta = (WorldContext = "WorldContextObject"))
 	static bool DeleteSaveGame(const UObject* WorldContextObject, const FString& SaveSlotName = TEXT("DefaultSave"), bool bDeleteFromSteamCloud = true);
 
 	/**
@@ -50,29 +50,29 @@ public:
 	 * @param WorldContextObject 월드 컨텍스트
 	 * @param SaveSlotName 확인할 슬롯 이름
 	 */
-	UFUNCTION(BlueprintPure, Category = "Lyra|SaveGame", meta = (WorldContext = "WorldContextObject"))
+	UFUNCTION(BlueprintPure, Category = "Harmonia|SaveGame", meta = (WorldContext = "WorldContextObject"))
 	static bool DoesSaveGameExist(const UObject* WorldContextObject, const FString& SaveSlotName = TEXT("DefaultSave"));
 
 	/**
 	 * 현재 로드된 세이브 게임 반환
 	 * @param WorldContextObject 월드 컨텍스트
 	 */
-	UFUNCTION(BlueprintPure, Category = "Lyra|SaveGame", meta = (WorldContext = "WorldContextObject"))
-	static ULyraSaveGame* GetCurrentSaveGame(const UObject* WorldContextObject);
+	UFUNCTION(BlueprintPure, Category = "Harmonia|SaveGame", meta = (WorldContext = "WorldContextObject"))
+	static UHarmoniaSaveGame* GetCurrentSaveGame(const UObject* WorldContextObject);
 
 	/**
 	 * 세이브 게임 서브시스템 가져오기
 	 * @param WorldContextObject 월드 컨텍스트
 	 */
-	UFUNCTION(BlueprintPure, Category = "Lyra|SaveGame", meta = (WorldContext = "WorldContextObject"))
-	static ULyraSaveGameSubsystem* GetSaveGameSubsystem(const UObject* WorldContextObject);
+	UFUNCTION(BlueprintPure, Category = "Harmonia|SaveGame", meta = (WorldContext = "WorldContextObject"))
+	static UHarmoniaSaveGameSubsystem* GetSaveGameSubsystem(const UObject* WorldContextObject);
 
 	/**
 	 * 자동 저장 활성화/비활성화
 	 * @param WorldContextObject 월드 컨텍스트
 	 * @param bEnabled 활성화 여부
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Lyra|SaveGame", meta = (WorldContext = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame", meta = (WorldContext = "WorldContextObject"))
 	static void SetAutoSaveEnabled(const UObject* WorldContextObject, bool bEnabled);
 
 	/**
@@ -80,20 +80,20 @@ public:
 	 * @param WorldContextObject 월드 컨텍스트
 	 * @param IntervalInSeconds 간격 (초 단위)
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Lyra|SaveGame", meta = (WorldContext = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame", meta = (WorldContext = "WorldContextObject"))
 	static void SetAutoSaveInterval(const UObject* WorldContextObject, float IntervalInSeconds);
 
 	/**
 	 * 플레이어의 스팀 ID 가져오기
 	 * @param PlayerController 플레이어 컨트롤러
 	 */
-	UFUNCTION(BlueprintPure, Category = "Lyra|SaveGame")
+	UFUNCTION(BlueprintPure, Category = "Harmonia|SaveGame")
 	static FString GetPlayerSteamID(APlayerController* PlayerController);
 
 	/**
 	 * 현재 플레이어가 서버 소유주인지 확인
 	 * @param PlayerController 플레이어 컨트롤러
 	 */
-	UFUNCTION(BlueprintPure, Category = "Lyra|SaveGame")
+	UFUNCTION(BlueprintPure, Category = "Harmonia|SaveGame")
 	static bool IsServerOwner(APlayerController* PlayerController);
 };

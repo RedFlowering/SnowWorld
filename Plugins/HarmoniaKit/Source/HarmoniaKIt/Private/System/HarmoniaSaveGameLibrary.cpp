@@ -1,8 +1,8 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2025 Snow Game Studio.
 
-#include "LyraSaveGameLibrary.h"
-#include "LyraSaveGameSubsystem.h"
-#include "LyraSaveGame.h"
+#include "System/HarmoniaSaveGameLibrary.h"
+#include "System/HarmoniaSaveGameSubsystem.h"
+#include "System/HarmoniaSaveGame.h"
 #include "Engine/World.h"
 #include "Engine/GameInstance.h"
 #include "OnlineSubsystem.h"
@@ -10,7 +10,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
 
-bool ULyraSaveGameLibrary::SaveGame(const UObject* WorldContextObject, const FString& SaveSlotName, bool bUseSteamCloud)
+bool UHarmoniaSaveGameLibrary::SaveGame(const UObject* WorldContextObject, const FString& SaveSlotName, bool bUseSteamCloud)
 {
 	if (!WorldContextObject)
 	{
@@ -29,7 +29,7 @@ bool ULyraSaveGameLibrary::SaveGame(const UObject* WorldContextObject, const FSt
 		return false;
 	}
 
-	ULyraSaveGameSubsystem* SaveSystem = GameInstance->GetSubsystem<ULyraSaveGameSubsystem>();
+	UHarmoniaSaveGameSubsystem* SaveSystem = GameInstance->GetSubsystem<UHarmoniaSaveGameSubsystem>();
 	if (!SaveSystem)
 	{
 		return false;
@@ -38,7 +38,7 @@ bool ULyraSaveGameLibrary::SaveGame(const UObject* WorldContextObject, const FSt
 	return SaveSystem->SaveGame(SaveSlotName, bUseSteamCloud);
 }
 
-bool ULyraSaveGameLibrary::LoadGame(const UObject* WorldContextObject, const FString& SaveSlotName, bool bUseSteamCloud)
+bool UHarmoniaSaveGameLibrary::LoadGame(const UObject* WorldContextObject, const FString& SaveSlotName, bool bUseSteamCloud)
 {
 	if (!WorldContextObject)
 	{
@@ -57,7 +57,7 @@ bool ULyraSaveGameLibrary::LoadGame(const UObject* WorldContextObject, const FSt
 		return false;
 	}
 
-	ULyraSaveGameSubsystem* SaveSystem = GameInstance->GetSubsystem<ULyraSaveGameSubsystem>();
+	UHarmoniaSaveGameSubsystem* SaveSystem = GameInstance->GetSubsystem<UHarmoniaSaveGameSubsystem>();
 	if (!SaveSystem)
 	{
 		return false;
@@ -66,7 +66,7 @@ bool ULyraSaveGameLibrary::LoadGame(const UObject* WorldContextObject, const FSt
 	return SaveSystem->LoadGame(SaveSlotName, bUseSteamCloud);
 }
 
-bool ULyraSaveGameLibrary::DeleteSaveGame(const UObject* WorldContextObject, const FString& SaveSlotName, bool bDeleteFromSteamCloud)
+bool UHarmoniaSaveGameLibrary::DeleteSaveGame(const UObject* WorldContextObject, const FString& SaveSlotName, bool bDeleteFromSteamCloud)
 {
 	if (!WorldContextObject)
 	{
@@ -85,7 +85,7 @@ bool ULyraSaveGameLibrary::DeleteSaveGame(const UObject* WorldContextObject, con
 		return false;
 	}
 
-	ULyraSaveGameSubsystem* SaveSystem = GameInstance->GetSubsystem<ULyraSaveGameSubsystem>();
+	UHarmoniaSaveGameSubsystem* SaveSystem = GameInstance->GetSubsystem<UHarmoniaSaveGameSubsystem>();
 	if (!SaveSystem)
 	{
 		return false;
@@ -94,7 +94,7 @@ bool ULyraSaveGameLibrary::DeleteSaveGame(const UObject* WorldContextObject, con
 	return SaveSystem->DeleteSaveGame(SaveSlotName, bDeleteFromSteamCloud);
 }
 
-bool ULyraSaveGameLibrary::DoesSaveGameExist(const UObject* WorldContextObject, const FString& SaveSlotName)
+bool UHarmoniaSaveGameLibrary::DoesSaveGameExist(const UObject* WorldContextObject, const FString& SaveSlotName)
 {
 	if (!WorldContextObject)
 	{
@@ -113,7 +113,7 @@ bool ULyraSaveGameLibrary::DoesSaveGameExist(const UObject* WorldContextObject, 
 		return false;
 	}
 
-	ULyraSaveGameSubsystem* SaveSystem = GameInstance->GetSubsystem<ULyraSaveGameSubsystem>();
+	UHarmoniaSaveGameSubsystem* SaveSystem = GameInstance->GetSubsystem<UHarmoniaSaveGameSubsystem>();
 	if (!SaveSystem)
 	{
 		return false;
@@ -122,7 +122,7 @@ bool ULyraSaveGameLibrary::DoesSaveGameExist(const UObject* WorldContextObject, 
 	return SaveSystem->DoesSaveGameExist(SaveSlotName);
 }
 
-ULyraSaveGame* ULyraSaveGameLibrary::GetCurrentSaveGame(const UObject* WorldContextObject)
+UHarmoniaSaveGame* UHarmoniaSaveGameLibrary::GetCurrentSaveGame(const UObject* WorldContextObject)
 {
 	if (!WorldContextObject)
 	{
@@ -141,7 +141,7 @@ ULyraSaveGame* ULyraSaveGameLibrary::GetCurrentSaveGame(const UObject* WorldCont
 		return nullptr;
 	}
 
-	ULyraSaveGameSubsystem* SaveSystem = GameInstance->GetSubsystem<ULyraSaveGameSubsystem>();
+	UHarmoniaSaveGameSubsystem* SaveSystem = GameInstance->GetSubsystem<UHarmoniaSaveGameSubsystem>();
 	if (!SaveSystem)
 	{
 		return nullptr;
@@ -150,7 +150,7 @@ ULyraSaveGame* ULyraSaveGameLibrary::GetCurrentSaveGame(const UObject* WorldCont
 	return SaveSystem->GetCurrentSaveGame();
 }
 
-ULyraSaveGameSubsystem* ULyraSaveGameLibrary::GetSaveGameSubsystem(const UObject* WorldContextObject)
+UHarmoniaSaveGameSubsystem* UHarmoniaSaveGameLibrary::GetSaveGameSubsystem(const UObject* WorldContextObject)
 {
 	if (!WorldContextObject)
 	{
@@ -169,28 +169,28 @@ ULyraSaveGameSubsystem* ULyraSaveGameLibrary::GetSaveGameSubsystem(const UObject
 		return nullptr;
 	}
 
-	return GameInstance->GetSubsystem<ULyraSaveGameSubsystem>();
+	return GameInstance->GetSubsystem<UHarmoniaSaveGameSubsystem>();
 }
 
-void ULyraSaveGameLibrary::SetAutoSaveEnabled(const UObject* WorldContextObject, bool bEnabled)
+void UHarmoniaSaveGameLibrary::SetAutoSaveEnabled(const UObject* WorldContextObject, bool bEnabled)
 {
-	ULyraSaveGameSubsystem* SaveSystem = GetSaveGameSubsystem(WorldContextObject);
+	UHarmoniaSaveGameSubsystem* SaveSystem = GetSaveGameSubsystem(WorldContextObject);
 	if (SaveSystem)
 	{
 		SaveSystem->SetAutoSaveEnabled(bEnabled);
 	}
 }
 
-void ULyraSaveGameLibrary::SetAutoSaveInterval(const UObject* WorldContextObject, float IntervalInSeconds)
+void UHarmoniaSaveGameLibrary::SetAutoSaveInterval(const UObject* WorldContextObject, float IntervalInSeconds)
 {
-	ULyraSaveGameSubsystem* SaveSystem = GetSaveGameSubsystem(WorldContextObject);
+	UHarmoniaSaveGameSubsystem* SaveSystem = GetSaveGameSubsystem(WorldContextObject);
 	if (SaveSystem)
 	{
 		SaveSystem->SetAutoSaveInterval(IntervalInSeconds);
 	}
 }
 
-FString ULyraSaveGameLibrary::GetPlayerSteamID(APlayerController* PlayerController)
+FString UHarmoniaSaveGameLibrary::GetPlayerSteamID(APlayerController* PlayerController)
 {
 	if (!PlayerController)
 	{
@@ -222,7 +222,7 @@ FString ULyraSaveGameLibrary::GetPlayerSteamID(APlayerController* PlayerControll
 	return TEXT("Unknown");
 }
 
-bool ULyraSaveGameLibrary::IsServerOwner(APlayerController* PlayerController)
+bool UHarmoniaSaveGameLibrary::IsServerOwner(APlayerController* PlayerController)
 {
 	if (!PlayerController)
 	{

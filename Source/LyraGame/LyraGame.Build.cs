@@ -44,9 +44,7 @@ public class LyraGame : ModuleRules
 				"ControlFlows",
 				"PropertyPath",
 				"ALS",
-				"SenseSystem",
-				"OnlineSubsystem",
-				"OnlineSubsystemUtils"
+				"SenseSystem"
 			}
 		);
 

@@ -1,18 +1,18 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
 #include "GameplayTagContainer.h"
-#include "LyraSaveGame.generated.h"
+#include "HarmoniaSaveGame.generated.h"
 
 class ULyraInventoryItemInstance;
 class ULyraInventoryItemDefinition;
 
 /** 인벤토리 아이템 저장 데이터 */
 USTRUCT(BlueprintType)
-struct FLyraSavedInventoryItem
+struct FHarmoniaSavedInventoryItem
 {
 	GENERATED_BODY()
 
@@ -24,7 +24,7 @@ struct FLyraSavedInventoryItem
 	UPROPERTY(SaveGame)
 	int32 StackCount = 1;
 
-	FLyraSavedInventoryItem()
+	FHarmoniaSavedInventoryItem()
 		: StackCount(1)
 	{
 	}
@@ -32,7 +32,7 @@ struct FLyraSavedInventoryItem
 
 /** 플레이어 속성 저장 데이터 */
 USTRUCT(BlueprintType)
-struct FLyraSavedPlayerAttributes
+struct FHarmoniaSavedPlayerAttributes
 {
 	GENERATED_BODY()
 
@@ -44,7 +44,7 @@ struct FLyraSavedPlayerAttributes
 	UPROPERTY(SaveGame)
 	float MaxHealth = 100.0f;
 
-	/** 스태미나 (HarmoniaAttributeSet 사용 시) */
+	/** 스태미나 */
 	UPROPERTY(SaveGame)
 	float Stamina = 100.0f;
 
@@ -79,7 +79,7 @@ struct FLyraSavedPlayerAttributes
 
 /** 빌딩 배치 데이터 */
 USTRUCT(BlueprintType)
-struct FLyraSavedBuildingInstance
+struct FHarmoniaSavedBuildingInstance
 {
 	GENERATED_BODY()
 
@@ -102,7 +102,7 @@ struct FLyraSavedBuildingInstance
 
 /** 플레이어별 세이브 데이터 */
 USTRUCT(BlueprintType)
-struct FLyraPlayerSaveData
+struct FHarmoniaPlayerSaveData
 {
 	GENERATED_BODY()
 
@@ -124,11 +124,11 @@ struct FLyraPlayerSaveData
 
 	/** 플레이어 속성 */
 	UPROPERTY(SaveGame)
-	FLyraSavedPlayerAttributes Attributes;
+	FHarmoniaSavedPlayerAttributes Attributes;
 
 	/** 인벤토리 아이템 목록 */
 	UPROPERTY(SaveGame)
-	TArray<FLyraSavedInventoryItem> InventoryItems;
+	TArray<FHarmoniaSavedInventoryItem> InventoryItems;
 
 	/** 스탯 태그 (체력 버프, 속도 증가 등) */
 	UPROPERTY(SaveGame)
@@ -141,13 +141,13 @@ struct FLyraPlayerSaveData
 
 /** 월드 세이브 데이터 */
 USTRUCT(BlueprintType)
-struct FLyraWorldSaveData
+struct FHarmoniaWorldSaveData
 {
 	GENERATED_BODY()
 
 	/** 배치된 빌딩 목록 */
 	UPROPERTY(SaveGame)
-	TArray<FLyraSavedBuildingInstance> PlacedBuildings;
+	TArray<FHarmoniaSavedBuildingInstance> PlacedBuildings;
 
 	/** 월드 시간 (게임 내 시간) */
 	UPROPERTY(SaveGame)
@@ -163,12 +163,12 @@ struct FLyraWorldSaveData
  * 로컬 PC 및 스팀 클라우드에 저장됩니다.
  */
 UCLASS()
-class LYRAGAME_API ULyraSaveGame : public USaveGame
+class HARMONIAKIT_API UHarmoniaSaveGame : public USaveGame
 {
 	GENERATED_BODY()
 
 public:
-	ULyraSaveGame();
+	UHarmoniaSaveGame();
 
 	/** 세이브 슬롯 이름 */
 	UPROPERTY(SaveGame)
@@ -188,11 +188,11 @@ public:
 
 	/** 플레이어별 세이브 데이터 (스팀 ID를 키로 사용) */
 	UPROPERTY(SaveGame)
-	TMap<FString, FLyraPlayerSaveData> PlayerDataMap;
+	TMap<FString, FHarmoniaPlayerSaveData> PlayerDataMap;
 
 	/** 월드 공유 데이터 (빌딩 등) */
 	UPROPERTY(SaveGame)
-	FLyraWorldSaveData WorldData;
+	FHarmoniaWorldSaveData WorldData;
 
 	/** 플레이 시간 (초 단위) */
 	UPROPERTY(SaveGame)
@@ -201,16 +201,16 @@ public:
 	// Helper functions
 
 	/** 플레이어 데이터 추가/업데이트 */
-	void SetPlayerData(const FString& InSteamID, const FLyraPlayerSaveData& InPlayerData);
+	void SetPlayerData(const FString& InSteamID, const FHarmoniaPlayerSaveData& InPlayerData);
 
 	/** 플레이어 데이터 가져오기 */
-	bool GetPlayerData(const FString& InSteamID, FLyraPlayerSaveData& OutPlayerData) const;
+	bool GetPlayerData(const FString& InSteamID, FHarmoniaPlayerSaveData& OutPlayerData) const;
 
 	/** 플레이어 데이터 존재 여부 확인 */
 	bool HasPlayerData(const FString& InSteamID) const;
 
 	/** 빌딩 추가 */
-	void AddBuilding(const FLyraSavedBuildingInstance& Building);
+	void AddBuilding(const FHarmoniaSavedBuildingInstance& Building);
 
 	/** 모든 빌딩 제거 */
 	void ClearBuildings();

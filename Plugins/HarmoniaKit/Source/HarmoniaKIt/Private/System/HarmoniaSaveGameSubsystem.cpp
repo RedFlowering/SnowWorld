@@ -1,7 +1,7 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2025 Snow Game Studio.
 
-#include "LyraSaveGameSubsystem.h"
-#include "LyraSaveGame.h"
+#include "System/HarmoniaSaveGameSubsystem.h"
+#include "System/HarmoniaSaveGame.h"
 #include "Player/LyraPlayerController.h"
 #include "Player/LyraPlayerState.h"
 #include "Character/LyraCharacter.h"
@@ -19,33 +19,16 @@
 #include "Serialization/BufferArchive.h"
 #include "Serialization/MemoryReader.h"
 
-// HarmoniaKit 지원 (있는 경우)
-#if __has_include("AbilitySystem/HarmoniaAttributeSet.h")
-	#include "AbilitySystem/HarmoniaAttributeSet.h"
-	#define HARMONIA_ATTRIBUTE_SET_AVAILABLE 1
-#else
-	#define HARMONIA_ATTRIBUTE_SET_AVAILABLE 0
-#endif
+// HarmoniaKit 컴포넌트
+#include "AbilitySystem/HarmoniaAttributeSet.h"
+#include "Components/HarmoniaInventoryComponent.h"
+#include "Components/HarmoniaBuildingComponent.h"
+#include "BuildingSystem/HarmoniaBuildingInstanceManager.h"
 
-#if __has_include("Components/HarmoniaInventoryComponent.h")
-	#include "Components/HarmoniaInventoryComponent.h"
-	#define HARMONIA_INVENTORY_AVAILABLE 1
-#else
-	#define HARMONIA_INVENTORY_AVAILABLE 0
-#endif
+const FString UHarmoniaSaveGameSubsystem::DefaultSaveSlotName = TEXT("DefaultSave");
+const int32 UHarmoniaSaveGameSubsystem::SaveGameUserIndex = 0;
 
-#if __has_include("Components/HarmoniaBuildingComponent.h")
-	#include "Components/HarmoniaBuildingComponent.h"
-	#include "BuildingSystem/HarmoniaBuildingInstanceManager.h"
-	#define HARMONIA_BUILDING_AVAILABLE 1
-#else
-	#define HARMONIA_BUILDING_AVAILABLE 0
-#endif
-
-const FString ULyraSaveGameSubsystem::DefaultSaveSlotName = TEXT("DefaultSave");
-const int32 ULyraSaveGameSubsystem::SaveGameUserIndex = 0;
-
-ULyraSaveGameSubsystem::ULyraSaveGameSubsystem()
+UHarmoniaSaveGameSubsystem::UHarmoniaSaveGameSubsystem()
 	: CurrentSaveGame(nullptr)
 	, bAutoSaveEnabled(true)
 	, AutoSaveIntervalSeconds(300.0f)
@@ -53,7 +36,7 @@ ULyraSaveGameSubsystem::ULyraSaveGameSubsystem()
 {
 }
 
-void ULyraSaveGameSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+void UHarmoniaSaveGameSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
@@ -66,7 +49,7 @@ void ULyraSaveGameSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			World->GetTimerManager().SetTimer(
 				AutoSaveTimerHandle,
 				this,
-				&ULyraSaveGameSubsystem::OnAutoSaveTimer,
+				&UHarmoniaSaveGameSubsystem::OnAutoSaveTimer,
 				AutoSaveIntervalSeconds,
 				true
 			);
@@ -74,7 +57,7 @@ void ULyraSaveGameSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	}
 }
 
-void ULyraSaveGameSubsystem::Deinitialize()
+void UHarmoniaSaveGameSubsystem::Deinitialize()
 {
 	// 타이머 정리
 	UWorld* World = GetWorld();
@@ -86,26 +69,26 @@ void ULyraSaveGameSubsystem::Deinitialize()
 	Super::Deinitialize();
 }
 
-bool ULyraSaveGameSubsystem::SaveGame(const FString& SaveSlotName, bool bUseSteamCloud)
+bool UHarmoniaSaveGameSubsystem::SaveGame(const FString& SaveSlotName, bool bUseSteamCloud)
 {
 	UWorld* World = GetWorld();
 	if (!World)
 	{
 		UE_LOG(LogTemp, Error, TEXT("SaveGame: World is null"));
-		OnSaveGameComplete.Broadcast(ELyraSaveGameResult::Failed, SaveSlotName);
+		OnSaveGameComplete.Broadcast(EHarmoniaSaveGameResult::Failed, SaveSlotName);
 		return false;
 	}
 
 	// 새 세이브 게임 객체 생성 또는 기존 것 사용
 	if (!CurrentSaveGame)
 	{
-		CurrentSaveGame = Cast<ULyraSaveGame>(UGameplayStatics::CreateSaveGameObject(ULyraSaveGame::StaticClass()));
+		CurrentSaveGame = Cast<UHarmoniaSaveGame>(UGameplayStatics::CreateSaveGameObject(UHarmoniaSaveGame::StaticClass()));
 	}
 
 	if (!CurrentSaveGame)
 	{
 		UE_LOG(LogTemp, Error, TEXT("SaveGame: Failed to create SaveGame object"));
-		OnSaveGameComplete.Broadcast(ELyraSaveGameResult::Failed, SaveSlotName);
+		OnSaveGameComplete.Broadcast(EHarmoniaSaveGameResult::Failed, SaveSlotName);
 		return false;
 	}
 
@@ -138,7 +121,7 @@ bool ULyraSaveGameSubsystem::SaveGame(const FString& SaveSlotName, bool bUseStea
 	if (!bSaveSuccess)
 	{
 		UE_LOG(LogTemp, Error, TEXT("SaveGame: Failed to save to local slot %s"), *SaveSlotName);
-		OnSaveGameComplete.Broadcast(ELyraSaveGameResult::Failed, SaveSlotName);
+		OnSaveGameComplete.Broadcast(EHarmoniaSaveGameResult::Failed, SaveSlotName);
 		return false;
 	}
 
@@ -166,21 +149,21 @@ bool ULyraSaveGameSubsystem::SaveGame(const FString& SaveSlotName, bool bUseStea
 	}
 
 	LastSaveTime = World->GetTimeSeconds();
-	OnSaveGameComplete.Broadcast(ELyraSaveGameResult::Success, SaveSlotName);
+	OnSaveGameComplete.Broadcast(EHarmoniaSaveGameResult::Success, SaveSlotName);
 	return true;
 }
 
-bool ULyraSaveGameSubsystem::LoadGame(const FString& SaveSlotName, bool bUseSteamCloud)
+bool UHarmoniaSaveGameSubsystem::LoadGame(const FString& SaveSlotName, bool bUseSteamCloud)
 {
 	UWorld* World = GetWorld();
 	if (!World)
 	{
 		UE_LOG(LogTemp, Error, TEXT("LoadGame: World is null"));
-		OnLoadGameComplete.Broadcast(ELyraSaveGameResult::Failed, nullptr);
+		OnLoadGameComplete.Broadcast(EHarmoniaSaveGameResult::Failed, nullptr);
 		return false;
 	}
 
-	ULyraSaveGame* LoadedSaveGame = nullptr;
+	UHarmoniaSaveGame* LoadedSaveGame = nullptr;
 
 	// 스팀 클라우드에서 먼저 로드 시도
 	if (bUseSteamCloud)
@@ -189,7 +172,7 @@ bool ULyraSaveGameSubsystem::LoadGame(const FString& SaveSlotName, bool bUseStea
 		if (LoadFromSteamCloud(SaveSlotName, CloudData))
 		{
 			// 바이너리 데이터를 SaveGame 객체로 역직렬화
-			LoadedSaveGame = Cast<ULyraSaveGame>(UGameplayStatics::CreateSaveGameObject(ULyraSaveGame::StaticClass()));
+			LoadedSaveGame = Cast<UHarmoniaSaveGame>(UGameplayStatics::CreateSaveGameObject(UHarmoniaSaveGame::StaticClass()));
 			if (LoadedSaveGame)
 			{
 				FMemoryReader MemoryReader(CloudData, true);
@@ -211,7 +194,7 @@ bool ULyraSaveGameSubsystem::LoadGame(const FString& SaveSlotName, bool bUseStea
 	{
 		if (UGameplayStatics::DoesSaveGameExist(SaveSlotName, SaveGameUserIndex))
 		{
-			LoadedSaveGame = Cast<ULyraSaveGame>(UGameplayStatics::LoadGameFromSlot(SaveSlotName, SaveGameUserIndex));
+			LoadedSaveGame = Cast<UHarmoniaSaveGame>(UGameplayStatics::LoadGameFromSlot(SaveSlotName, SaveGameUserIndex));
 
 			if (LoadedSaveGame)
 			{
@@ -230,7 +213,7 @@ bool ULyraSaveGameSubsystem::LoadGame(const FString& SaveSlotName, bool bUseStea
 
 	if (!LoadedSaveGame)
 	{
-		OnLoadGameComplete.Broadcast(ELyraSaveGameResult::Failed, nullptr);
+		OnLoadGameComplete.Broadcast(EHarmoniaSaveGameResult::Failed, nullptr);
 		return false;
 	}
 
@@ -255,11 +238,11 @@ bool ULyraSaveGameSubsystem::LoadGame(const FString& SaveSlotName, bool bUseStea
 	// 월드 데이터 로드
 	LoadWorldData(LoadedSaveGame);
 
-	OnLoadGameComplete.Broadcast(ELyraSaveGameResult::Success, LoadedSaveGame);
+	OnLoadGameComplete.Broadcast(EHarmoniaSaveGameResult::Success, LoadedSaveGame);
 	return true;
 }
 
-bool ULyraSaveGameSubsystem::DeleteSaveGame(const FString& SaveSlotName, bool bDeleteFromSteamCloud)
+bool UHarmoniaSaveGameSubsystem::DeleteSaveGame(const FString& SaveSlotName, bool bDeleteFromSteamCloud)
 {
 	bool bSuccess = UGameplayStatics::DeleteGameInSlot(SaveSlotName, SaveGameUserIndex);
 
@@ -289,12 +272,12 @@ bool ULyraSaveGameSubsystem::DeleteSaveGame(const FString& SaveSlotName, bool bD
 	return bSuccess;
 }
 
-bool ULyraSaveGameSubsystem::DoesSaveGameExist(const FString& SaveSlotName) const
+bool UHarmoniaSaveGameSubsystem::DoesSaveGameExist(const FString& SaveSlotName) const
 {
 	return UGameplayStatics::DoesSaveGameExist(SaveSlotName, SaveGameUserIndex);
 }
 
-void ULyraSaveGameSubsystem::SetAutoSaveEnabled(bool bEnabled)
+void UHarmoniaSaveGameSubsystem::SetAutoSaveEnabled(bool bEnabled)
 {
 	bAutoSaveEnabled = bEnabled;
 
@@ -309,7 +292,7 @@ void ULyraSaveGameSubsystem::SetAutoSaveEnabled(bool bEnabled)
 		World->GetTimerManager().SetTimer(
 			AutoSaveTimerHandle,
 			this,
-			&ULyraSaveGameSubsystem::OnAutoSaveTimer,
+			&UHarmoniaSaveGameSubsystem::OnAutoSaveTimer,
 			AutoSaveIntervalSeconds,
 			true
 		);
@@ -320,7 +303,7 @@ void ULyraSaveGameSubsystem::SetAutoSaveEnabled(bool bEnabled)
 	}
 }
 
-void ULyraSaveGameSubsystem::SetAutoSaveInterval(float IntervalInSeconds)
+void UHarmoniaSaveGameSubsystem::SetAutoSaveInterval(float IntervalInSeconds)
 {
 	AutoSaveIntervalSeconds = FMath::Max(0.0f, IntervalInSeconds);
 
@@ -332,7 +315,7 @@ void ULyraSaveGameSubsystem::SetAutoSaveInterval(float IntervalInSeconds)
 	}
 }
 
-void ULyraSaveGameSubsystem::SavePlayerData(APlayerController* PlayerController, ULyraSaveGame* SaveGameObject)
+void UHarmoniaSaveGameSubsystem::SavePlayerData(APlayerController* PlayerController, UHarmoniaSaveGame* SaveGameObject)
 {
 	if (!PlayerController || !SaveGameObject)
 	{
@@ -345,7 +328,7 @@ void ULyraSaveGameSubsystem::SavePlayerData(APlayerController* PlayerController,
 		return;
 	}
 
-	FLyraPlayerSaveData PlayerData;
+	FHarmoniaPlayerSaveData PlayerData;
 
 	// 스팀 ID 저장
 	PlayerData.SteamID = GetSteamIDForPlayer(PlayerController);
@@ -361,18 +344,12 @@ void ULyraSaveGameSubsystem::SavePlayerData(APlayerController* PlayerController,
 	// 플레이어 속성 저장
 	SavePlayerAttributes(LyraPS, PlayerData.Attributes);
 
-	// 인벤토리 저장
+	// 인벤토리 저장 - 먼저 Lyra 인벤토리 시도
 	if (ULyraInventoryManagerComponent* InventoryComp = LyraPS->FindComponentByClass<ULyraInventoryManagerComponent>())
 	{
 		SaveInventory(InventoryComp, PlayerData.InventoryItems);
 	}
-#if HARMONIA_INVENTORY_AVAILABLE
-	else if (UHarmoniaInventoryComponent* HarmoniaInv = LyraPS->FindComponentByClass<UHarmoniaInventoryComponent>())
-	{
-		// HarmoniaInventoryComponent는 별도 처리가 필요할 수 있음
-		// 현재는 기본 인벤토리 저장 로직 사용
-	}
-#endif
+	// HarmoniaInventoryComponent는 별도 처리 필요 시 추가
 
 	// 스탯 태그 저장
 	PlayerData.StatTags = LyraPS->GetStatTags();
@@ -384,7 +361,7 @@ void ULyraSaveGameSubsystem::SavePlayerData(APlayerController* PlayerController,
 	SaveGameObject->SetPlayerData(PlayerData.SteamID, PlayerData);
 }
 
-void ULyraSaveGameSubsystem::LoadPlayerData(APlayerController* PlayerController, const ULyraSaveGame* SaveGameObject)
+void UHarmoniaSaveGameSubsystem::LoadPlayerData(APlayerController* PlayerController, const UHarmoniaSaveGame* SaveGameObject)
 {
 	if (!PlayerController || !SaveGameObject)
 	{
@@ -399,7 +376,7 @@ void ULyraSaveGameSubsystem::LoadPlayerData(APlayerController* PlayerController,
 
 	// 스팀 ID로 플레이어 데이터 찾기
 	FString SteamID = GetSteamIDForPlayer(PlayerController);
-	FLyraPlayerSaveData PlayerData;
+	FHarmoniaPlayerSaveData PlayerData;
 
 	if (!SaveGameObject->GetPlayerData(SteamID, PlayerData))
 	{
@@ -424,7 +401,6 @@ void ULyraSaveGameSubsystem::LoadPlayerData(APlayerController* PlayerController,
 	}
 
 	// 스탯 태그 로드
-	// Note: StatTags는 직접 설정할 수 없으므로 AddStatTagStack을 사용해야 함
 	for (const FGameplayTag& Tag : PlayerData.StatTags)
 	{
 		LyraPS->AddStatTagStack(Tag, 1);
@@ -433,7 +409,7 @@ void ULyraSaveGameSubsystem::LoadPlayerData(APlayerController* PlayerController,
 	UE_LOG(LogTemp, Log, TEXT("LoadPlayerData: Successfully loaded data for %s"), *PlayerData.PlayerName);
 }
 
-void ULyraSaveGameSubsystem::SaveWorldData(ULyraSaveGame* SaveGameObject)
+void UHarmoniaSaveGameSubsystem::SaveWorldData(UHarmoniaSaveGame* SaveGameObject)
 {
 	if (!SaveGameObject)
 	{
@@ -446,9 +422,7 @@ void ULyraSaveGameSubsystem::SaveWorldData(ULyraSaveGame* SaveGameObject)
 		return;
 	}
 
-	// 빌딩 데이터 저장
-#if HARMONIA_BUILDING_AVAILABLE
-	// HarmoniaBuildingInstanceManager를 찾아서 배치된 건물들을 저장
+	// 빌딩 데이터 저장 - HarmoniaBuildingInstanceManager를 찾아서 배치된 건물들을 저장
 	for (TActorIterator<AActor> It(World); It; ++It)
 	{
 		AActor* Actor = *It;
@@ -458,12 +432,11 @@ void ULyraSaveGameSubsystem::SaveWorldData(ULyraSaveGame* SaveGameObject)
 			// (구체적인 구현은 HarmoniaBuildingInstanceManager의 API에 따라 다름)
 		}
 	}
-#endif
 
 	UE_LOG(LogTemp, Log, TEXT("SaveWorldData: World data saved"));
 }
 
-void ULyraSaveGameSubsystem::LoadWorldData(const ULyraSaveGame* SaveGameObject)
+void UHarmoniaSaveGameSubsystem::LoadWorldData(const UHarmoniaSaveGame* SaveGameObject)
 {
 	if (!SaveGameObject)
 	{
@@ -477,18 +450,16 @@ void ULyraSaveGameSubsystem::LoadWorldData(const ULyraSaveGame* SaveGameObject)
 	}
 
 	// 빌딩 데이터 로드
-#if HARMONIA_BUILDING_AVAILABLE
-	for (const FLyraSavedBuildingInstance& Building : SaveGameObject->WorldData.PlacedBuildings)
+	for (const FHarmoniaSavedBuildingInstance& Building : SaveGameObject->WorldData.PlacedBuildings)
 	{
 		// 빌딩 복원 로직
 		// (구체적인 구현은 HarmoniaBuildingInstanceManager의 API에 따라 다름)
 	}
-#endif
 
 	UE_LOG(LogTemp, Log, TEXT("LoadWorldData: World data loaded"));
 }
 
-void ULyraSaveGameSubsystem::SavePlayerAttributes(ALyraPlayerState* PlayerState, FLyraSavedPlayerAttributes& OutAttributes)
+void UHarmoniaSaveGameSubsystem::SavePlayerAttributes(ALyraPlayerState* PlayerState, FHarmoniaSavedPlayerAttributes& OutAttributes)
 {
 	if (!PlayerState)
 	{
@@ -501,8 +472,7 @@ void ULyraSaveGameSubsystem::SavePlayerAttributes(ALyraPlayerState* PlayerState,
 		return;
 	}
 
-#if HARMONIA_ATTRIBUTE_SET_AVAILABLE
-	// HarmoniaAttributeSet 사용 시
+	// HarmoniaAttributeSet 사용
 	if (const UHarmoniaAttributeSet* HarmoniaAttrs = ASC->GetSet<UHarmoniaAttributeSet>())
 	{
 		OutAttributes.Health = HarmoniaAttrs->GetHealth();
@@ -517,9 +487,8 @@ void ULyraSaveGameSubsystem::SavePlayerAttributes(ALyraPlayerState* PlayerState,
 		OutAttributes.AttackSpeed = HarmoniaAttrs->GetAttackSpeed();
 		return;
 	}
-#endif
 
-	// 기본 LyraAttributeSet 사용
+	// 기본 LyraAttributeSet 사용 (폴백)
 	if (const ULyraHealthSet* HealthSet = ASC->GetSet<ULyraHealthSet>())
 	{
 		OutAttributes.Health = HealthSet->GetHealth();
@@ -529,11 +498,10 @@ void ULyraSaveGameSubsystem::SavePlayerAttributes(ALyraPlayerState* PlayerState,
 	if (const ULyraCombatSet* CombatSet = ASC->GetSet<ULyraCombatSet>())
 	{
 		OutAttributes.AttackPower = CombatSet->GetBaseDamage();
-		// CombatSet에는 Defense 등이 없으므로 기본값 사용
 	}
 }
 
-void ULyraSaveGameSubsystem::LoadPlayerAttributes(ALyraPlayerState* PlayerState, const FLyraSavedPlayerAttributes& Attributes)
+void UHarmoniaSaveGameSubsystem::LoadPlayerAttributes(ALyraPlayerState* PlayerState, const FHarmoniaSavedPlayerAttributes& Attributes)
 {
 	if (!PlayerState)
 	{
@@ -546,8 +514,7 @@ void ULyraSaveGameSubsystem::LoadPlayerAttributes(ALyraPlayerState* PlayerState,
 		return;
 	}
 
-#if HARMONIA_ATTRIBUTE_SET_AVAILABLE
-	// HarmoniaAttributeSet 사용 시
+	// HarmoniaAttributeSet 사용
 	if (const UHarmoniaAttributeSet* HarmoniaAttrs = ASC->GetSet<UHarmoniaAttributeSet>())
 	{
 		ASC->SetNumericAttributeBase(HarmoniaAttrs->GetHealthAttribute(), Attributes.Health);
@@ -562,9 +529,8 @@ void ULyraSaveGameSubsystem::LoadPlayerAttributes(ALyraPlayerState* PlayerState,
 		ASC->SetNumericAttributeBase(HarmoniaAttrs->GetAttackSpeedAttribute(), Attributes.AttackSpeed);
 		return;
 	}
-#endif
 
-	// 기본 LyraAttributeSet 사용
+	// 기본 LyraAttributeSet 사용 (폴백)
 	if (const ULyraHealthSet* HealthSet = ASC->GetSet<ULyraHealthSet>())
 	{
 		ASC->SetNumericAttributeBase(HealthSet->GetHealthAttribute(), Attributes.Health);
@@ -577,7 +543,7 @@ void ULyraSaveGameSubsystem::LoadPlayerAttributes(ALyraPlayerState* PlayerState,
 	}
 }
 
-void ULyraSaveGameSubsystem::SaveInventory(ULyraInventoryManagerComponent* InventoryComponent, TArray<FLyraSavedInventoryItem>& OutItems)
+void UHarmoniaSaveGameSubsystem::SaveInventory(ULyraInventoryManagerComponent* InventoryComponent, TArray<FHarmoniaSavedInventoryItem>& OutItems)
 {
 	if (!InventoryComponent)
 	{
@@ -594,7 +560,7 @@ void ULyraSaveGameSubsystem::SaveInventory(ULyraInventoryManagerComponent* Inven
 			continue;
 		}
 
-		FLyraSavedInventoryItem SavedItem;
+		FHarmoniaSavedInventoryItem SavedItem;
 
 		// 아이템 정의 경로 저장
 		if (const ULyraInventoryItemDefinition* ItemDef = Item->GetItemDef())
@@ -610,18 +576,15 @@ void ULyraSaveGameSubsystem::SaveInventory(ULyraInventoryManagerComponent* Inven
 	}
 }
 
-void ULyraSaveGameSubsystem::LoadInventory(ULyraInventoryManagerComponent* InventoryComponent, const TArray<FLyraSavedInventoryItem>& Items)
+void UHarmoniaSaveGameSubsystem::LoadInventory(ULyraInventoryManagerComponent* InventoryComponent, const TArray<FHarmoniaSavedInventoryItem>& Items)
 {
 	if (!InventoryComponent)
 	{
 		return;
 	}
 
-	// 기존 인벤토리 비우기
-	// (주의: 이 작업은 신중하게 수행해야 함)
-
 	// 아이템 로드
-	for (const FLyraSavedInventoryItem& SavedItem : Items)
+	for (const FHarmoniaSavedInventoryItem& SavedItem : Items)
 	{
 		if (ULyraInventoryItemDefinition* ItemDef = Cast<ULyraInventoryItemDefinition>(SavedItem.ItemDefinitionPath.TryLoad()))
 		{
@@ -631,7 +594,7 @@ void ULyraSaveGameSubsystem::LoadInventory(ULyraInventoryManagerComponent* Inven
 	}
 }
 
-FString ULyraSaveGameSubsystem::GetSteamIDForPlayer(APlayerController* PlayerController) const
+FString UHarmoniaSaveGameSubsystem::GetSteamIDForPlayer(APlayerController* PlayerController) const
 {
 	if (!PlayerController)
 	{
@@ -664,7 +627,7 @@ FString ULyraSaveGameSubsystem::GetSteamIDForPlayer(APlayerController* PlayerCon
 	return TEXT("Unknown");
 }
 
-bool ULyraSaveGameSubsystem::IsServerOwner(APlayerController* PlayerController) const
+bool UHarmoniaSaveGameSubsystem::IsServerOwner(APlayerController* PlayerController) const
 {
 	if (!PlayerController)
 	{
@@ -675,7 +638,7 @@ bool ULyraSaveGameSubsystem::IsServerOwner(APlayerController* PlayerController) 
 	return PlayerController->GetLocalPlayer() && PlayerController->GetLocalPlayer()->GetControllerId() == 0;
 }
 
-bool ULyraSaveGameSubsystem::SaveToSteamCloud(const FString& SaveSlotName, const TArray<uint8>& SaveData)
+bool UHarmoniaSaveGameSubsystem::SaveToSteamCloud(const FString& SaveSlotName, const TArray<uint8>& SaveData)
 {
 	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
 	if (!OnlineSub)
@@ -708,7 +671,7 @@ bool ULyraSaveGameSubsystem::SaveToSteamCloud(const FString& SaveSlotName, const
 	return bSuccess;
 }
 
-bool ULyraSaveGameSubsystem::LoadFromSteamCloud(const FString& SaveSlotName, TArray<uint8>& OutSaveData)
+bool UHarmoniaSaveGameSubsystem::LoadFromSteamCloud(const FString& SaveSlotName, TArray<uint8>& OutSaveData)
 {
 	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
 	if (!OnlineSub)
@@ -764,7 +727,7 @@ bool ULyraSaveGameSubsystem::LoadFromSteamCloud(const FString& SaveSlotName, TAr
 	}
 }
 
-void ULyraSaveGameSubsystem::OnAutoSaveTimer()
+void UHarmoniaSaveGameSubsystem::OnAutoSaveTimer()
 {
 	UWorld* World = GetWorld();
 	if (!World)
