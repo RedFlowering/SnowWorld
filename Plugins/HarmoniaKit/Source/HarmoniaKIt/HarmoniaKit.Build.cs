@@ -11,6 +11,7 @@ public class HarmoniaKit : ModuleRules
             {
                 "Core",
                 "CoreUObject",
+                "CoreOnline",
                 "Engine",
                 "InputCore",
                 "EnhancedInput",
@@ -24,6 +25,8 @@ public class HarmoniaKit : ModuleRules
                 "GameplayTags",
                 "GameplayTasks",
                 "LyraGame", // For LyraGameplayAbility base class
+                "OnlineSubsystem",
+                "OnlineSubsystemUtils"
             });
     }
 }
