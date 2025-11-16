@@ -59,35 +59,54 @@ struct FPerlinNoiseSettings
 };
 
 /**
- * 월드 생성 파라미터 구조체
+ * World Generation Configuration
+ * Seed-based generation ensures same world in multiplayer
  */
 USTRUCT(BlueprintType)
 struct FWorldGeneratorConfig
 {
 	GENERATED_BODY()
 
+	// Seed for deterministic world generation (multiplayer sync)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen")
 	int32 Seed = 0;
 
+	// World size (recommend power of 2)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen")
-	int32 SizeX = 512;  // 2^n 권장
+	int32 SizeX = 512;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen")
 	int32 SizeY = 512;
 
+	// Maximum terrain height
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen")
 	float MaxHeight = 1000.f;
 
+	// Object spawn density (0.0 - 1.0)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen")
-	float ObjectDensity = 0.008f; // 0~1
+	float ObjectDensity = 0.008f;
 
+	// Sea level threshold (0.0 - 1.0)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen")
-	float SeaLevel = 0.42f; // 0~1
+	float SeaLevel = 0.42f;
 
+	// Object type spawn probabilities
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen")
 	TMap<EWorldObjectType, float> ObjectTypeProbabilities;
 
+	// Noise generation settings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen")
 	FPerlinNoiseSettings NoiseSettings;
-};
 
+	// Chunk size for generation (prevents infinite loop detection)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen|Performance")
+	int32 ChunkSize = 64;
+
+	// Max chunks to process per frame (0 = all at once)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen|Performance")
+	int32 MaxChunksPerFrame = 0;
+
+	// Enable progress logging
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen|Debug")
+	bool bEnableProgressLogging = false;
+};
