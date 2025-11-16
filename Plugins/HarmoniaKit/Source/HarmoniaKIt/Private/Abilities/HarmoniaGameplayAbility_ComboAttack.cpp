@@ -77,10 +77,17 @@ void UHarmoniaGameplayAbility_ComboAttack::ActivateAbility(const FGameplayAbilit
 
 void UHarmoniaGameplayAbility_ComboAttack::PerformComboAttack()
 {
-	const FComboAttackData* ComboData = GetCurrentComboData();
-	if (!ComboData || !ComboData->AttackMontage)
+	if (!HasCurrentComboData())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("ComboAttack: No valid combo data or montage for index %d"), CurrentComboIndex);
+		UE_LOG(LogTemp, Warning, TEXT("ComboAttack: No valid combo data for index %d"), CurrentComboIndex);
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+		return;
+	}
+
+	const FComboAttackData ComboData = GetCurrentComboData();
+	if (!ComboData.AttackMontage)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ComboAttack: No montage for index %d"), CurrentComboIndex);
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		return;
 	}
@@ -89,7 +96,7 @@ void UHarmoniaGameplayAbility_ComboAttack::PerformComboAttack()
 	UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 		this,
 		NAME_None,
-		ComboData->AttackMontage,
+		ComboData.AttackMontage,
 		1.0f,
 		NAME_None,
 		false,
@@ -100,7 +107,7 @@ void UHarmoniaGameplayAbility_ComboAttack::PerformComboAttack()
 	{
 		MontageTask->OnCompleted.AddDynamic(this, &UHarmoniaGameplayAbility_ComboAttack::OnMontageCompleted);
 		MontageTask->OnCancelled.AddDynamic(this, &UHarmoniaGameplayAbility_ComboAttack::OnMontageCancelled);
-		MontageTask->OnInterrupted.AddDynamic(this, &UHarmoniaGameplayAbility_ComboAttack::OnMontageCancelled);
+		MontageTask->OnInterrupted.AddDynamic(this, &UHarmoniaGameplayAbility_ComboAttack::OnMontageInterrupted);
 		MontageTask->ReadyForActivation();
 	}
 
@@ -139,7 +146,7 @@ void UHarmoniaGameplayAbility_ComboAttack::PerformComboAttack()
 					}
 				}
 			},
-			ComboData->ComboWindowDuration,
+			ComboData.ComboWindowDuration,
 			false
 		);
 	}
@@ -147,14 +154,13 @@ void UHarmoniaGameplayAbility_ComboAttack::PerformComboAttack()
 	// TODO: Apply damage, effects, etc. based on ComboData
 	UE_LOG(LogTemp, Log, TEXT("ComboAttack: Performing combo %d - %s (Damage: %.2fx)"),
 		CurrentComboIndex,
-		*ComboData->DisplayName.ToString(),
-		ComboData->DamageMultiplier);
+		*ComboData.DisplayName.ToString(),
+		ComboData.DamageMultiplier);
 }
 
 void UHarmoniaGameplayAbility_ComboAttack::AdvanceCombo()
 {
-	const FComboAttackData* NextCombo = GetNextComboData();
-	if (NextCombo)
+	if (HasNextComboData())
 	{
 		CurrentComboIndex++;
 		bNextComboQueued = true;
@@ -204,7 +210,7 @@ void UHarmoniaGameplayAbility_ComboAttack::EndAbility(const FGameplayAbilitySpec
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UHarmoniaGameplayAbility_ComboAttack::OnMontageCompleted(FGameplayTag EventTag, FGameplayEventData EventData)
+void UHarmoniaGameplayAbility_ComboAttack::OnMontageCompleted()
 {
 	// If next combo was queued during this attack, don't end the ability
 	// The new activation will handle it
@@ -220,30 +226,48 @@ void UHarmoniaGameplayAbility_ComboAttack::OnMontageCompleted(FGameplayTag Event
 	}
 }
 
-void UHarmoniaGameplayAbility_ComboAttack::OnMontageCancelled(FGameplayTag EventTag, FGameplayEventData EventData)
+void UHarmoniaGameplayAbility_ComboAttack::OnMontageCancelled()
 {
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 }
 
-const FComboAttackData* UHarmoniaGameplayAbility_ComboAttack::GetCurrentComboData() const
+void UHarmoniaGameplayAbility_ComboAttack::OnMontageInterrupted()
+{
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+}
+
+FComboAttackData UHarmoniaGameplayAbility_ComboAttack::GetCurrentComboData() const
 {
 	if (!ComboDataTable || !ComboSequence.IsValidIndex(CurrentComboIndex))
 	{
-		return nullptr;
+		return FComboAttackData();
 	}
 
 	const FName RowName = ComboSequence[CurrentComboIndex];
-	return ComboDataTable->FindRow<FComboAttackData>(RowName, TEXT("GetCurrentComboData"));
+	const FComboAttackData* Data = ComboDataTable->FindRow<FComboAttackData>(RowName, TEXT("GetCurrentComboData"));
+	return Data ? *Data : FComboAttackData();
 }
 
-const FComboAttackData* UHarmoniaGameplayAbility_ComboAttack::GetNextComboData() const
+FComboAttackData UHarmoniaGameplayAbility_ComboAttack::GetNextComboData() const
 {
 	const int32 NextIndex = CurrentComboIndex + 1;
 	if (!ComboDataTable || !ComboSequence.IsValidIndex(NextIndex))
 	{
-		return nullptr;
+		return FComboAttackData();
 	}
 
 	const FName RowName = ComboSequence[NextIndex];
-	return ComboDataTable->FindRow<FComboAttackData>(RowName, TEXT("GetNextComboData"));
+	const FComboAttackData* Data = ComboDataTable->FindRow<FComboAttackData>(RowName, TEXT("GetNextComboData"));
+	return Data ? *Data : FComboAttackData();
+}
+
+bool UHarmoniaGameplayAbility_ComboAttack::HasCurrentComboData() const
+{
+	return ComboDataTable && ComboSequence.IsValidIndex(CurrentComboIndex);
+}
+
+bool UHarmoniaGameplayAbility_ComboAttack::HasNextComboData() const
+{
+	const int32 NextIndex = CurrentComboIndex + 1;
+	return ComboDataTable && ComboSequence.IsValidIndex(NextIndex);
 }

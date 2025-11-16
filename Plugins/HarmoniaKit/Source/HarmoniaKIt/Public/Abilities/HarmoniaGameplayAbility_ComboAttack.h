@@ -84,19 +84,31 @@ protected:
 
 	// Called when montage completes
 	UFUNCTION()
-	virtual void OnMontageCompleted(FGameplayTag EventTag, FGameplayEventData EventData);
+	virtual void OnMontageCompleted();
 
 	// Called when montage is cancelled
 	UFUNCTION()
-	virtual void OnMontageCancelled(FGameplayTag EventTag, FGameplayEventData EventData);
+	virtual void OnMontageCancelled();
+
+	// Called when montage is interrupted
+	UFUNCTION()
+	virtual void OnMontageInterrupted();
 
 	// Returns the current combo data
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Ability")
-	const FComboAttackData* GetCurrentComboData() const;
+	FComboAttackData GetCurrentComboData() const;
 
-	// Returns the next combo data (or nullptr if at the end)
+	// Returns the next combo data (or empty if at the end)
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Ability")
-	const FComboAttackData* GetNextComboData() const;
+	FComboAttackData GetNextComboData() const;
+
+	// Returns whether there is valid current combo data
+	UFUNCTION(BlueprintPure, Category = "Harmonia|Ability")
+	bool HasCurrentComboData() const;
+
+	// Returns whether there is valid next combo data
+	UFUNCTION(BlueprintPure, Category = "Harmonia|Ability")
+	bool HasNextComboData() const;
 
 protected:
 	// DataTable containing combo attack data
