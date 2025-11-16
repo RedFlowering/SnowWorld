@@ -20,10 +20,7 @@ public:
     UFUNCTION(BlueprintPure, Category = "Harmonia|LoadManager")
     static UDataTable* GetItemDataTable();
 
-	//UFUNCTION(BlueprintPure, Category = "Harmonia|LoadManager")
-	//static FItemData FindItemRow(FName RowName);
-
-	//UFUNCTION(BlueprintPure, Category = "Harmonia|LoadManager")
-	//static void GetAllItemRows(TArray<FItemData>& OutRows);
+    UFUNCTION(BlueprintPure, Category = "Harmonia|LoadManager")
+    static UDataTable* GetGamePlayTagsDataTable();
 
 };
