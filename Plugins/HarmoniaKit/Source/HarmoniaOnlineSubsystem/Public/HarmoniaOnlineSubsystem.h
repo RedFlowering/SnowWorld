@@ -239,6 +239,66 @@ public:
 	EHarmoniaVoiceChatStatus GetVoiceChatStatus() const { return VoiceChatStatus; }
 
 	//~=============================================================================
+	// 음성 효과 (환경 음향 효과)
+	//~=============================================================================
+
+	/**
+	 * 음성 효과 적용
+	 * @param Settings 적용할 효과 설정
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Online|Voice|Effects")
+	void ApplyVoiceEffect(const FHarmoniaVoiceEffectSettings& Settings);
+
+	/**
+	 * 환경 프리셋으로 음성 효과 적용
+	 * @param Preset 환경 프리셋
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Online|Voice|Effects")
+	void ApplyEnvironmentPreset(EHarmoniaEnvironmentPreset Preset);
+
+	/**
+	 * 특정 사용자에게만 음성 효과 적용
+	 * @param UserId 사용자 ID
+	 * @param Settings 적용할 효과 설정
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Online|Voice|Effects")
+	void ApplyVoiceEffectToUser(const FString& UserId, const FHarmoniaVoiceEffectSettings& Settings);
+
+	/**
+	 * 음성 효과 제거
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Online|Voice|Effects")
+	void ClearVoiceEffect();
+
+	/**
+	 * 특정 사용자의 음성 효과 제거
+	 * @param UserId 사용자 ID
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Online|Voice|Effects")
+	void ClearVoiceEffectFromUser(const FString& UserId);
+
+	/**
+	 * 현재 적용된 음성 효과 설정 가져오기
+	 * @return 현재 효과 설정
+	 */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|Online|Voice|Effects")
+	FHarmoniaVoiceEffectSettings GetCurrentVoiceEffectSettings() const { return CurrentVoiceEffectSettings; }
+
+	/**
+	 * 음성 효과가 활성화되어 있는지 확인
+	 * @return 효과 활성화 여부
+	 */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|Online|Voice|Effects")
+	bool IsVoiceEffectEnabled() const { return CurrentVoiceEffectSettings.bEnabled; }
+
+	/**
+	 * 음성 효과 강도 조절
+	 * @param Intensity 효과 강도 (0.0 ~ 1.0)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Online|Voice|Effects")
+	void SetVoiceEffectIntensity(float Intensity);
+
+	//~=============================================================================
 	// 연결 및 상태 관리
 	//~=============================================================================
 
@@ -375,6 +435,14 @@ private:
 	/** 음소거된 사용자 ID 목록 */
 	UPROPERTY()
 	TSet<FString> MutedUsers;
+
+	/** 현재 적용된 음성 효과 설정 */
+	UPROPERTY()
+	FHarmoniaVoiceEffectSettings CurrentVoiceEffectSettings;
+
+	/** 사용자별 음성 효과 설정 맵 */
+	UPROPERTY()
+	TMap<FString, FHarmoniaVoiceEffectSettings> UserVoiceEffects;
 
 	/** 타이머 핸들 (주기적 업데이트용) */
 	FTimerHandle FriendListUpdateTimerHandle;

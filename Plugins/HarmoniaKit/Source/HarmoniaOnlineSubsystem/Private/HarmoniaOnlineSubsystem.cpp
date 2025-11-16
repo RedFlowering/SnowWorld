@@ -702,3 +702,180 @@ void UHarmoniaOnlineSubsystem::UpdateVoiceChannelStatus(const FString& ChannelId
 		UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Voice chat status changed to %d"), static_cast<int32>(NewStatus));
 	}
 }
+
+//~=============================================================================
+// 음성 효과 프리셋 (정적 함수)
+//~=============================================================================
+
+FHarmoniaVoiceEffectSettings FHarmoniaVoiceEffectSettings::FromPreset(EHarmoniaEnvironmentPreset Preset)
+{
+	FHarmoniaVoiceEffectSettings Settings;
+
+	switch (Preset)
+	{
+	case EHarmoniaEnvironmentPreset::Default:
+		Settings.EffectType = EHarmoniaVoiceEffectType::None;
+		Settings.bEnabled = false;
+		break;
+
+	case EHarmoniaEnvironmentPreset::SmallRoom:
+		Settings.EffectType = EHarmoniaVoiceEffectType::Reverb;
+		Settings.Intensity = 0.3f;
+		Settings.DecayTime = 0.5f;
+		Settings.DelayTime = 0.02f;
+		Settings.Density = 0.7f;
+		Settings.Diffusion = 0.5f;
+		Settings.DryWetMix = 0.2f;
+		break;
+
+	case EHarmoniaEnvironmentPreset::LargeRoom:
+		Settings.EffectType = EHarmoniaVoiceEffectType::Reverb;
+		Settings.Intensity = 0.5f;
+		Settings.DecayTime = 1.2f;
+		Settings.DelayTime = 0.05f;
+		Settings.Density = 0.6f;
+		Settings.Diffusion = 0.7f;
+		Settings.DryWetMix = 0.35f;
+		break;
+
+	case EHarmoniaEnvironmentPreset::Hall:
+		Settings.EffectType = EHarmoniaVoiceEffectType::Reverb;
+		Settings.Intensity = 0.7f;
+		Settings.DecayTime = 2.5f;
+		Settings.DelayTime = 0.1f;
+		Settings.Density = 0.5f;
+		Settings.Diffusion = 0.9f;
+		Settings.DryWetMix = 0.5f;
+		break;
+
+	case EHarmoniaEnvironmentPreset::Cave:
+		Settings.EffectType = EHarmoniaVoiceEffectType::Cave;
+		Settings.Intensity = 0.8f;
+		Settings.DecayTime = 3.0f;
+		Settings.DelayTime = 0.15f;
+		Settings.Density = 0.8f;
+		Settings.Diffusion = 0.6f;
+		Settings.LowPassCutoff = 3000.0f; // 동굴은 고음이 감쇠됨
+		Settings.DryWetMix = 0.6f;
+		break;
+
+	case EHarmoniaEnvironmentPreset::Underwater:
+		Settings.EffectType = EHarmoniaVoiceEffectType::Underwater;
+		Settings.Intensity = 0.9f;
+		Settings.DecayTime = 1.5f;
+		Settings.DelayTime = 0.08f;
+		Settings.Density = 1.0f;
+		Settings.Diffusion = 0.8f;
+		Settings.LowPassCutoff = 1000.0f; // 물 속에서는 고음이 많이 감쇠됨
+		Settings.DryWetMix = 0.8f;
+		break;
+
+	case EHarmoniaEnvironmentPreset::Outdoor:
+		Settings.EffectType = EHarmoniaVoiceEffectType::None;
+		Settings.Intensity = 0.1f;
+		Settings.DecayTime = 0.3f;
+		Settings.DelayTime = 0.01f;
+		Settings.Density = 0.2f;
+		Settings.Diffusion = 0.3f;
+		Settings.DryWetMix = 0.1f;
+		break;
+
+	case EHarmoniaEnvironmentPreset::Forest:
+		Settings.EffectType = EHarmoniaVoiceEffectType::Reverb;
+		Settings.Intensity = 0.4f;
+		Settings.DecayTime = 0.8f;
+		Settings.DelayTime = 0.03f;
+		Settings.Density = 0.6f;
+		Settings.Diffusion = 0.7f;
+		Settings.HighPassCutoff = 150.0f; // 숲에서는 저음이 약간 감쇠됨
+		Settings.DryWetMix = 0.25f;
+		break;
+
+	case EHarmoniaEnvironmentPreset::Mountain:
+		Settings.EffectType = EHarmoniaVoiceEffectType::Echo;
+		Settings.Intensity = 0.6f;
+		Settings.DecayTime = 2.0f;
+		Settings.DelayTime = 0.3f;
+		Settings.Density = 0.3f;
+		Settings.Diffusion = 0.4f;
+		Settings.DryWetMix = 0.4f;
+		break;
+
+	case EHarmoniaEnvironmentPreset::Canyon:
+		Settings.EffectType = EHarmoniaVoiceEffectType::Echo;
+		Settings.Intensity = 0.85f;
+		Settings.DecayTime = 4.0f;
+		Settings.DelayTime = 0.5f;
+		Settings.Density = 0.4f;
+		Settings.Diffusion = 0.5f;
+		Settings.DryWetMix = 0.7f;
+		break;
+	}
+
+	return Settings;
+}
+
+//~=============================================================================
+// 음성 효과 함수 구현
+//~=============================================================================
+
+void UHarmoniaOnlineSubsystem::ApplyVoiceEffect(const FHarmoniaVoiceEffectSettings& Settings)
+{
+	CurrentVoiceEffectSettings = Settings;
+
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Applying voice effect (Type: %d, Intensity: %.2f)"),
+		static_cast<int32>(Settings.EffectType), Settings.Intensity);
+
+	// TODO: 실제 음성 SDK에 효과 적용
+	// 예: Vivox, EOS Voice, Agora 등의 SDK API 호출
+	// SDK->SetVoiceEffect(Settings);
+}
+
+void UHarmoniaOnlineSubsystem::ApplyEnvironmentPreset(EHarmoniaEnvironmentPreset Preset)
+{
+	FHarmoniaVoiceEffectSettings Settings = FHarmoniaVoiceEffectSettings::FromPreset(Preset);
+	ApplyVoiceEffect(Settings);
+
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Applied environment preset: %d"), static_cast<int32>(Preset));
+}
+
+void UHarmoniaOnlineSubsystem::ApplyVoiceEffectToUser(const FString& UserId, const FHarmoniaVoiceEffectSettings& Settings)
+{
+	UserVoiceEffects.Add(UserId, Settings);
+
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Applying voice effect to user %s"), *UserId);
+
+	// TODO: 실제 음성 SDK에 사용자별 효과 적용
+	// SDK->SetUserVoiceEffect(UserId, Settings);
+}
+
+void UHarmoniaOnlineSubsystem::ClearVoiceEffect()
+{
+	CurrentVoiceEffectSettings = FHarmoniaVoiceEffectSettings();
+	CurrentVoiceEffectSettings.bEnabled = false;
+
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Cleared voice effect"));
+
+	// TODO: 실제 음성 SDK에서 효과 제거
+	// SDK->ClearVoiceEffect();
+}
+
+void UHarmoniaOnlineSubsystem::ClearVoiceEffectFromUser(const FString& UserId)
+{
+	UserVoiceEffects.Remove(UserId);
+
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Cleared voice effect from user %s"), *UserId);
+
+	// TODO: 실제 음성 SDK에서 사용자별 효과 제거
+	// SDK->ClearUserVoiceEffect(UserId);
+}
+
+void UHarmoniaOnlineSubsystem::SetVoiceEffectIntensity(float Intensity)
+{
+	CurrentVoiceEffectSettings.Intensity = FMath::Clamp(Intensity, 0.0f, 1.0f);
+
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Set voice effect intensity to %.2f"), Intensity);
+
+	// TODO: 실제 음성 SDK에 강도 변경 적용
+	// SDK->UpdateVoiceEffectIntensity(Intensity);
+}

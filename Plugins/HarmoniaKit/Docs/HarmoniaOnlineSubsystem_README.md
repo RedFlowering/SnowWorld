@@ -26,6 +26,7 @@ Harmonia Online Subsystem은 친구 관리, 초대, 음성 대화 등의 커뮤�
 - 음성 채널 참여/퇴장
 - 마이크 음소거
 - 사용자별 음소거
+- **환경 음향 효과** (동굴 에코, 수중 효과 등)
 
 ### 4. 데이터 캐싱
 - 친구 목록 캐시
@@ -280,6 +281,139 @@ OnlineSubsystem->SetUserMuted(TEXT("AnnoyingUserId"), true);
 // 현재 채널 퇴장
 FString CurrentChannelId = OnlineSubsystem->GetCurrentVoiceChannelId();
 OnlineSubsystem->LeaveVoiceChannel(CurrentChannelId);
+```
+
+### 음성 효과 (환경 음향 효과)
+
+#### 환경 프리셋으로 효과 적용
+```cpp
+// 동굴에 들어갔을 때 - 에코 효과
+OnlineSubsystem->ApplyEnvironmentPreset(EHarmoniaEnvironmentPreset::Cave);
+
+// 수중에 들어갔을 때 - 물 속 효과
+OnlineSubsystem->ApplyEnvironmentPreset(EHarmoniaEnvironmentPreset::Underwater);
+
+// 산에서 - 메아리 효과
+OnlineSubsystem->ApplyEnvironmentPreset(EHarmoniaEnvironmentPreset::Mountain);
+
+// 실외로 나왔을 때 - 효과 최소화
+OnlineSubsystem->ApplyEnvironmentPreset(EHarmoniaEnvironmentPreset::Outdoor);
+```
+
+#### 사용 가능한 환경 프리셋
+- **Default** - 기본 (효과 없음)
+- **SmallRoom** - 작은 방 (약한 리버브)
+- **LargeRoom** - 큰 방 (중간 리버브)
+- **Hall** - 홀/강당 (강한 리버브)
+- **Cave** - 동굴 (강한 에코, 고음 감쇠)
+- **Underwater** - 수중 (매우 강한 저역 통과 필터)
+- **Outdoor** - 실외 (효과 거의 없음)
+- **Forest** - 숲 (약간의 리버브)
+- **Mountain** - 산 (에코)
+- **Canyon** - 협곡 (강한 에코)
+
+#### 커스텀 음성 효과 설정
+```cpp
+// 커스텀 효과 설정 생성
+FHarmoniaVoiceEffectSettings CustomEffect;
+CustomEffect.EffectType = EHarmoniaVoiceEffectType::Cave;
+CustomEffect.Intensity = 0.7f;          // 효과 강도
+CustomEffect.DecayTime = 2.5f;          // 감쇠 시간 (초)
+CustomEffect.DelayTime = 0.2f;          // 지연 시간 (초)
+CustomEffect.Density = 0.8f;            // 밀도
+CustomEffect.Diffusion = 0.6f;          // 확산도
+CustomEffect.LowPassCutoff = 3000.0f;   // 저역 통과 필터 (Hz)
+CustomEffect.DryWetMix = 0.6f;          // 드라이/웨트 믹스
+CustomEffect.bEnabled = true;
+
+// 효과 적용
+OnlineSubsystem->ApplyVoiceEffect(CustomEffect);
+```
+
+#### 효과 강도만 조절
+```cpp
+// 현재 효과의 강도만 조절 (0.0 ~ 1.0)
+OnlineSubsystem->SetVoiceEffectIntensity(0.5f);
+```
+
+#### 특정 사용자에게만 효과 적용
+```cpp
+// 특정 사용자의 음성에만 로봇 효과 적용
+FHarmoniaVoiceEffectSettings RobotEffect;
+RobotEffect.EffectType = EHarmoniaVoiceEffectType::Robot;
+RobotEffect.Intensity = 0.8f;
+
+OnlineSubsystem->ApplyVoiceEffectToUser(TEXT("UserId123"), RobotEffect);
+
+// 사용자별 효과 제거
+OnlineSubsystem->ClearVoiceEffectFromUser(TEXT("UserId123"));
+```
+
+#### 효과 제거
+```cpp
+// 모든 음성 효과 제거
+OnlineSubsystem->ClearVoiceEffect();
+
+// 현재 효과 설정 확인
+FHarmoniaVoiceEffectSettings CurrentEffect = OnlineSubsystem->GetCurrentVoiceEffectSettings();
+bool bIsActive = OnlineSubsystem->IsVoiceEffectEnabled();
+```
+
+#### 사용 가능한 효과 타입
+- **None** - 효과 없음
+- **Echo** - 에코
+- **Reverb** - 리버브
+- **Cave** - 동굴 (에코 + 고음 감쇠)
+- **Underwater** - 수중 (강한 저역 통과 필터)
+- **Radio** - 무전기 효과
+- **Robot** - 로봇 목소리
+- **LowPass** - 저역 통과 필터
+- **HighPass** - 고역 통과 필터
+- **Distortion** - 왜곡
+- **Custom** - 커스텀 설정
+
+#### 환경 변화에 따른 자동 효과 전환 예제
+```cpp
+// 플레이어 위치 기반 자동 효과 적용
+void AMyCharacter::UpdateVoiceEffect()
+{
+    UHarmoniaOnlineSubsystem* OnlineSubsystem =
+        GetGameInstance()->GetSubsystem<UHarmoniaOnlineSubsystem>();
+
+    if (!OnlineSubsystem) return;
+
+    // 현재 위치의 물리 볼륨 확인
+    APhysicsVolume* Volume = GetPhysicsVolume();
+
+    if (Volume->IsA<AWaterVolume>())
+    {
+        // 물 속
+        OnlineSubsystem->ApplyEnvironmentPreset(EHarmoniaEnvironmentPreset::Underwater);
+    }
+    else if (Volume->IsA<ACaveVolume>())
+    {
+        // 동굴
+        OnlineSubsystem->ApplyEnvironmentPreset(EHarmoniaEnvironmentPreset::Cave);
+    }
+    else if (IsOutdoor())
+    {
+        // 실외
+        OnlineSubsystem->ApplyEnvironmentPreset(EHarmoniaEnvironmentPreset::Outdoor);
+    }
+    else
+    {
+        // 실내 - 방 크기에 따라
+        float RoomSize = CalculateRoomSize();
+        if (RoomSize < 100.0f)
+        {
+            OnlineSubsystem->ApplyEnvironmentPreset(EHarmoniaEnvironmentPreset::SmallRoom);
+        }
+        else
+        {
+            OnlineSubsystem->ApplyEnvironmentPreset(EHarmoniaEnvironmentPreset::LargeRoom);
+        }
+    }
+}
 ```
 
 ## 데이터 구조

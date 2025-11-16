@@ -55,6 +55,43 @@ enum class EHarmoniaInviteType : uint8
 };
 
 /**
+ * 음성 효과 타입
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaVoiceEffectType : uint8
+{
+	None UMETA(DisplayName = "효과 없음"),
+	Echo UMETA(DisplayName = "에코"),
+	Reverb UMETA(DisplayName = "리버브"),
+	Cave UMETA(DisplayName = "동굴"),
+	Underwater UMETA(DisplayName = "수중"),
+	Radio UMETA(DisplayName = "무전기"),
+	Robot UMETA(DisplayName = "로봇"),
+	LowPass UMETA(DisplayName = "저역 통과 필터"),
+	HighPass UMETA(DisplayName = "고역 통과 필터"),
+	Distortion UMETA(DisplayName = "왜곡"),
+	Custom UMETA(DisplayName = "커스텀")
+};
+
+/**
+ * 환경 프리셋 타입
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaEnvironmentPreset : uint8
+{
+	Default UMETA(DisplayName = "기본"),
+	SmallRoom UMETA(DisplayName = "작은 방"),
+	LargeRoom UMETA(DisplayName = "큰 방"),
+	Hall UMETA(DisplayName = "홀"),
+	Cave UMETA(DisplayName = "동굴"),
+	Underwater UMETA(DisplayName = "수중"),
+	Outdoor UMETA(DisplayName = "실외"),
+	Forest UMETA(DisplayName = "숲"),
+	Mountain UMETA(DisplayName = "산"),
+	Canyon UMETA(DisplayName = "협곡")
+};
+
+/**
  * 친구 정보 구조체
  */
 USTRUCT(BlueprintType)
@@ -249,4 +286,75 @@ struct HARMONIAONLINESUBSYSTEM_API FHarmoniaUserSearchResult
 		, bHasPendingRequest(false)
 	{
 	}
+};
+
+/**
+ * 음성 효과 설정 구조체
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAONLINESUBSYSTEM_API FHarmoniaVoiceEffectSettings
+{
+	GENERATED_BODY()
+
+	/** 효과 타입 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Voice")
+	EHarmoniaVoiceEffectType EffectType;
+
+	/** 효과 강도 (0.0 ~ 1.0) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Voice", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float Intensity;
+
+	/** 에코/리버브 감쇠 시간 (초) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Voice", meta = (ClampMin = "0.0", ClampMax = "10.0"))
+	float DecayTime;
+
+	/** 에코/리버브 지연 시간 (초) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Voice", meta = (ClampMin = "0.0", ClampMax = "2.0"))
+	float DelayTime;
+
+	/** 습도/밀도 (리버브 특성) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Voice", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float Density;
+
+	/** 확산도 (리버브 특성) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Voice", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float Diffusion;
+
+	/** 저주파 컷오프 (Hz) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Voice", meta = (ClampMin = "20.0", ClampMax = "20000.0"))
+	float LowPassCutoff;
+
+	/** 고주파 컷오프 (Hz) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Voice", meta = (ClampMin = "20.0", ClampMax = "20000.0"))
+	float HighPassCutoff;
+
+	/** 왜곡 레벨 (0.0 ~ 1.0) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Voice", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float DistortionLevel;
+
+	/** 드라이/웨트 믹스 (0.0 = 원본, 1.0 = 완전 효과) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Voice", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float DryWetMix;
+
+	/** 효과 활성화 여부 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Voice")
+	bool bEnabled;
+
+	FHarmoniaVoiceEffectSettings()
+		: EffectType(EHarmoniaVoiceEffectType::None)
+		, Intensity(0.5f)
+		, DecayTime(1.0f)
+		, DelayTime(0.1f)
+		, Density(0.5f)
+		, Diffusion(0.5f)
+		, LowPassCutoff(5000.0f)
+		, HighPassCutoff(200.0f)
+		, DistortionLevel(0.0f)
+		, DryWetMix(0.5f)
+		, bEnabled(true)
+	{
+	}
+
+	/** 환경 프리셋으로 설정 생성 */
+	static FHarmoniaVoiceEffectSettings FromPreset(EHarmoniaEnvironmentPreset Preset);
 };
