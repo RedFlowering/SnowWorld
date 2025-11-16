@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
 #include "GameplayTagContainer.h"
+#include "Definitions/HarmoniaEquipmentSystemDefinitions.h"
 #include "HarmoniaSaveGame.generated.h"
 
 class ULyraInventoryItemInstance;
@@ -129,6 +130,10 @@ struct FHarmoniaPlayerSaveData
 	/** 인벤토리 아이템 목록 */
 	UPROPERTY(SaveGame)
 	TArray<FHarmoniaSavedInventoryItem> InventoryItems;
+
+	/** 장비 데이터 */
+	UPROPERTY(SaveGame)
+	FEquipmentSaveData EquipmentData;
 
 	/** 스탯 태그 (체력 버프, 속도 증가 등) */
 	UPROPERTY(SaveGame)
