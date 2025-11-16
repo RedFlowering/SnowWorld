@@ -5,6 +5,7 @@
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "Misc/Guid.h"
+#include "HarmoniaLoadManager.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogBuildingInstanceManager, Log, All);
 
@@ -23,6 +24,16 @@ void UHarmoniaBuildingInstanceManager::Initialize(FSubsystemCollectionBase& Coll
 		if (ISMManagerActor)
 		{
 			ISMManagerActor->SetActorLabel(TEXT("BuildingISMManager"));
+		}
+	}
+
+	// BuildingDataTable 로드
+	if (UHarmoniaLoadManager* LoadManager = UHarmoniaLoadManager::Get())
+	{
+		BuildingDataTable = LoadManager->GetDataTableByKey(FName(TEXT("BuildingParts")));
+		if (!BuildingDataTable)
+		{
+			UE_LOG(LogBuildingInstanceManager, Warning, TEXT("Failed to load BuildingDataTable"));
 		}
 	}
 
@@ -197,6 +208,108 @@ bool UHarmoniaBuildingInstanceManager::GetBuildingMetadata(const FGuid& Building
 		return true;
 	}
 	return false;
+}
+
+bool UHarmoniaBuildingInstanceManager::CheckBuildingOverlap(const FVector& Location, const FRotator& Rotation, const FVector& BoundsExtent, float MinDistance) const
+{
+	// 모든 배치된 건축물과 충돌 검사
+	for (const auto& Pair : BuildingMetadataMap)
+	{
+		const FBuildingInstanceMetadata& ExistingBuilding = Pair.Value;
+
+		// 거리 기반 충돌 검사 (빠른 체크)
+		float Distance = FVector::Dist(Location, ExistingBuilding.Location);
+
+		// MinDistance보다 가까우면 충돌로 간주
+		if (Distance < MinDistance)
+		{
+			UE_LOG(LogBuildingInstanceManager, Warning, TEXT("Building too close: Distance=%.1f, Min=%.1f"), Distance, MinDistance);
+			return true;
+		}
+
+		// 박스 오버랩 검사 (BoundsExtent 사용)
+		if (BoundsExtent.SizeSquared() > 0.0f)
+		{
+			// 기존 건축물의 BoundsExtent를 가져오기 위해 BuildingDataTable 조회 필요
+			// 지금은 간단하게 거리 기반으로만 검사
+			// TODO: 실제 박스 오버랩 검사 구현 시 BuildingDataTable에서 기존 건축물의 BoundsExtent 조회
+		}
+	}
+
+	return false; // 충돌 없음
+}
+
+void UHarmoniaBuildingInstanceManager::GetAllBuildingMetadata(TArray<FBuildingInstanceMetadata>& OutMetadataArray) const
+{
+	OutMetadataArray.Empty();
+	OutMetadataArray.Reserve(BuildingMetadataMap.Num());
+
+	for (const auto& Pair : BuildingMetadataMap)
+	{
+		OutMetadataArray.Add(Pair.Value);
+	}
+}
+
+bool UHarmoniaBuildingInstanceManager::FindNearbySnapPoint(const FVector& TargetLocation, EBuildingPartType PartType, float SearchRadius, FVector& OutSnapLocation, FRotator& OutSnapRotation) const
+{
+	if (!BuildingDataTable)
+	{
+		return false;
+	}
+
+	float ClosestDistance = SearchRadius;
+	bool bFoundSnapPoint = false;
+
+	// 모든 배치된 건축물을 순회
+	for (const auto& Pair : BuildingMetadataMap)
+	{
+		const FBuildingInstanceMetadata& ExistingBuilding = Pair.Value;
+
+		// 거리 체크 - 검색 반경 내에 있는지
+		float Distance = FVector::Dist(TargetLocation, ExistingBuilding.Location);
+		if (Distance > SearchRadius)
+		{
+			continue;
+		}
+
+		// 기존 건축물의 데이터 가져오기
+		FBuildingPartData* ExistingPartData = BuildingDataTable->FindRow<FBuildingPartData>(ExistingBuilding.PartID, TEXT("FindNearbySnapPoint"));
+		if (!ExistingPartData || ExistingPartData->SnapPoints.Num() == 0)
+		{
+			continue;
+		}
+
+		// 각 스냅 포인트 검사
+		for (const FBuildingSnapPoint& SnapPoint : ExistingPartData->SnapPoints)
+		{
+			// 스냅 포인트가 현재 배치하려는 건축물 타입을 허용하는지 확인
+			if (SnapPoint.AcceptsType != EBuildingPartType::None && SnapPoint.AcceptsType != PartType)
+			{
+				continue;
+			}
+
+			// 스냅 포인트의 월드 위치 계산
+			FTransform BuildingTransform(ExistingBuilding.Rotation, ExistingBuilding.Location);
+			FVector SnapWorldLocation = BuildingTransform.TransformPosition(SnapPoint.LocalOffset);
+			FRotator SnapWorldRotation = (BuildingTransform.GetRotation() * SnapPoint.LocalRotation.Quaternion()).Rotator();
+
+			// 타겟 위치와 스냅 포인트 간의 거리 계산
+			float SnapDistance = FVector::Dist(TargetLocation, SnapWorldLocation);
+
+			if (SnapDistance < ClosestDistance)
+			{
+				ClosestDistance = SnapDistance;
+				OutSnapLocation = SnapWorldLocation;
+				OutSnapRotation = SnapWorldRotation;
+				bFoundSnapPoint = true;
+
+				UE_LOG(LogBuildingInstanceManager, Log, TEXT("Found snap point: Distance=%.1f at %s"),
+					SnapDistance, *SnapWorldLocation.ToString());
+			}
+		}
+	}
+
+	return bFoundSnapPoint;
 }
 
 AActor* UHarmoniaBuildingInstanceManager::SpawnWorldActor(const FHarmoniaInstancedObjectData& Data, AController* Requestor)
