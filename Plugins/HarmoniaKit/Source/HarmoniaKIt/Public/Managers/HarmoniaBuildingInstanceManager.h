@@ -42,6 +42,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Building")
 	bool GetBuildingMetadata(const FGuid& BuildingGuid, FBuildingInstanceMetadata& OutMetadata) const;
 
+	// 충돌 검사 - 특정 위치와 범위에 이미 배치된 건축물이 있는지 확인
+	UFUNCTION(BlueprintCallable, Category = "Building")
+	bool CheckBuildingOverlap(const FVector& Location, const FRotator& Rotation, const FVector& BoundsExtent, float MinDistance = 50.0f) const;
+
+	// 모든 건축물 메타데이터 가져오기
+	UFUNCTION(BlueprintCallable, Category = "Building")
+	void GetAllBuildingMetadata(TArray<FBuildingInstanceMetadata>& OutMetadataArray) const;
+
+	// 스냅 포인트 찾기 - 주어진 위치 주변에서 스냅 가능한 지점을 찾음
+	UFUNCTION(BlueprintCallable, Category = "Building")
+	bool FindNearbySnapPoint(const FVector& TargetLocation, EBuildingPartType PartType, float SearchRadius, FVector& OutSnapLocation, FRotator& OutSnapRotation) const;
+
 protected:
 	// 건축물 액터 생성 (실제 3D 오브젝트)
 	virtual AActor* SpawnWorldActor(const FHarmoniaInstancedObjectData& Data, AController* Requestor) override;

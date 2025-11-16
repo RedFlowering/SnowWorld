@@ -111,6 +111,22 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
 	bool bUseGridSnapping = true;
 
+	// 스냅 포인트 검색 반경
+	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
+	float SnapSearchRadius = 200.0f;
+
+	// 스냅 포인트 우선 사용 여부
+	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
+	bool bPreferSnapPoints = true;
+
+	// 최대 허용 지형 경사 각도
+	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
+	float MaxAllowedSlope = 45.0f;
+
+	// 지형 경사 검사 활성화 여부
+	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
+	bool bCheckTerrainSlope = true;
+
 	// 현재 회전 각도 (누적)
 	float CurrentRotationYaw = 0.0f;
 

@@ -55,11 +55,15 @@ void AHarmoniaBuildingPreviewActor::SetIsPlacementValid(bool bIsValid)
 	if (!PreviewMeshComponent)
 		return;
 
-	// 머티리얼 변경
+	// 머티리얼 변경 (모든 머티리얼 슬롯에 적용)
 	UMaterialInterface* MaterialToUse = bIsValid ? ValidPlacementMaterial : InvalidPlacementMaterial;
 	if (MaterialToUse)
 	{
-		PreviewMeshComponent->SetMaterial(0, MaterialToUse);
+		int32 NumMaterials = PreviewMeshComponent->GetNumMaterials();
+		for (int32 i = 0; i < NumMaterials; ++i)
+		{
+			PreviewMeshComponent->SetMaterial(i, MaterialToUse);
+		}
 	}
 }
 

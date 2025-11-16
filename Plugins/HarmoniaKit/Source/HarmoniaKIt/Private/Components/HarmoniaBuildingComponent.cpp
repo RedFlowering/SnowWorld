@@ -207,7 +207,24 @@ bool UHarmoniaBuildingComponent::ValidatePlacement(FVector& OutLocation, FRotato
 		// 히트하지 않으면 최대 거리에 배치
 		OutLocation = TraceEnd;
 		OutRotation = FRotator(0.0f, CameraRotation.Yaw + CurrentRotationYaw, 0.0f);
+		UE_LOG(LogBuildingSystem, Warning, TEXT("Cannot place: No valid surface found"));
 		return false;
+	}
+
+	// 지형 경사 검사
+	if (bCheckTerrainSlope)
+	{
+		FVector SurfaceNormal = HitResult.Normal;
+		float SlopeAngle = FMath::RadiansToDegrees(FMath::Acos(FVector::DotProduct(SurfaceNormal, FVector::UpVector)));
+
+		if (SlopeAngle > MaxAllowedSlope)
+		{
+			UE_LOG(LogBuildingSystem, Warning, TEXT("Cannot place: Terrain too steep (%.1f degrees, max %.1f)"),
+				SlopeAngle, MaxAllowedSlope);
+			OutLocation = HitResult.Location;
+			OutRotation = FRotator(0.0f, CameraRotation.Yaw + CurrentRotationYaw, 0.0f);
+			return false;
+		}
 	}
 
 	// 그리드 스냅 적용
@@ -222,8 +239,53 @@ bool UHarmoniaBuildingComponent::ValidatePlacement(FVector& OutLocation, FRotato
 	OutLocation = SnappedLocation;
 	OutRotation = FRotator(0.0f, CameraRotation.Yaw + CurrentRotationYaw, 0.0f);
 
-	// TODO: 스냅 포인트 검사 (다른 건축물과의 연결)
-	// TODO: 충돌 검사 (다른 건축물과 겹치는지)
+	// 스냅 포인트 검사 (다른 건축물과의 연결)
+	if (InstanceManager && bPreferSnapPoints)
+	{
+		FBuildingPartData* PartData = GetCurrentPartData();
+		if (PartData)
+		{
+			FVector SnapLocation;
+			FRotator SnapRotation;
+
+			// 주변 스냅 포인트 찾기
+			bool bFoundSnap = InstanceManager->FindNearbySnapPoint(
+				OutLocation,
+				PartData->PartType,
+				SnapSearchRadius,
+				SnapLocation,
+				SnapRotation
+			);
+
+			if (bFoundSnap)
+			{
+				// 스냅 포인트로 위치 조정
+				OutLocation = SnapLocation;
+				OutRotation = SnapRotation;
+				UE_LOG(LogBuildingSystem, Log, TEXT("Snapped to nearby building"));
+			}
+		}
+	}
+
+	// 충돌 검사 (다른 건축물과 겹치는지)
+	if (InstanceManager)
+	{
+		FBuildingPartData* PartData = GetCurrentPartData();
+		if (PartData && PartData->BoundsExtent.SizeSquared() > 0.0f)
+		{
+			// 건축물 간 최소 거리 (BoundsExtent의 평균값 사용)
+			float MinDistance = (PartData->BoundsExtent.X + PartData->BoundsExtent.Y) * 0.5f;
+
+			// 기존 건축물과의 충돌 검사
+			bool bHasOverlap = InstanceManager->CheckBuildingOverlap(OutLocation, OutRotation, PartData->BoundsExtent, MinDistance);
+
+			if (bHasOverlap)
+			{
+				UE_LOG(LogBuildingSystem, Warning, TEXT("Cannot place: Overlaps with existing building"));
+				return false; // 충돌 발생 - 배치 불가
+			}
+		}
+	}
 
 	return true;
 }
@@ -297,18 +359,28 @@ bool UHarmoniaBuildingComponent::CheckAndConsumeResources(const FBuildingPartDat
 		}
 	}
 
-	// 2단계: 모든 자원 소비
+	// 2단계: 모든 자원 소비 (실패 시 롤백 지원)
+	TArray<FBuildingResourceCost> ConsumedResources; // 롤백용 추적
+
 	for (const FBuildingResourceCost& Cost : PartData.RequiredResources)
 	{
 		bool bSuccess = InventoryComponent->RemoveItem(Cost.Item, Cost.Count, 0.0f);
 		if (!bSuccess)
 		{
-			UE_LOG(LogBuildingSystem, Error, TEXT("Failed to remove item: %s"), *Cost.Item.Id.ToString());
-			// TODO: 롤백 로직 필요 (이미 제거된 아이템 복구)
+			UE_LOG(LogBuildingSystem, Error, TEXT("Failed to remove item: %s - Rolling back consumed resources"), *Cost.Item.Id.ToString());
+
+			// 롤백: 이미 제거된 아이템들을 복구
+			for (const FBuildingResourceCost& ConsumedCost : ConsumedResources)
+			{
+				InventoryComponent->AddItem(ConsumedCost.Item, ConsumedCost.Count, 0.0f);
+				UE_LOG(LogBuildingSystem, Log, TEXT("Rolled back resource: %s x%d"), *ConsumedCost.Item.Id.ToString(), ConsumedCost.Count);
+			}
+
 			return false;
 		}
 		else
 		{
+			ConsumedResources.Add(Cost);
 			UE_LOG(LogBuildingSystem, Log, TEXT("Consumed resource: %s x%d"), *Cost.Item.Id.ToString(), Cost.Count);
 		}
 	}
