@@ -238,7 +238,7 @@ void UHarmoniaSenseAttackComponent::CleanupSenseReceiver()
 	{
 		SenseReceiver->OnNewSense.RemoveDynamic(this, &UHarmoniaSenseAttackComponent::OnSenseDetected);
 		SenseReceiver->OnCurrentSense.RemoveDynamic(this, &UHarmoniaSenseAttackComponent::OnSenseDetected);
-		SenseReceiver->DestroyComponent();
+		SenseReceiver->DestroyComponent(false);
 		SenseReceiver = nullptr;
 	}
 
@@ -315,8 +315,9 @@ bool UHarmoniaSenseAttackComponent::ProcessHitTarget(const FSensedStimulus& Stim
 	const bool bWasCritical = CalculateCriticalHit(CurrentAttackData.DamageConfig.CriticalChance);
 
 	// Get hit location and normal
-	FVector HitLocation = Stimulus.SensedPoint;
+	FVector HitLocation = Stimulus.SensedPoints.Num() > 0 ? Stimulus.SensedPoints[0].SensedPoint : GetOwner()->GetActorLocation();
 	FVector HitNormal = (GetOwner()->GetActorLocation() - HitLocation).GetSafeNormal();
+	float HitDistance = Stimulus.SensedPoints.Num() > 0 ? (HitLocation - GetTraceLocation()).Length() : 0.0f;
 
 	// Apply damage
 	ApplyDamageToTarget(TargetActor, CurrentAttackData.DamageConfig, bWasCritical, HitLocation, HitNormal);
@@ -331,7 +332,7 @@ bool UHarmoniaSenseAttackComponent::ProcessHitTarget(const FSensedStimulus& Stim
 	HitResult.HitComponent = Stimulus.StimulusComponent.Get();
 	HitResult.HitLocation = HitLocation;
 	HitResult.HitNormal = HitNormal;
-	HitResult.Distance = Stimulus.SensedDistance;
+	HitResult.Distance = HitDistance;
 	HitResult.bWasCriticalHit = bWasCritical;
 	HitResult.SenseScore = Stimulus.Score;
 

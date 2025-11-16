@@ -147,7 +147,7 @@ void UHarmoniaGameplayAbility_HitReaction::PerformHitReaction(const FGameplayEve
 	CurrentReactionData = GetHitReactionData(ReactionType);
 
 	// Calculate hit direction
-	if (bAutoDetectHitDirection && EventData.Instigator.IsValid())
+	if (bAutoDetectHitDirection && EventData.Instigator != nullptr)
 	{
 		CurrentHitDirection = CalculateHitDirection(EventData.Instigator->GetActorLocation());
 	}
@@ -306,7 +306,7 @@ FHitReactionData UHarmoniaGameplayAbility_HitReaction::GetHitReactionData(EHarmo
 void UHarmoniaGameplayAbility_HitReaction::ApplyMovementSpeedModification(float Multiplier)
 {
 	const AActor* Owner = GetOwningActorFromActorInfo();
-	ACharacter* Character = Cast<ACharacter>(Owner);
+	const ACharacter* Character = Cast<const ACharacter>(Owner);
 	if (!Character || !Character->GetCharacterMovement())
 	{
 		return;
@@ -322,7 +322,7 @@ void UHarmoniaGameplayAbility_HitReaction::ApplyMovementSpeedModification(float 
 void UHarmoniaGameplayAbility_HitReaction::RemoveMovementSpeedModification()
 {
 	const AActor* Owner = GetOwningActorFromActorInfo();
-	ACharacter* Character = Cast<ACharacter>(Owner);
+	const ACharacter* Character = Cast<const ACharacter>(Owner);
 	if (!Character || !Character->GetCharacterMovement())
 	{
 		return;
