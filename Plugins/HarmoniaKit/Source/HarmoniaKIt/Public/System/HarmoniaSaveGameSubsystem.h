@@ -39,7 +39,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHarmoniaLoadGameComplete, EHarmo
  * 2. LoadGame() - 게임 상태 로드
  * 3. AutoSave 활성화 시 자동 저장
  */
-UCLASS()
+UCLASS(config=Game)
 class HARMONIAKIT_API UHarmoniaSaveGameSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()

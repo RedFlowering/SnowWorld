@@ -44,7 +44,8 @@ public class LyraGame : ModuleRules
 				"ControlFlows",
 				"PropertyPath",
 				"ALS",
-				"SenseSystem"
+				"SenseSystem",
+				"CommonGame"
 			}
 		);
 
@@ -64,7 +65,6 @@ public class LyraGame : ModuleRules
 				"CommonUI",
 				"CommonInput",
 				"GameSettings",
-				"CommonGame",
 				"CommonUser",
 				"GameSubtitles",
 				"GameplayMessageRuntime",

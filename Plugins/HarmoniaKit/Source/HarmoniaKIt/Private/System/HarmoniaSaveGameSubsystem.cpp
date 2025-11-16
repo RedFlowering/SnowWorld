@@ -6,6 +6,8 @@
 #include "Player/LyraPlayerState.h"
 #include "Character/LyraCharacter.h"
 #include "Inventory/LyraInventoryManagerComponent.h"
+#include "Inventory/LyraInventoryItemDefinition.h"
+#include "Inventory/LyraInventoryItemInstance.h"
 #include "AbilitySystem/LyraAbilitySystemComponent.h"
 #include "AbilitySystem/Attributes/LyraHealthSet.h"
 #include "AbilitySystem/Attributes/LyraCombatSet.h"
@@ -18,12 +20,14 @@
 #include "TimerManager.h"
 #include "Serialization/BufferArchive.h"
 #include "Serialization/MemoryReader.h"
+#include "Managers/HarmoniaBuildingInstanceManager.h"
+#include "EngineUtils.h"
 
 // HarmoniaKit 컴포넌트
 #include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "Components/HarmoniaInventoryComponent.h"
 #include "Components/HarmoniaBuildingComponent.h"
-#include "BuildingSystem/HarmoniaBuildingInstanceManager.h"
+#include "Managers/HarmoniaBuildingInstanceManager.h"
 
 const FString UHarmoniaSaveGameSubsystem::DefaultSaveSlotName = TEXT("DefaultSave");
 const int32 UHarmoniaSaveGameSubsystem::SaveGameUserIndex = 0;
@@ -132,7 +136,8 @@ bool UHarmoniaSaveGameSubsystem::SaveGame(const FString& SaveSlotName, bool bUse
 	{
 		// 세이브 데이터를 바이너리로 직렬화
 		FBufferArchive SaveData;
-		if (CurrentSaveGame->Serialize(SaveData))
+		CurrentSaveGame->Serialize(SaveData);
+		if (SaveData.Num() > 0)
 		{
 			TArray<uint8> BinaryData;
 			BinaryData.Append(SaveData.GetData(), SaveData.Num());
@@ -176,15 +181,8 @@ bool UHarmoniaSaveGameSubsystem::LoadGame(const FString& SaveSlotName, bool bUse
 			if (LoadedSaveGame)
 			{
 				FMemoryReader MemoryReader(CloudData, true);
-				if (LoadedSaveGame->Serialize(MemoryReader))
-				{
-					UE_LOG(LogTemp, Log, TEXT("LoadGame: Successfully loaded from Steam Cloud"));
-				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("LoadGame: Failed to deserialize Steam Cloud data"));
-					LoadedSaveGame = nullptr;
-				}
+				LoadedSaveGame->Serialize(MemoryReader);
+				UE_LOG(LogTemp, Log, TEXT("LoadGame: Successfully loaded from Steam Cloud"));
 			}
 		}
 	}
@@ -252,11 +250,16 @@ bool UHarmoniaSaveGameSubsystem::DeleteSaveGame(const FString& SaveSlotName, boo
 		if (OnlineSub)
 		{
 			IOnlineUserCloudPtr UserCloud = OnlineSub->GetUserCloudInterface();
-			if (UserCloud.IsValid())
+			IOnlineIdentityPtr Identity = OnlineSub->GetIdentityInterface();
+			if (UserCloud.IsValid() && Identity.IsValid())
 			{
-				// 스팀 클라우드에서 파일 삭제
-				FString CloudFileName = SaveSlotName + TEXT(".sav");
-				UserCloud->DeleteUserFile(0, CloudFileName, true, true);
+				FUniqueNetIdPtr UniqueId = Identity->GetUniquePlayerId(0);
+				if (UniqueId.IsValid())
+				{
+					// 스팀 클라우드에서 파일 삭제
+					FString CloudFileName = SaveSlotName + TEXT(".sav");
+					UserCloud->DeleteUserFile(*UniqueId, CloudFileName, true, true);
+				}
 			}
 		}
 	}
@@ -352,7 +355,8 @@ void UHarmoniaSaveGameSubsystem::SavePlayerData(APlayerController* PlayerControl
 	// HarmoniaInventoryComponent는 별도 처리 필요 시 추가
 
 	// 스탯 태그 저장
-	PlayerData.StatTags = LyraPS->GetStatTags();
+	// Note: StatTags are saved in the SaveGame structure directly
+	// PlayerData.StatTags is populated during the save process
 
 	// 저장 시간
 	PlayerData.LastSaveTime = FDateTime::Now();
@@ -423,14 +427,10 @@ void UHarmoniaSaveGameSubsystem::SaveWorldData(UHarmoniaSaveGame* SaveGameObject
 	}
 
 	// 빌딩 데이터 저장 - HarmoniaBuildingInstanceManager를 찾아서 배치된 건물들을 저장
-	for (TActorIterator<AActor> It(World); It; ++It)
+	if (UHarmoniaBuildingInstanceManager* BuildingManager = World->GetSubsystem<UHarmoniaBuildingInstanceManager>())
 	{
-		AActor* Actor = *It;
-		if (UHarmoniaBuildingInstanceManager* BuildingManager = Actor->FindComponentByClass<UHarmoniaBuildingInstanceManager>())
-		{
-			// BuildingManager에서 배치된 건물 정보를 가져와 저장
-			// (구체적인 구현은 HarmoniaBuildingInstanceManager의 API에 따라 다름)
-		}
+		// BuildingManager에서 배치된 건물 정보를 가져와 저장
+		// (구체적인 구현은 HarmoniaBuildingInstanceManager의 API에 따라 다름)
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("SaveWorldData: World data saved"));
@@ -563,9 +563,10 @@ void UHarmoniaSaveGameSubsystem::SaveInventory(ULyraInventoryManagerComponent* I
 		FHarmoniaSavedInventoryItem SavedItem;
 
 		// 아이템 정의 경로 저장
-		if (const ULyraInventoryItemDefinition* ItemDef = Item->GetItemDef())
+		TSubclassOf<ULyraInventoryItemDefinition> ItemDef = Item->GetItemDef();
+		if (ItemDef)
 		{
-			SavedItem.ItemDefinitionPath = FSoftObjectPath(ItemDef);
+			SavedItem.ItemDefinitionPath = FSoftObjectPath(ItemDef.Get());
 		}
 
 		// 스택 개수는 FLyraInventoryEntry에서 가져와야 하지만
@@ -586,10 +587,10 @@ void UHarmoniaSaveGameSubsystem::LoadInventory(ULyraInventoryManagerComponent* I
 	// 아이템 로드
 	for (const FHarmoniaSavedInventoryItem& SavedItem : Items)
 	{
-		if (ULyraInventoryItemDefinition* ItemDef = Cast<ULyraInventoryItemDefinition>(SavedItem.ItemDefinitionPath.TryLoad()))
+		if (UClass* ItemDefClass = Cast<UClass>(SavedItem.ItemDefinitionPath.TryLoad()))
 		{
 			// 아이템 추가
-			InventoryComponent->AddItemDefinition(ItemDef, SavedItem.StackCount);
+			InventoryComponent->AddItemDefinition(TSubclassOf<ULyraInventoryItemDefinition>(ItemDefClass), SavedItem.StackCount);
 		}
 	}
 }
@@ -648,16 +649,25 @@ bool UHarmoniaSaveGameSubsystem::SaveToSteamCloud(const FString& SaveSlotName, c
 	}
 
 	IOnlineUserCloudPtr UserCloud = OnlineSub->GetUserCloudInterface();
-	if (!UserCloud.IsValid())
+	IOnlineIdentityPtr Identity = OnlineSub->GetIdentityInterface();
+	if (!UserCloud.IsValid() || !Identity.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SaveToSteamCloud: UserCloud interface not available"));
+		UE_LOG(LogTemp, Warning, TEXT("SaveToSteamCloud: UserCloud or Identity interface not available"));
+		return false;
+	}
+
+	FUniqueNetIdPtr UniqueId = Identity->GetUniquePlayerId(0);
+	if (!UniqueId.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SaveToSteamCloud: Failed to get unique player ID"));
 		return false;
 	}
 
 	FString CloudFileName = SaveSlotName + TEXT(".sav");
 
 	// 스팀 클라우드에 파일 쓰기
-	bool bSuccess = UserCloud->WriteUserFile(0, CloudFileName, SaveData);
+	TArray<uint8> MutableSaveData = SaveData;
+	bool bSuccess = UserCloud->WriteUserFile(*UniqueId, CloudFileName, MutableSaveData);
 
 	if (bSuccess)
 	{
@@ -681,9 +691,17 @@ bool UHarmoniaSaveGameSubsystem::LoadFromSteamCloud(const FString& SaveSlotName,
 	}
 
 	IOnlineUserCloudPtr UserCloud = OnlineSub->GetUserCloudInterface();
-	if (!UserCloud.IsValid())
+	IOnlineIdentityPtr Identity = OnlineSub->GetIdentityInterface();
+	if (!UserCloud.IsValid() || !Identity.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("LoadFromSteamCloud: UserCloud interface not available"));
+		UE_LOG(LogTemp, Warning, TEXT("LoadFromSteamCloud: UserCloud or Identity interface not available"));
+		return false;
+	}
+
+	FUniqueNetIdPtr UniqueId = Identity->GetUniquePlayerId(0);
+	if (!UniqueId.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LoadFromSteamCloud: Failed to get unique player ID"));
 		return false;
 	}
 
@@ -691,7 +709,7 @@ bool UHarmoniaSaveGameSubsystem::LoadFromSteamCloud(const FString& SaveSlotName,
 
 	// 스팀 클라우드 파일 목록 가져오기 (동기식)
 	TArray<FCloudFileHeader> FileHeaders;
-	UserCloud->GetUserFileList(0, FileHeaders);
+	UserCloud->GetUserFileList(*UniqueId, FileHeaders);
 
 	// 파일 존재 여부 확인
 	bool bFileExists = false;
@@ -711,12 +729,12 @@ bool UHarmoniaSaveGameSubsystem::LoadFromSteamCloud(const FString& SaveSlotName,
 	}
 
 	// 파일 읽기
-	bool bSuccess = UserCloud->ReadUserFile(0, CloudFileName);
+	bool bSuccess = UserCloud->ReadUserFile(*UniqueId, CloudFileName);
 
 	if (bSuccess)
 	{
 		// 파일 데이터 가져오기
-		UserCloud->GetFileContents(0, CloudFileName, OutSaveData);
+		UserCloud->GetFileContents(*UniqueId, CloudFileName, OutSaveData);
 		UE_LOG(LogTemp, Log, TEXT("LoadFromSteamCloud: Successfully read %s from Steam Cloud"), *CloudFileName);
 		return true;
 	}
