@@ -20,6 +20,10 @@ public class HarmoniaKit : ModuleRules
                 "HarmoniaLoadManager",
                 "HarmoniaWorldGenerator",
                 "SenseSystem", // Sense-based interaction system
+                "GameplayAbilities",
+                "GameplayTags",
+                "GameplayTasks",
+                "LyraGame", // For LyraGameplayAbility base class
             });
     }
 }
