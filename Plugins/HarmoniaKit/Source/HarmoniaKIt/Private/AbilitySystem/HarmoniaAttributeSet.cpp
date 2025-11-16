@@ -1,11 +1,11 @@
 // Copyright 2025 Snow Game Studio.
 
-#include "AbilitySystem/HarmoniaCombatAttributeSet.h"
+#include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "GameplayEffectExtension.h"
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
 
-UHarmoniaCombatAttributeSet::UHarmoniaCombatAttributeSet()
+UHarmoniaAttributeSet::UHarmoniaAttributeSet()
 {
 	// Set default values
 	Health = 100.0f;
@@ -20,23 +20,23 @@ UHarmoniaCombatAttributeSet::UHarmoniaCombatAttributeSet()
 	AttackSpeed = 1.0f;
 }
 
-void UHarmoniaCombatAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void UHarmoniaAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaCombatAttributeSet, Health, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaCombatAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaCombatAttributeSet, Stamina, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaCombatAttributeSet, MaxStamina, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaCombatAttributeSet, AttackPower, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaCombatAttributeSet, Defense, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaCombatAttributeSet, CriticalChance, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaCombatAttributeSet, CriticalDamage, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaCombatAttributeSet, MovementSpeed, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaCombatAttributeSet, AttackSpeed, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Health, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Stamina, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, MaxStamina, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, AttackPower, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Defense, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, CriticalChance, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, CriticalDamage, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, MovementSpeed, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, AttackSpeed, COND_None, REPNOTIFY_Always);
 }
 
-bool UHarmoniaCombatAttributeSet::PreGameplayEffectExecute(FGameplayEffectModCallbackData& Data)
+bool UHarmoniaAttributeSet::PreGameplayEffectExecute(FGameplayEffectModCallbackData& Data)
 {
 	if (!Super::PreGameplayEffectExecute(Data))
 	{
@@ -52,7 +52,7 @@ bool UHarmoniaCombatAttributeSet::PreGameplayEffectExecute(FGameplayEffectModCal
 	return true;
 }
 
-void UHarmoniaCombatAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
+void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
 	Super::PostGameplayEffectExecute(Data);
 
@@ -182,21 +182,21 @@ void UHarmoniaCombatAttributeSet::PostGameplayEffectExecute(const FGameplayEffec
 	}
 }
 
-void UHarmoniaCombatAttributeSet::PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue) const
+void UHarmoniaAttributeSet::PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue) const
 {
 	Super::PreAttributeBaseChange(Attribute, NewValue);
 
 	ClampAttribute(Attribute, NewValue);
 }
 
-void UHarmoniaCombatAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
+void UHarmoniaAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
 {
 	Super::PreAttributeChange(Attribute, NewValue);
 
 	ClampAttribute(Attribute, NewValue);
 }
 
-void UHarmoniaCombatAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
+void UHarmoniaAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
 {
 	Super::PostAttributeChange(Attribute, OldValue, NewValue);
 
@@ -222,7 +222,7 @@ void UHarmoniaCombatAttributeSet::PostAttributeChange(const FGameplayAttribute& 
 	}
 }
 
-void UHarmoniaCombatAttributeSet::ClampAttribute(const FGameplayAttribute& Attribute, float& NewValue) const
+void UHarmoniaAttributeSet::ClampAttribute(const FGameplayAttribute& Attribute, float& NewValue) const
 {
 	if (Attribute == GetHealthAttribute())
 	{
@@ -266,7 +266,7 @@ void UHarmoniaCombatAttributeSet::ClampAttribute(const FGameplayAttribute& Attri
 	}
 }
 
-UAbilitySystemComponent* UHarmoniaCombatAttributeSet::GetAbilitySystemComponent() const
+UAbilitySystemComponent* UHarmoniaAttributeSet::GetAbilitySystemComponent() const
 {
 	return GetOwningAbilitySystemComponent();
 }
@@ -275,52 +275,52 @@ UAbilitySystemComponent* UHarmoniaCombatAttributeSet::GetAbilitySystemComponent(
 // Replication Callbacks
 // ============================================================================
 
-void UHarmoniaCombatAttributeSet::OnRep_Health(const FGameplayAttributeData& OldValue)
+void UHarmoniaAttributeSet::OnRep_Health(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaCombatAttributeSet, Health, OldValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Health, OldValue);
 }
 
-void UHarmoniaCombatAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldValue)
+void UHarmoniaAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaCombatAttributeSet, MaxHealth, OldValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxHealth, OldValue);
 }
 
-void UHarmoniaCombatAttributeSet::OnRep_Stamina(const FGameplayAttributeData& OldValue)
+void UHarmoniaAttributeSet::OnRep_Stamina(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaCombatAttributeSet, Stamina, OldValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Stamina, OldValue);
 }
 
-void UHarmoniaCombatAttributeSet::OnRep_MaxStamina(const FGameplayAttributeData& OldValue)
+void UHarmoniaAttributeSet::OnRep_MaxStamina(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaCombatAttributeSet, MaxStamina, OldValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxStamina, OldValue);
 }
 
-void UHarmoniaCombatAttributeSet::OnRep_AttackPower(const FGameplayAttributeData& OldValue)
+void UHarmoniaAttributeSet::OnRep_AttackPower(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaCombatAttributeSet, AttackPower, OldValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, AttackPower, OldValue);
 }
 
-void UHarmoniaCombatAttributeSet::OnRep_Defense(const FGameplayAttributeData& OldValue)
+void UHarmoniaAttributeSet::OnRep_Defense(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaCombatAttributeSet, Defense, OldValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Defense, OldValue);
 }
 
-void UHarmoniaCombatAttributeSet::OnRep_CriticalChance(const FGameplayAttributeData& OldValue)
+void UHarmoniaAttributeSet::OnRep_CriticalChance(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaCombatAttributeSet, CriticalChance, OldValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, CriticalChance, OldValue);
 }
 
-void UHarmoniaCombatAttributeSet::OnRep_CriticalDamage(const FGameplayAttributeData& OldValue)
+void UHarmoniaAttributeSet::OnRep_CriticalDamage(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaCombatAttributeSet, CriticalDamage, OldValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, CriticalDamage, OldValue);
 }
 
-void UHarmoniaCombatAttributeSet::OnRep_MovementSpeed(const FGameplayAttributeData& OldValue)
+void UHarmoniaAttributeSet::OnRep_MovementSpeed(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaCombatAttributeSet, MovementSpeed, OldValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MovementSpeed, OldValue);
 }
 
-void UHarmoniaCombatAttributeSet::OnRep_AttackSpeed(const FGameplayAttributeData& OldValue)
+void UHarmoniaAttributeSet::OnRep_AttackSpeed(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaCombatAttributeSet, AttackSpeed, OldValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, AttackSpeed, OldValue);
 }

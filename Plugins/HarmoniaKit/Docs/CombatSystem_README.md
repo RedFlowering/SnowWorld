@@ -7,7 +7,7 @@
 - **센스 기반 히트 감지**: Sense System의 멀티스레드 방식을 활용한 공격 판정
 - **다양한 공격 형태**: Box, Sphere, Capsule, Line 등 다양한 트레이스 모양 지원
 - **데미지 타입**: Instant, Duration(DoT), Explosion, Percentage 등
-- **Attribute Set**: Health, Stamina, Attack Power, Defense 등 전투 속성
+- **Attribute Set**: Health, Stamina, Attack Power, Defense 등 캐릭터 속성 (전투/비전투 모두 사용)
 - **Gameplay Effect**: 데미지 적용, 버프/디버프 효과
 - **Gameplay Cue**: 히트 이펙트, 사운드, 카메라 셰이크 등
 - **애니메이션 통합**: Animation Notify/Notify State를 통한 공격 타이밍 제어
@@ -16,7 +16,7 @@
 
 ```
 Combat System
-├── Attribute Set (HarmoniaCombatAttributeSet)
+├── Attribute Set (HarmoniaAttributeSet)
 │   ├── Health / MaxHealth
 │   ├── Stamina / MaxStamina
 │   ├── AttackPower
@@ -49,22 +49,22 @@ Combat System
 
 ### 1. Attribute Set 설정
 
-캐릭터에 `HarmoniaCombatAttributeSet`을 추가:
+캐릭터에 `HarmoniaAttributeSet`을 추가:
 
 ```cpp
 // YourCharacter.h
 UPROPERTY()
-TObjectPtr<UHarmoniaCombatAttributeSet> CombatAttributeSet;
+TObjectPtr<UHarmoniaAttributeSet> CombatAttributeSet;
 
 // YourCharacter.cpp
 void AYourCharacter::InitializeAttributes()
 {
     if (AbilitySystemComponent)
     {
-        CombatAttributeSet = AbilitySystemComponent->GetSet<UHarmoniaCombatAttributeSet>();
+        CombatAttributeSet = AbilitySystemComponent->GetSet<UHarmoniaAttributeSet>();
         if (!CombatAttributeSet)
         {
-            CombatAttributeSet = AbilitySystemComponent->AddSet<UHarmoniaCombatAttributeSet>();
+            CombatAttributeSet = AbilitySystemComponent->AddSet<UHarmoniaAttributeSet>();
         }
     }
 }
@@ -136,12 +136,15 @@ Attack Data
    Duration Policy: Instant
 
    Modifiers:
-   ├── Attribute: HarmoniaCombatAttributeSet.Damage
+   ├── Attribute: HarmoniaAttributeSet.Damage
    ├── Modifier Op: Additive
    ├── Modifier Magnitude
    │   └── Set By Caller Magnitude
    │       └── Data Tag: Data.Damage
    ```
+
+**참고**: HarmoniaAttributeSet은 전투와 비전투 상황 모두에서 사용됩니다.
+식사로 체력 회복, 휴식으로 스태미나 회복 등에도 동일한 Attribute Set을 사용합니다.
 
 **DoT Effect:**
 1. 새 Gameplay Effect 생성: `GE_Damage_Duration`
@@ -154,7 +157,7 @@ Attack Data
    Execute Periodic Effect on Application: true
 
    Modifiers:
-   ├── Attribute: HarmoniaCombatAttributeSet.Damage
+   ├── Attribute: HarmoniaAttributeSet.Damage
    ├── Modifier Op: Additive
    └── Modifier Magnitude
        └── Set By Caller Magnitude

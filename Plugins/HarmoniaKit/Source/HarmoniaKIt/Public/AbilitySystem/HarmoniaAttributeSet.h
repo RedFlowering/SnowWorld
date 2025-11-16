@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "AbilitySystemComponent.h"
 #include "AttributeSet.h"
-#include "HarmoniaCombatAttributeSet.generated.h"
+#include "HarmoniaAttributeSet.generated.h"
 
 class UObject;
 struct FGameplayEffectSpec;
@@ -39,18 +39,19 @@ DECLARE_MULTICAST_DELEGATE_SixParams(
 	float /*NewValue*/);
 
 /**
- * UHarmoniaCombatAttributeSet
+ * UHarmoniaAttributeSet
  *
- * Attribute set for combat-related attributes (health, stamina, damage, etc.)
+ * Attribute set for character attributes (health, stamina, damage, etc.)
+ * Used in both combat and non-combat situations (eating, resting, etc.)
  * Based on Lyra's attribute set architecture
  */
 UCLASS(BlueprintType)
-class HARMONIAKIT_API UHarmoniaCombatAttributeSet : public UAttributeSet
+class HARMONIAKIT_API UHarmoniaAttributeSet : public UAttributeSet
 {
 	GENERATED_BODY()
 
 public:
-	UHarmoniaCombatAttributeSet();
+	UHarmoniaAttributeSet();
 
 	//~UObject interface
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -68,20 +69,20 @@ public:
 	// Attribute Accessors
 	// ============================================================================
 
-	ATTRIBUTE_ACCESSORS(UHarmoniaCombatAttributeSet, Health);
-	ATTRIBUTE_ACCESSORS(UHarmoniaCombatAttributeSet, MaxHealth);
-	ATTRIBUTE_ACCESSORS(UHarmoniaCombatAttributeSet, Stamina);
-	ATTRIBUTE_ACCESSORS(UHarmoniaCombatAttributeSet, MaxStamina);
-	ATTRIBUTE_ACCESSORS(UHarmoniaCombatAttributeSet, AttackPower);
-	ATTRIBUTE_ACCESSORS(UHarmoniaCombatAttributeSet, Defense);
-	ATTRIBUTE_ACCESSORS(UHarmoniaCombatAttributeSet, CriticalChance);
-	ATTRIBUTE_ACCESSORS(UHarmoniaCombatAttributeSet, CriticalDamage);
-	ATTRIBUTE_ACCESSORS(UHarmoniaCombatAttributeSet, MovementSpeed);
-	ATTRIBUTE_ACCESSORS(UHarmoniaCombatAttributeSet, AttackSpeed);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, Health);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, MaxHealth);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, Stamina);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, MaxStamina);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, AttackPower);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, Defense);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, CriticalChance);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, CriticalDamage);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, MovementSpeed);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, AttackSpeed);
 
 	// Meta Attributes (temporary, not replicated)
-	ATTRIBUTE_ACCESSORS(UHarmoniaCombatAttributeSet, Healing);
-	ATTRIBUTE_ACCESSORS(UHarmoniaCombatAttributeSet, Damage);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, Healing);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, Damage);
 
 	// ============================================================================
 	// Delegates
@@ -165,28 +166,28 @@ private:
 	 * Clamped by MaxHealth
 	 * Hidden from modifiers - only executions can modify
 	 */
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Health, Category = "Harmonia|Combat", Meta = (HideFromModifiers, AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Health, Category = "Harmonia|Attributes", Meta = (HideFromModifiers, AllowPrivateAccess = true))
 	FGameplayAttributeData Health;
 
 	/**
 	 * Maximum health
 	 * Can be modified by gameplay effects
 	 */
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxHealth, Category = "Harmonia|Combat", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxHealth, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData MaxHealth;
 
 	/**
 	 * Current stamina
-	 * Used for attacks, dodges, sprinting
+	 * Used for attacks, dodges, sprinting, and other activities
 	 * Clamped by MaxStamina
 	 */
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Stamina, Category = "Harmonia|Combat", Meta = (HideFromModifiers, AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Stamina, Category = "Harmonia|Attributes", Meta = (HideFromModifiers, AllowPrivateAccess = true))
 	FGameplayAttributeData Stamina;
 
 	/**
 	 * Maximum stamina
 	 */
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxStamina, Category = "Harmonia|Combat", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxStamina, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData MaxStamina;
 
 	// ============================================================================
@@ -197,38 +198,38 @@ private:
 	 * Attack power
 	 * Base damage multiplier for all attacks
 	 */
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_AttackPower, Category = "Harmonia|Combat", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_AttackPower, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData AttackPower;
 
 	/**
 	 * Defense
 	 * Reduces incoming damage
 	 */
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Defense, Category = "Harmonia|Combat", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Defense, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData Defense;
 
 	/**
 	 * Critical hit chance (0-1)
 	 */
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_CriticalChance, Category = "Harmonia|Combat", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_CriticalChance, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData CriticalChance;
 
 	/**
 	 * Critical damage multiplier
 	 */
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_CriticalDamage, Category = "Harmonia|Combat", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_CriticalDamage, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData CriticalDamage;
 
 	/**
 	 * Movement speed multiplier
 	 */
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MovementSpeed, Category = "Harmonia|Combat", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MovementSpeed, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData MovementSpeed;
 
 	/**
 	 * Attack speed multiplier
 	 */
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_AttackSpeed, Category = "Harmonia|Combat", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_AttackSpeed, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData AttackSpeed;
 
 	// ============================================================================
@@ -240,7 +241,7 @@ private:
 	 * Incoming healing
 	 * Mapped to +Health
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Combat", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData Healing;
 
 	/**
@@ -248,7 +249,7 @@ private:
 	 * Mapped to -Health
 	 * Hidden from modifiers - only executions can apply damage
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Combat", Meta = (HideFromModifiers, AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Attributes", Meta = (HideFromModifiers, AllowPrivateAccess = true))
 	FGameplayAttributeData Damage;
 
 	// ============================================================================

@@ -3,7 +3,7 @@
 #include "Components/HarmoniaSenseAttackComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
-#include "AbilitySystem/HarmoniaCombatAttributeSet.h"
+#include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "SenseReceiverComponent.h"
 #include "SenseStimulusComponent.h"
 #include "Sensors/SensorBase.h"
@@ -393,7 +393,7 @@ bool UHarmoniaSenseAttackComponent::CalculateCriticalHit(float CritChance) const
 
 	if (OwnerAbilitySystem)
 	{
-		const UHarmoniaCombatAttributeSet* CombatSet = OwnerAbilitySystem->GetSet<UHarmoniaCombatAttributeSet>();
+		const UHarmoniaAttributeSet* CombatSet = OwnerAbilitySystem->GetSet<UHarmoniaAttributeSet>();
 		if (CombatSet)
 		{
 			FinalCritChance = CombatSet->GetCriticalChance();
@@ -434,7 +434,7 @@ void UHarmoniaSenseAttackComponent::ApplyDamageToTarget(
 	// Apply attack power from owner's attributes
 	if (SourceASC)
 	{
-		const UHarmoniaCombatAttributeSet* CombatSet = SourceASC->GetSet<UHarmoniaCombatAttributeSet>();
+		const UHarmoniaAttributeSet* CombatSet = SourceASC->GetSet<UHarmoniaAttributeSet>();
 		if (CombatSet)
 		{
 			FinalDamage *= (CombatSet->GetAttackPower() / 10.0f); // Normalize attack power
@@ -448,7 +448,7 @@ void UHarmoniaSenseAttackComponent::ApplyDamageToTarget(
 
 		if (SourceASC)
 		{
-			const UHarmoniaCombatAttributeSet* CombatSet = SourceASC->GetSet<UHarmoniaCombatAttributeSet>();
+			const UHarmoniaAttributeSet* CombatSet = SourceASC->GetSet<UHarmoniaAttributeSet>();
 			if (CombatSet)
 			{
 				CritMultiplier = CombatSet->GetCriticalDamage();
@@ -484,7 +484,7 @@ void UHarmoniaSenseAttackComponent::ApplyDamageToTarget(
 			else
 			{
 				// Fallback: Apply damage directly to attribute
-				const UHarmoniaCombatAttributeSet* TargetCombatSet = TargetASC->GetSet<UHarmoniaCombatAttributeSet>();
+				const UHarmoniaAttributeSet* TargetCombatSet = TargetASC->GetSet<UHarmoniaAttributeSet>();
 				if (TargetCombatSet)
 				{
 					TargetASC->ApplyModToAttribute(
@@ -547,7 +547,7 @@ void UHarmoniaSenseAttackComponent::ApplyDamageToTarget(
 	case EHarmoniaDamageType::Percentage:
 		{
 			// Apply percentage-based damage (ignores defense)
-			const UHarmoniaCombatAttributeSet* TargetCombatSet = TargetASC->GetSet<UHarmoniaCombatAttributeSet>();
+			const UHarmoniaAttributeSet* TargetCombatSet = TargetASC->GetSet<UHarmoniaAttributeSet>();
 			if (TargetCombatSet)
 			{
 				const float PercentageDamage = TargetCombatSet->GetMaxHealth() * (FinalDamage / 100.0f);
