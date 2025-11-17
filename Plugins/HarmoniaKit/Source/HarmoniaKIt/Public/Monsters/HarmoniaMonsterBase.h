@@ -17,6 +17,8 @@ class USenseReceiverComponent;
 class USenseStimulusComponent;
 class UHarmoniaThreatComponent;
 class UHarmoniaSenseInteractionComponent;
+class UHarmoniaAdvancedAIComponent;
+class UHarmoniaAILODComponent;
 struct FGameplayEffectSpec;
 
 /**

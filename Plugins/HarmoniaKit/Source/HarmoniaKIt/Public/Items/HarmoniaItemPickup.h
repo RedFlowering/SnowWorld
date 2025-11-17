@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Definitions/HarmoniaMonsterSystemDefinitions.h"
-#include "Interactable/HarmoniaInteractableInterface.h"
+#include "Interface/HarmoniaInteractableInterface.h"
 #include "HarmoniaItemPickup.generated.h"
 
 class UStaticMeshComponent;
