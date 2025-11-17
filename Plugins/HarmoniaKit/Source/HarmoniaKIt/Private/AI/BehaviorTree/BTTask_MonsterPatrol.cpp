@@ -18,6 +18,12 @@ UBTTask_MonsterPatrol::UBTTask_MonsterPatrol()
 
 EBTNodeResult::Type UBTTask_MonsterPatrol::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+	// Check if task is enabled
+	if (!bTaskEnabled)
+	{
+		return EBTNodeResult::Succeeded;
+	}
+
 	AHarmoniaMonsterAIController* AIController = Cast<AHarmoniaMonsterAIController>(OwnerComp.GetAIOwner());
 	if (!AIController)
 	{
@@ -118,6 +124,12 @@ void UBTTask_MonsterPatrol::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, ui
 FString UBTTask_MonsterPatrol::GetStaticDescription() const
 {
 	FString Description = Super::GetStaticDescription();
+
+	if (!bTaskEnabled)
+	{
+		Description += TEXT("\n[DISABLED]");
+		return Description;
+	}
 
 	if (PatrolRadiusOverride > 0.0f)
 	{

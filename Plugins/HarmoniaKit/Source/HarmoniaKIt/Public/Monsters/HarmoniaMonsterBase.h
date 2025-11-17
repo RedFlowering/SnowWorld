@@ -13,6 +13,9 @@ class UAbilitySystemComponent;
 class UHarmoniaAttributeSet;
 class UHarmoniaMonsterData;
 class UHarmoniaLootTableData;
+class USenseReceiverComponent;
+class USenseStimulusComponent;
+class UHarmoniaThreatComponent;
 
 /**
  * Monster Death Delegate
@@ -172,16 +175,37 @@ public:
 	virtual void PlayDeathAnimation();
 
 	/**
-	 * Perform attack by ID
+	 * Perform attack by ID (deprecated - use ActivateAttackAbility instead)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Monster|Combat", meta = (DeprecatedFunction, DeprecationMessage = "Use ActivateAttackAbility instead"))
+	virtual bool PerformAttack(FName AttackID);
+
+	/**
+	 * Activate attack ability by ID
+	 * Uses Gameplay Ability System
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Monster|Combat")
-	virtual bool PerformAttack(FName AttackID);
+	virtual bool ActivateAttackAbility(FName AttackID);
 
 	/**
 	 * Select random attack from available attacks
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Monster|Combat")
 	virtual FHarmoniaMonsterAttackPattern SelectRandomAttack() const;
+
+	/**
+	 * Get all sensed potential targets
+	 * Uses Sense System for detection
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Monster|Sense")
+	TArray<AActor*> GetSensedTargets(FName SensorTag = NAME_None) const;
+
+	/**
+	 * Select best target from sensed actors
+	 * Uses threat system if available, otherwise distance
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Monster|Combat")
+	AActor* SelectBestTarget() const;
 
 protected:
 	// ============================================================================
@@ -199,6 +223,24 @@ protected:
 	 */
 	UPROPERTY()
 	TObjectPtr<UHarmoniaAttributeSet> AttributeSet = nullptr;
+
+	/**
+	 * Sense Receiver Component (for target detection via Sense System)
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sense")
+	TObjectPtr<USenseReceiverComponent> SenseReceiverComponent = nullptr;
+
+	/**
+	 * Sense Stimulus Component (for being detected by others)
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sense")
+	TObjectPtr<USenseStimulusComponent> SenseStimulusComponent = nullptr;
+
+	/**
+	 * Threat Component (for MMO-style aggro management)
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	TObjectPtr<UHarmoniaThreatComponent> ThreatComponent = nullptr;
 
 	// ============================================================================
 	// Internal State

@@ -8,6 +8,10 @@
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
 #include "Components/CapsuleComponent.h"
+#include "SenseReceiverComponent.h"
+#include "SenseStimulusComponent.h"
+#include "Components/HarmoniaThreatComponent.h"
+#include "SensedStimulStruct.h"
 
 AHarmoniaMonsterBase::AHarmoniaMonsterBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -19,6 +23,15 @@ AHarmoniaMonsterBase::AHarmoniaMonsterBase(const FObjectInitializer& ObjectIniti
 
 	// Create attribute set
 	AttributeSet = CreateDefaultSubobject<UHarmoniaAttributeSet>(TEXT("AttributeSet"));
+
+	// Create Sense Receiver Component for target detection
+	SenseReceiverComponent = CreateDefaultSubobject<USenseReceiverComponent>(TEXT("SenseReceiverComponent"));
+
+	// Create Sense Stimulus Component for being detected
+	SenseStimulusComponent = CreateDefaultSubobject<USenseStimulusComponent>(TEXT("SenseStimulusComponent"));
+
+	// Create Threat Component for aggro management
+	ThreatComponent = CreateDefaultSubobject<UHarmoniaThreatComponent>(TEXT("ThreatComponent"));
 
 	// Enable ticking
 	PrimaryActorTick.bCanEverTick = true;
@@ -552,6 +565,19 @@ void AHarmoniaMonsterBase::OnDamageReceived(AActor* EffectInstigator, AActor* Ef
 {
 	if (HasAuthority())
 	{
+		// Add threat for damage dealer
+		if (ThreatComponent && EffectInstigator)
+		{
+			ThreatComponent->AddThreat(EffectInstigator, EffectMagnitude);
+
+			// Update target based on threat if no current target or threat system takes priority
+			AActor* HighestThreat = ThreatComponent->GetHighestThreatActor();
+			if (HighestThreat && (!CurrentTarget || HighestThreat != CurrentTarget))
+			{
+				SetCurrentTarget_Implementation(HighestThreat);
+			}
+		}
+
 		OnDamageTaken_Implementation(EffectMagnitude, EffectInstigator);
 	}
 }
@@ -639,4 +665,158 @@ void AHarmoniaMonsterBase::HandleDeathCleanup()
 void AHarmoniaMonsterBase::DestroyCorpse()
 {
 	Destroy();
+}
+
+// ============================================================================
+// Sense System Integration
+// ============================================================================
+
+TArray<AActor*> AHarmoniaMonsterBase::GetSensedTargets(FName SensorTag) const
+{
+	TArray<AActor*> SensedActors;
+
+	if (!SenseReceiverComponent)
+	{
+		return SensedActors;
+	}
+
+	// Get all currently sensed stimuli
+	TArray<FSensedStimulus> SensedStimuli;
+
+	// If sensor tag specified, get only those
+	if (SensorTag != NAME_None)
+	{
+		SenseReceiverComponent->GetAllSensedStimuliForTag(SensorTag, SensedStimuli);
+	}
+	else
+	{
+		// Get all sensed stimuli across all sensors
+		SenseReceiverComponent->GetAllCurrentlySensedStimuli(SensedStimuli);
+	}
+
+	// Extract actors from stimuli
+	for (const FSensedStimulus& Stimulus : SensedStimuli)
+	{
+		if (Stimulus.SourceActor.IsValid())
+		{
+			AActor* Actor = Stimulus.SourceActor.Get();
+			if (Actor && !Actor->IsPendingKillPending())
+			{
+				// Filter out self
+				if (Actor != this)
+				{
+					SensedActors.AddUnique(Actor);
+				}
+			}
+		}
+	}
+
+	return SensedActors;
+}
+
+AActor* AHarmoniaMonsterBase::SelectBestTarget() const
+{
+	// First, check threat system if available
+	if (ThreatComponent)
+	{
+		AActor* HighestThreat = ThreatComponent->GetHighestThreatActor();
+		if (HighestThreat)
+		{
+			return HighestThreat;
+		}
+	}
+
+	// Otherwise, use Sense System to find closest target
+	TArray<AActor*> SensedTargets = GetSensedTargets();
+	if (SensedTargets.Num() == 0)
+	{
+		return nullptr;
+	}
+
+	// Find closest valid target
+	AActor* BestTarget = nullptr;
+	float ClosestDistance = MAX_FLT;
+
+	for (AActor* Target : SensedTargets)
+	{
+		if (!Target)
+		{
+			continue;
+		}
+
+		// Don't target other monsters (for now - could add faction system)
+		if (Target->Implements<UHarmoniaMonsterInterface>())
+		{
+			continue;
+		}
+
+		// Check if it's a valid pawn
+		APawn* TargetPawn = Cast<APawn>(Target);
+		if (!TargetPawn || !TargetPawn->GetController())
+		{
+			continue;
+		}
+
+		// Calculate distance
+		float Distance = FVector::Dist(GetActorLocation(), Target->GetActorLocation());
+		if (Distance < ClosestDistance)
+		{
+			ClosestDistance = Distance;
+			BestTarget = Target;
+		}
+	}
+
+	return BestTarget;
+}
+
+// ============================================================================
+// Gameplay Ability Integration
+// ============================================================================
+
+bool AHarmoniaMonsterBase::ActivateAttackAbility(FName AttackID)
+{
+	if (!MonsterData || !AbilitySystemComponent || IsDead_Implementation())
+	{
+		return false;
+	}
+
+	// Check cooldown
+	if (AttackCooldowns.Contains(AttackID) && AttackCooldowns[AttackID] > 0.0f)
+	{
+		return false;
+	}
+
+	// Find attack pattern
+	const FHarmoniaMonsterAttackPattern* AttackPattern = MonsterData->AttackPatterns.FindByPredicate([AttackID](const FHarmoniaMonsterAttackPattern& Pattern)
+	{
+		return Pattern.AttackID == AttackID;
+	});
+
+	if (!AttackPattern || !AttackPattern->AttackAbility)
+	{
+		return false;
+	}
+
+	// Check state requirement
+	if (AttackPattern->RequiredState != EHarmoniaMonsterState::Combat && CurrentState != AttackPattern->RequiredState)
+	{
+		return false;
+	}
+
+	// Find and activate the ability
+	FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(AttackPattern->AttackAbility);
+	if (!Spec)
+	{
+		return false;
+	}
+
+	bool bSuccess = AbilitySystemComponent->TryActivateAbility(Spec->Handle);
+
+	if (bSuccess)
+	{
+		// Set cooldown
+		AttackCooldowns.Add(AttackID, AttackPattern->Cooldown);
+	}
+
+	return bSuccess;
 }

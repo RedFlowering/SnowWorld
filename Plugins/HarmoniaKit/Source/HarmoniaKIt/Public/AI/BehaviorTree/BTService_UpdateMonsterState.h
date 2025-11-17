@@ -29,6 +29,12 @@ protected:
 	//~End of UBTService interface
 
 	/**
+	 * Enable/Disable this service
+	 */
+	UPROPERTY(EditAnywhere, Category = "Service Control")
+	bool bServiceEnabled = true;
+
+	/**
 	 * Blackboard key for target actor
 	 */
 	UPROPERTY(EditAnywhere, Category = "Blackboard")

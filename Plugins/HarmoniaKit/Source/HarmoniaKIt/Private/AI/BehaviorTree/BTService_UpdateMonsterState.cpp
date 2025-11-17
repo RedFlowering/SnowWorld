@@ -21,6 +21,12 @@ void UBTService_UpdateMonsterState::TickNode(UBehaviorTreeComponent& OwnerComp, 
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
+	// Check if service is enabled
+	if (!bServiceEnabled)
+	{
+		return;
+	}
+
 	AAIController* AIController = OwnerComp.GetAIOwner();
 	if (!AIController)
 	{
@@ -94,6 +100,13 @@ void UBTService_UpdateMonsterState::TickNode(UBehaviorTreeComponent& OwnerComp, 
 FString UBTService_UpdateMonsterState::GetStaticDescription() const
 {
 	FString Description = Super::GetStaticDescription();
+
+	if (!bServiceEnabled)
+	{
+		Description += TEXT("\n[DISABLED]");
+		return Description;
+	}
+
 	Description += TEXT("\nUpdates: State, Target, Distance");
 
 	if (bClearInvalidTargets)

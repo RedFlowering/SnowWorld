@@ -28,6 +28,12 @@ public:
 
 protected:
 	/**
+	 * Enable/Disable this task
+	 */
+	UPROPERTY(EditAnywhere, Category = "Task Control")
+	bool bTaskEnabled = true;
+
+	/**
 	 * Blackboard key for home location (patrol center)
 	 */
 	UPROPERTY(EditAnywhere, Category = "Blackboard")

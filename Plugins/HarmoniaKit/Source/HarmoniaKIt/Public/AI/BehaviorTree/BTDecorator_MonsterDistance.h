@@ -40,6 +40,13 @@ protected:
 	//~End of UBTDecorator interface
 
 	/**
+	 * Enable/Disable this decorator
+	 * When disabled, always returns true (allows execution)
+	 */
+	UPROPERTY(EditAnywhere, Category = "Decorator Control")
+	bool bDecoratorEnabled = true;
+
+	/**
 	 * Blackboard key for target actor
 	 */
 	UPROPERTY(EditAnywhere, Category = "Blackboard")

@@ -10,12 +10,12 @@
  * UBTTask_MonsterAttack
  *
  * Behavior Tree task for monster attacks
- * Executes a monster attack and waits for completion
+ * Executes Gameplay Ability configured in MonsterData
  *
  * Usage:
  * - Add to BT as a task node
- * - Configure attack selection mode
- * - Set target blackboard key
+ * - Specify Attack ID or leave empty for random
+ * - Attack abilities are configured in MonsterData asset
  */
 UCLASS()
 class HARMONIAKIT_API UBTTask_MonsterAttack : public UBTTaskNode
@@ -33,9 +33,16 @@ public:
 
 protected:
 	/**
-	 * Specific attack ID to use (leave empty for random selection)
+	 * Enable/Disable this task
 	 */
-	UPROPERTY(EditAnywhere, Category = "Attack")
+	UPROPERTY(EditAnywhere, Category = "Task Control")
+	bool bTaskEnabled = true;
+
+	/**
+	 * Specific attack ID to use (leave empty for random selection)
+	 * Must match AttackID in MonsterData->AttackPatterns
+	 */
+	UPROPERTY(EditAnywhere, Category = "Gameplay Ability")
 	FName AttackID = NAME_None;
 
 	/**

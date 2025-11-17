@@ -15,6 +15,12 @@ UBTDecorator_MonsterDistance::UBTDecorator_MonsterDistance()
 
 bool UBTDecorator_MonsterDistance::CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const
 {
+	// If decorator is disabled, always return true (allow execution)
+	if (!bDecoratorEnabled)
+	{
+		return true;
+	}
+
 	AAIController* AIController = OwnerComp.GetAIOwner();
 	if (!AIController)
 	{
@@ -102,6 +108,11 @@ bool UBTDecorator_MonsterDistance::CalculateRawConditionValue(UBehaviorTreeCompo
 
 FString UBTDecorator_MonsterDistance::GetStaticDescription() const
 {
+	if (!bDecoratorEnabled)
+	{
+		return TEXT("[DISABLED] Always allows execution");
+	}
+
 	FString ComparisonStr;
 	switch (Comparison)
 	{

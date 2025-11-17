@@ -8,7 +8,7 @@
 
 UBTTask_MonsterAttack::UBTTask_MonsterAttack()
 {
-	NodeName = "Monster Attack";
+	NodeName = "Monster Attack (GAS)";
 	bNotifyTick = true;
 	bNotifyTaskFinished = true;
 	bCreateNodeInstance = true;
@@ -19,6 +19,12 @@ UBTTask_MonsterAttack::UBTTask_MonsterAttack()
 
 EBTNodeResult::Type UBTTask_MonsterAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+	// Check if task is enabled
+	if (!bTaskEnabled)
+	{
+		return EBTNodeResult::Succeeded;
+	}
+
 	AAIController* AIController = OwnerComp.GetAIOwner();
 	if (!AIController)
 	{
@@ -59,8 +65,8 @@ EBTNodeResult::Type UBTTask_MonsterAttack::ExecuteTask(UBehaviorTreeComponent& O
 		}
 	}
 
-	// Perform attack
-	bool bAttackStarted = Monster->PerformAttack(AttackID);
+	// Activate attack ability via GAS
+	bool bAttackStarted = Monster->ActivateAttackAbility(AttackID);
 	if (!bAttackStarted)
 	{
 		return EBTNodeResult::Failed;
@@ -132,7 +138,7 @@ void UBTTask_MonsterAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* N
 			bIsRotating = false;
 
 			// Now execute the attack
-			bool bAttackStarted = Monster->PerformAttack(AttackID);
+			bool bAttackStarted = Monster->ActivateAttackAbility(AttackID);
 			if (!bAttackStarted)
 			{
 				FinishLatentTask(OwnerComp, EBTNodeResult::Failed);

@@ -5,12 +5,11 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "Monsters/HarmoniaMonsterInterface.h"
-#include "Perception/AIPerceptionComponent.h"
-#include "Perception/AISense_Sight.h"
+#include "Components/HarmoniaThreatComponent.h"
 
 UBTTask_MonsterFindTarget::UBTTask_MonsterFindTarget()
 {
-	NodeName = "Find Target";
+	NodeName = "Find Target (Sense System)";
 	bCreateNodeInstance = false;
 
 	TargetKey.AddObjectFilter(this, GET_MEMBER_NAME_CHECKED(UBTTask_MonsterFindTarget, TargetKey), AActor::StaticClass());
@@ -18,6 +17,12 @@ UBTTask_MonsterFindTarget::UBTTask_MonsterFindTarget()
 
 EBTNodeResult::Type UBTTask_MonsterFindTarget::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+	// Check if task is enabled
+	if (!bTaskEnabled)
+	{
+		return EBTNodeResult::Succeeded;
+	}
+
 	AAIController* AIController = OwnerComp.GetAIOwner();
 	if (!AIController)
 	{
@@ -60,72 +65,64 @@ EBTNodeResult::Type UBTTask_MonsterFindTarget::ExecuteTask(UBehaviorTreeComponen
 		}
 	}
 
-	// Use perception component to find targets
-	UAIPerceptionComponent* PerceptionComp = AIController->GetPerceptionComponent();
-	if (!PerceptionComp)
-	{
-		return EBTNodeResult::Failed;
-	}
-
-	// Get all perceived actors
-	TArray<AActor*> PerceivedActors;
-	PerceptionComp->GetCurrentlyPerceivedActors(UAISense_Sight::StaticClass(), PerceivedActors);
-
-	// Filter valid targets
-	TArray<AActor*> ValidTargets;
-	for (AActor* Actor : PerceivedActors)
-	{
-		if (!Actor || Actor == Monster || Actor->IsPendingKillPending())
-		{
-			continue;
-		}
-
-		// Don't target other monsters
-		if (Actor->Implements<UHarmoniaMonsterInterface>())
-		{
-			continue;
-		}
-
-		// Check if it's a valid pawn
-		APawn* TargetPawn = Cast<APawn>(Actor);
-		if (!TargetPawn || !TargetPawn->GetController())
-		{
-			continue;
-		}
-
-		// Check distance
-		float Distance = FVector::Dist(Monster->GetActorLocation(), Actor->GetActorLocation());
-		if (Distance <= SearchRadius)
-		{
-			ValidTargets.Add(Actor);
-		}
-	}
-
-	// Select best target
+	// Determine search method
 	AActor* BestTarget = nullptr;
-	float BestScore = -1.0f;
 
-	for (AActor* Target : ValidTargets)
+	if (bUseThreatSystem)
 	{
-		float Score = 0.0f;
+		// Use SelectBestTarget which checks threat system first
+		BestTarget = Monster->SelectBestTarget();
+	}
+	else
+	{
+		// Use Sense System directly
+		TArray<AActor*> SensedTargets = Monster->GetSensedTargets(SensorTag);
 
-		if (bPrioritizeClosest)
+		// Filter by distance if specified
+		float MaxDistance = SearchRadius;
+		if (MaxDistance <= 0.0f)
 		{
-			// Score based on distance (closer = higher score)
+			// Use aggro range from monster data
+			UHarmoniaMonsterData* MonsterData = IHarmoniaMonsterInterface::Execute_GetMonsterData(Monster);
+			if (MonsterData)
+			{
+				MaxDistance = MonsterData->AggroRange;
+			}
+			else
+			{
+				MaxDistance = 2000.0f; // Default
+			}
+		}
+
+		// Find closest valid target within range
+		float ClosestDistance = MAX_FLT;
+		for (AActor* Target : SensedTargets)
+		{
+			if (!Target || Target->IsPendingKillPending())
+			{
+				continue;
+			}
+
+			// Don't target other monsters
+			if (Target->Implements<UHarmoniaMonsterInterface>())
+			{
+				continue;
+			}
+
+			// Check if it's a valid pawn
+			APawn* TargetPawn = Cast<APawn>(Target);
+			if (!TargetPawn || !TargetPawn->GetController())
+			{
+				continue;
+			}
+
+			// Check distance
 			float Distance = FVector::Dist(Monster->GetActorLocation(), Target->GetActorLocation());
-			Score = SearchRadius - Distance;
-		}
-		else
-		{
-			// Score based on threat/perception
-			// This could be extended with a threat table system
-			Score = 100.0f;
-		}
-
-		if (Score > BestScore)
-		{
-			BestScore = Score;
-			BestTarget = Target;
+			if (Distance <= MaxDistance && Distance < ClosestDistance)
+			{
+				ClosestDistance = Distance;
+				BestTarget = Target;
+			}
 		}
 	}
 
@@ -146,20 +143,43 @@ EBTNodeResult::Type UBTTask_MonsterFindTarget::ExecuteTask(UBehaviorTreeComponen
 FString UBTTask_MonsterFindTarget::GetStaticDescription() const
 {
 	FString Description = Super::GetStaticDescription();
-	Description += FString::Printf(TEXT("\nRadius: %.0f"), SearchRadius);
+
+	if (!bTaskEnabled)
+	{
+		Description += TEXT(" [DISABLED]");
+		return Description;
+	}
+
+	if (SensorTag != NAME_None)
+	{
+		Description += FString::Printf(TEXT("\nSensor: %s"), *SensorTag.ToString());
+	}
+	else
+	{
+		Description += TEXT("\nSensor: All");
+	}
+
+	if (SearchRadius > 0.0f)
+	{
+		Description += FString::Printf(TEXT("\nRadius: %.0f"), SearchRadius);
+	}
+	else
+	{
+		Description += TEXT("\nRadius: From MonsterData");
+	}
 
 	if (bOnlySearchIfNoTarget)
 	{
 		Description += TEXT("\nOnly if no target");
 	}
 
-	if (bPrioritizeClosest)
+	if (bUseThreatSystem)
 	{
-		Description += TEXT("\nPriority: Closest");
+		Description += TEXT("\nPriority: Threat System");
 	}
 	else
 	{
-		Description += TEXT("\nPriority: Threat");
+		Description += TEXT("\nPriority: Closest");
 	}
 
 	return Description;
