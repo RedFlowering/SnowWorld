@@ -412,12 +412,12 @@ public:
 	void AddPlayerNote(FHarmoniaID QuestId, const FString& Note);
 
 protected:
-	/** Quest statistics */
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Quest")
+	/** Quest statistics (server only, not replicated - use GetQuestStatistics() to query) */
+	UPROPERTY(BlueprintReadOnly, Category = "Quest")
 	FQuestStatistics QuestStatistics;
 
-	/** Quest log entries */
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Quest")
+	/** Quest log entries (server only, not replicated - use GetQuestLogEntry() to query) */
+	UPROPERTY(BlueprintReadOnly, Category = "Quest")
 	TArray<FQuestLogEntry> QuestLog;
 
 	/**

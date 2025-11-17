@@ -57,8 +57,8 @@ void UHarmoniaQuestComponent::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	DOREPLIFETIME(UHarmoniaQuestComponent, CompletedQuests);
 	DOREPLIFETIME(UHarmoniaQuestComponent, FailedQuests);
 	DOREPLIFETIME(UHarmoniaQuestComponent, TrackedQuest);
-	DOREPLIFETIME(UHarmoniaQuestComponent, QuestStatistics);
-	DOREPLIFETIME(UHarmoniaQuestComponent, QuestLog);
+	// Note: QuestStatistics and QuestLog are not replicated (contain TMap which can't be replicated)
+	// Clients can query them via GetQuestStatistics() and GetQuestLogEntry()
 }
 
 void UHarmoniaQuestComponent::OnRep_ActiveQuests()
