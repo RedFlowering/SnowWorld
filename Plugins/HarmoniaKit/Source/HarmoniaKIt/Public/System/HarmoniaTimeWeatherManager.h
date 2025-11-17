@@ -261,4 +261,21 @@ protected:
 	/** Current minute (0-59) */
 	UPROPERTY(BlueprintReadOnly, Category = "Time & Weather")
 	int32 CurrentMinute;
+
+	// ==================== Spam Prevention ====================
+
+	/** Minimum time between broadcasts (seconds) */
+	float MinBroadcastInterval = 1.0f;
+
+	/** Last time BroadcastTimeChange was called */
+	double LastTimeChangeBroadcast = 0.0;
+
+	/** Last time BroadcastWeatherChange was called */
+	double LastWeatherChangeBroadcast = 0.0;
+
+	/** Last time BroadcastHourChange was called */
+	double LastHourChangeBroadcast = 0.0;
+
+	/** Last time BroadcastTimeWeatherCombination was called */
+	double LastCombinationBroadcast = 0.0;
 };

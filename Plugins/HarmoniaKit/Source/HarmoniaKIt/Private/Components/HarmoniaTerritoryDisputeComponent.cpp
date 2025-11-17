@@ -11,6 +11,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "NavigationSystem.h"
 #include "DrawDebugHelpers.h"
+#include "Net/UnrealNetwork.h"
 
 UHarmoniaTerritoryDisputeComponent::UHarmoniaTerritoryDisputeComponent()
 {
@@ -34,6 +35,17 @@ UHarmoniaTerritoryDisputeComponent::UHarmoniaTerritoryDisputeComponent()
 	CurrentOpponent = nullptr;
 	ScanTimer = 0.0f;
 	FleeTimer = 0.0f;
+
+	// Enable replication for multiplayer
+	SetIsReplicatedByDefault(true);
+}
+
+void UHarmoniaTerritoryDisputeComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UHarmoniaTerritoryDisputeComponent, DisputeState);
+	DOREPLIFETIME(UHarmoniaTerritoryDisputeComponent, CurrentOpponent);
 }
 
 void UHarmoniaTerritoryDisputeComponent::BeginPlay()

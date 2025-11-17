@@ -110,6 +110,10 @@ class HARMONIAKIT_API UHarmoniaTerritoryDisputeComponent : public UActorComponen
 public:
 	UHarmoniaTerritoryDisputeComponent();
 
+	//~UActorComponent interface
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	//~End of UActorComponent interface
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -257,11 +261,11 @@ protected:
 	// ==================== State ====================
 
 	/** Current dispute state */
-	UPROPERTY(BlueprintReadOnly, Category = "Territory Dispute", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Territory Dispute", meta = (AllowPrivateAccess = "true"))
 	EHarmoniaTerritoryDisputeState DisputeState;
 
 	/** Current opponent in dispute */
-	UPROPERTY(BlueprintReadOnly, Category = "Territory Dispute", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Territory Dispute", meta = (AllowPrivateAccess = "true"))
 	AActor* CurrentOpponent;
 
 	/** Scan timer */

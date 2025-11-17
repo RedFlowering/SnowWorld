@@ -27,6 +27,24 @@ void UHarmoniaTimeWeatherManager::Deinitialize()
 
 void UHarmoniaTimeWeatherManager::BroadcastTimeChange(EHarmoniaTimeOfDay PreviousTime, EHarmoniaTimeOfDay NewTime, int32 Hour, int32 Minute)
 {
+	// Prevent spam: check if enough time has passed since last broadcast
+	double CurrentTime = GetWorld()->GetTimeSeconds();
+	if (CurrentTime - LastTimeChangeBroadcast < MinBroadcastInterval)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BroadcastTimeChange ignored - called too frequently (%.2fs since last call)"),
+			CurrentTime - LastTimeChangeBroadcast);
+		return;
+	}
+
+	// Prevent duplicate broadcasts: check if values actually changed
+	if (NewTime == CurrentTimeOfDay && Hour == CurrentHour && Minute == CurrentMinute)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BroadcastTimeChange ignored - no change in values"));
+		return;
+	}
+
+	LastTimeChangeBroadcast = CurrentTime;
+
 	CurrentTimeOfDay = NewTime;
 	CurrentHour = Hour;
 	CurrentMinute = Minute;
@@ -50,8 +68,29 @@ void UHarmoniaTimeWeatherManager::BroadcastTimeChange(EHarmoniaTimeOfDay Previou
 
 void UHarmoniaTimeWeatherManager::BroadcastWeatherChange(EHarmoniaWeatherType PreviousWeather, EHarmoniaWeatherType NewWeather, float Intensity, float TransitionDuration)
 {
+	// Prevent spam: check if enough time has passed since last broadcast
+	double CurrentTime = GetWorld()->GetTimeSeconds();
+	if (CurrentTime - LastWeatherChangeBroadcast < MinBroadcastInterval)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BroadcastWeatherChange ignored - called too frequently (%.2fs since last call)"),
+			CurrentTime - LastWeatherChangeBroadcast);
+		return;
+	}
+
+	// Clamp intensity
+	float ClampedIntensity = FMath::Clamp(Intensity, 0.0f, 1.0f);
+
+	// Prevent duplicate broadcasts: check if values actually changed
+	if (NewWeather == CurrentWeather && FMath::IsNearlyEqual(ClampedIntensity, CurrentWeatherIntensity, 0.01f))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BroadcastWeatherChange ignored - no significant change in values"));
+		return;
+	}
+
+	LastWeatherChangeBroadcast = CurrentTime;
+
 	CurrentWeather = NewWeather;
-	CurrentWeatherIntensity = FMath::Clamp(Intensity, 0.0f, 1.0f);
+	CurrentWeatherIntensity = ClampedIntensity;
 
 	FHarmoniaWeatherChangeInfo WeatherInfo;
 	WeatherInfo.PreviousWeather = PreviousWeather;
@@ -73,8 +112,29 @@ void UHarmoniaTimeWeatherManager::BroadcastWeatherChange(EHarmoniaWeatherType Pr
 
 void UHarmoniaTimeWeatherManager::BroadcastHourChange(int32 Hour, int32 Minute)
 {
-	CurrentHour = Hour % 24;
-	CurrentMinute = Minute % 60;
+	// Prevent spam: check if enough time has passed since last broadcast
+	double CurrentTime = GetWorld()->GetTimeSeconds();
+	if (CurrentTime - LastHourChangeBroadcast < MinBroadcastInterval)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BroadcastHourChange ignored - called too frequently (%.2fs since last call)"),
+			CurrentTime - LastHourChangeBroadcast);
+		return;
+	}
+
+	int32 NormalizedHour = Hour % 24;
+	int32 NormalizedMinute = Minute % 60;
+
+	// Prevent duplicate broadcasts: check if values actually changed
+	if (NormalizedHour == CurrentHour && NormalizedMinute == CurrentMinute)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BroadcastHourChange ignored - no change in values"));
+		return;
+	}
+
+	LastHourChangeBroadcast = CurrentTime;
+
+	CurrentHour = NormalizedHour;
+	CurrentMinute = NormalizedMinute;
 
 	OnHourChanged.Broadcast(CurrentHour, CurrentMinute);
 
@@ -97,6 +157,16 @@ void UHarmoniaTimeWeatherManager::BroadcastHourChange(int32 Hour, int32 Minute)
 
 void UHarmoniaTimeWeatherManager::BroadcastTimeWeatherCombination(EHarmoniaTimeOfDay TimeOfDay, EHarmoniaWeatherType Weather, float WeatherIntensity)
 {
+	// Prevent spam: check if enough time has passed since last broadcast
+	// Note: This has a shorter interval since it's called internally by other broadcast functions
+	double CurrentTime = GetWorld()->GetTimeSeconds();
+	if (CurrentTime - LastCombinationBroadcast < (MinBroadcastInterval * 0.5f))
+	{
+		return; // Silently ignore for internal calls
+	}
+
+	LastCombinationBroadcast = CurrentTime;
+
 	OnTimeWeatherCombinationChanged.Broadcast(TimeOfDay, Weather, WeatherIntensity);
 }
 
