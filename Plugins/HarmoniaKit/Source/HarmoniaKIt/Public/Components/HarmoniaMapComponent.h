@@ -43,10 +43,12 @@ public:
 	TArray<FExploredRegion> ExploredRegions;
 
 	// Discovered locations (replicated to owner only)
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Map|Locations")
+	UPROPERTY(ReplicatedUsing = OnRep_DiscoveredLocations, BlueprintReadOnly, Category = "Map|Locations")
 	TArray<FMapLocationData> DiscoveredLocations;
 
-	// Active pings (replicated to all clients for team coordination)
+	// Active pings created by this player (replicated to all clients for team coordination)
+	// NOTE: Each player's pings are stored in their own MapComponent.
+	// To display all team pings, iterate through all player characters' MapComponents.
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Map|Pings")
 	TArray<FMapPingData> ActivePings;
 
@@ -148,6 +150,10 @@ protected:
 	UFUNCTION()
 	void OnRep_ExploredRegions();
 
+	// Replication notify for discovered locations
+	UFUNCTION()
+	void OnRep_DiscoveredLocations();
+
 	// Update exploration around player
 	void UpdateExploration();
 
@@ -169,17 +175,9 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerDiscoverLocation(const FMapLocationData& Location);
 
-	// Multicast RPC for broadcasting ping creation
+	// Multicast RPC for broadcasting ping creation (pings are shared with all players)
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastOnPingCreated(const FMapPingData& Ping);
-
-	// Multicast RPC for broadcasting location discovery
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastOnLocationDiscovered(const FMapLocationData& Location);
-
-	// Multicast RPC for broadcasting region exploration
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastOnRegionExplored(const FExploredRegion& Region);
 
 public:
 	// Get fog of war renderer

@@ -93,6 +93,21 @@ void UHarmoniaMapComponent::OnRep_ExploredRegions()
 	{
 		FogOfWarRenderer->UpdateFogOfWar(ExploredRegions);
 	}
+
+	// Broadcast event for the newly added region (last in array)
+	if (ExploredRegions.Num() > 0)
+	{
+		OnRegionExplored.Broadcast(ExploredRegions.Last());
+	}
+}
+
+void UHarmoniaMapComponent::OnRep_DiscoveredLocations()
+{
+	// Broadcast event for the newly discovered location (last in array)
+	if (DiscoveredLocations.Num() > 0)
+	{
+		OnLocationDiscovered.Broadcast(DiscoveredLocations.Last());
+	}
 }
 
 bool UHarmoniaMapComponent::IsLocationExplored(const FVector& WorldLocation) const
@@ -175,9 +190,7 @@ void UHarmoniaMapComponent::AddExploredRegion(const FVector& Center, float Radiu
 			FExploredRegion NewRegion(Center, Radius);
 			NewRegion.ExploredTime = GetWorld()->GetTimeSeconds();
 			ExploredRegions.Add(NewRegion);
-
-			// Broadcast event
-			MulticastOnRegionExplored(NewRegion);
+			// Event will be broadcast via OnRep_ExploredRegions on the owning client
 		}
 	}
 	else
@@ -204,9 +217,7 @@ void UHarmoniaMapComponent::DiscoverLocation(const FMapLocationData& Location)
 		FMapLocationData NewLocation = Location;
 		NewLocation.bDiscovered = true;
 		DiscoveredLocations.Add(NewLocation);
-
-		// Broadcast event
-		MulticastOnLocationDiscovered(NewLocation);
+		// Event will be broadcast via OnRep_DiscoveredLocations on the owning client
 	}
 	else
 	{
@@ -419,16 +430,6 @@ void UHarmoniaMapComponent::ServerDiscoverLocation_Implementation(const FMapLoca
 void UHarmoniaMapComponent::MulticastOnPingCreated_Implementation(const FMapPingData& Ping)
 {
 	OnPingCreated.Broadcast(Ping);
-}
-
-void UHarmoniaMapComponent::MulticastOnLocationDiscovered_Implementation(const FMapLocationData& Location)
-{
-	OnLocationDiscovered.Broadcast(Location);
-}
-
-void UHarmoniaMapComponent::MulticastOnRegionExplored_Implementation(const FExploredRegion& Region)
-{
-	OnRegionExplored.Broadcast(Region);
 }
 
 UHarmoniaMapSubsystem* UHarmoniaMapComponent::GetMapSubsystem()
