@@ -494,13 +494,18 @@ void UHarmoniaAdvancedAIComponent::EvaluateEmotionTriggers()
 	}
 
 	// Check for rage trigger (low health)
-	if (OwnerMonster->AttributeSet)
+	UAbilitySystemComponent* ASC = OwnerMonster->GetAbilitySystemComponent();
+	if (ASC)
 	{
-		float HealthPercent = OwnerMonster->AttributeSet->GetHealth() / OwnerMonster->AttributeSet->GetMaxHealth();
-		if (HealthPercent <= RageHealthThreshold)
+		const UHarmoniaAttributeSet* AttributeSet = ASC->GetSet<UHarmoniaAttributeSet>();
+		if (AttributeSet)
 		{
-			TriggerEmotion(EHarmoniaMonsterEmotion::Enraged, 1.0f, 15.0f);
-			return;
+			float HealthPercent = AttributeSet->GetHealth() / AttributeSet->GetMaxHealth();
+			if (HealthPercent <= RageHealthThreshold)
+			{
+				TriggerEmotion(EHarmoniaMonsterEmotion::Enraged, 1.0f, 15.0f);
+				return;
+			}
 		}
 	}
 

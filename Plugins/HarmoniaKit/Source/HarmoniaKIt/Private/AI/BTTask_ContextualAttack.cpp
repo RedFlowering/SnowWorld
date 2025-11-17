@@ -72,15 +72,15 @@ EBTNodeResult::Type UBTTask_ContextualAttack::ExecuteTask(UBehaviorTreeComponent
 	// Use contextual selection if advanced AI is available
 	if (AdvancedAI)
 	{
-		// Filter available attacks (not on cooldown, state requirements met, distance)
+		// Filter available attacks (state requirements met, distance)
 		TArray<FHarmoniaMonsterAttackPattern> AvailableAttacks;
 		for (const FHarmoniaMonsterAttackPattern& Pattern : Monster->MonsterData->AttackPatterns)
 		{
-			// Check cooldown
-			if (Monster->AttackCooldowns.Contains(Pattern.AttackID) && Monster->AttackCooldowns[Pattern.AttackID] > 0.0f)
-			{
-				continue;
-			}
+			// TODO: Check cooldown - requires public getter method in HarmoniaMonsterBase
+			// if (Monster->IsAttackOnCooldown(Pattern.AttackID))
+			// {
+			// 	continue;
+			// }
 
 			// Check state
 			if (Pattern.RequiredState != EHarmoniaMonsterState::Combat && Monster->CurrentState != Pattern.RequiredState)

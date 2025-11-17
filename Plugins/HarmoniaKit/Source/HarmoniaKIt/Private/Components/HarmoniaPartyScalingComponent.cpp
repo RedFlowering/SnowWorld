@@ -85,7 +85,7 @@ void UHarmoniaPartyScalingComponent::DetectPartyMembers()
 
 	// Get all player controllers in range
 	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APawn::class, FoundActors);
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APawn::StaticClass(), FoundActors);
 
 	TArray<APawn*> NearbyPlayers;
 	FVector MonsterLocation = OwnerMonster->GetActorLocation();

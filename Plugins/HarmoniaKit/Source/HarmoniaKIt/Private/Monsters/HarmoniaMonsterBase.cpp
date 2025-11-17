@@ -159,9 +159,9 @@ EHarmoniaMonsterFaction AHarmoniaMonsterBase::GetFaction_Implementation() const
 {
 	if (MonsterData)
 	{
-		return MonsterData->Faction;
+		return MonsterData->FactionSettings.Faction;
 	}
-	return EHarmoniaMonsterFaction::Hostile;
+	return EHarmoniaMonsterFaction::PlayerHostile;
 }
 
 EHarmoniaMonsterState AHarmoniaMonsterBase::GetMonsterState_Implementation() const

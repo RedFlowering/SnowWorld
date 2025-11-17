@@ -132,7 +132,7 @@ void UBTTask_FindTacticalPosition::TickTask(UBehaviorTreeComponent& OwnerComp, u
 
 	// Check if pathfinding completed
 	EPathFollowingStatus::Type Status = AIController->GetMoveStatus();
-	if (Status == EPathFollowingStatus::Idle || Status == EPathFollowingStatus::Invalid)
+	if (Status == EPathFollowingStatus::Idle)
 	{
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		return;

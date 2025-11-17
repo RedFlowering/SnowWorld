@@ -136,7 +136,7 @@ void UBTTask_MaintainSquadFormation::TickTask(UBehaviorTreeComponent& OwnerComp,
 	if (bUsePathfinding)
 	{
 		EPathFollowingStatus::Type Status = AIController->GetMoveStatus();
-		if (Status == EPathFollowingStatus::Idle || Status == EPathFollowingStatus::Invalid)
+		if (Status == EPathFollowingStatus::Idle)
 		{
 			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 			return;
