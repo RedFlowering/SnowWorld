@@ -431,6 +431,46 @@ struct HARMONIAKIT_API FHarmoniaMonsterAttackPattern
 	// Gameplay tags that block this attack
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
 	FGameplayTagContainer BlockedTags;
+
+	// ============================================================================
+	// Advanced Attack Selection
+	// ============================================================================
+
+	// Priority modifier when target health is high (> 75%)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced|Context", meta = (ClampMin = "0.0", ClampMax = "10.0"))
+	float HighHealthPriority = 1.0f;
+
+	// Priority modifier when target health is medium (25% - 75%)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced|Context", meta = (ClampMin = "0.0", ClampMax = "10.0"))
+	float MediumHealthPriority = 1.0f;
+
+	// Priority modifier when target health is low (< 25%)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced|Context", meta = (ClampMin = "0.0", ClampMax = "10.0"))
+	float LowHealthPriority = 1.0f;
+
+	// Whether this attack can start a combo
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced|Combo")
+	bool bCanStartCombo = false;
+
+	// Follow-up attacks for combo chains (AttackIDs)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced|Combo")
+	TArray<FName> ComboFollowUps;
+
+	// Time window to chain into combo (in seconds)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced|Combo", meta = (ClampMin = "0.1", ClampMax = "5.0"))
+	float ComboWindow = 2.0f;
+
+	// Whether this attack requires cover
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced|Tactical")
+	bool bRequiresCover = false;
+
+	// Whether this attack requires high ground
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced|Tactical")
+	bool bRequiresHighGround = false;
+
+	// Priority bonus when in optimal tactical position
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced|Tactical", meta = (ClampMin = "0.0", ClampMax = "5.0"))
+	float TacticalPositionBonus = 1.0f;
 };
 
 /**
@@ -620,4 +660,267 @@ public:
 	// Show boss health bar
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss", meta = (EditCondition = "bIsBoss"))
 	bool bShowBossHealthBar = true;
+
+	// ============================================================================
+	// Group AI Settings (optional)
+	// ============================================================================
+
+	// Whether this monster can participate in squad behavior
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Group AI")
+	bool bCanFormSquad = true;
+
+	// Preferred squad size
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Group AI", meta = (EditCondition = "bCanFormSquad", ClampMin = "2", ClampMax = "10"))
+	int32 PreferredSquadSize = 3;
+
+	// Squad formation type
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Group AI", meta = (EditCondition = "bCanFormSquad"))
+	EHarmoniaSquadFormationType FormationType = EHarmoniaSquadFormationType::Loose;
+
+	// Whether this monster can be a squad leader
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Group AI", meta = (EditCondition = "bCanFormSquad"))
+	bool bCanBeSquadLeader = true;
+
+	// Squad coordination range
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Group AI", meta = (EditCondition = "bCanFormSquad", ClampMin = "500", ClampMax = "5000"))
+	float SquadCoordinationRange = 2000.0f;
+};
+
+// ============================================================================
+// Group AI Definitions
+// ============================================================================
+
+/**
+ * Squad Formation Type
+ * Defines how squad members position themselves
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaSquadFormationType : uint8
+{
+	Loose UMETA(DisplayName = "Loose"),			// Spread out, maintain distance
+	Tight UMETA(DisplayName = "Tight"),			// Stay close together
+	Circle UMETA(DisplayName = "Circle"),		// Surround target
+	Line UMETA(DisplayName = "Line"),			// Form a line
+	Wedge UMETA(DisplayName = "Wedge"),			// V-formation
+	Flanking UMETA(DisplayName = "Flanking")	// Flank target from sides
+};
+
+/**
+ * Squad Role
+ * Defines the role of a monster within a squad
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaSquadRole : uint8
+{
+	Leader UMETA(DisplayName = "Leader"),		// Leads the squad
+	Tank UMETA(DisplayName = "Tank"),			// Frontline fighter
+	DPS UMETA(DisplayName = "DPS"),				// Damage dealer
+	Support UMETA(DisplayName = "Support"),		// Healer/buffer
+	Scout UMETA(DisplayName = "Scout")			// Reconnaissance
+};
+
+/**
+ * Squad Member Info
+ * Information about a single squad member
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaSquadMemberInfo
+{
+	GENERATED_BODY()
+
+	// Monster actor
+	UPROPERTY(BlueprintReadWrite)
+	TObjectPtr<AActor> Monster = nullptr;
+
+	// Assigned role
+	UPROPERTY(BlueprintReadWrite)
+	EHarmoniaSquadRole Role = EHarmoniaSquadRole::DPS;
+
+	// Formation position (relative to leader)
+	UPROPERTY(BlueprintReadWrite)
+	FVector FormationOffset = FVector::ZeroVector;
+
+	// Whether this member is alive
+	UPROPERTY(BlueprintReadWrite)
+	bool bIsAlive = true;
+
+	// Last known location (for regrouping)
+	UPROPERTY(BlueprintReadWrite)
+	FVector LastKnownLocation = FVector::ZeroVector;
+
+	FHarmoniaSquadMemberInfo()
+	{
+	}
+
+	bool IsValid() const
+	{
+		return Monster != nullptr && bIsAlive;
+	}
+};
+
+// ============================================================================
+// Emotion & Advanced AI State Definitions
+// ============================================================================
+
+/**
+ * Monster Emotion State
+ * Defines the emotional state that affects behavior
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaMonsterEmotion : uint8
+{
+	Neutral UMETA(DisplayName = "Neutral"),		// Normal state
+	Enraged UMETA(DisplayName = "Enraged"),		// High damage, low defense
+	Fearful UMETA(DisplayName = "Fearful"),		// Defensive, may flee
+	Cautious UMETA(DisplayName = "Cautious"),	// Defensive, tactical
+	Confident UMETA(DisplayName = "Confident"),	// Aggressive, risky
+	Exhausted UMETA(DisplayName = "Exhausted")	// Low performance
+};
+
+/**
+ * Tactical Position Type
+ * Defines types of tactical positions monsters can seek
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaTacticalPosition : uint8
+{
+	None UMETA(DisplayName = "None"),
+	Cover UMETA(DisplayName = "Cover"),				// Behind obstacle
+	HighGround UMETA(DisplayName = "High Ground"),	// Elevated position
+	Flanking UMETA(DisplayName = "Flanking"),		// Side attack position
+	Retreat UMETA(DisplayName = "Retreat"),			// Safe distance
+	Ambush UMETA(DisplayName = "Ambush")			// Hidden attack position
+};
+
+/**
+ * Emotion State Data
+ * Stores information about current emotional state
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaEmotionStateData
+{
+	GENERATED_BODY()
+
+	// Current emotion
+	UPROPERTY(BlueprintReadWrite)
+	EHarmoniaMonsterEmotion CurrentEmotion = EHarmoniaMonsterEmotion::Neutral;
+
+	// Intensity of the emotion (0.0 - 1.0)
+	UPROPERTY(BlueprintReadWrite)
+	float Intensity = 0.0f;
+
+	// Time remaining in this emotional state
+	UPROPERTY(BlueprintReadWrite)
+	float Duration = 0.0f;
+
+	// Attack power modifier
+	UPROPERTY(BlueprintReadWrite)
+	float AttackModifier = 1.0f;
+
+	// Defense modifier
+	UPROPERTY(BlueprintReadWrite)
+	float DefenseModifier = 1.0f;
+
+	// Movement speed modifier
+	UPROPERTY(BlueprintReadWrite)
+	float SpeedModifier = 1.0f;
+
+	// Attack speed modifier
+	UPROPERTY(BlueprintReadWrite)
+	float AttackSpeedModifier = 1.0f;
+
+	FHarmoniaEmotionStateData()
+	{
+	}
+
+	// Check if in active emotional state
+	bool IsActive() const
+	{
+		return CurrentEmotion != EHarmoniaMonsterEmotion::Neutral && Duration > 0.0f;
+	}
+};
+
+/**
+ * Combo Attack State
+ * Tracks current combo chain progress
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaComboState
+{
+	GENERATED_BODY()
+
+	// Current attack in the combo
+	UPROPERTY(BlueprintReadWrite)
+	FName CurrentAttackID = NAME_None;
+
+	// Available follow-up attacks
+	UPROPERTY(BlueprintReadWrite)
+	TArray<FName> AvailableFollowUps;
+
+	// Time remaining to execute next combo attack
+	UPROPERTY(BlueprintReadWrite)
+	float ComboWindowRemaining = 0.0f;
+
+	// Number of attacks in current combo chain
+	UPROPERTY(BlueprintReadWrite)
+	int32 ComboCount = 0;
+
+	FHarmoniaComboState()
+	{
+	}
+
+	// Check if combo is active
+	bool IsActive() const
+	{
+		return ComboWindowRemaining > 0.0f && AvailableFollowUps.Num() > 0;
+	}
+
+	// Reset combo state
+	void Reset()
+	{
+		CurrentAttackID = NAME_None;
+		AvailableFollowUps.Empty();
+		ComboWindowRemaining = 0.0f;
+		ComboCount = 0;
+	}
+};
+
+/**
+ * Tactical State Data
+ * Stores information about tactical positioning
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaTacticalStateData
+{
+	GENERATED_BODY()
+
+	// Current tactical position type
+	UPROPERTY(BlueprintReadWrite)
+	EHarmoniaTacticalPosition CurrentPosition = EHarmoniaTacticalPosition::None;
+
+	// Target tactical position location
+	UPROPERTY(BlueprintReadWrite)
+	FVector TargetLocation = FVector::ZeroVector;
+
+	// Whether currently in optimal position
+	UPROPERTY(BlueprintReadWrite)
+	bool bInOptimalPosition = false;
+
+	// Cover actor (if using cover)
+	UPROPERTY(BlueprintReadWrite)
+	TObjectPtr<AActor> CoverActor = nullptr;
+
+	// Height advantage over target (in cm)
+	UPROPERTY(BlueprintReadWrite)
+	float HeightAdvantage = 0.0f;
+
+	FHarmoniaTacticalStateData()
+	{
+	}
+
+	// Check if has valid tactical position
+	bool HasValidPosition() const
+	{
+		return CurrentPosition != EHarmoniaTacticalPosition::None;
+	}
 };
