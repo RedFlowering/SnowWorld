@@ -27,7 +27,11 @@ void UHarmoniaSenseInteractionComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	InitializeSenseReceiver();
+	// Bind to sense receiver delegates (this component IS a SenseReceiverComponent)
+	OnNewSense.AddDynamic(this, &UHarmoniaSenseInteractionComponent::OnNewSenseDetected);
+	OnLostSense.AddDynamic(this, &UHarmoniaSenseInteractionComponent::OnSenseLost);
+	OnCurrentSense.AddDynamic(this, &UHarmoniaSenseInteractionComponent::OnSenseUpdated);
+
 	SetupInput();
 }
 
@@ -36,12 +40,9 @@ void UHarmoniaSenseInteractionComponent::EndPlay(const EEndPlayReason::Type EndP
 	CleanupInput();
 
 	// Unbind from sense receiver delegates
-	if (SenseReceiverComponent)
-	{
-		SenseReceiverComponent->OnNewSense.RemoveDynamic(this, &UHarmoniaSenseInteractionComponent::OnNewSenseDetected);
-		SenseReceiverComponent->OnLostSense.RemoveDynamic(this, &UHarmoniaSenseInteractionComponent::OnSenseLost);
-		SenseReceiverComponent->OnCurrentSense.RemoveDynamic(this, &UHarmoniaSenseInteractionComponent::OnSenseUpdated);
-	}
+	OnNewSense.RemoveDynamic(this, &UHarmoniaSenseInteractionComponent::OnNewSenseDetected);
+	OnLostSense.RemoveDynamic(this, &UHarmoniaSenseInteractionComponent::OnSenseLost);
+	OnCurrentSense.RemoveDynamic(this, &UHarmoniaSenseInteractionComponent::OnSenseUpdated);
 
 	Super::EndPlay(EndPlayReason);
 }
@@ -72,11 +73,12 @@ void UHarmoniaSenseInteractionComponent::TickComponent(
 			{
 				if (Target.IsValid())
 				{
+					FColor LineColor = Target.IsInteractable() ? FColor::Green : FColor::Yellow;
 					DrawDebugLine(
 						GetWorld(),
 						Owner->GetActorLocation(),
-						Target.InteractableComponent->GetOwner()->GetActorLocation(),
-						FColor::Green,
+						Target.TargetActor->GetActorLocation(),
+						LineColor,
 						false,
 						0.0f,
 						0,
@@ -293,43 +295,6 @@ void UHarmoniaSenseInteractionComponent::Client_OnInteractionResult_Implementati
 // Protected Functions
 // ============================================================================
 
-void UHarmoniaSenseInteractionComponent::InitializeSenseReceiver()
-{
-	AActor* Owner = GetOwner();
-	if (!Owner)
-	{
-		return;
-	}
-
-	// Try to find existing sense receiver
-	if (bAutoFindSenseReceiver && !SenseReceiverComponent)
-	{
-		SenseReceiverComponent = Owner->FindComponentByClass<USenseReceiverComponent>();
-	}
-
-	// Create sense receiver if not found
-	if (bAutoCreateSenseReceiver && !SenseReceiverComponent)
-	{
-		SenseReceiverComponent = NewObject<USenseReceiverComponent>(
-			Owner,
-			USenseReceiverComponent::StaticClass(),
-			FName("HarmoniaSenseReceiver"));
-
-		if (SenseReceiverComponent)
-		{
-			SenseReceiverComponent->RegisterComponent();
-		}
-	}
-
-	// Bind to sense receiver delegates
-	if (SenseReceiverComponent)
-	{
-		SenseReceiverComponent->OnNewSense.AddDynamic(this, &UHarmoniaSenseInteractionComponent::OnNewSenseDetected);
-		SenseReceiverComponent->OnLostSense.AddDynamic(this, &UHarmoniaSenseInteractionComponent::OnSenseLost);
-		SenseReceiverComponent->OnCurrentSense.AddDynamic(this, &UHarmoniaSenseInteractionComponent::OnSenseUpdated);
-	}
-}
-
 void UHarmoniaSenseInteractionComponent::SetupInput()
 {
 	if (!InteractAction || !InputMapping)
@@ -455,30 +420,47 @@ void UHarmoniaSenseInteractionComponent::ProcessSensedStimuli(const TArray<FSens
 			continue;
 		}
 
-		// Check if the stimulus component is a sense-based interactable
-		if (UHarmoniaSenseInteractableComponent* Interactable = Cast<UHarmoniaSenseInteractableComponent>(Stimulus.StimulusComponent.Get()))
+		UHarmoniaSenseInteractableComponent* Interactable = nullptr;
+		AActor* TargetActor = Stimulus.StimulusComponent->GetOwner();
+
+		if (!TargetActor)
 		{
-			// Check if interactable is active
-			if (!Interactable->bIsSenseActive)
-			{
-				continue;
-			}
+			continue;
+		}
 
-			// Add or update the interactable target
-			AddInteractableTarget(Interactable, Stimulus, SensorTag);
+		// Check if the stimulus component is a sense-based interactable
+		Interactable = Cast<UHarmoniaSenseInteractableComponent>(Stimulus.StimulusComponent.Get());
 
-			// Broadcast new sense event
-			if (bIsNewSense)
-			{
-				OnInteractableSensed.Broadcast(Interactable, SensorTag);
-			}
+		// If bInteractableOnly is true, skip non-interactable actors
+		if (bInteractableOnly && !Interactable)
+		{
+			continue;
+		}
+
+		// Check if interactable is active (if it's an interactable)
+		if (Interactable && !Interactable->bIsSenseActive)
+		{
+			continue;
+		}
+
+		// Add or update the target (interactable or general actor)
+		AddInteractableTarget(Interactable, Stimulus, SensorTag);
+
+		// Broadcast new sense event (only for interactables)
+		if (bIsNewSense && Interactable)
+		{
+			OnInteractableSensed.Broadcast(Interactable, SensorTag);
 		}
 	}
 }
 
 void UHarmoniaSenseInteractionComponent::AddInteractableTarget(UHarmoniaSenseInteractableComponent* Interactable, const FSensedStimulus& Stimulus, FName SensorTag)
 {
-	if (!Interactable)
+	// Get target actor (from Interactable if available, otherwise from Stimulus)
+	AActor* TargetActor = Interactable ? Interactable->GetOwner() :
+	                      (Stimulus.StimulusComponent.IsValid() ? Stimulus.StimulusComponent->GetOwner() : nullptr);
+
+	if (!TargetActor)
 	{
 		return;
 	}
@@ -487,7 +469,7 @@ void UHarmoniaSenseInteractionComponent::AddInteractableTarget(UHarmoniaSenseInt
 	int32 ExistingIndex = INDEX_NONE;
 	for (int32 i = 0; i < TrackedTargets.Num(); ++i)
 	{
-		if (TrackedTargets[i].InteractableComponent == Interactable &&
+		if (TrackedTargets[i].TargetActor == TargetActor &&
 			TrackedTargets[i].SensorTag == SensorTag)
 		{
 			ExistingIndex = i;
@@ -497,11 +479,11 @@ void UHarmoniaSenseInteractionComponent::AddInteractableTarget(UHarmoniaSenseInt
 
 	// Calculate distance
 	const AActor* Owner = GetOwner();
-	const AActor* TargetActor = Interactable->GetOwner();
-	const float Distance = Owner && TargetActor ? FVector::Dist(Owner->GetActorLocation(), TargetActor->GetActorLocation()) : 0.0f;
+	const float Distance = Owner ? FVector::Dist(Owner->GetActorLocation(), TargetActor->GetActorLocation()) : 0.0f;
 
 	// Update or add target
 	FInteractableTargetInfo TargetInfo;
+	TargetInfo.TargetActor = TargetActor;
 	TargetInfo.InteractableComponent = Interactable;
 	TargetInfo.StimulusData = Stimulus;
 	TargetInfo.SensorTag = SensorTag;
@@ -564,12 +546,8 @@ void UHarmoniaSenseInteractionComponent::UpdateTargetPriorities()
 	{
 		if (Target.IsValid())
 		{
-			const AActor* TargetActor = Target.InteractableComponent->GetOwner();
-			if (TargetActor)
-			{
-				Target.Distance = FVector::Dist(Owner->GetActorLocation(), TargetActor->GetActorLocation());
-				Target.Priority = CalculateTargetPriority(Target);
-			}
+			Target.Distance = FVector::Dist(Owner->GetActorLocation(), Target.TargetActor->GetActorLocation());
+			Target.Priority = CalculateTargetPriority(Target);
 		}
 	}
 
@@ -610,8 +588,8 @@ float UHarmoniaSenseInteractionComponent::CalculateTargetPriority(const FInterac
 		Priority += (1000.0f / FMath::Max(TargetInfo.Distance, 1.0f));
 	}
 
-	// Interaction availability priority
-	if (TargetInfo.IsValid())
+	// Interaction availability priority (only for interactables)
+	if (TargetInfo.IsInteractable())
 	{
 		if (TargetInfo.InteractableComponent->IsInteractionAvailable(TargetInfo.SensorTag))
 		{
@@ -626,7 +604,7 @@ void UHarmoniaSenseInteractionComponent::ProcessAutomaticInteractions(float Delt
 {
 	for (const FInteractableTargetInfo& TargetInfo : TrackedTargets)
 	{
-		if (!TargetInfo.IsValid())
+		if (!TargetInfo.IsValid() || !TargetInfo.IsInteractable())
 		{
 			continue;
 		}
