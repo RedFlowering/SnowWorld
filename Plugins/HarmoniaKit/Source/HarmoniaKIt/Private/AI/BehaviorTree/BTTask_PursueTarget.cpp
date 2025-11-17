@@ -68,8 +68,8 @@ EBTNodeResult::Type UBTTask_PursueTarget::ExecuteTask(UBehaviorTreeComponent& Ow
 	EPathFollowingRequestResult::Type MoveResult = AIController->MoveToActor(Target, AcceptanceRadius);
 
 	// Check if move request was accepted (not failed)
-	using namespace EPathFollowingRequestResult;
-	if (MoveResult == RequestSuccessful || MoveResult == AlreadyAtGoal)
+	// Note: Failed = 0, AlreadyAtGoal = 1, RequestSuccessful = 2
+	if (MoveResult != 0)  // 0 = Failed
 	{
 		return EBTNodeResult::Succeeded;
 	}
