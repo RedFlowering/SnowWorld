@@ -620,4 +620,100 @@ public:
 	// Show boss health bar
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss", meta = (EditCondition = "bIsBoss"))
 	bool bShowBossHealthBar = true;
+
+	// ============================================================================
+	// Group AI Settings (optional)
+	// ============================================================================
+
+	// Whether this monster can participate in squad behavior
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Group AI")
+	bool bCanFormSquad = true;
+
+	// Preferred squad size
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Group AI", meta = (EditCondition = "bCanFormSquad", ClampMin = "2", ClampMax = "10"))
+	int32 PreferredSquadSize = 3;
+
+	// Squad formation type
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Group AI", meta = (EditCondition = "bCanFormSquad"))
+	EHarmoniaSquadFormationType FormationType = EHarmoniaSquadFormationType::Loose;
+
+	// Whether this monster can be a squad leader
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Group AI", meta = (EditCondition = "bCanFormSquad"))
+	bool bCanBeSquadLeader = true;
+
+	// Squad coordination range
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Group AI", meta = (EditCondition = "bCanFormSquad", ClampMin = "500", ClampMax = "5000"))
+	float SquadCoordinationRange = 2000.0f;
+};
+
+// ============================================================================
+// Group AI Definitions
+// ============================================================================
+
+/**
+ * Squad Formation Type
+ * Defines how squad members position themselves
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaSquadFormationType : uint8
+{
+	Loose UMETA(DisplayName = "Loose"),			// Spread out, maintain distance
+	Tight UMETA(DisplayName = "Tight"),			// Stay close together
+	Circle UMETA(DisplayName = "Circle"),		// Surround target
+	Line UMETA(DisplayName = "Line"),			// Form a line
+	Wedge UMETA(DisplayName = "Wedge"),			// V-formation
+	Flanking UMETA(DisplayName = "Flanking")	// Flank target from sides
+};
+
+/**
+ * Squad Role
+ * Defines the role of a monster within a squad
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaSquadRole : uint8
+{
+	Leader UMETA(DisplayName = "Leader"),		// Leads the squad
+	Tank UMETA(DisplayName = "Tank"),			// Frontline fighter
+	DPS UMETA(DisplayName = "DPS"),				// Damage dealer
+	Support UMETA(DisplayName = "Support"),		// Healer/buffer
+	Scout UMETA(DisplayName = "Scout")			// Reconnaissance
+};
+
+/**
+ * Squad Member Info
+ * Information about a single squad member
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaSquadMemberInfo
+{
+	GENERATED_BODY()
+
+	// Monster actor
+	UPROPERTY(BlueprintReadWrite)
+	TObjectPtr<AActor> Monster = nullptr;
+
+	// Assigned role
+	UPROPERTY(BlueprintReadWrite)
+	EHarmoniaSquadRole Role = EHarmoniaSquadRole::DPS;
+
+	// Formation position (relative to leader)
+	UPROPERTY(BlueprintReadWrite)
+	FVector FormationOffset = FVector::ZeroVector;
+
+	// Whether this member is alive
+	UPROPERTY(BlueprintReadWrite)
+	bool bIsAlive = true;
+
+	// Last known location (for regrouping)
+	UPROPERTY(BlueprintReadWrite)
+	FVector LastKnownLocation = FVector::ZeroVector;
+
+	FHarmoniaSquadMemberInfo()
+	{
+	}
+
+	bool IsValid() const
+	{
+		return Monster != nullptr && bIsAlive;
+	}
 };

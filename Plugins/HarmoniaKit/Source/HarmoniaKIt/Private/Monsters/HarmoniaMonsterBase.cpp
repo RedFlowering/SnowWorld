@@ -12,6 +12,7 @@
 #include "SenseStimulusComponent.h"
 #include "Components/HarmoniaThreatComponent.h"
 #include "SensedStimulStruct.h"
+#include "Items/HarmoniaItemPickup.h"
 
 AHarmoniaMonsterBase::AHarmoniaMonsterBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -262,17 +263,86 @@ TArray<FHarmoniaLootTableRow> AHarmoniaMonsterBase::GenerateLoot_Implementation(
 
 void AHarmoniaMonsterBase::SpawnLoot_Implementation(const TArray<FHarmoniaLootTableRow>& LootItems, const FVector& SpawnLocation)
 {
-	// This is a basic implementation
-	// Override this in Blueprint or child classes to spawn actual item actors
-	// For now, just log what would be spawned
-
-	for (const FHarmoniaLootTableRow& LootItem : LootItems)
+	if (!HasAuthority() || !GetWorld())
 	{
-		UE_LOG(LogTemp, Log, TEXT("Monster dropped: %s x%d"), *LootItem.ItemID.ToString(), LootItem.MinQuantity);
+		return;
 	}
 
-	// TODO: Spawn actual item actors based on LootItems
-	// This should integrate with your inventory/item system
+	// Spawn each loot item as a pickup actor
+	for (const FHarmoniaLootTableRow& LootItem : LootItems)
+	{
+		// Calculate quantity
+		int32 Quantity = FMath::RandRange(LootItem.MinQuantity, LootItem.MaxQuantity);
+		if (Quantity <= 0)
+		{
+			continue;
+		}
+
+		// Calculate random spawn offset to spread items
+		FVector RandomOffset = FVector(
+			FMath::RandRange(-100.0f, 100.0f),
+			FMath::RandRange(-100.0f, 100.0f),
+			50.0f
+		);
+		FVector ItemSpawnLocation = SpawnLocation + RandomOffset;
+
+		// Spawn pickup actor
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+		AHarmoniaItemPickup* Pickup = GetWorld()->SpawnActor<AHarmoniaItemPickup>(
+			AHarmoniaItemPickup::StaticClass(),
+			ItemSpawnLocation,
+			FRotator::ZeroRotator,
+			SpawnParams
+		);
+
+		if (Pickup)
+		{
+			// Handle different loot types
+			if (LootItem.LootType == EHarmoniaLootItemType::Currency)
+			{
+				Pickup->InitializeGoldPickup(Quantity);
+			}
+			else
+			{
+				Pickup->InitializePickup(LootItem, Quantity);
+			}
+
+			UE_LOG(LogTemp, Log, TEXT("Monster dropped: %s x%d at %s"),
+				*LootItem.ItemID.ToString(), Quantity, *ItemSpawnLocation.ToString());
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Failed to spawn item pickup for %s"), *LootItem.ItemID.ToString());
+		}
+	}
+
+	// Spawn gold if configured
+	if (MonsterData && MonsterData->LootTable)
+	{
+		int32 GoldAmount = FMath::RandRange(MonsterData->LootTable->MinGold, MonsterData->LootTable->MaxGold);
+		if (GoldAmount > 0)
+		{
+			FVector GoldSpawnLocation = SpawnLocation + FVector(0.0f, 0.0f, 50.0f);
+
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+			AHarmoniaItemPickup* GoldPickup = GetWorld()->SpawnActor<AHarmoniaItemPickup>(
+				AHarmoniaItemPickup::StaticClass(),
+				GoldSpawnLocation,
+				FRotator::ZeroRotator,
+				SpawnParams
+			);
+
+			if (GoldPickup)
+			{
+				GoldPickup->InitializeGoldPickup(GoldAmount);
+				UE_LOG(LogTemp, Log, TEXT("Monster dropped: %d gold"), GoldAmount);
+			}
+		}
+	}
 }
 
 EHarmoniaMonsterAggroType AHarmoniaMonsterBase::GetAggroType_Implementation() const
