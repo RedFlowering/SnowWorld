@@ -62,6 +62,9 @@ struct FMapMeasurement
 
 /**
  * Tools for measuring distances and areas on the map
+ *
+ * NETWORK NOTE: This is a CLIENT-ONLY system. Do not replicate.
+ * Each client manages their own measurements locally for their map UI.
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaMapMeasurementTools : public UObject

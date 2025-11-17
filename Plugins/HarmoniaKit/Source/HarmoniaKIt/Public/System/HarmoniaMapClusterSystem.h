@@ -75,6 +75,9 @@ enum class EMapMarkerLOD : uint8
 
 /**
  * System for clustering markers and LOD management
+ *
+ * NETWORK NOTE: This is a CLIENT-ONLY system. Do not replicate.
+ * Each client performs clustering calculations locally based on their current zoom level.
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaMapClusterSystem : public UObject

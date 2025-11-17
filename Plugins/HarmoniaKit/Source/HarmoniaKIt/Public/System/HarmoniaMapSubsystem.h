@@ -9,6 +9,11 @@
 
 /**
  * Game instance subsystem for managing global map data
+ *
+ * NETWORK NOTE: GameInstanceSubsystem is NOT replicated.
+ * Server and each client have their own independent instance.
+ * GlobalLocations are local to each game instance and not synchronized across the network.
+ * For shared/synchronized locations, use UHarmoniaMapComponent's DiscoveredLocations instead.
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaMapSubsystem : public UGameInstanceSubsystem

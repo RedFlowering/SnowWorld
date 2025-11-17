@@ -39,8 +39,9 @@ void UHarmoniaMapComponent::BeginPlay()
 		ExplorationRadius = CurrentMapData->ExplorationRadius;
 		ExplorationUpdateInterval = CurrentMapData->ExplorationUpdateInterval;
 
-		// Initialize fog of war renderer (client only)
-		if (GetOwnerRole() != ROLE_Authority || GetNetMode() == NM_Standalone)
+		// Initialize fog of war renderer - only for the owning client or standalone
+		// FogOfWarRenderer is purely visual and should only exist on the local player's machine
+		if (GetOwnerRole() == ROLE_AutonomousProxy || GetNetMode() == NM_Standalone)
 		{
 			InitializeFogOfWarRenderer();
 		}
@@ -51,8 +52,12 @@ void UHarmoniaMapComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(UHarmoniaMapComponent, ExploredRegions);
-	DOREPLIFETIME(UHarmoniaMapComponent, DiscoveredLocations);
+	// Only replicate exploration data to the owning client to save bandwidth
+	// Each player only needs to see their own explored regions and discovered locations
+	DOREPLIFETIME_CONDITION(UHarmoniaMapComponent, ExploredRegions, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(UHarmoniaMapComponent, DiscoveredLocations, COND_OwnerOnly);
+
+	// Pings are shared with all clients (for team coordination)
 	DOREPLIFETIME(UHarmoniaMapComponent, ActivePings);
 }
 
@@ -77,6 +82,16 @@ void UHarmoniaMapComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 
 		// Update pings
 		UpdatePings(DeltaTime);
+	}
+}
+
+void UHarmoniaMapComponent::OnRep_ExploredRegions()
+{
+	// Update fog of war renderer when explored regions are replicated
+	// This only happens on the owning client (due to COND_OwnerOnly)
+	if (FogOfWarRenderer)
+	{
+		FogOfWarRenderer->UpdateFogOfWar(ExploredRegions);
 	}
 }
 
@@ -163,12 +178,6 @@ void UHarmoniaMapComponent::AddExploredRegion(const FVector& Center, float Radiu
 
 			// Broadcast event
 			MulticastOnRegionExplored(NewRegion);
-		}
-
-		// Update fog of war renderer
-		if (FogOfWarRenderer)
-		{
-			FogOfWarRenderer->UpdateFogOfWar(ExploredRegions);
 		}
 	}
 	else

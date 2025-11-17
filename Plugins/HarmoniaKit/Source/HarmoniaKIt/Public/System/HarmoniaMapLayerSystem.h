@@ -78,6 +78,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLayerChanged, int32, NewLayerInde
 
 /**
  * System for managing multi-layer/floor maps
+ *
+ * NETWORK NOTE: This is a CLIENT-ONLY system. Do not replicate.
+ * Each client manages layer visibility and switching locally for their map UI.
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaMapLayerSystem : public UObject

@@ -38,15 +38,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map")
 	TObjectPtr<UHarmoniaMapDataAsset> CurrentMapData;
 
-	// Explored regions (replicated)
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Map|Exploration")
+	// Explored regions (replicated to owner only)
+	UPROPERTY(ReplicatedUsing = OnRep_ExploredRegions, BlueprintReadOnly, Category = "Map|Exploration")
 	TArray<FExploredRegion> ExploredRegions;
 
-	// Discovered locations (replicated)
+	// Discovered locations (replicated to owner only)
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Map|Locations")
 	TArray<FMapLocationData> DiscoveredLocations;
 
-	// Active pings (replicated)
+	// Active pings (replicated to all clients for team coordination)
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Map|Pings")
 	TArray<FMapPingData> ActivePings;
 
@@ -143,6 +143,10 @@ public:
 protected:
 	// Timer for exploration updates
 	float ExplorationUpdateTimer = 0.0f;
+
+	// Replication notify for explored regions
+	UFUNCTION()
+	void OnRep_ExploredRegions();
 
 	// Update exploration around player
 	void UpdateExploration();

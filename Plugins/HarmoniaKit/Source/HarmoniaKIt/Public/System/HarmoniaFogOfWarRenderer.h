@@ -15,6 +15,9 @@ class UMaterialInstanceDynamic;
 /**
  * Renders fog of war mask texture from explored regions
  * Creates a dynamic texture that can be used in materials to hide unexplored areas
+ *
+ * NETWORK NOTE: This is a CLIENT-ONLY system. Do not replicate.
+ * Each client creates its own renderer based on replicated ExploredRegions data.
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaFogOfWarRenderer : public UObject

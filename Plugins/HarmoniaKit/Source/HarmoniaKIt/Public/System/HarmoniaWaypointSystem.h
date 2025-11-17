@@ -108,6 +108,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWaypointReached, const FGuid&, W
 
 /**
  * System for managing waypoints and path guidance
+ *
+ * NETWORK NOTE: This is a CLIENT-ONLY system. Do not replicate.
+ * Each client manages their own waypoints locally for UI/navigation purposes.
+ * If you need shared waypoints, use the map ping system instead.
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaWaypointSystem : public UObject
