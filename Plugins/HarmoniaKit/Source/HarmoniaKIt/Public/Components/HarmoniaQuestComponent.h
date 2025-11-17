@@ -113,7 +113,7 @@ public:
 	 * @return True if quest was completed successfully
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Quest")
-	bool CompleteQuest(FHarmoniaID QuestId, const TArray<int32>& SelectedOptionalRewards = TArray<int32>());
+	bool CompleteQuest(FHarmoniaID QuestId, const TArray<int32>& SelectedOptionalRewards);
 
 	/**
 	 * Abandon a quest
