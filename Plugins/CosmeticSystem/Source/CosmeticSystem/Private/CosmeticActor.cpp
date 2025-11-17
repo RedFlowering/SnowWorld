@@ -11,6 +11,7 @@
 #include "PhysicsEngine/ConstraintInstance.h"
 #include "PhysicsEngine/BodyInstance.h"
 #include "Runtime/Engine/Classes/PhysicsEngine/SkeletalBodySetup.h"
+#include "GameFramework/Pawn.h"
 
 ACosmeticActor::ACosmeticActor(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -26,12 +27,12 @@ ACosmeticActor::ACosmeticActor(const FObjectInitializer& ObjectInitializer)
 		Mesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesWhenNotRendered;
 		Mesh->bCastDynamicShadow = true;
 		Mesh->bAffectDynamicIndirectLighting = true;
-		Mesh->PrimaryComponentTick.TickGroup = TG_PrePhysics;				
+		Mesh->PrimaryComponentTick.TickGroup = TG_PrePhysics;
 		Mesh->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
 		Mesh->SetGenerateOverlapEvents(false);
 		Mesh->SetCanEverAffectNavigation(false);
 		SetRootComponent(Mesh);
-	}	
+	}
 }
 
 USkeletalMeshComponent* ACosmeticActor::GetMergeTargetSkeletalMesh(FName ComponentTag)
@@ -43,13 +44,13 @@ USkeletalMeshComponent* ACosmeticActor::GetMergeTargetSkeletalMesh(FName Compone
 
 	UE_LOG(LogCosmeticSystem, Error, TEXT("Can't find MergeTargetSkeletalMesh [%s]"), *ComponentTag.ToString())
 
-	return nullptr;
+		return nullptr;
 }
 
 UCosmeticSkeletalMeshComponent* ACosmeticActor::CreateInstanceSkeletalMesh(FGameplayTag PartTag, FName SocketName, bool bUseMasterPoseComponent, TSubclassOf<UCosmeticSkeletalMeshComponent> OverrideSkeletalMeshComponent)
 {
-	TSubclassOf<UCosmeticSkeletalMeshComponent> SkeletalMeshCompType = 
-				(OverrideSkeletalMeshComponent != nullptr) ? OverrideSkeletalMeshComponent : CosmeticSkeletalMeshComponentType;
+	TSubclassOf<UCosmeticSkeletalMeshComponent> SkeletalMeshCompType =
+		(OverrideSkeletalMeshComponent != nullptr) ? OverrideSkeletalMeshComponent : CosmeticSkeletalMeshComponentType;
 
 	UCosmeticSkeletalMeshComponent* MeshComp = NewObject<UCosmeticSkeletalMeshComponent>(this, SkeletalMeshCompType, PartTag.GetTagName());
 	MeshComp->AttachToComponent(GetVisualMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, SocketName);
@@ -63,7 +64,7 @@ UCosmeticSkeletalMeshComponent* ACosmeticActor::CreateInstanceSkeletalMesh(FGame
 UCosmeticGroomComponent* ACosmeticActor::CreateInstanceGroomAsset(FGameplayTag PartTag, FName SocketName, TSubclassOf<UCosmeticGroomComponent> OverrideGroomComponent)
 {
 	TSubclassOf<UCosmeticGroomComponent> GroomCompType =
-			(OverrideGroomComponent != nullptr) ? OverrideGroomComponent : CosmeticGroomComponentType;
+		(OverrideGroomComponent != nullptr) ? OverrideGroomComponent : CosmeticGroomComponentType;
 	UCosmeticGroomComponent* GroomComp = NewObject<UCosmeticGroomComponent>(this, GroomCompType, PartTag.GetTagName());
 	GroomComp->AttachToComponent(GetVisualMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, SocketName);
 	GroomComp->RegisterComponent();
@@ -76,12 +77,12 @@ bool ACosmeticActor::IsEnableMerge_Implementation()
 }
 
 bool ACosmeticActor::MergeCosmeticMeshes(FSkeletalMeshMergeParams MergeParams, UPhysicsAsset* DefaultPhysicsAsset, USkeletalMeshComponent* Target)
-{	
+{
 	USkeletalMesh* BaseMesh = USkeletalMergingLibrary::MergeMeshes(MergeParams);
 	if (BaseMesh)
-	{	
+	{
 		Target->SetSkeletalMesh(BaseMesh);
-		Target->SetPhysicsAsset(DefaultPhysicsAsset);		
+		Target->SetPhysicsAsset(DefaultPhysicsAsset);
 	}
 
 	return true;
@@ -90,7 +91,7 @@ bool ACosmeticActor::MergeCosmeticMeshes(FSkeletalMeshMergeParams MergeParams, U
 void ACosmeticActor::ClearCreatedMergeTargetMeshes()
 {
 	for (auto& Ele : CreatedMergeTargetMeshes)
-	{	
+	{
 		Ele.Value->SetSkeletalMesh(nullptr, false);
 	}
 }
@@ -120,13 +121,13 @@ void ACosmeticActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Mesh = nullptr;
 	CreatedMergeTargetMeshes.Empty();
 
-	Super::EndPlay(EndPlayReason);		
+	Super::EndPlay(EndPlayReason);
 }
 
 void ACosmeticActor::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-		
+
 	int32 Index = 0;
 	TArray<UActorComponent*> TempComponents = K2_GetComponentsByClass(UCosmeticSkeletalMeshComponent::StaticClass());
 	for (UActorComponent* Elem : TempComponents)
@@ -146,7 +147,7 @@ bool ACosmeticActor::CreateSkeletalBodySetup(UPhysicsAsset* PhysAsset, USkeletal
 		USkeletalBodySetup* NewBodySetup = NewObject<USkeletalBodySetup>(PhysAsset, NAME_None, RF_Transactional);
 		NewBodySetup->BoneName = SKBSetup->BoneName;
 		NewBodySetup->CollisionTraceFlag = SKBSetup->CollisionTraceFlag;
-		NewBodySetup->PhysicsType = SKBSetup->PhysicsType;		
+		NewBodySetup->PhysicsType = SKBSetup->PhysicsType;
 
 		int32 BodySetupIndex = PhysAsset->SkeletalBodySetups.Add(NewBodySetup);
 		PhysAsset->SkeletalBodySetups[BodySetupIndex]->AggGeom = SKBSetup->AggGeom;
@@ -164,9 +165,9 @@ bool ACosmeticActor::CreateSkeletalBodySetup(UPhysicsAsset* PhysAsset, USkeletal
 }
 
 UPhysicsAsset* ACosmeticActor::MergePhysicsAssets(TArray<UPhysicsAsset*> PhysicsAssets, USkeletalMeshComponent* Target)
-{	
-    USkeletalMesh* SkeletalMesh = Target->GetSkeletalMeshAsset();
-    UPhysicsAsset* MergedPhysicsAsset = NewObject<UPhysicsAsset>(SkeletalMesh, MakeUniqueObjectName(SkeletalMesh, UPhysicsAsset::StaticClass(), TEXT("MergedPhysicsAsset")), RF_Public | RF_Standalone | RF_Transient);
+{
+	USkeletalMesh* SkeletalMesh = Target->GetSkeletalMeshAsset();
+	UPhysicsAsset* MergedPhysicsAsset = NewObject<UPhysicsAsset>(SkeletalMesh, MakeUniqueObjectName(SkeletalMesh, UPhysicsAsset::StaticClass(), TEXT("MergedPhysicsAsset")), RF_Public | RF_Standalone | RF_Transient);
 
 	for (UPhysicsAsset* PhysicsAsset : PhysicsAssets)
 	{
@@ -174,89 +175,89 @@ UPhysicsAsset* ACosmeticActor::MergePhysicsAssets(TArray<UPhysicsAsset*> Physics
 		{
 			CreateSkeletalBodySetup(MergedPhysicsAsset, SKBSetup);
 		}
-	}   
+	}
 
-    const TArray<FTransform>& LocalPose = SkeletalMesh->GetRefSkeleton().GetRefBonePose();
+	const TArray<FTransform>& LocalPose = SkeletalMesh->GetRefSkeleton().GetRefBonePose();
 
-    TArray<FName> AllBoneNames;
-    MergedPhysicsAsset->BodySetupIndexMap.GenerateKeyArray(AllBoneNames);
-	
+	TArray<FName> AllBoneNames;
+	MergedPhysicsAsset->BodySetupIndexMap.GenerateKeyArray(AllBoneNames);
+
 	// create constraints
 	for (int32 Index = 0; Index < AllBoneNames.Num(); ++Index)
-    {
-        const FName BoneName = AllBoneNames[Index];
+	{
+		const FName BoneName = AllBoneNames[Index];
 
-        const int32 ConstraintIndex = MergedPhysicsAsset->FindConstraintIndex(BoneName);
-        if (ConstraintIndex != INDEX_NONE)
-        {
-            continue;
-        }
+		const int32 ConstraintIndex = MergedPhysicsAsset->FindConstraintIndex(BoneName);
+		if (ConstraintIndex != INDEX_NONE)
+		{
+			continue;
+		}
 
-        const int32 BodyIndex = MergedPhysicsAsset->BodySetupIndexMap[BoneName];
-        if (BodyIndex == INDEX_NONE)
-        {
-            continue;
-        }
+		const int32 BodyIndex = MergedPhysicsAsset->BodySetupIndexMap[BoneName];
+		if (BodyIndex == INDEX_NONE)
+		{
+			continue;
+		}
 
-        const int32 BoneIndex = SkeletalMesh->GetRefSkeleton().FindRawBoneIndex(BoneName);
+		const int32 BoneIndex = SkeletalMesh->GetRefSkeleton().FindRawBoneIndex(BoneName);
 
-        int32 ParentBoneIndex = BoneIndex;
-        int32 ParentBodyIndex = INDEX_NONE;
-        FName ParentBoneName;
+		int32 ParentBoneIndex = BoneIndex;
+		int32 ParentBodyIndex = INDEX_NONE;
+		FName ParentBoneName;
 
-        FTransform RelTM = FTransform::Identity;
-        do
-        {
+		FTransform RelTM = FTransform::Identity;
+		do
+		{
 			// Transform of child from parent is just child ref-pose entry.
-            RelTM = RelTM * LocalPose[ParentBoneIndex];
-            
+			RelTM = RelTM * LocalPose[ParentBoneIndex];
+
 			//Travel up the hierarchy to find a parent which has a valid body
-            ParentBoneIndex = SkeletalMesh->GetRefSkeleton().GetParentIndex(ParentBoneIndex);
-            if (ParentBoneIndex != INDEX_NONE)
-            {
-                ParentBoneName = SkeletalMesh->GetRefSkeleton().GetBoneName(ParentBoneIndex);
-                ParentBodyIndex = MergedPhysicsAsset->FindBodyIndex(ParentBoneName);
-            }
-            else
-            { 
+			ParentBoneIndex = SkeletalMesh->GetRefSkeleton().GetParentIndex(ParentBoneIndex);
+			if (ParentBoneIndex != INDEX_NONE)
+			{
+				ParentBoneName = SkeletalMesh->GetRefSkeleton().GetBoneName(ParentBoneIndex);
+				ParentBodyIndex = MergedPhysicsAsset->FindBodyIndex(ParentBoneName);
+			}
+			else
+			{
 				//no more parents so just stop
-                break;
-            }
+				break;
+			}
 
-        } while (ParentBodyIndex == INDEX_NONE);
+		} while (ParentBodyIndex == INDEX_NONE);
 
-        if (ParentBodyIndex != INDEX_NONE)
-        {
+		if (ParentBodyIndex != INDEX_NONE)
+		{
 			// add constraint between BoneName and ParentBoneName
 
 			// constraintClass must be a subclass of UPhysicsConstraintTemplate
 
-            UPhysicsConstraintTemplate* NewConstraintSetup = NewObject<UPhysicsConstraintTemplate>(MergedPhysicsAsset, NAME_None, RF_Transient);
-            const int32 NewConstraintSetupIndex = MergedPhysicsAsset->ConstraintSetup.Add(NewConstraintSetup);
+			UPhysicsConstraintTemplate* NewConstraintSetup = NewObject<UPhysicsConstraintTemplate>(MergedPhysicsAsset, NAME_None, RF_Transient);
+			const int32 NewConstraintSetupIndex = MergedPhysicsAsset->ConstraintSetup.Add(NewConstraintSetup);
 
-            NewConstraintSetup->DefaultInstance.JointName = BoneName;
+			NewConstraintSetup->DefaultInstance.JointName = BoneName;
 
-            UPhysicsConstraintTemplate* CS = MergedPhysicsAsset->ConstraintSetup[NewConstraintSetupIndex];
+			UPhysicsConstraintTemplate* CS = MergedPhysicsAsset->ConstraintSetup[NewConstraintSetupIndex];
 
 			// set angular constraint mode
-            CS->DefaultInstance.SetAngularSwing1Motion(EAngularConstraintMotion::ACM_Limited);
-            CS->DefaultInstance.SetAngularSwing2Motion(EAngularConstraintMotion::ACM_Limited);
-            CS->DefaultInstance.SetAngularTwistMotion(EAngularConstraintMotion::ACM_Limited);
+			CS->DefaultInstance.SetAngularSwing1Motion(EAngularConstraintMotion::ACM_Limited);
+			CS->DefaultInstance.SetAngularSwing2Motion(EAngularConstraintMotion::ACM_Limited);
+			CS->DefaultInstance.SetAngularTwistMotion(EAngularConstraintMotion::ACM_Limited);
 
 			// Place joint at origin of child
-            CS->DefaultInstance.ConstraintBone1 = BoneName;
-            CS->DefaultInstance.Pos1 = FVector::ZeroVector;
-            CS->DefaultInstance.PriAxis1 = FVector(1, 0, 0);
-            CS->DefaultInstance.SecAxis1 = FVector(0, 1, 0);
+			CS->DefaultInstance.ConstraintBone1 = BoneName;
+			CS->DefaultInstance.Pos1 = FVector::ZeroVector;
+			CS->DefaultInstance.PriAxis1 = FVector(1, 0, 0);
+			CS->DefaultInstance.SecAxis1 = FVector(0, 1, 0);
 
-            CS->DefaultInstance.ConstraintBone2 = ParentBoneName;
-            CS->DefaultInstance.Pos2 = RelTM.GetLocation();
-            CS->DefaultInstance.PriAxis2 = RelTM.GetUnitAxis(EAxis::X);
-            CS->DefaultInstance.SecAxis2 = RelTM.GetUnitAxis(EAxis::Y);
+			CS->DefaultInstance.ConstraintBone2 = ParentBoneName;
+			CS->DefaultInstance.Pos2 = RelTM.GetLocation();
+			CS->DefaultInstance.PriAxis2 = RelTM.GetUnitAxis(EAxis::X);
+			CS->DefaultInstance.SecAxis2 = RelTM.GetUnitAxis(EAxis::Y);
 
-            MergedPhysicsAsset->DisableCollision(BodyIndex, ParentBodyIndex);
-        }
-    }
+			MergedPhysicsAsset->DisableCollision(BodyIndex, ParentBodyIndex);
+		}
+	}
 
 	Target->SetSkeletalMesh(SkeletalMesh);
 	Target->SetPhysicsAsset(MergedPhysicsAsset);
@@ -285,7 +286,29 @@ UPhysicsAsset* ACosmeticActor::MergePhysicsAssets(TArray<UPhysicsAsset*> Physics
 		}
 	}
 
-    return MergedPhysicsAsset;
+	return MergedPhysicsAsset;
+}
+
+FGenericTeamId ACosmeticActor::GetGenericTeamId() const
+{
+	if (GetOwner() != nullptr)
+	{
+		IGenericTeamAgentInterface* AgentInterface = Cast<IGenericTeamAgentInterface>(GetOwner());
+		if (AgentInterface)
+		{
+			return AgentInterface->GetGenericTeamId();
+		}
+		else if (APawn* OwnerActor = Cast<APawn>(GetOwner()))
+		{
+			AgentInterface = Cast<IGenericTeamAgentInterface>(OwnerActor->GetController());
+			if (AgentInterface)
+			{
+				return AgentInterface->GetGenericTeamId();
+			}
+		}
+	}
+
+	return FGenericTeamId::NoTeam;
 }
 
 void ACosmeticActor::Tick(float DeltaTime)

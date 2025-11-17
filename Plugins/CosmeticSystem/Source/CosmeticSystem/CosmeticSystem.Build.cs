@@ -43,6 +43,7 @@ public class CosmeticSystem : ModuleRules
                 "Slate",
                 "SlateCore",
                 "DeveloperSettings",
+                "AIModule"
             }
             );
 
