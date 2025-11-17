@@ -43,19 +43,16 @@ bool UBTDecorator_MonsterDistance::CalculateRawConditionValue(UBehaviorTreeCompo
 	FVector TargetLocation = FVector::ZeroVector;
 	bool bHasTarget = false;
 
-	// Check if key is an object (actor)
-	if (TargetKey.SelectedKeyType == UBlackboardKeyType_Object::StaticClass())
+	// Try to get as object (actor) first
+	AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetKey.SelectedKeyName));
+	if (TargetActor)
 	{
-		AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetKey.SelectedKeyName));
-		if (TargetActor)
-		{
-			TargetLocation = TargetActor->GetActorLocation();
-			bHasTarget = true;
-		}
+		TargetLocation = TargetActor->GetActorLocation();
+		bHasTarget = true;
 	}
-	// Check if key is a vector
-	else if (TargetKey.SelectedKeyType == UBlackboardKeyType_Vector::StaticClass())
+	else
 	{
+		// Try to get as vector
 		TargetLocation = BlackboardComp->GetValueAsVector(TargetKey.SelectedKeyName);
 		if (!TargetLocation.IsZero())
 		{

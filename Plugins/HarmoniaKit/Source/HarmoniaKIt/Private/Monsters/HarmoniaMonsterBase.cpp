@@ -421,10 +421,10 @@ void AHarmoniaMonsterBase::PlayDeathAnimation()
 	// Schedule corpse destruction
 	if (MonsterData && MonsterData->CorpseLifetime > 0.0f)
 	{
+		FTimerHandle UnusedHandle;
 		GetWorld()->GetTimerManager().SetTimer(
-			FTimerHandle(),
-			this,
-			&AHarmoniaMonsterBase::DestroyCorpse,
+			UnusedHandle,
+			FTimerDelegate::CreateLambda([this]() { DestroyCorpse(); }),
 			MonsterData->CorpseLifetime,
 			false
 		);

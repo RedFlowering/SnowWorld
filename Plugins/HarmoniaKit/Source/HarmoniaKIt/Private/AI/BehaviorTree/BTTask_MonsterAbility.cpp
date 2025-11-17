@@ -7,6 +7,7 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "Abilities/GameplayAbility.h"
+#include "AbilitySystem/HarmoniaAttributeSet.h"
 
 UBTTask_MonsterAbility::UBTTask_MonsterAbility()
 {
@@ -109,8 +110,8 @@ TSubclassOf<UGameplayAbility> UBTTask_MonsterAbility::FindAbilityToActivate(AHar
 		{
 			if (Spec.Ability)
 			{
-				FGameplayTagContainer AbilityTagContainer;
-				Spec.Ability->GetOwnedGameplayTags(AbilityTagContainer);
+				// Get ability tags from the ability class
+				const FGameplayTagContainer& AbilityTagContainer = Spec.Ability->GetAssetTags();
 
 				if (AbilityTagContainer.HasAny(AbilityTags))
 				{
@@ -150,8 +151,8 @@ bool UBTTask_MonsterAbility::CheckConditions(AHarmoniaMonsterBase* Monster, UBeh
 	UAbilitySystemComponent* ASC = Monster->GetAbilitySystemComponent();
 	if (ASC)
 	{
-		float CurrentHealth = ASC->GetNumericAttribute(UAbilitySystemGlobals::Get().GetHealthAttribute());
-		float MaxHealth = ASC->GetNumericAttribute(UAbilitySystemGlobals::Get().GetMaxHealthAttribute());
+		float CurrentHealth = ASC->GetNumericAttribute(UHarmoniaAttributeSet::GetHealthAttribute());
+		float MaxHealth = ASC->GetNumericAttribute(UHarmoniaAttributeSet::GetMaxHealthAttribute());
 
 		if (MaxHealth > 0.0f)
 		{

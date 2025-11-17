@@ -6,6 +6,7 @@
 #include "Components/HarmoniaThreatComponent.h"
 #include "Components/HarmoniaSenseInteractionComponent.h"
 #include "AbilitySystemComponent.h"
+#include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
@@ -115,14 +116,17 @@ void UHarmoniaMonsterDebugComponent::DrawAIState(AHarmoniaMonsterBase* Monster, 
 	case EHarmoniaMonsterState::Patrol:
 		StateString = TEXT("Patrol");
 		break;
+	case EHarmoniaMonsterState::Alert:
+		StateString = TEXT("Alert");
+		break;
 	case EHarmoniaMonsterState::Combat:
 		StateString = TEXT("Combat");
 		break;
-	case EHarmoniaMonsterState::Alerted:
-		StateString = TEXT("Alerted");
+	case EHarmoniaMonsterState::Retreating:
+		StateString = TEXT("Retreating");
 		break;
-	case EHarmoniaMonsterState::Retreat:
-		StateString = TEXT("Retreat");
+	case EHarmoniaMonsterState::Stunned:
+		StateString = TEXT("Stunned");
 		break;
 	case EHarmoniaMonsterState::Dead:
 		StateString = TEXT("Dead");
@@ -174,11 +178,14 @@ void UHarmoniaMonsterDebugComponent::DrawThreatTable(AHarmoniaMonsterBase* Monst
 		return;
 	}
 
-	TArray<FHarmoniaThreatEntry> ThreatEntries = ThreatComp->GetTopThreats(5);
-	if (ThreatEntries.Num() == 0)
+	TArray<FHarmoniaThreatEntry> AllThreatEntries = ThreatComp->GetThreatTable(true);
+	if (AllThreatEntries.Num() == 0)
 	{
 		return;
 	}
+
+	// Get top 5 threats
+	int32 MaxThreats = FMath::Min(5, AllThreatEntries.Num());
 
 	FVector CurrentDrawLocation = DrawLocation;
 	CurrentDrawLocation.Z += 20.0f * TextScale;
@@ -188,10 +195,10 @@ void UHarmoniaMonsterDebugComponent::DrawThreatTable(AHarmoniaMonsterBase* Monst
 	CurrentDrawLocation.Z += 15.0f * TextScale;
 
 	// Draw top 5 threats
-	for (int32 i = 0; i < ThreatEntries.Num(); ++i)
+	for (int32 i = 0; i < MaxThreats; ++i)
 	{
-		const FHarmoniaThreatEntry& Entry = ThreatEntries[i];
-		if (Entry.ThreatActor.IsValid())
+		const FHarmoniaThreatEntry& Entry = AllThreatEntries[i];
+		if (Entry.ThreatActor)
 		{
 			FString ThreatText = FString::Printf(TEXT("%d. %s: %.0f"),
 				i + 1,
@@ -280,24 +287,9 @@ void UHarmoniaMonsterDebugComponent::DrawHealthBar(AHarmoniaMonsterBase* Monster
 		return;
 	}
 
-	// Get health attributes (assuming standard GAS health attributes)
-	// You may need to adjust these based on your attribute set
-	float CurrentHealth = 100.0f;
-	float MaxHealth = 100.0f;
-
-	// Try to get actual health values
-	// Note: This is simplified - you'll need to use your actual attribute getters
-	const FGameplayAttribute HealthAttribute = ASC->GetSet<UAttributeSet>()->FindAttribute(FName("Health"));
-	const FGameplayAttribute MaxHealthAttribute = ASC->GetSet<UAttributeSet>()->FindAttribute(FName("MaxHealth"));
-
-	if (HealthAttribute.IsValid())
-	{
-		CurrentHealth = ASC->GetNumericAttribute(HealthAttribute);
-	}
-	if (MaxHealthAttribute.IsValid())
-	{
-		MaxHealth = ASC->GetNumericAttribute(MaxHealthAttribute);
-	}
+	// Get health attributes from HarmoniaAttributeSet
+	float CurrentHealth = ASC->GetNumericAttribute(UHarmoniaAttributeSet::GetHealthAttribute());
+	float MaxHealth = ASC->GetNumericAttribute(UHarmoniaAttributeSet::GetMaxHealthAttribute());
 
 	float HealthPercent = (MaxHealth > 0.0f) ? (CurrentHealth / MaxHealth) : 0.0f;
 

@@ -4,39 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
+#include "Definitions/HarmoniaMonsterSystemDefinitions.h"
 #include "HarmoniaMonsterInterface.generated.h"
 
 class UHarmoniaMonsterData;
 struct FHarmoniaLootTableRow;
-
-/**
- * Monster State Enum
- * Defines the current behavior state of the monster
- */
-UENUM(BlueprintType)
-enum class EHarmoniaMonsterState : uint8
-{
-	Idle UMETA(DisplayName = "Idle"),
-	Patrol UMETA(DisplayName = "Patrol"),
-	Alert UMETA(DisplayName = "Alert"),
-	Combat UMETA(DisplayName = "Combat"),
-	Retreating UMETA(DisplayName = "Retreating"),
-	Stunned UMETA(DisplayName = "Stunned"),
-	Dead UMETA(DisplayName = "Dead")
-};
-
-/**
- * Monster Aggro Type
- * Defines how the monster reacts to players
- */
-UENUM(BlueprintType)
-enum class EHarmoniaMonsterAggroType : uint8
-{
-	Passive UMETA(DisplayName = "Passive"),		// Never attacks unless provoked
-	Neutral UMETA(DisplayName = "Neutral"),		// Attacks when attacked
-	Aggressive UMETA(DisplayName = "Aggressive"),	// Attacks on sight
-	Territorial UMETA(DisplayName = "Territorial")	// Attacks when in territory
-};
 
 UINTERFACE(MinimalAPI, BlueprintType)
 class UHarmoniaMonsterInterface : public UInterface

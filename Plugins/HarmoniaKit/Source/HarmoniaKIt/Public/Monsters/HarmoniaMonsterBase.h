@@ -16,6 +16,8 @@ class UHarmoniaLootTableData;
 class USenseReceiverComponent;
 class USenseStimulusComponent;
 class UHarmoniaThreatComponent;
+class UHarmoniaSenseInteractionComponent;
+struct FGameplayEffectSpec;
 
 /**
  * Monster Death Delegate

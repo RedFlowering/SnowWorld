@@ -12,7 +12,8 @@
 #include "Engine/World.h"
 #include "DrawDebugHelpers.h"
 
-UHarmoniaSenseInteractionComponent::UHarmoniaSenseInteractionComponent()
+UHarmoniaSenseInteractionComponent::UHarmoniaSenseInteractionComponent(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.TickGroup = TG_PostPhysics;
