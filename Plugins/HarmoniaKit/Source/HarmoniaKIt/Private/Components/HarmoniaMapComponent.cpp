@@ -2,6 +2,7 @@
 
 #include "Components/HarmoniaMapComponent.h"
 #include "System/HarmoniaMapSubsystem.h"
+#include "System/HarmoniaFogOfWarRenderer.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Net/UnrealNetwork.h"
@@ -37,6 +38,12 @@ void UHarmoniaMapComponent::BeginPlay()
 	{
 		ExplorationRadius = CurrentMapData->ExplorationRadius;
 		ExplorationUpdateInterval = CurrentMapData->ExplorationUpdateInterval;
+
+		// Initialize fog of war renderer (client only)
+		if (GetOwnerRole() != ROLE_Authority || GetNetMode() == NM_Standalone)
+		{
+			InitializeFogOfWarRenderer();
+		}
 	}
 }
 
@@ -156,6 +163,12 @@ void UHarmoniaMapComponent::AddExploredRegion(const FVector& Center, float Radiu
 
 			// Broadcast event
 			MulticastOnRegionExplored(NewRegion);
+		}
+
+		// Update fog of war renderer
+		if (FogOfWarRenderer)
+		{
+			FogOfWarRenderer->UpdateFogOfWar(ExploredRegions);
 		}
 	}
 	else
@@ -424,4 +437,28 @@ UHarmoniaMapSubsystem* UHarmoniaMapComponent::GetMapSubsystem()
 		}
 	}
 	return MapSubsystem;
+}
+
+void UHarmoniaMapComponent::InitializeFogOfWarRenderer()
+{
+	if (!CurrentMapData || FogOfWarRenderer)
+	{
+		return;
+	}
+
+	// Create fog of war renderer
+	FogOfWarRenderer = NewObject<UHarmoniaFogOfWarRenderer>(this);
+	if (FogOfWarRenderer)
+	{
+		// Initialize with map bounds
+		FogOfWarRenderer->Initialize(
+			CurrentMapData->CapturedMapData.WorldBounds,
+			FIntPoint(1024, 1024)
+		);
+
+		// Initial update with current explored regions
+		FogOfWarRenderer->UpdateFogOfWar(ExploredRegions);
+
+		UE_LOG(LogTemp, Log, TEXT("Fog of War renderer initialized"));
+	}
 }

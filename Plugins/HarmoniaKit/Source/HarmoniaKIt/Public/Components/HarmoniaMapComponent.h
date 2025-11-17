@@ -9,6 +9,7 @@
 
 class UHarmoniaMapDataAsset;
 class UHarmoniaMapSubsystem;
+class UHarmoniaFogOfWarRenderer;
 
 // Delegates
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLocationDiscovered, const FMapLocationData&, Location);
@@ -176,11 +177,23 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastOnRegionExplored(const FExploredRegion& Region);
 
+public:
+	// Get fog of war renderer
+	UFUNCTION(BlueprintPure, Category = "Map|Fog of War")
+	UHarmoniaFogOfWarRenderer* GetFogOfWarRenderer() const { return FogOfWarRenderer; }
+
 private:
 	// Cached subsystem reference
 	UPROPERTY()
 	TObjectPtr<UHarmoniaMapSubsystem> MapSubsystem;
 
+	// Fog of war renderer
+	UPROPERTY(Transient)
+	TObjectPtr<UHarmoniaFogOfWarRenderer> FogOfWarRenderer;
+
 	// Get or cache map subsystem
 	UHarmoniaMapSubsystem* GetMapSubsystem();
+
+	// Initialize fog of war renderer
+	void InitializeFogOfWarRenderer();
 };

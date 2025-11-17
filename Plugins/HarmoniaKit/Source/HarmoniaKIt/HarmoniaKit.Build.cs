@@ -27,7 +27,9 @@ public class HarmoniaKit : ModuleRules
                 "LyraGame", // For LyraGameplayAbility base class
                 "OnlineSubsystem",
                 "OnlineSubsystemUtils",
-                "CommonUI" // For UCommonActivatableWidget
+                "CommonUI", // For UCommonActivatableWidget
+                "NavigationSystem", // For waypoint pathfinding
+                "AIModule" // For AI navigation
                 // Note: RenderCore, RHI, ImageWrapper moved to HarmoniaEditor module
                 // These are only needed for editor map capture functionality
             });
