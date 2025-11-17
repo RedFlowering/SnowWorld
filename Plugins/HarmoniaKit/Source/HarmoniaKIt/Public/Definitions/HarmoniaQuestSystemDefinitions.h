@@ -86,6 +86,7 @@ enum class EQuestConditionType : uint8
 UENUM(BlueprintType)
 enum class EQuestRewardType : uint8
 {
+	None			UMETA(DisplayName = "None"),			// 없음
 	Experience		UMETA(DisplayName = "Experience"),		// 경험치
 	Gold			UMETA(DisplayName = "Gold"),			// 골드
 	Item			UMETA(DisplayName = "Item"),			// 아이템
@@ -272,7 +273,7 @@ struct FQuestReward
 
 	// Reward type
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
-	EQuestRewardType RewardType = EQuestRewardType::Experience;
+	EQuestRewardType RewardType = EQuestRewardType::None;
 
 	// Experience amount (for Experience reward)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest", meta = (ClampMin = "0"))
@@ -303,7 +304,7 @@ struct FQuestReward
 	FHarmoniaID QuestToUnlock = FHarmoniaID();
 
 	FQuestReward()
-		: RewardType(EQuestRewardType::Experience)
+		: RewardType(EQuestRewardType::None)
 		, ExperienceAmount(0)
 		, GoldAmount(0)
 		, ItemId()
