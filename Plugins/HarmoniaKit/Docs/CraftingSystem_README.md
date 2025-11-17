@@ -6,6 +6,8 @@ HarmoniaKit의 제작 시스템은 아이템 및 장비를 제작할 수 있는 
 
 **주요 기능:**
 - ✅ 레시피 기반 제작 시스템
+- ✅ **제작 스테이션/작업대 시스템** (대장간, 요리, 연금술 등)
+- ✅ **부위별 장비 시스템** (머리, 옷, 장갑, 신발, 가방, 악세사리 등)
 - ✅ 캐스팅 타임과 애니메이션 지원
 - ✅ 성공/실패/대성공 확률 시스템
 - ✅ 아이템 등급 시스템 (Common ~ Mythic)
@@ -14,6 +16,71 @@ HarmoniaKit의 제작 시스템은 아이템 및 장비를 제작할 수 있는 
 - ✅ 멀티플레이어 지원 (Replication)
 - ✅ 저장/로드 지원
 - ✅ 데이터 테이블 기반 설정
+
+---
+
+## 장비 시스템 (Equipment System)
+
+HarmoniaKit는 **완전한 부위별 장비 시스템**을 제공합니다!
+
+### 지원되는 장비 슬롯
+
+| 슬롯 | 용도 | 예시 |
+|------|------|------|
+| **Head** | 머리 | 투구, 모자, 헬멧 |
+| **Chest** | 상의/갑옷 | 갑옷, 셔츠, 조끼 |
+| **Legs** | 하의 | 바지, 각반, 레깅스 |
+| **Feet** | 신발 | 부츠, 신발, 장화 |
+| **Hands** | 장갑 | 장갑, 건틀릿 |
+| **Back** | 가방/망토 | 백팩, 망토, 케이프 |
+| **MainHand** | 주 무기 | 검, 도끼, 활 |
+| **OffHand** | 보조 무기/방패 | 방패, 단검, 토치 |
+| **Accessory1** | 악세사리 1 | 반지, 목걸이 |
+| **Accessory2** | 악세사리 2 | 반지, 귀걸이 |
+
+**사용법:**
+```cpp
+// 장비 장착 (블루프린트 또는 C++)
+EquipmentComponent->EquipItem(ItemId, EEquipmentSlot::Head);
+EquipmentComponent->EquipItem(ItemId, EEquipmentSlot::Chest);
+EquipmentComponent->EquipItem(ItemId, EEquipmentSlot::Hands);
+```
+
+---
+
+## 제작 스테이션 시스템 (Crafting Station System)
+
+각 레시피를 **특정 제작 스테이션(작업대)**에서만 제작할 수 있도록 설정할 수 있습니다!
+
+### 지원되는 제작 스테이션
+
+| 스테이션 | 용도 | 예시 레시피 |
+|----------|------|-------------|
+| **None** | 어디서나 (손 제작) | 간단한 도구, 횃불 |
+| **Anvil** | 대장간 모루 | 무기, 갑옷, 금속 도구 |
+| **Forge** | 용광로 | 금속 제련, 주조 |
+| **WorkBench** | 작업대 | 목공, 가구, 건축 |
+| **CookingPot** | 요리 냄비 | 요리, 스튜 |
+| **CampFire** | 캠프파이어 | 구운 고기, 간단한 요리 |
+| **AlchemyTable** | 연금술 테이블 | 포션, 엘릭서 |
+| **SewingTable** | 재봉틀 | 옷, 가방, 천 갑옷 |
+| **TanningRack** | 무두질 선반 | 가죽, 가죽 갑옷 |
+| **Loom** | 베틀 | 천, 옷감 |
+| **GrindStone** | 숫돌 | 무기 강화, 날 세우기 |
+| **Enchanting** | 마법 부여대 | 인챈트, 마법 부여 |
+| **Custom** | 커스텀 (태그 사용) | 게임플레이 태그로 지정 |
+
+**사용법:**
+```cpp
+// 작업대에 접근 시
+CraftingComponent->SetCurrentStation(ECraftingStationType::Anvil);
+
+// 작업대에서 벗어날 때
+CraftingComponent->ClearCurrentStation();
+
+// 현재 작업대에서 제작 가능한 레시피 조회
+TArray<FCraftingRecipeData> Recipes = CraftingComponent->GetRecipesForCurrentStation();
+```
 
 ---
 
@@ -84,6 +151,20 @@ float GetCraftingProgress();
 
 // 제작 중인지 확인
 bool IsCrafting();
+
+// ===== 제작 스테이션 관련 =====
+
+// 현재 제작 스테이션 설정
+void SetCurrentStation(ECraftingStationType StationType, FGameplayTagContainer StationTags = FGameplayTagContainer());
+
+// 제작 스테이션 해제 (손 제작으로 전환)
+void ClearCurrentStation();
+
+// 현재 스테이션 조회
+ECraftingStationType GetCurrentStation();
+
+// 현재 스테이션에서 제작 가능한 레시피 조회
+TArray<FCraftingRecipeData> GetRecipesForCurrentStation(FGameplayTag CategoryTag = FGameplayTag());
 ```
 
 **주요 이벤트 (Delegates):**
@@ -140,6 +221,8 @@ struct FCraftingRecipeData : public FTableRowBase
     // 요구 사항
     int32 RequiredLevel;                           // 필요 레벨
     int32 RequiredSkillLevel;                      // 필요 스킬 레벨
+    ECraftingStationType RequiredStation;          // 필요 제작 스테이션 (None = 어디서나 제작 가능)
+    FGameplayTagContainer RequiredStationTags;     // 필요 스테이션 태그 (Custom 타입용)
     bool bRequiresLearning;                        // 학습 필요 여부
 
     // 보상
@@ -204,6 +287,7 @@ struct FCraftingResultItem
    - `RecipeDataTable`: 레시피 데이터 테이블 선택
    - `GradeConfigDataTable`: 등급 설정 데이터 테이블 선택
    - `CategoryDataTable`: 카테고리 데이터 테이블 선택 (선택사항)
+   - `StationDataTable`: 제작 스테이션 데이터 테이블 선택 (선택사항)
 
 **C++에서:**
 ```cpp
@@ -270,21 +354,149 @@ FailureResults:
 
 RequiredLevel: 5
 RequiredSkillLevel: 0
+RequiredStation: Anvil  // 대장간 모루에서만 제작 가능
+RequiredStationTags: (Empty)
 bRequiresLearning: true
 ExperienceReward: 100
 ```
 
-### 3. 제작 시작 (블루프린트)
+**예시 레시피 (Bread - 손 제작):**
+```
+Row Name: Recipe_Bread
+RecipeId: Recipe_Bread
+RecipeName: "빵"
+RecipeDescription: "간단한 빵을 만듭니다."
+CategoryTags: Crafting.Category.Food
+
+RequiredMaterials:
+  [0]:
+    ItemId: Item_Wheat
+    Amount: 3
+    bConsumeOnCraft: true
+
+CastingTime: 2.0
+CraftingMontage: AM_Crafting_Cooking
+
+BaseSuccessChance: 1.0  // 100% 성공
+CriticalSuccessChance: 0.0
+
+SuccessResults:
+  [0]:
+    ItemId: Item_Bread
+    Amount: 1
+    Grade: Common
+    Probability: 1.0
+
+RequiredLevel: 1
+RequiredStation: None  // 어디서나 제작 가능 (손 제작)
+bRequiresLearning: false
+```
+
+**예시 레시피 (Health Potion - 연금술):**
+```
+Row Name: Recipe_HealthPotion
+RecipeId: Recipe_HealthPotion
+RecipeName: "체력 포션"
+RecipeDescription: "체력을 회복하는 포션을 만듭니다."
+CategoryTags: Crafting.Category.Alchemy
+
+RequiredMaterials:
+  [0]:
+    ItemId: Item_Herb
+    Amount: 2
+    bConsumeOnCraft: true
+  [1]:
+    ItemId: Item_WaterBottle
+    Amount: 1
+    bConsumeOnCraft: true
+
+CastingTime: 5.0
+CraftingMontage: AM_Crafting_Alchemy
+
+BaseSuccessChance: 0.85  // 85% 성공률
+CriticalSuccessChance: 0.15  // 15% 대성공률
+
+SuccessResults:
+  [0]:
+    ItemId: Item_HealthPotion
+    Amount: 1
+    Grade: Common
+    Probability: 1.0
+
+CriticalSuccessResults:
+  [0]:
+    ItemId: Item_HealthPotion
+    Amount: 2  // 대성공 시 2개 제작
+    Grade: Uncommon
+    Probability: 1.0
+
+RequiredLevel: 3
+RequiredStation: AlchemyTable  // 연금술 테이블에서만 제작 가능
+bRequiresLearning: true
+ExperienceReward: 50
+```
+
+### 3. 제작 스테이션 사용 (블루프린트)
+
+**작업대 접근 시:**
+```
+Event: OnInteract (대장간 모루)
+1. Get Crafting Component
+2. Call "Set Current Station" (StationType: Anvil)
+3. Open Crafting UI
+4. Call "Get Recipes For Current Station" → Update UI with recipes
+```
+
+**작업대에서 벗어날 때:**
+```
+Event: OnEndOverlap (대장간 모루)
+1. Get Crafting Component
+2. Call "Clear Current Station"
+3. Close Crafting UI
+```
+
+**예시 (C++):**
+```cpp
+// 작업대 액터 (예: 대장간 모루)
+void AAnvilStation::OnInteract(AActor* InteractingActor)
+{
+    ACharacter* Character = Cast<ACharacter>(InteractingActor);
+    if (!Character) return;
+
+    UHarmoniaCraftingComponent* CraftingComp = Character->FindComponentByClass<UHarmoniaCraftingComponent>();
+    if (CraftingComp)
+    {
+        CraftingComp->SetCurrentStation(ECraftingStationType::Anvil);
+        UE_LOG(LogTemp, Log, TEXT("Player is now using the Anvil"));
+    }
+}
+
+void AAnvilStation::OnEndInteract(AActor* InteractingActor)
+{
+    ACharacter* Character = Cast<ACharacter>(InteractingActor);
+    if (!Character) return;
+
+    UHarmoniaCraftingComponent* CraftingComp = Character->FindComponentByClass<UHarmoniaCraftingComponent>();
+    if (CraftingComp)
+    {
+        CraftingComp->ClearCurrentStation();
+        UE_LOG(LogTemp, Log, TEXT("Player left the Anvil"));
+    }
+}
+```
+
+### 4. 제작 시작 (블루프린트)
 
 ```
 Event Graph:
 1. Get Crafting Component
-2. Call "Can Craft Recipe" (RecipeId: Recipe_IronSword)
+2. Check Current Station (if recipe requires specific station)
+3. Call "Can Craft Recipe" (RecipeId: Recipe_IronSword)
    - Branch: If True
      - Call "Start Crafting" (RecipeId: Recipe_IronSword)
      - Display UI: "Crafting started..."
    - Branch: If False
-     - Display UI: "Cannot craft - missing materials or requirements"
+     - Display UI: "Cannot craft - missing materials/wrong station/requirements not met"
 ```
 
 ### 4. 제작 진행도 표시 (블루프린트)

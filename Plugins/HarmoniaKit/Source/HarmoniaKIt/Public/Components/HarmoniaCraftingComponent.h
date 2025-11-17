@@ -62,6 +62,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crafting|Config")
 	UDataTable* CategoryDataTable;
 
+	/** Station configuration data table */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crafting|Config")
+	UDataTable* StationDataTable;
+
 	//~==============================================
 	//~ Crafting State
 	//~==============================================
@@ -74,12 +78,23 @@ protected:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Crafting")
 	TArray<FHarmoniaID> LearnedRecipes;
 
+	/** Current crafting station type (None = hand crafting) */
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentStation, BlueprintReadOnly, Category = "Crafting")
+	ECraftingStationType CurrentStation;
+
+	/** Current station tags (for custom stations) */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Crafting")
+	FGameplayTagContainer CurrentStationTags;
+
 	/** Cached inventory component reference */
 	UPROPERTY()
 	UHarmoniaInventoryComponent* InventoryComponent;
 
 	UFUNCTION()
 	void OnRep_ActiveSession();
+
+	UFUNCTION()
+	void OnRep_CurrentStation();
 
 	//~==============================================
 	//~ Crafting Operations
@@ -142,6 +157,61 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, Category = "Crafting")
 	FActiveCraftingSession GetActiveCraftingSession() const { return ActiveSession; }
+
+	//~==============================================
+	//~ Crafting Station System
+	//~==============================================
+public:
+	/**
+	 * Set current crafting station
+	 * @param StationType - Type of station to use
+	 * @param StationTags - Additional tags for custom stations
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Crafting|Station")
+	void SetCurrentStation(ECraftingStationType StationType, FGameplayTagContainer StationTags = FGameplayTagContainer());
+
+	/**
+	 * Clear current crafting station (return to hand crafting)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Crafting|Station")
+	void ClearCurrentStation();
+
+	/**
+	 * Get current crafting station type
+	 */
+	UFUNCTION(BlueprintPure, Category = "Crafting|Station")
+	ECraftingStationType GetCurrentStation() const { return CurrentStation; }
+
+	/**
+	 * Check if currently at a crafting station
+	 */
+	UFUNCTION(BlueprintPure, Category = "Crafting|Station")
+	bool IsAtCraftingStation() const { return CurrentStation != ECraftingStationType::None; }
+
+	/**
+	 * Get station data
+	 * @param StationType - Station type to lookup
+	 * @param OutStationData - Output station data
+	 * @return True if station data was found
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Crafting|Station")
+	bool GetStationData(ECraftingStationType StationType, FCraftingStationData& OutStationData) const;
+
+	/**
+	 * Check if current station meets recipe requirements
+	 * @param RecipeData - Recipe to check
+	 * @return True if station requirements are met
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Crafting|Station")
+	bool CheckStationRequirement(const FCraftingRecipeData& RecipeData) const;
+
+	/**
+	 * Get all recipes available at current station
+	 * @param CategoryTag - Optional category filter
+	 * @return Array of recipe data
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Crafting|Station")
+	TArray<FCraftingRecipeData> GetRecipesForCurrentStation(FGameplayTag CategoryTag = FGameplayTag()) const;
 
 	//~==============================================
 	//~ Recipe Learning System

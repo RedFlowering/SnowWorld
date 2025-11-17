@@ -18,7 +18,9 @@ UHarmoniaCraftingComponent::UHarmoniaCraftingComponent()
 	RecipeDataTable = nullptr;
 	GradeConfigDataTable = nullptr;
 	CategoryDataTable = nullptr;
+	StationDataTable = nullptr;
 	InventoryComponent = nullptr;
+	CurrentStation = ECraftingStationType::None;
 }
 
 void UHarmoniaCraftingComponent::BeginPlay()
@@ -56,6 +58,8 @@ void UHarmoniaCraftingComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 
 	DOREPLIFETIME(UHarmoniaCraftingComponent, ActiveSession);
 	DOREPLIFETIME(UHarmoniaCraftingComponent, LearnedRecipes);
+	DOREPLIFETIME(UHarmoniaCraftingComponent, CurrentStation);
+	DOREPLIFETIME(UHarmoniaCraftingComponent, CurrentStationTags);
 }
 
 void UHarmoniaCraftingComponent::OnRep_ActiveSession()
@@ -76,6 +80,12 @@ void UHarmoniaCraftingComponent::OnRep_ActiveSession()
 			}
 		}
 	}
+}
+
+void UHarmoniaCraftingComponent::OnRep_CurrentStation()
+{
+	// Client-side notification when station changes
+	// Can be used for UI updates
 }
 
 //~==============================================
@@ -117,6 +127,14 @@ bool UHarmoniaCraftingComponent::StartCrafting(FHarmoniaID RecipeId)
 	if (!MeetsRecipeRequirements(RecipeData))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UHarmoniaCraftingComponent::StartCrafting - Player doesn't meet requirements for recipe: %s"), *RecipeId.ToString());
+		return false;
+	}
+
+	// Check if at correct crafting station
+	if (!CheckStationRequirement(RecipeData))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UHarmoniaCraftingComponent::StartCrafting - Wrong crafting station for recipe: %s (Requires: %d, Current: %d)"),
+			*RecipeId.ToString(), (int32)RecipeData.RequiredStation, (int32)CurrentStation);
 		return false;
 	}
 
@@ -635,6 +653,129 @@ bool UHarmoniaCraftingComponent::MeetsRecipeRequirements(const FCraftingRecipeDa
 	}
 
 	return true;
+}
+
+//~==============================================
+//~ Crafting Station System
+//~==============================================
+
+void UHarmoniaCraftingComponent::SetCurrentStation(ECraftingStationType StationType, FGameplayTagContainer StationTags)
+{
+	CurrentStation = StationType;
+	CurrentStationTags = StationTags;
+
+	UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::SetCurrentStation - Station set to: %d"), (int32)StationType);
+}
+
+void UHarmoniaCraftingComponent::ClearCurrentStation()
+{
+	CurrentStation = ECraftingStationType::None;
+	CurrentStationTags.Reset();
+
+	UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::ClearCurrentStation - Station cleared"));
+}
+
+bool UHarmoniaCraftingComponent::GetStationData(ECraftingStationType StationType, FCraftingStationData& OutStationData) const
+{
+	if (!StationDataTable)
+	{
+		return false;
+	}
+
+	// Find station data by row
+	TArray<FCraftingStationData*> AllStations;
+	StationDataTable->GetAllRows<FCraftingStationData>(TEXT("GetStationData"), AllStations);
+
+	for (FCraftingStationData* Station : AllStations)
+	{
+		if (Station && Station->StationType == StationType)
+		{
+			OutStationData = *Station;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool UHarmoniaCraftingComponent::CheckStationRequirement(const FCraftingRecipeData& RecipeData) const
+{
+	// If recipe doesn't require a station, it can be crafted anywhere
+	if (RecipeData.RequiredStation == ECraftingStationType::None)
+	{
+		return true;
+	}
+
+	// Check if current station matches required station
+	if (CurrentStation != RecipeData.RequiredStation)
+	{
+		return false;
+	}
+
+	// For custom stations, check tags
+	if (RecipeData.RequiredStation == ECraftingStationType::Custom)
+	{
+		if (RecipeData.RequiredStationTags.Num() > 0)
+		{
+			// Check if current station has all required tags
+			for (const FGameplayTag& RequiredTag : RecipeData.RequiredStationTags)
+			{
+				if (!CurrentStationTags.HasTag(RequiredTag))
+				{
+					return false;
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+TArray<FCraftingRecipeData> UHarmoniaCraftingComponent::GetRecipesForCurrentStation(FGameplayTag CategoryTag) const
+{
+	TArray<FCraftingRecipeData> AvailableRecipes;
+
+	if (!RecipeDataTable)
+	{
+		return AvailableRecipes;
+	}
+
+	// Get all recipes
+	TArray<FCraftingRecipeData*> AllRecipes;
+	RecipeDataTable->GetAllRows<FCraftingRecipeData>(TEXT("GetRecipesForCurrentStation"), AllRecipes);
+
+	for (FCraftingRecipeData* Recipe : AllRecipes)
+	{
+		if (!Recipe)
+		{
+			continue;
+		}
+
+		// Filter by station requirement
+		if (!CheckStationRequirement(*Recipe))
+		{
+			continue;
+		}
+
+		// Filter by category if specified
+		if (CategoryTag.IsValid())
+		{
+			if (!Recipe->CategoryTags.HasTag(CategoryTag))
+			{
+				continue;
+			}
+		}
+
+		// Check if recipe requires learning
+		if (Recipe->bRequiresLearning && !HasLearnedRecipe(Recipe->RecipeId))
+		{
+			continue;
+		}
+
+		AvailableRecipes.Add(*Recipe);
+	}
+
+	return AvailableRecipes;
 }
 
 //~==============================================

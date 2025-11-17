@@ -35,6 +35,29 @@ enum class ECraftingResult : uint8
 };
 
 /**
+ * Crafting station type
+ * Defines where a recipe can be crafted
+ */
+UENUM(BlueprintType)
+enum class ECraftingStationType : uint8
+{
+	None			UMETA(DisplayName = "None"),			// 어디서나 제작 가능 (손으로)
+	Anvil			UMETA(DisplayName = "Anvil"),			// 대장간 모루
+	Forge			UMETA(DisplayName = "Forge"),			// 용광로
+	WorkBench		UMETA(DisplayName = "Work Bench"),		// 작업대
+	CookingPot		UMETA(DisplayName = "Cooking Pot"),		// 요리 냄비
+	CampFire		UMETA(DisplayName = "Camp Fire"),		// 캠프파이어
+	AlchemyTable	UMETA(DisplayName = "Alchemy Table"),	// 연금술 테이블
+	SewingTable		UMETA(DisplayName = "Sewing Table"),	// 재봉틀
+	TanningRack		UMETA(DisplayName = "Tanning Rack"),	// 무두질 선반
+	Loom			UMETA(DisplayName = "Loom"),			// 베틀
+	GrindStone		UMETA(DisplayName = "Grind Stone"),		// 숫돌
+	Enchanting		UMETA(DisplayName = "Enchanting"),		// 마법 부여대
+	Custom			UMETA(DisplayName = "Custom"),			// 커스텀 (태그로 지정)
+	MAX				UMETA(Hidden)
+};
+
+/**
  * Item grade configuration (DataTable row)
  * Configures grade properties like color, stat multipliers, etc.
  */
@@ -66,6 +89,40 @@ struct FItemGradeConfig : public FTableRowBase
 	// Sell price multiplier for this grade
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Grade")
 	float PriceMultiplier = 1.0f;
+};
+
+/**
+ * Crafting station data (DataTable row)
+ * Defines properties of a crafting station
+ */
+USTRUCT(BlueprintType)
+struct FCraftingStationData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	// Station type
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Station")
+	ECraftingStationType StationType = ECraftingStationType::None;
+
+	// Station name
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Station")
+	FText StationName = FText();
+
+	// Station description
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Station")
+	FText StationDescription = FText();
+
+	// Station icon
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Station")
+	TSoftObjectPtr<UTexture2D> StationIcon = nullptr;
+
+	// Gameplay tags for custom stations
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Station")
+	FGameplayTagContainer StationTags;
+
+	// Interaction range (how close player needs to be)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Station")
+	float InteractionRange = 300.0f;
 };
 
 /**
@@ -201,6 +258,14 @@ struct FCraftingRecipeData : public FTableRowBase
 	// Required crafting skill level (if you have skill system)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Recipe|Requirements")
 	int32 RequiredSkillLevel = 0;
+
+	// Required crafting station type (None = can craft anywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Recipe|Requirements")
+	ECraftingStationType RequiredStation = ECraftingStationType::None;
+
+	// Required station tags (for Custom station type or additional filtering)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Recipe|Requirements")
+	FGameplayTagContainer RequiredStationTags;
 
 	// Experience gained on successful crafting
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Recipe|Rewards")
