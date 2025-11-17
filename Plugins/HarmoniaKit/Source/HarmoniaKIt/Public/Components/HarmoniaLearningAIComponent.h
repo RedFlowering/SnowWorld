@@ -9,6 +9,23 @@
 class AHarmoniaMonsterBase;
 
 /**
+ * Skill usage tracking entry
+ */
+USTRUCT(BlueprintType)
+struct FHarmoniaSkillUsageEntry
+{
+	GENERATED_BODY()
+
+	/** Skill name */
+	UPROPERTY()
+	FName SkillName;
+
+	/** Usage count */
+	UPROPERTY()
+	int32 UsageCount = 0;
+};
+
+/**
  * Player pattern data
  */
 USTRUCT(BlueprintType)
@@ -30,7 +47,7 @@ struct FHarmoniaPlayerPattern
 
 	/** Most frequently used abilities/skills */
 	UPROPERTY()
-	TMap<FName, int32> SkillUsageCount;
+	TArray<FHarmoniaSkillUsageEntry> SkillUsageData;
 
 	/** Combat encounters count */
 	UPROPERTY()
@@ -51,6 +68,23 @@ struct FHarmoniaPlayerPattern
 	/** Pattern confidence (0.0 - 1.0) */
 	UPROPERTY()
 	float Confidence = 0.0f;
+};
+
+/**
+ * Player pattern entry for replication
+ */
+USTRUCT(BlueprintType)
+struct FHarmoniaPlayerPatternEntry
+{
+	GENERATED_BODY()
+
+	/** Player actor */
+	UPROPERTY()
+	AActor* Player = nullptr;
+
+	/** Pattern data */
+	UPROPERTY()
+	FHarmoniaPlayerPattern Pattern;
 };
 
 /**
@@ -176,7 +210,7 @@ protected:
 
 	/** Learned patterns per player */
 	UPROPERTY(Replicated)
-	TMap<AActor*, FHarmoniaPlayerPattern> LearnedPatterns;
+	TArray<FHarmoniaPlayerPatternEntry> LearnedPatterns;
 
 	/** Current adaptive difficulty */
 	UPROPERTY(Replicated)

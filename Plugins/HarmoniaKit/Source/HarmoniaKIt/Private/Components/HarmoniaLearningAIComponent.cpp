@@ -117,15 +117,22 @@ void UHarmoniaLearningAIComponent::AnalyzePlayerMovement(float DeltaTime)
 			FVector CurrentPosition = PlayerActor->GetActorLocation();
 			FVector MovementDirection = (CurrentPosition - LastPosition).GetSafeNormal();
 
-			// Update pattern
-			if (!LearnedPatterns.Contains(PlayerActor))
+			// Find or create pattern
+			FHarmoniaPlayerPatternEntry* FoundEntry = LearnedPatterns.FindByPredicate([PlayerActor](const FHarmoniaPlayerPatternEntry& Entry)
 			{
-				FHarmoniaPlayerPattern NewPattern;
-				NewPattern.Player = PlayerActor;
-				LearnedPatterns.Add(PlayerActor, NewPattern);
+				return Entry.Player == PlayerActor;
+			});
+
+			if (!FoundEntry)
+			{
+				FHarmoniaPlayerPatternEntry NewEntry;
+				NewEntry.Player = PlayerActor;
+				NewEntry.Pattern.Player = PlayerActor;
+				LearnedPatterns.Add(NewEntry);
+				FoundEntry = &LearnedPatterns.Last();
 			}
 
-			FHarmoniaPlayerPattern& Pattern = LearnedPatterns[PlayerActor];
+			FHarmoniaPlayerPattern& Pattern = FoundEntry->Pattern;
 
 			// Update preferred dodge direction (weighted average)
 			if (!MovementDirection.IsNearlyZero())
@@ -142,12 +149,17 @@ void UHarmoniaLearningAIComponent::AnalyzePlayerMovement(float DeltaTime)
 
 void UHarmoniaLearningAIComponent::UpdatePatternConfidence(AActor* Player)
 {
-	if (!LearnedPatterns.Contains(Player))
+	FHarmoniaPlayerPatternEntry* FoundEntry = LearnedPatterns.FindByPredicate([Player](const FHarmoniaPlayerPatternEntry& Entry)
+	{
+		return Entry.Player == Player;
+	});
+
+	if (!FoundEntry)
 	{
 		return;
 	}
 
-	FHarmoniaPlayerPattern& Pattern = LearnedPatterns[Player];
+	FHarmoniaPlayerPattern& Pattern = FoundEntry->Pattern;
 
 	// Calculate confidence based on encounter count
 	int32 TotalEncounters = Pattern.EncounterCount;
@@ -171,14 +183,21 @@ void UHarmoniaLearningAIComponent::RecordPlayerDodge(AActor* Player, FVector Dod
 		return;
 	}
 
-	if (!LearnedPatterns.Contains(Player))
+	FHarmoniaPlayerPatternEntry* FoundEntry = LearnedPatterns.FindByPredicate([Player](const FHarmoniaPlayerPatternEntry& Entry)
 	{
-		FHarmoniaPlayerPattern NewPattern;
-		NewPattern.Player = Player;
-		LearnedPatterns.Add(Player, NewPattern);
+		return Entry.Player == Player;
+	});
+
+	if (!FoundEntry)
+	{
+		FHarmoniaPlayerPatternEntry NewEntry;
+		NewEntry.Player = Player;
+		NewEntry.Pattern.Player = Player;
+		LearnedPatterns.Add(NewEntry);
+		FoundEntry = &LearnedPatterns.Last();
 	}
 
-	FHarmoniaPlayerPattern& Pattern = LearnedPatterns[Player];
+	FHarmoniaPlayerPattern& Pattern = FoundEntry->Pattern;
 
 	// Update dodge direction with weighted average
 	Pattern.PreferredDodgeDirection = (Pattern.PreferredDodgeDirection * 0.7f + DodgeDirection * 0.3f).GetSafeNormal();
@@ -199,23 +218,38 @@ void UHarmoniaLearningAIComponent::RecordPlayerAttack(AActor* Player, FName Abil
 		return;
 	}
 
-	if (!LearnedPatterns.Contains(Player))
+	FHarmoniaPlayerPatternEntry* FoundEntry = LearnedPatterns.FindByPredicate([Player](const FHarmoniaPlayerPatternEntry& Entry)
 	{
-		FHarmoniaPlayerPattern NewPattern;
-		NewPattern.Player = Player;
-		LearnedPatterns.Add(Player, NewPattern);
+		return Entry.Player == Player;
+	});
+
+	if (!FoundEntry)
+	{
+		FHarmoniaPlayerPatternEntry NewEntry;
+		NewEntry.Player = Player;
+		NewEntry.Pattern.Player = Player;
+		LearnedPatterns.Add(NewEntry);
+		FoundEntry = &LearnedPatterns.Last();
 	}
 
-	FHarmoniaPlayerPattern& Pattern = LearnedPatterns[Player];
+	FHarmoniaPlayerPattern& Pattern = FoundEntry->Pattern;
 
 	// Record skill usage
-	if (Pattern.SkillUsageCount.Contains(AbilityName))
+	FHarmoniaSkillUsageEntry* SkillEntry = Pattern.SkillUsageData.FindByPredicate([AbilityName](const FHarmoniaSkillUsageEntry& Entry)
 	{
-		Pattern.SkillUsageCount[AbilityName]++;
+		return Entry.SkillName == AbilityName;
+	});
+
+	if (SkillEntry)
+	{
+		SkillEntry->UsageCount++;
 	}
 	else
 	{
-		Pattern.SkillUsageCount.Add(AbilityName, 1);
+		FHarmoniaSkillUsageEntry NewSkillEntry;
+		NewSkillEntry.SkillName = AbilityName;
+		NewSkillEntry.UsageCount = 1;
+		Pattern.SkillUsageData.Add(NewSkillEntry);
 	}
 
 	// Calculate attack interval
@@ -244,14 +278,21 @@ void UHarmoniaLearningAIComponent::RecordCombatResult(AActor* Player, bool bPlay
 		return;
 	}
 
-	if (!LearnedPatterns.Contains(Player))
+	FHarmoniaPlayerPatternEntry* FoundEntry = LearnedPatterns.FindByPredicate([Player](const FHarmoniaPlayerPatternEntry& Entry)
 	{
-		FHarmoniaPlayerPattern NewPattern;
-		NewPattern.Player = Player;
-		LearnedPatterns.Add(Player, NewPattern);
+		return Entry.Player == Player;
+	});
+
+	if (!FoundEntry)
+	{
+		FHarmoniaPlayerPatternEntry NewEntry;
+		NewEntry.Player = Player;
+		NewEntry.Pattern.Player = Player;
+		LearnedPatterns.Add(NewEntry);
+		FoundEntry = &LearnedPatterns.Last();
 	}
 
-	FHarmoniaPlayerPattern& Pattern = LearnedPatterns[Player];
+	FHarmoniaPlayerPattern& Pattern = FoundEntry->Pattern;
 
 	Pattern.EncounterCount++;
 
@@ -275,9 +316,14 @@ void UHarmoniaLearningAIComponent::RecordCombatResult(AActor* Player, bool bPlay
 
 FHarmoniaPlayerPattern UHarmoniaLearningAIComponent::GetPlayerPattern(AActor* Player) const
 {
-	if (LearnedPatterns.Contains(Player))
+	const FHarmoniaPlayerPatternEntry* FoundEntry = LearnedPatterns.FindByPredicate([Player](const FHarmoniaPlayerPatternEntry& Entry)
 	{
-		return LearnedPatterns[Player];
+		return Entry.Player == Player;
+	});
+
+	if (FoundEntry)
+	{
+		return FoundEntry->Pattern;
 	}
 
 	return FHarmoniaPlayerPattern();
@@ -285,12 +331,17 @@ FHarmoniaPlayerPattern UHarmoniaLearningAIComponent::GetPlayerPattern(AActor* Pl
 
 FVector UHarmoniaLearningAIComponent::PredictPlayerDodgeDirection(AActor* Player) const
 {
-	if (!LearnedPatterns.Contains(Player))
+	const FHarmoniaPlayerPatternEntry* FoundEntry = LearnedPatterns.FindByPredicate([Player](const FHarmoniaPlayerPatternEntry& Entry)
+	{
+		return Entry.Player == Player;
+	});
+
+	if (!FoundEntry)
 	{
 		return FVector::ZeroVector;
 	}
 
-	const FHarmoniaPlayerPattern& Pattern = LearnedPatterns[Player];
+	const FHarmoniaPlayerPattern& Pattern = FoundEntry->Pattern;
 
 	// Only predict if confidence is high enough
 	if (Pattern.Confidence < 0.5f)
@@ -303,12 +354,17 @@ FVector UHarmoniaLearningAIComponent::PredictPlayerDodgeDirection(AActor* Player
 
 float UHarmoniaLearningAIComponent::GetOptimalAttackTiming(AActor* Player) const
 {
-	if (!LearnedPatterns.Contains(Player))
+	const FHarmoniaPlayerPatternEntry* FoundEntry = LearnedPatterns.FindByPredicate([Player](const FHarmoniaPlayerPatternEntry& Entry)
+	{
+		return Entry.Player == Player;
+	});
+
+	if (!FoundEntry)
 	{
 		return 2.0f; // Default
 	}
 
-	const FHarmoniaPlayerPattern& Pattern = LearnedPatterns[Player];
+	const FHarmoniaPlayerPattern& Pattern = FoundEntry->Pattern;
 
 	// Attack slightly before player's average attack interval
 	// This creates pressure and interrupts player rhythm
@@ -332,12 +388,12 @@ void UHarmoniaLearningAIComponent::AdjustDifficulty()
 	AActor* PrimaryPlayer = nullptr;
 	int32 MaxEncounters = 0;
 
-	for (const auto& Pair : LearnedPatterns)
+	for (const FHarmoniaPlayerPatternEntry& Entry : LearnedPatterns)
 	{
-		if (Pair.Value.EncounterCount > MaxEncounters)
+		if (Entry.Pattern.EncounterCount > MaxEncounters)
 		{
-			MaxEncounters = Pair.Value.EncounterCount;
-			PrimaryPlayer = Pair.Key;
+			MaxEncounters = Entry.Pattern.EncounterCount;
+			PrimaryPlayer = Entry.Player;
 		}
 	}
 
@@ -377,12 +433,17 @@ void UHarmoniaLearningAIComponent::AdjustDifficulty()
 
 float UHarmoniaLearningAIComponent::CalculatePlayerWinRate(AActor* Player) const
 {
-	if (!LearnedPatterns.Contains(Player))
+	const FHarmoniaPlayerPatternEntry* FoundEntry = LearnedPatterns.FindByPredicate([Player](const FHarmoniaPlayerPatternEntry& Entry)
+	{
+		return Entry.Player == Player;
+	});
+
+	if (!FoundEntry)
 	{
 		return 0.5f;
 	}
 
-	const FHarmoniaPlayerPattern& Pattern = LearnedPatterns[Player];
+	const FHarmoniaPlayerPattern& Pattern = FoundEntry->Pattern;
 
 	int32 TotalBattles = Pattern.PlayerDeathCount + Pattern.MonsterDeathCount;
 	if (TotalBattles == 0)

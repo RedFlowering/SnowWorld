@@ -23,11 +23,11 @@ void UHarmoniaLearningAISaveGame::AddOrUpdatePattern(const FString& PlayerID, co
 		ExistingPattern->PreferredDodgeDirection = Pattern.PreferredDodgeDirection;
 		ExistingPattern->AverageAttackInterval = Pattern.AverageAttackInterval;
 
-		// Convert skill usage map
+		// Convert skill usage array to map
 		ExistingPattern->SkillUsageCount.Empty();
-		for (const auto& Pair : Pattern.SkillUsageCount)
+		for (const FHarmoniaSkillUsageEntry& Entry : Pattern.SkillUsageData)
 		{
-			ExistingPattern->SkillUsageCount.Add(Pair.Key.ToString(), Pair.Value);
+			ExistingPattern->SkillUsageCount.Add(Entry.SkillName.ToString(), Entry.UsageCount);
 		}
 
 		ExistingPattern->EncounterCount = Pattern.EncounterCount;
@@ -46,10 +46,10 @@ void UHarmoniaLearningAISaveGame::AddOrUpdatePattern(const FString& PlayerID, co
 		NewPattern.PreferredDodgeDirection = Pattern.PreferredDodgeDirection;
 		NewPattern.AverageAttackInterval = Pattern.AverageAttackInterval;
 
-		// Convert skill usage map
-		for (const auto& Pair : Pattern.SkillUsageCount)
+		// Convert skill usage array to map
+		for (const FHarmoniaSkillUsageEntry& Entry : Pattern.SkillUsageData)
 		{
-			NewPattern.SkillUsageCount.Add(Pair.Key.ToString(), Pair.Value);
+			NewPattern.SkillUsageCount.Add(Entry.SkillName.ToString(), Entry.UsageCount);
 		}
 
 		NewPattern.EncounterCount = Pattern.EncounterCount;
