@@ -49,6 +49,30 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	int32 GetTotalCount(const FHarmoniaID& ItemID) const;
 
+	// ============================================================================
+	// Internal Operations (Server-only, for plugin-internal use)
+	// WARNING: Do not call these directly from blueprints or client code!
+	// Use Request* functions instead for proper server validation.
+	// ============================================================================
+
+	/**
+	 * Add item to inventory (Server-only, internal use)
+	 * NOTE: Only call from plugin-internal code (Crafting, Building, Quest systems)
+	 */
+	bool AddItem(const FHarmoniaID& ItemID, int32 Count, float Durability);
+
+	/**
+	 * Remove item from inventory (Server-only, internal use)
+	 * NOTE: Only call from plugin-internal code (Crafting, Building, Quest systems)
+	 */
+	bool RemoveItem(const FHarmoniaID& ItemID, int32 Count, float Durability);
+
+	/**
+	 * Swap two inventory slots (Server-only, internal use)
+	 * NOTE: Only call from plugin-internal code (UI widgets with proper validation)
+	 */
+	void SwapSlots(int32 SlotA, int32 SlotB);
+
 protected:
 	void PickupItem(AHarmoniaItemActor* Item);
 
@@ -60,18 +84,11 @@ protected:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerDropItem(int32 SlotIndex);
 
-	// Server-authoritative inventory operations
-	bool AddItem(const FHarmoniaID& ItemID, int32 Count, float Durability);
-
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerAddItem(const FHarmoniaID& ItemID, int32 Count, float Durability);
 
-	bool RemoveItem(const FHarmoniaID& ItemID, int32 Count, float Durability);
-
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRemoveItem(const FHarmoniaID& ItemID, int32 Count, float Durability);
-
-	void SwapSlots(int32 SlotA, int32 SlotB);
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerSwapSlots(int32 SlotA, int32 SlotB);

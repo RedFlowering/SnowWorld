@@ -499,11 +499,17 @@ void UHarmoniaEquipmentComponent::ApplyStatModifiers(const FEquipmentData& Equip
 		{
 			ModOp = EGameplayModOp::Additive;
 		}
-		else if (Modifier.ModifierType == EStatModifierType::Percentage)
+			else if (Modifier.ModifierType == EStatModifierType::Percentage)
 		{
-			ModOp = EGameplayModOp::Multiplicative;
-			// Convert percentage to multiplier (e.g., 10% = 0.1)
-			ModifierMagnitude = Modifier.Value / 100.0f;
+			// Note: Using Additive for percentage modifiers
+			// The magnitude is converted from percentage to actual value based on current attribute
+			// Example: 10% bonus on 100 HP = 100 * (10/100) = 10 HP (additive)
+			ModOp = EGameplayModOp::Additive;
+
+			// Get current attribute value to calculate percentage
+			float CurrentValue = ASC->GetNumericAttribute(Attribute);
+			// Calculate actual value from percentage
+			ModifierMagnitude = CurrentValue * (Modifier.Value / 100.0f);
 		}
 		else if (Modifier.ModifierType == EStatModifierType::Override)
 		{

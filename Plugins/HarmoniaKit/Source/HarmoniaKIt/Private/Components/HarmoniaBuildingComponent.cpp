@@ -327,7 +327,7 @@ bool UHarmoniaBuildingComponent::ValidatePlacement(FVector& OutLocation, FRotato
 			float MinDistance = (PartData->BoundsExtent.X + PartData->BoundsExtent.Y) * 0.5f;
 
 			// 기존 건축물과의 충돌 검사
-			bool bHasOverlap = InstanceManager->CheckBuildingOverlap(OutLocation, OutRotation, PartData->BoundsExtent, MinDistance);
+			bool bHasOverlap = InstanceManager->CheckBuildingOverlap(OutLocation, OutRotation, PartData->BoundsExtent, PartData->PartType, MinDistance);
 
 			if (bHasOverlap)
 			{

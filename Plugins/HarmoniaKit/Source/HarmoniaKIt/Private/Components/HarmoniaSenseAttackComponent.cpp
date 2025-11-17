@@ -126,11 +126,14 @@ bool UHarmoniaSenseAttackComponent::ServerStartAttack_Validate(const FHarmoniaAt
 		return false;
 	}
 
-	// Validate attack range
-	if (InAttackData.TraceConfig.TraceRange < 0.0f || InAttackData.TraceConfig.TraceRange > 10000.0f)
+	// Validate attack trace extent
+	const FVector& TraceExtent = InAttackData.TraceConfig.TraceExtent;
+	if (TraceExtent.X < 0.0f || TraceExtent.X > 10000.0f ||
+		TraceExtent.Y < 0.0f || TraceExtent.Y > 10000.0f ||
+		TraceExtent.Z < 0.0f || TraceExtent.Z > 10000.0f)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartAttack: Invalid trace range %.1f"),
-			InAttackData.TraceConfig.TraceRange);
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartAttack: Invalid trace extent (%.1f, %.1f, %.1f)"),
+			TraceExtent.X, TraceExtent.Y, TraceExtent.Z);
 		return false;
 	}
 
