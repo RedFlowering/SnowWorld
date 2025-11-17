@@ -15,6 +15,178 @@ class UAnimMontage;
 class UBehaviorTree;
 
 // ============================================================================
+// Faction System
+// ============================================================================
+
+/**
+ * Monster Faction/Team
+ * Determines which actors are allies, enemies, or neutral
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaMonsterFaction : uint8
+{
+	/**
+	 * Neutral - Does not attack anyone unless attacked first
+	 * Examples: Wildlife, passive creatures
+	 */
+	Neutral UMETA(DisplayName = "Neutral"),
+
+	/**
+	 * Player Hostile - Attacks players on sight
+	 * Examples: Standard enemy monsters
+	 */
+	PlayerHostile UMETA(DisplayName = "Player Hostile"),
+
+	/**
+	 * Player Friendly - Helps players, attacks enemies
+	 * Examples: Allied NPCs, summoned creatures
+	 */
+	PlayerFriendly UMETA(DisplayName = "Player Friendly"),
+
+	/**
+	 * Monster - Other monsters of same faction (typically don't attack each other)
+	 * Examples: Goblin tribe, Undead legion
+	 */
+	Monster1 UMETA(DisplayName = "Monster Faction 1"),
+	Monster2 UMETA(DisplayName = "Monster Faction 2"),
+	Monster3 UMETA(DisplayName = "Monster Faction 3"),
+	Monster4 UMETA(DisplayName = "Monster Faction 4"),
+
+	/**
+	 * Custom factions for specific use cases
+	 */
+	Custom1 UMETA(DisplayName = "Custom Faction 1"),
+	Custom2 UMETA(DisplayName = "Custom Faction 2"),
+	Custom3 UMETA(DisplayName = "Custom Faction 3")
+};
+
+/**
+ * Faction Relationship
+ * Defines how a faction reacts to another faction
+ */
+UENUM(BlueprintType)
+enum class EFactionRelationship : uint8
+{
+	/** Treat as friend, won't attack */
+	Friendly UMETA(DisplayName = "Friendly"),
+
+	/** Ignore unless provoked */
+	Neutral UMETA(DisplayName = "Neutral"),
+
+	/** Attack on sight */
+	Hostile UMETA(DisplayName = "Hostile")
+};
+
+/**
+ * Faction Settings
+ * Configures faction behavior and relationships
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaFactionSettings
+{
+	GENERATED_BODY()
+
+	/** This monster's faction */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Faction")
+	EHarmoniaMonsterFaction Faction = EHarmoniaMonsterFaction::PlayerHostile;
+
+	/**
+	 * Can attack members of same faction
+	 * Useful for free-for-all scenarios or boss minions
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Faction")
+	bool bCanAttackSameFaction = false;
+
+	/**
+	 * Retaliate when attacked, even by normally friendly factions
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Faction")
+	bool bRetaliateWhenAttacked = true;
+
+	/**
+	 * Help allies of same faction when they're attacked
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Faction")
+	bool bDefendAllies = true;
+
+	/**
+	 * Custom faction relationships (overrides default behavior)
+	 * Key: Faction, Value: Relationship
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Faction")
+	TMap<EHarmoniaMonsterFaction, EFactionRelationship> CustomRelationships;
+
+	/**
+	 * Get relationship with another faction
+	 */
+	EFactionRelationship GetRelationshipWith(EHarmoniaMonsterFaction OtherFaction) const
+	{
+		// Check custom relationships first
+		if (const EFactionRelationship* CustomRelation = CustomRelationships.Find(OtherFaction))
+		{
+			return *CustomRelation;
+		}
+
+		// Default relationship logic
+		if (Faction == OtherFaction)
+		{
+			return bCanAttackSameFaction ? EFactionRelationship::Neutral : EFactionRelationship::Friendly;
+		}
+
+		// Player Friendly is hostile to Player Hostile
+		if (Faction == EHarmoniaMonsterFaction::PlayerFriendly && OtherFaction == EHarmoniaMonsterFaction::PlayerHostile)
+		{
+			return EFactionRelationship::Hostile;
+		}
+
+		// Player Hostile is hostile to Player Friendly
+		if (Faction == EHarmoniaMonsterFaction::PlayerHostile && OtherFaction == EHarmoniaMonsterFaction::PlayerFriendly)
+		{
+			return EFactionRelationship::Hostile;
+		}
+
+		// Monster factions are neutral to each other by default
+		if ((Faction >= EHarmoniaMonsterFaction::Monster1 && Faction <= EHarmoniaMonsterFaction::Monster4) &&
+			(OtherFaction >= EHarmoniaMonsterFaction::Monster1 && OtherFaction <= EHarmoniaMonsterFaction::Monster4))
+		{
+			return EFactionRelationship::Neutral;
+		}
+
+		// Neutral is neutral to everyone
+		if (Faction == EHarmoniaMonsterFaction::Neutral)
+		{
+			return EFactionRelationship::Neutral;
+		}
+
+		// Default: Neutral
+		return EFactionRelationship::Neutral;
+	}
+
+	/**
+	 * Can this faction attack the other faction?
+	 */
+	bool CanAttack(EHarmoniaMonsterFaction OtherFaction) const
+	{
+		EFactionRelationship Relationship = GetRelationshipWith(OtherFaction);
+		return Relationship == EFactionRelationship::Hostile;
+	}
+
+	/**
+	 * Should help the other faction?
+	 */
+	bool ShouldHelp(EHarmoniaMonsterFaction OtherFaction) const
+	{
+		if (!bDefendAllies)
+		{
+			return false;
+		}
+
+		EFactionRelationship Relationship = GetRelationshipWith(OtherFaction);
+		return Relationship == EFactionRelationship::Friendly;
+	}
+};
+
+// ============================================================================
 // Loot System
 // ============================================================================
 
@@ -374,6 +546,10 @@ public:
 	// Aggro type
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
 	EHarmoniaMonsterAggroType AggroType = EHarmoniaMonsterAggroType::Neutral;
+
+	// Faction settings (determines allies and enemies)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Faction")
+	FHarmoniaFactionSettings FactionSettings;
 
 	// Aggro range (how far the monster can detect players)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")

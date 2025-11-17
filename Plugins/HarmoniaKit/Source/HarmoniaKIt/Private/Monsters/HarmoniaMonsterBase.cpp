@@ -751,14 +751,8 @@ AActor* AHarmoniaMonsterBase::SelectBestTarget() const
 
 	AActor* BestTarget = BestTargetInfo.TargetActor;
 
-	// Validate target (don't target other monsters or invalid pawns)
+	// Validate target
 	if (!BestTarget)
-	{
-		return nullptr;
-	}
-
-	// Don't target other monsters (for now - could add faction system)
-	if (BestTarget->Implements<UHarmoniaMonsterInterface>())
 	{
 		return nullptr;
 	}
@@ -768,6 +762,40 @@ AActor* AHarmoniaMonsterBase::SelectBestTarget() const
 	if (!TargetPawn || !TargetPawn->GetController())
 	{
 		return nullptr;
+	}
+
+	// Faction-based targeting (check if target is another monster)
+	if (BestTarget->Implements<UHarmoniaMonsterInterface>())
+	{
+		// If target is a monster, check faction
+		if (MonsterData)
+		{
+			// Get target's faction
+			UHarmoniaMonsterData* TargetMonsterData = IHarmoniaMonsterInterface::Execute_GetMonsterData(BestTarget);
+			if (TargetMonsterData)
+			{
+				// Check faction relationship
+				const FHarmoniaFactionSettings& MyFaction = MonsterData->FactionSettings;
+				const FHarmoniaFactionSettings& TargetFaction = TargetMonsterData->FactionSettings;
+
+				// Can we attack this faction?
+				if (!MyFaction.CanAttack(TargetFaction.Faction))
+				{
+					// Not hostile, skip this target
+					return nullptr;
+				}
+			}
+			else
+			{
+				// No faction data, assume neutral (don't attack)
+				return nullptr;
+			}
+		}
+		else
+		{
+			// No faction data, assume neutral (don't attack other monsters)
+			return nullptr;
+		}
 	}
 
 	return BestTarget;
