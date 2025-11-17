@@ -97,6 +97,70 @@ enum class EQuestRewardType : uint8
 };
 
 /**
+ * Quest marker type
+ * Visual indicators for quest objectives
+ */
+UENUM(BlueprintType)
+enum class EQuestMarkerType : uint8
+{
+	Objective		UMETA(DisplayName = "Objective"),		// 주요 목표
+	Optional		UMETA(DisplayName = "Optional"),		// 선택 목표
+	Discover		UMETA(DisplayName = "Discover"),		// 탐험 지점
+	Deliver			UMETA(DisplayName = "Deliver"),			// 전달 지점
+	Talk			UMETA(DisplayName = "Talk"),			// 대화 NPC
+	Gather			UMETA(DisplayName = "Gather"),			// 채집 지점
+	Custom			UMETA(DisplayName = "Custom"),			// 커스텀
+	MAX				UMETA(Hidden)
+};
+
+/**
+ * Quest fail condition type
+ */
+UENUM(BlueprintType)
+enum class EQuestFailConditionType : uint8
+{
+	None			UMETA(DisplayName = "None"),			// 없음
+	TimeLimit		UMETA(DisplayName = "Time Limit"),		// 시간 제한
+	NPCDied			UMETA(DisplayName = "NPC Died"),		// NPC 사망
+	ItemLost		UMETA(DisplayName = "Item Lost"),		// 아이템 손실
+	LocationLeft	UMETA(DisplayName = "Location Left"),	// 지역 이탈
+	PlayerDied		UMETA(DisplayName = "Player Died"),		// 플레이어 사망
+	Custom			UMETA(DisplayName = "Custom"),			// 커스텀 조건
+	MAX				UMETA(Hidden)
+};
+
+/**
+ * Quest event trigger type
+ */
+UENUM(BlueprintType)
+enum class EQuestEventTrigger : uint8
+{
+	OnStart			UMETA(DisplayName = "On Start"),		// 퀘스트 시작 시
+	OnComplete		UMETA(DisplayName = "On Complete"),		// 퀘스트 완료 시
+	OnFail			UMETA(DisplayName = "On Fail"),			// 퀘스트 실패 시
+	OnAbandon		UMETA(DisplayName = "On Abandon"),		// 퀘스트 포기 시
+	OnPhaseChange	UMETA(DisplayName = "On Phase Change"),	// 단계 변경 시
+	OnObjectiveComplete UMETA(DisplayName = "On Objective Complete"), // 목표 완료 시
+	MAX				UMETA(Hidden)
+};
+
+/**
+ * Quest notification type
+ */
+UENUM(BlueprintType)
+enum class EQuestNotificationType : uint8
+{
+	QuestAdded		UMETA(DisplayName = "Quest Added"),			// 퀘스트 추가
+	QuestStarted	UMETA(DisplayName = "Quest Started"),		// 퀘스트 시작
+	QuestCompleted	UMETA(DisplayName = "Quest Completed"),		// 퀘스트 완료
+	QuestFailed		UMETA(DisplayName = "Quest Failed"),		// 퀘스트 실패
+	ObjectiveComplete UMETA(DisplayName = "Objective Complete"),// 목표 완료
+	PhaseComplete	UMETA(DisplayName = "Phase Complete"),		// 단계 완료
+	HintShown		UMETA(DisplayName = "Hint Shown"),			// 힌트 표시
+	MAX				UMETA(Hidden)
+};
+
+/**
  * Quest objective data
  * Represents a single objective within a quest
  */
@@ -137,6 +201,10 @@ struct FQuestObjective
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
 	bool bHidden = false;
 
+	// Whether this is a bonus objective (optional but gives extra rewards)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	bool bBonus = false;
+
 	// Location (for Reach, Defend, Discover objectives)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
 	FVector TargetLocation = FVector::ZeroVector;
@@ -144,6 +212,10 @@ struct FQuestObjective
 	// Radius for location-based objectives
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest", meta = (ClampMin = "0.0"))
 	float LocationRadius = 500.0f;
+
+	// Target actor reference (for dynamic targets like NPCs)
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	TWeakObjectPtr<AActor> TargetActor = nullptr;
 
 	FQuestObjective()
 		: ObjectiveType(EQuestObjectiveType::Kill)
@@ -154,8 +226,10 @@ struct FQuestObjective
 		, CurrentCount(0)
 		, bOptional(false)
 		, bHidden(false)
+		, bBonus(false)
 		, TargetLocation(FVector::ZeroVector)
 		, LocationRadius(500.0f)
+		, TargetActor(nullptr)
 	{}
 
 	// Check if objective is completed
@@ -217,6 +291,299 @@ struct FQuestCondition
 		, RequiredItemAmount(1)
 		, RequiredTags()
 		, RequiredRecipeId()
+	{}
+};
+
+/**
+ * Quest marker data
+ * Visual indicator for quest objectives on map/compass
+ */
+USTRUCT(BlueprintType)
+struct FQuestMarker
+{
+	GENERATED_BODY()
+
+	// Marker type
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	EQuestMarkerType MarkerType = EQuestMarkerType::Objective;
+
+	// World location
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FVector WorldLocation = FVector::ZeroVector;
+
+	// Target actor (dynamic marker that follows actor)
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	TWeakObjectPtr<AActor> TargetActor = nullptr;
+
+	// Whether to show distance to marker
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	bool bShowDistance = true;
+
+	// Marker icon (optional, can be set by marker type)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	TSoftObjectPtr<UTexture2D> MarkerIcon = nullptr;
+
+	// Marker color
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FLinearColor MarkerColor = FLinearColor::Yellow;
+
+	FQuestMarker()
+		: MarkerType(EQuestMarkerType::Objective)
+		, WorldLocation(FVector::ZeroVector)
+		, TargetActor(nullptr)
+		, bShowDistance(true)
+		, MarkerIcon(nullptr)
+		, MarkerColor(FLinearColor::Yellow)
+	{}
+};
+
+/**
+ * Quest dialogue data
+ * Dialogue lines for quest NPCs
+ */
+USTRUCT(BlueprintType)
+struct FQuestDialogue
+{
+	GENERATED_BODY()
+
+	// Dialogue when accepting quest
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	TArray<FText> StartDialogues;
+
+	// Dialogue when quest is in progress (talking to quest giver again)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	TArray<FText> InProgressDialogues;
+
+	// Dialogue when ready to complete quest
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	TArray<FText> ReadyToCompleteDialogues;
+
+	// Dialogue when completing quest
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	TArray<FText> CompletionDialogues;
+
+	// Dialogue when quest failed
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	TArray<FText> FailureDialogues;
+
+	FQuestDialogue()
+		: StartDialogues()
+		, InProgressDialogues()
+		, ReadyToCompleteDialogues()
+		, CompletionDialogues()
+		, FailureDialogues()
+	{}
+};
+
+/**
+ * Quest hint data
+ * Hints shown to player when stuck
+ */
+USTRUCT(BlueprintType)
+struct FQuestHint
+{
+	GENERATED_BODY()
+
+	// Hint text
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FText HintText = FText();
+
+	// Delay before showing hint (seconds since quest start or last progress)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest", meta = (ClampMin = "0.0"))
+	float DelayBeforeShowing = 30.0f;
+
+	// Optional hint location (to show marker)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FVector HintLocation = FVector::ZeroVector;
+
+	// Whether hint has a location marker
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	bool bHasLocation = false;
+
+	// Whether hint was shown
+	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	bool bShown = false;
+
+	FQuestHint()
+		: HintText()
+		, DelayBeforeShowing(30.0f)
+		, HintLocation(FVector::ZeroVector)
+		, bHasLocation(false)
+		, bShown(false)
+	{}
+};
+
+/**
+ * Dynamic objective count
+ * Allows objective count to scale with player level or party size
+ */
+USTRUCT(BlueprintType)
+struct FDynamicObjectiveCount
+{
+	GENERATED_BODY()
+
+	// Base count
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest", meta = (ClampMin = "1"))
+	int32 BaseCount = 10;
+
+	// Additional count per player level
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	float CountPerLevel = 0.0f;
+
+	// Additional count per party member
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	float CountPerPartyMember = 0.0f;
+
+	// Maximum count (0 = no limit)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest", meta = (ClampMin = "0"))
+	int32 MaxCount = 0;
+
+	FDynamicObjectiveCount()
+		: BaseCount(10)
+		, CountPerLevel(0.0f)
+		, CountPerPartyMember(0.0f)
+		, MaxCount(0)
+	{}
+
+	// Calculate actual count
+	int32 CalculateCount(int32 PlayerLevel, int32 PartySize) const
+	{
+		float Total = BaseCount;
+		Total += CountPerLevel * PlayerLevel;
+		Total += CountPerPartyMember * FMath::Max(0, PartySize - 1); // Don't count self
+
+		int32 Result = FMath::RoundToInt(Total);
+
+		if (MaxCount > 0)
+		{
+			Result = FMath::Min(Result, MaxCount);
+		}
+
+		return FMath::Max(1, Result);
+	}
+};
+
+/**
+ * Quest fail condition
+ * Conditions that cause quest to fail
+ */
+USTRUCT(BlueprintType)
+struct FQuestFailCondition
+{
+	GENERATED_BODY()
+
+	// Fail condition type
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	EQuestFailConditionType ConditionType = EQuestFailConditionType::None;
+
+	// Target ID (NPC ID for NPCDied, Item ID for ItemLost, etc.)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FHarmoniaID TargetId = FHarmoniaID();
+
+	// Failure message shown to player
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FText FailureMessage = FText();
+
+	// Location (for LocationLeft condition)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FVector FailLocation = FVector::ZeroVector;
+
+	// Radius (for LocationLeft condition)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest", meta = (ClampMin = "0.0"))
+	float FailRadius = 1000.0f;
+
+	FQuestFailCondition()
+		: ConditionType(EQuestFailConditionType::None)
+		, TargetId()
+		, FailureMessage()
+		, FailLocation(FVector::ZeroVector)
+		, FailRadius(1000.0f)
+	{}
+};
+
+/**
+ * Quest event
+ * Events triggered by quest state changes
+ */
+USTRUCT(BlueprintType)
+struct FQuestEvent
+{
+	GENERATED_BODY()
+
+	// When to trigger event
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	EQuestEventTrigger TriggerType = EQuestEventTrigger::OnStart;
+
+	// Actor class to spawn
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	TSubclassOf<AActor> ActorToSpawn = nullptr;
+
+	// Spawn location
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FVector SpawnLocation = FVector::ZeroVector;
+
+	// Event tags to broadcast
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FGameplayTagContainer EventTags;
+
+	// Whether to broadcast to all players (multiplayer)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	bool bBroadcastToWorld = false;
+
+	// Custom event name (for blueprint events)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FName CustomEventName = NAME_None;
+
+	FQuestEvent()
+		: TriggerType(EQuestEventTrigger::OnStart)
+		, ActorToSpawn(nullptr)
+		, SpawnLocation(FVector::ZeroVector)
+		, EventTags()
+		, bBroadcastToWorld(false)
+		, CustomEventName(NAME_None)
+	{}
+};
+
+/**
+ * Quest notification
+ * UI notification for quest events
+ */
+USTRUCT(BlueprintType)
+struct FQuestNotification
+{
+	GENERATED_BODY()
+
+	// Notification type
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	EQuestNotificationType NotificationType = EQuestNotificationType::QuestStarted;
+
+	// Quest ID
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	FHarmoniaID QuestId = FHarmoniaID();
+
+	// Quest name
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	FText QuestName = FText();
+
+	// Notification message
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	FText Message = FText();
+
+	// Notification icon
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	TSoftObjectPtr<UTexture2D> Icon = nullptr;
+
+	// Display duration (seconds)
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	float DisplayDuration = 5.0f;
+
+	FQuestNotification()
+		: NotificationType(EQuestNotificationType::QuestStarted)
+		, QuestId()
+		, QuestName()
+		, Message()
+		, Icon(nullptr)
+		, DisplayDuration(5.0f)
 	{}
 };
 
@@ -305,9 +672,14 @@ struct FQuestData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Quest")
 	FGameplayTagContainer CategoryTags;
 
-	// Quest objectives
+	// Quest objectives (used if not using phases)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Quest|Objectives")
 	TArray<FQuestObjective> Objectives;
+
+	// Quest phases (multi-phase quest system)
+	// If phases are defined, objectives from phases will be used instead
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Quest|Phases")
+	TArray<FQuestPhase> Phases;
 
 	// Quest unlock conditions (prerequisites)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Quest|Conditions")
@@ -361,6 +733,50 @@ struct FQuestData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Quest|Chain")
 	TArray<FHarmoniaID> NextQuests;
 
+	// Quest dialogue
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Quest|Dialogue")
+	FQuestDialogue Dialogues;
+
+	// Quest markers
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Quest|Markers")
+	TArray<FQuestMarker> Markers;
+
+	// Quest hints
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Quest|Hints")
+	TArray<FQuestHint> Hints;
+
+	// Quest events
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Quest|Events")
+	TArray<FQuestEvent> Events;
+
+	// Quest fail conditions
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Quest|FailConditions")
+	TArray<FQuestFailCondition> FailConditions;
+
+	// Bonus rewards (for completing bonus objectives)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Quest|Rewards")
+	TArray<FQuestReward> BonusRewards;
+
+	// Tracking priority (higher = shown first in UI)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Quest|UI")
+	int32 TrackingPriority = 0;
+
+	// Whether this quest can be shared with party members
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Quest|Party")
+	bool bCanShare = true;
+
+	// Whether quest progress is shared among party members
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Quest|Party")
+	bool bSharedProgress = false;
+
+	// Minimum party size required
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Quest|Party", meta = (ClampMin = "1"))
+	int32 MinPartySize = 1;
+
+	// Maximum party size allowed
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Quest|Party", meta = (ClampMin = "1"))
+	int32 MaxPartySize = 4;
+
 	FQuestData()
 		: QuestId()
 		, QuestType(EQuestType::Side)
@@ -369,6 +785,7 @@ struct FQuestData : public FTableRowBase
 		, QuestIcon(nullptr)
 		, CategoryTags()
 		, Objectives()
+		, Phases()
 		, UnlockConditions()
 		, Rewards()
 		, OptionalRewards()
@@ -382,6 +799,17 @@ struct FQuestData : public FTableRowBase
 		, SortOrder(0)
 		, RecommendedLevel(1)
 		, NextQuests()
+		, Dialogues()
+		, Markers()
+		, Hints()
+		, Events()
+		, FailConditions()
+		, BonusRewards()
+		, TrackingPriority(0)
+		, bCanShare(true)
+		, bSharedProgress(false)
+		, MinPartySize(1)
+		, MaxPartySize(4)
 	{}
 };
 
@@ -482,6 +910,200 @@ struct FActiveQuestProgress
 };
 
 /**
+ * Quest phase data
+ * Multi-phase quest support
+ */
+USTRUCT(BlueprintType)
+struct FQuestPhase
+{
+	GENERATED_BODY()
+
+	// Phase number (0-based)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	int32 PhaseNumber = 0;
+
+	// Phase name
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FText PhaseName = FText();
+
+	// Phase description
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FText PhaseDescription = FText();
+
+	// Phase objectives
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	TArray<FQuestObjective> PhaseObjectives;
+
+	// Phase markers
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	TArray<FQuestMarker> PhaseMarkers;
+
+	// Phase events (triggered when phase starts)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	TArray<FQuestEvent> PhaseEvents;
+
+	// Auto-advance to next phase when objectives complete
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	bool bAutoAdvance = true;
+
+	FQuestPhase()
+		: PhaseNumber(0)
+		, PhaseName()
+		, PhaseDescription()
+		, PhaseObjectives()
+		, PhaseMarkers()
+		, PhaseEvents()
+		, bAutoAdvance(true)
+	{}
+};
+
+/**
+ * Quest statistics
+ * Player quest completion statistics
+ */
+USTRUCT(BlueprintType)
+struct FQuestStatistics
+{
+	GENERATED_BODY()
+
+	// Total quests completed
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	int32 TotalQuestsCompleted = 0;
+
+	// Main quests completed
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	int32 MainQuestsCompleted = 0;
+
+	// Side quests completed
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	int32 SideQuestsCompleted = 0;
+
+	// Daily quests completed
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	int32 DailyQuestsCompleted = 0;
+
+	// Weekly quests completed
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	int32 WeeklyQuestsCompleted = 0;
+
+	// Total quests failed
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	int32 TotalQuestsFailed = 0;
+
+	// Total quests abandoned
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	int32 TotalQuestsAbandoned = 0;
+
+	// Average completion time (seconds)
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	float AverageCompletionTime = 0.0f;
+
+	// Total objectives completed
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	int32 TotalObjectivesCompleted = 0;
+
+	// Completion count by quest type
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	TMap<EQuestType, int32> CompletedByType;
+
+	// Completion count by category
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	TMap<FGameplayTag, int32> CompletedByCategory;
+
+	// Longest quest completed (time)
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	FHarmoniaID LongestQuestCompleted;
+
+	// Longest quest time (seconds)
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	float LongestQuestTime = 0.0f;
+
+	// Current quest streak (consecutive days with quest completion)
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	int32 CurrentStreak = 0;
+
+	// Best quest streak
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	int32 BestStreak = 0;
+
+	// Last completion date
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	FDateTime LastCompletionDate;
+
+	FQuestStatistics()
+		: TotalQuestsCompleted(0)
+		, MainQuestsCompleted(0)
+		, SideQuestsCompleted(0)
+		, DailyQuestsCompleted(0)
+		, WeeklyQuestsCompleted(0)
+		, TotalQuestsFailed(0)
+		, TotalQuestsAbandoned(0)
+		, AverageCompletionTime(0.0f)
+		, TotalObjectivesCompleted(0)
+		, CompletedByType()
+		, CompletedByCategory()
+		, LongestQuestCompleted()
+		, LongestQuestTime(0.0f)
+		, CurrentStreak(0)
+		, BestStreak(0)
+		, LastCompletionDate(FDateTime::MinValue())
+	{}
+};
+
+/**
+ * Quest log entry
+ * Journal/log entry for a quest
+ */
+USTRUCT(BlueprintType)
+struct FQuestLogEntry
+{
+	GENERATED_BODY()
+
+	// Quest ID
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	FHarmoniaID QuestId;
+
+	// When quest was started
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	FDateTime StartTime;
+
+	// When quest was completed
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	FDateTime CompletionTime;
+
+	// Total time taken (seconds)
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	float TotalTime = 0.0f;
+
+	// Player notes/bookmarks
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	TArray<FString> PlayerNotes;
+
+	// Completion count (for repeatable quests)
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	int32 CompletionCount = 0;
+
+	// Best completion time (for repeatable quests)
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	float BestCompletionTime = 0.0f;
+
+	// Whether this entry is favorited
+	UPROPERTY(BlueprintReadWrite, Category = "Quest")
+	bool bFavorited = false;
+
+	FQuestLogEntry()
+		: QuestId()
+		, StartTime(FDateTime::MinValue())
+		, CompletionTime(FDateTime::MinValue())
+		, TotalTime(0.0f)
+		, PlayerNotes()
+		, CompletionCount(0)
+		, BestCompletionTime(0.0f)
+		, bFavorited(false)
+	{}
+};
+
+/**
  * Quest save data
  * Used for save/load system
  */
@@ -502,9 +1124,19 @@ struct FQuestSaveData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
 	TArray<FHarmoniaID> FailedQuests;
 
+	// Quest statistics
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FQuestStatistics Statistics;
+
+	// Quest log entries
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	TArray<FQuestLogEntry> LogEntries;
+
 	FQuestSaveData()
 		: ActiveQuests()
 		, CompletedQuests()
 		, FailedQuests()
+		, Statistics()
+		, LogEntries()
 	{}
 };
