@@ -22,13 +22,13 @@ void UHarmoniaInventoryComponent::BeginPlay()
 void UHarmoniaInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	// ����(����) Ŭ�󿡸� ����ȭ
+	// 소유자(오너) 클라이언트만 복제화
 	DOREPLIFETIME_CONDITION(UHarmoniaInventoryComponent, InventoryData, COND_OwnerOnly);
 }
 
 void UHarmoniaInventoryComponent::OnRep_InventoryData()
 {
-	// Ŭ�󿡼��� ��ε�ĳ��Ʈ �� UI �ڵ� ����
+	// 클라이언트에서 브로드캐스트 및 UI 자동 업데이트
 	OnInventoryChanged.Broadcast();
 }
 
@@ -125,7 +125,7 @@ bool UHarmoniaInventoryComponent::AddItem(const FHarmoniaID& ItemID, int32 Count
 			}
 		}
 
-		// Num != MaxSlotCount üũ�� ��ǻ� ���ʿ�
+		// Num != MaxSlotCount 체크는 BeginPlay에서 이미 했으므로 불필요
 		for (FInventorySlot& Slot : InventoryData.Slots)
 		{
 			if (Slot.Count == 0)
@@ -264,7 +264,7 @@ void UHarmoniaInventoryComponent::DropItem(int32 SlotIndex)
 	{
 		FInventorySlot& Slot = InventoryData.Slots[SlotIndex];
 
-		// �������� ��� ������ �н�
+		// 슬롯에서 아이템 정보를 가져옴
 		if (Slot.ItemID.IsValid() && Slot.Count != 0)
 		{
 			UDataTable* ItemDataTable = GETITEMDATATABLE();
@@ -273,7 +273,7 @@ void UHarmoniaInventoryComponent::DropItem(int32 SlotIndex)
 			{
 				FItemData* Item = ItemDataTable->FindRow<FItemData>(Slot.ItemID.Id, TEXT("FindItemRow"));
 
-				// ���忡 ��� ���� ����
+				// 월드에 아이템 액터 스폰
 				if (Item && Item->WorldActorClass)
 				{
 					AActor* OwnerActor = GetOwner();
@@ -294,7 +294,7 @@ void UHarmoniaInventoryComponent::DropItem(int32 SlotIndex)
 					}
 				}
 
-				// �κ��丮 ���� ����
+				// 인벤토리 슬롯 초기화
 				Slot = FInventorySlot();
 			}
 		}

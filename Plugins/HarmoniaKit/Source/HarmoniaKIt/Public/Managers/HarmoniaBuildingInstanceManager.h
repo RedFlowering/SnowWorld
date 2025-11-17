@@ -43,8 +43,14 @@ public:
 	bool GetBuildingMetadata(const FGuid& BuildingGuid, FBuildingInstanceMetadata& OutMetadata) const;
 
 	// 충돌 검사 - 특정 위치와 범위에 이미 배치된 건축물이 있는지 확인
+	// @param Location - 배치하려는 위치
+	// @param Rotation - 배치하려는 회전
+	// @param BoundsExtent - 배치하려는 건축물의 경계 크기
+	// @param PlacingPartType - 배치하려는 건축물 타입 (오버랩 허용 규칙 판단에 사용)
+	// @param MinDistance - 최소 거리 (음수일 경우 거리 검사 스킵)
+	// @return true면 충돌 발생 (배치 불가), false면 배치 가능
 	UFUNCTION(BlueprintCallable, Category = "Building")
-	bool CheckBuildingOverlap(const FVector& Location, const FRotator& Rotation, const FVector& BoundsExtent, float MinDistance = 50.0f) const;
+	bool CheckBuildingOverlap(const FVector& Location, const FRotator& Rotation, const FVector& BoundsExtent, EBuildingPartType PlacingPartType, float MinDistance = -1.0f) const;
 
 	// 모든 건축물 메타데이터 가져오기
 	UFUNCTION(BlueprintCallable, Category = "Building")
@@ -81,6 +87,12 @@ private:
 
 	// ISM 컴포넌트 초기화
 	void InitializeISMComponent(const FName& PartID, UStaticMesh* Mesh);
+
+	// 타입별 오버랩 허용 규칙 체크
+	bool IsOverlapAllowed(EBuildingPartType PlacingType, EBuildingPartType ExistingType) const;
+
+	// OBB(Oriented Bounding Box) 충돌 검사
+	bool DoBoxesOverlap(const FTransform& TransformA, const FVector& ExtentA, const FTransform& TransformB, const FVector& ExtentB) const;
 
 	// 건축물 데이터 테이블 캐시
 	UPROPERTY()

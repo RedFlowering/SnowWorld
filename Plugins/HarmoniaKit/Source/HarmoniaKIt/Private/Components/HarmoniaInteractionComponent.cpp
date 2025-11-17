@@ -13,7 +13,7 @@ void UHarmoniaInteractionComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-    // �Ŵ��� ���� ȹ��
+    // 매니저 캐싱 획득
     if (GetWorld() && GetWorld()->GetGameInstance())
     {
         InteractionManager = GetWorld()->GetGameInstance()->GetSubsystem<UHarmoniaInteractionManager>();
@@ -36,21 +36,21 @@ void UHarmoniaInteractionComponent::Interact()
 
 	if (InteractionManager && Target)
 	{
-		// ��ȣ�ۿ� ���ؽ�Ʈ ����
+		// 인터랙션 컨텍스트 생성
 		FHarmoniaInteractionContext Context;
 		Context.Interactor = GetOwner();
 		Context.Interactable = Target;
-		Context.InteractionType = EHarmoniaInteractionType::Custom; // Ȥ�� ��Ȳ�� ����
+		Context.InteractionType = EHarmoniaInteractionType::Custom; // 혹은 상황에 맞게
 
-		// �Ŵ����� ��ȣ�ۿ� ��û
+		// 매니저에게 인터랙션 요청
 		if (GetOwner() && GetOwner()->HasAuthority())
 		{
-			// ���������� ���� ó��
+			// 서버에서는 바로 처리
 			InteractionManager->TryInteract(Context);
 		}
 		else
 		{
-			// Ŭ���̾�Ʈ�漭�� RPC ȣ��
+			// 클라이언트에서는 RPC 호출
 			Server_TryInteract(Context);
 		}
 	}
@@ -68,7 +68,7 @@ bool UHarmoniaInteractionComponent::Server_TryInteract_Validate(const FHarmoniaI
 {
     if (Context.Interactor && Context.Interactable)
     {
-        // �Ÿ� üũ
+        // 거리 체크
         float MaxDistance = TraceDistance;
         FVector Start = Context.Interactor->GetActorLocation();
         FVector End = Context.Interactable->GetActorLocation();
@@ -76,7 +76,7 @@ bool UHarmoniaInteractionComponent::Server_TryInteract_Validate(const FHarmoniaI
 
         if (Dist <= MaxDistance)
         {
-            // ������, ��Ÿ�� �� ����
+            // 성공적, 거리와 널 검증
 
             return true;
         }

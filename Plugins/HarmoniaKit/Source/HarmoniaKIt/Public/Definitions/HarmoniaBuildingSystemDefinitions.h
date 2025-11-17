@@ -10,15 +10,16 @@
 UENUM(BlueprintType)
 enum class EBuildingPartType : uint8
 {
-    None        UMETA(DisplayName = "None"),
-    Floor       UMETA(DisplayName = "Floor"),
-    Wall        UMETA(DisplayName = "Wall"),
-    Roof        UMETA(DisplayName = "Roof"),
-    Pillar      UMETA(DisplayName = "Pillar"),
-    Door        UMETA(DisplayName = "Door"),
-    Window      UMETA(DisplayName = "Window"),
-    Stairs      UMETA(DisplayName = "Stairs"),
-    Fence       UMETA(DisplayName = "Fence")
+    None            UMETA(DisplayName = "None"),
+    Floor           UMETA(DisplayName = "Floor"),
+    Wall            UMETA(DisplayName = "Wall"),
+    Roof            UMETA(DisplayName = "Roof"),
+    Pillar          UMETA(DisplayName = "Pillar"),
+    Door            UMETA(DisplayName = "Door"),
+    Window          UMETA(DisplayName = "Window"),
+    Stairs          UMETA(DisplayName = "Stairs"),
+    Fence           UMETA(DisplayName = "Fence"),
+    WallDecoration  UMETA(DisplayName = "Wall Decoration")  // 벽걸이 장식품 (액자, 그림, 벽걸이 등)
 };
 
 UENUM(BlueprintType)
