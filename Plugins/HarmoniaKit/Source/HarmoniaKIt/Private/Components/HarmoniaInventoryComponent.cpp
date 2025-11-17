@@ -265,7 +265,7 @@ void UHarmoniaInventoryComponent::DropItem(int32 SlotIndex)
 		FInventorySlot& Slot = InventoryData.Slots[SlotIndex];
 
 		// �������� ��� ������ �н�
-		if (Slot.ItemID.Id != NAME_None && Slot.Count != 0)
+		if (Slot.ItemID.IsValid() && Slot.Count != 0)
 		{
 			UDataTable* ItemDataTable = GETITEMDATATABLE();
 

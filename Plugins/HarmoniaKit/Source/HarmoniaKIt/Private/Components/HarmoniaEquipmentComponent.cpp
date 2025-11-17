@@ -156,6 +156,19 @@ bool UHarmoniaEquipmentComponent::UnequipItem(EEquipmentSlot Slot)
 	return true;
 }
 
+void UHarmoniaEquipmentComponent::RequestSwapEquipment(EEquipmentSlot SlotA, EEquipmentSlot SlotB)
+{
+	// Server authority
+	if (GetOwnerRole() == ROLE_Authority)
+	{
+		SwapEquipment(SlotA, SlotB);
+	}
+	else
+	{
+		ServerSwapEquipment(SlotA, SlotB);
+	}
+}
+
 bool UHarmoniaEquipmentComponent::SwapEquipment(EEquipmentSlot SlotA, EEquipmentSlot SlotB)
 {
 	if (GetOwnerRole() != ROLE_Authority)
@@ -740,5 +753,22 @@ void UHarmoniaEquipmentComponent::ServerUnequipItem_Implementation(EEquipmentSlo
 bool UHarmoniaEquipmentComponent::ServerUnequipItem_Validate(EEquipmentSlot Slot)
 {
 	// Slot validation happens in implementation
+	return true;
+}
+
+void UHarmoniaEquipmentComponent::ServerSwapEquipment_Implementation(EEquipmentSlot SlotA, EEquipmentSlot SlotB)
+{
+	SwapEquipment(SlotA, SlotB);
+}
+
+bool UHarmoniaEquipmentComponent::ServerSwapEquipment_Validate(EEquipmentSlot SlotA, EEquipmentSlot SlotB)
+{
+	// Basic validation - slot equality check
+	if (SlotA == SlotB)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSwapEquipment: Cannot swap slot with itself"));
+		return false;
+	}
+
 	return true;
 }

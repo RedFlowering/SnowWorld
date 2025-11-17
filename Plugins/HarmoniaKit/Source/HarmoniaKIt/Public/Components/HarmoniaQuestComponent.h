@@ -124,14 +124,6 @@ public:
 	bool AbandonQuest(FHarmoniaID QuestId);
 
 	/**
-	 * Fail a quest (called by game logic, not player)
-	 * @param QuestId - Quest to fail
-	 * @return True if quest was failed successfully
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Quest")
-	bool FailQuest(FHarmoniaID QuestId);
-
-	/**
 	 * Update quest objective progress
 	 * @param QuestId - Quest to update
 	 * @param ObjectiveIndex - Objective index to update
@@ -140,25 +132,6 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Quest")
 	bool UpdateQuestObjective(FHarmoniaID QuestId, int32 ObjectiveIndex, int32 Progress);
-
-	/**
-	 * Update quest objective by type and target
-	 * Automatically finds matching objectives and updates them
-	 * @param ObjectiveType - Type of objective
-	 * @param TargetId - Target ID (enemy type, item ID, etc.)
-	 * @param Progress - Progress to add
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Quest")
-	void UpdateQuestObjectivesByType(EQuestObjectiveType ObjectiveType, FHarmoniaID TargetId, int32 Progress = 1);
-
-	/**
-	 * Update quest objective by gameplay tags
-	 * @param ObjectiveType - Type of objective
-	 * @param TargetTags - Tags to match
-	 * @param Progress - Progress to add
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Quest")
-	void UpdateQuestObjectivesByTags(EQuestObjectiveType ObjectiveType, FGameplayTagContainer TargetTags, int32 Progress = 1);
 
 	/**
 	 * Set tracked quest (displayed prominently in UI)
@@ -289,6 +262,34 @@ protected:
 	 * @param Reward - Reward to grant
 	 */
 	void GrantReward(const FQuestReward& Reward);
+
+	//~==============================================
+	//~ Quest Operations - Internal (Server-only)
+	//~==============================================
+
+	/**
+	 * Fail a quest (called by game logic, not player)
+	 * @param QuestId - Quest to fail
+	 * @return True if quest was failed successfully
+	 */
+	bool FailQuest(FHarmoniaID QuestId);
+
+	/**
+	 * Update quest objective by type and target
+	 * Automatically finds matching objectives and updates them
+	 * @param ObjectiveType - Type of objective
+	 * @param TargetId - Target ID (enemy type, item ID, etc.)
+	 * @param Progress - Progress to add
+	 */
+	void UpdateQuestObjectivesByType(EQuestObjectiveType ObjectiveType, FHarmoniaID TargetId, int32 Progress = 1);
+
+	/**
+	 * Update quest objective by gameplay tags
+	 * @param ObjectiveType - Type of objective
+	 * @param TargetTags - Tags to match
+	 * @param Progress - Progress to add
+	 */
+	void UpdateQuestObjectivesByTags(EQuestObjectiveType ObjectiveType, FGameplayTagContainer TargetTags, int32 Progress = 1);
 
 	//~==============================================
 	//~ Quest Chain System

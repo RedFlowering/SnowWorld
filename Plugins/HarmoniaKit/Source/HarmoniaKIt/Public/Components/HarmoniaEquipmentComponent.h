@@ -73,10 +73,10 @@ public:
 	bool UnequipItem(EEquipmentSlot Slot);
 
 	/**
-	 * Swap equipment between two slots
+	 * Request to swap equipment between two slots (Client callable)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Equipment")
-	bool SwapEquipment(EEquipmentSlot SlotA, EEquipmentSlot SlotB);
+	void RequestSwapEquipment(EEquipmentSlot SlotA, EEquipmentSlot SlotB);
 
 	/**
 	 * Get equipped item in a specific slot
@@ -264,6 +264,17 @@ protected:
 	 */
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerUnequipItem(EEquipmentSlot Slot);
+
+	/**
+	 * Server RPC for swapping equipment
+	 */
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSwapEquipment(EEquipmentSlot SlotA, EEquipmentSlot SlotB);
+
+	/**
+	 * Swap equipment between two slots (Server-only)
+	 */
+	bool SwapEquipment(EEquipmentSlot SlotA, EEquipmentSlot SlotB);
 
 private:
 	// Cached ability system component

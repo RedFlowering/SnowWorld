@@ -292,6 +292,12 @@ void UHarmoniaMapComponent::CreatePing(const FVector& WorldLocation, float Lifet
 
 void UHarmoniaMapComponent::RemovePing(int32 PingIndex)
 {
+	// Server-only execution (ActivePings is replicated)
+	if (GetOwnerRole() != ROLE_Authority)
+	{
+		return;
+	}
+
 	if (ActivePings.IsValidIndex(PingIndex))
 	{
 		ActivePings.RemoveAt(PingIndex);
@@ -300,6 +306,12 @@ void UHarmoniaMapComponent::RemovePing(int32 PingIndex)
 
 void UHarmoniaMapComponent::ClearAllPings()
 {
+	// Server-only execution (ActivePings is replicated)
+	if (GetOwnerRole() != ROLE_Authority)
+	{
+		return;
+	}
+
 	ActivePings.Empty();
 }
 
