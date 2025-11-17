@@ -263,6 +263,44 @@ struct FQuestObjective
 };
 
 /**
+ * Bonus objective data
+ * Optional objectives that grant bonus rewards when completed
+ */
+USTRUCT(BlueprintType)
+struct FBonusObjective
+{
+	GENERATED_BODY()
+
+	// Objective description
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FText Description;
+
+	// Objective type
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	EQuestObjectiveType ObjectiveType = EQuestObjectiveType::Kill;
+
+	// Target ID
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FHarmoniaID TargetId;
+
+	// Required count
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest", meta = (ClampMin = "1"))
+	int32 RequiredCount = 1;
+
+	// Bonus reward for completing this objective
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FQuestReward BonusReward;
+
+	FBonusObjective()
+		: Description()
+		, ObjectiveType(EQuestObjectiveType::Kill)
+		, TargetId()
+		, RequiredCount(1)
+		, BonusReward()
+	{}
+};
+
+/**
  * Quest condition data
  * Used for quest unlock requirements and prerequisites
  */
