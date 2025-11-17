@@ -225,10 +225,12 @@ protected:
 	TObjectPtr<UHarmoniaAttributeSet> AttributeSet = nullptr;
 
 	/**
-	 * Sense Receiver Component (for target detection via Sense System)
+	 * Harmonia Sense Interaction Component (for target detection via Sense System)
+	 * Extends SenseReceiverComponent with convenient target tracking features
+	 * Configured for combat (bInteractableOnly = false, tracks all actors)
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sense")
-	TObjectPtr<USenseReceiverComponent> SenseReceiverComponent = nullptr;
+	TObjectPtr<UHarmoniaSenseInteractionComponent> SenseInteractionComponent = nullptr;
 
 	/**
 	 * Sense Stimulus Component (for being detected by others)

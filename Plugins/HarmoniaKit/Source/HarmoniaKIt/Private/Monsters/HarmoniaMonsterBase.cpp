@@ -8,7 +8,7 @@
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
 #include "Components/CapsuleComponent.h"
-#include "SenseReceiverComponent.h"
+#include "Components/HarmoniaSenseInteractionComponent.h"
 #include "SenseStimulusComponent.h"
 #include "Components/HarmoniaThreatComponent.h"
 #include "SensedStimulStruct.h"
@@ -24,8 +24,15 @@ AHarmoniaMonsterBase::AHarmoniaMonsterBase(const FObjectInitializer& ObjectIniti
 	// Create attribute set
 	AttributeSet = CreateDefaultSubobject<UHarmoniaAttributeSet>(TEXT("AttributeSet"));
 
-	// Create Sense Receiver Component for target detection
-	SenseReceiverComponent = CreateDefaultSubobject<USenseReceiverComponent>(TEXT("SenseReceiverComponent"));
+	// Create Harmonia Sense Interaction Component for target detection
+	// Configured for combat: tracks all actors, not just interactables
+	SenseInteractionComponent = CreateDefaultSubobject<UHarmoniaSenseInteractionComponent>(TEXT("SenseInteractionComponent"));
+	if (SenseInteractionComponent)
+	{
+		SenseInteractionComponent->bInteractableOnly = false;  // Track all actors for combat
+		SenseInteractionComponent->bEnableAutomaticInteractions = false;  // Disable auto-interactions
+		SenseInteractionComponent->bPrioritizeByDistance = true;  // Sort by distance
+	}
 
 	// Create Sense Stimulus Component for being detected
 	SenseStimulusComponent = CreateDefaultSubobject<USenseStimulusComponent>(TEXT("SenseStimulusComponent"));
@@ -675,31 +682,31 @@ TArray<AActor*> AHarmoniaMonsterBase::GetSensedTargets(FName SensorTag) const
 {
 	TArray<AActor*> SensedActors;
 
-	if (!SenseReceiverComponent)
+	if (!SenseInteractionComponent)
 	{
 		return SensedActors;
 	}
 
-	// Get all currently sensed stimuli
-	TArray<FSensedStimulus> SensedStimuli;
+	// Use Harmonia Sense Interaction Component's convenient target tracking
+	TArray<FInteractableTargetInfo> TrackedTargets;
 
 	// If sensor tag specified, get only those
 	if (SensorTag != NAME_None)
 	{
-		SenseReceiverComponent->GetAllSensedStimuliForTag(SensorTag, SensedStimuli);
+		TrackedTargets = SenseInteractionComponent->GetInteractablesBySensorTag(SensorTag);
 	}
 	else
 	{
-		// Get all sensed stimuli across all sensors
-		SenseReceiverComponent->GetAllCurrentlySensedStimuli(SensedStimuli);
+		// Get all tracked targets
+		TrackedTargets = SenseInteractionComponent->GetAllInteractableTargets();
 	}
 
-	// Extract actors from stimuli
-	for (const FSensedStimulus& Stimulus : SensedStimuli)
+	// Extract actors from target info
+	for (const FInteractableTargetInfo& TargetInfo : TrackedTargets)
 	{
-		if (Stimulus.SourceActor.IsValid())
+		if (TargetInfo.IsValid())
 		{
-			AActor* Actor = Stimulus.SourceActor.Get();
+			AActor* Actor = TargetInfo.TargetActor;
 			if (Actor && !Actor->IsPendingKillPending())
 			{
 				// Filter out self
@@ -726,44 +733,41 @@ AActor* AHarmoniaMonsterBase::SelectBestTarget() const
 		}
 	}
 
-	// Otherwise, use Sense System to find closest target
-	TArray<AActor*> SensedTargets = GetSensedTargets();
-	if (SensedTargets.Num() == 0)
+	// Use Harmonia Sense Interaction Component for target selection
+	// It automatically prioritizes by distance and manages tracked targets
+	if (!SenseInteractionComponent)
 	{
 		return nullptr;
 	}
 
-	// Find closest valid target
-	AActor* BestTarget = nullptr;
-	float ClosestDistance = MAX_FLT;
+	// Get best target from sense interaction component
+	// It's already sorted by priority (distance-based by default)
+	FInteractableTargetInfo BestTargetInfo = SenseInteractionComponent->GetBestInteractionTarget();
 
-	for (AActor* Target : SensedTargets)
+	if (!BestTargetInfo.IsValid())
 	{
-		if (!Target)
-		{
-			continue;
-		}
+		return nullptr;
+	}
 
-		// Don't target other monsters (for now - could add faction system)
-		if (Target->Implements<UHarmoniaMonsterInterface>())
-		{
-			continue;
-		}
+	AActor* BestTarget = BestTargetInfo.TargetActor;
 
-		// Check if it's a valid pawn
-		APawn* TargetPawn = Cast<APawn>(Target);
-		if (!TargetPawn || !TargetPawn->GetController())
-		{
-			continue;
-		}
+	// Validate target (don't target other monsters or invalid pawns)
+	if (!BestTarget)
+	{
+		return nullptr;
+	}
 
-		// Calculate distance
-		float Distance = FVector::Dist(GetActorLocation(), Target->GetActorLocation());
-		if (Distance < ClosestDistance)
-		{
-			ClosestDistance = Distance;
-			BestTarget = Target;
-		}
+	// Don't target other monsters (for now - could add faction system)
+	if (BestTarget->Implements<UHarmoniaMonsterInterface>())
+	{
+		return nullptr;
+	}
+
+	// Check if it's a valid pawn
+	APawn* TargetPawn = Cast<APawn>(BestTarget);
+	if (!TargetPawn || !TargetPawn->GetController())
+	{
+		return nullptr;
 	}
 
 	return BestTarget;
