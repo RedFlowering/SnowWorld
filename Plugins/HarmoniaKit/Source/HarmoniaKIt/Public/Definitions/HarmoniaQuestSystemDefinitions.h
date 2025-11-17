@@ -640,6 +640,54 @@ struct FQuestReward
 };
 
 /**
+ * Quest phase data
+ * Multi-phase quest support
+ */
+USTRUCT(BlueprintType)
+struct FQuestPhase
+{
+	GENERATED_BODY()
+
+	// Phase number (0-based)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	int32 PhaseNumber = 0;
+
+	// Phase name
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FText PhaseName = FText();
+
+	// Phase description
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FText PhaseDescription = FText();
+
+	// Phase objectives
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	TArray<FQuestObjective> PhaseObjectives;
+
+	// Phase markers
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	TArray<FQuestMarker> PhaseMarkers;
+
+	// Phase events (triggered when phase starts)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	TArray<FQuestEvent> PhaseEvents;
+
+	// Auto-advance to next phase when objectives complete
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	bool bAutoAdvance = true;
+
+	FQuestPhase()
+		: PhaseNumber(0)
+		, PhaseName()
+		, PhaseDescription()
+		, PhaseObjectives()
+		, PhaseMarkers()
+		, PhaseEvents()
+		, bAutoAdvance(true)
+	{}
+};
+
+/**
  * Quest data (DataTable row)
  * Complete quest definition
  */
@@ -907,54 +955,6 @@ struct FActiveQuestProgress
 	{
 		return HasTimeLimit(QuestData) && ElapsedTime >= QuestData.TimeLimit;
 	}
-};
-
-/**
- * Quest phase data
- * Multi-phase quest support
- */
-USTRUCT(BlueprintType)
-struct FQuestPhase
-{
-	GENERATED_BODY()
-
-	// Phase number (0-based)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
-	int32 PhaseNumber = 0;
-
-	// Phase name
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
-	FText PhaseName = FText();
-
-	// Phase description
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
-	FText PhaseDescription = FText();
-
-	// Phase objectives
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
-	TArray<FQuestObjective> PhaseObjectives;
-
-	// Phase markers
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
-	TArray<FQuestMarker> PhaseMarkers;
-
-	// Phase events (triggered when phase starts)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
-	TArray<FQuestEvent> PhaseEvents;
-
-	// Auto-advance to next phase when objectives complete
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
-	bool bAutoAdvance = true;
-
-	FQuestPhase()
-		: PhaseNumber(0)
-		, PhaseName()
-		, PhaseDescription()
-		, PhaseObjectives()
-		, PhaseMarkers()
-		, PhaseEvents()
-		, bAutoAdvance(true)
-	{}
 };
 
 /**
