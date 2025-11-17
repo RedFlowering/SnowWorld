@@ -29,7 +29,7 @@ public:
 
     // Initialize the renderer with map bounds and resolution
     UFUNCTION(BlueprintCallable, Category = "Fog of War")
-    void Initialize(const FBox& MapBounds, FIntPoint Resolution = FIntPoint(1024, 1024));
+    void Initialize(const FBox& MapBounds, FIntPoint Resolution);
 
     // Update fog of war with explored regions
     UFUNCTION(BlueprintCallable, Category = "Fog of War")
