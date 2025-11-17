@@ -83,7 +83,8 @@ EBTNodeResult::Type UBTTask_FleeFromTarget::ExecuteTask(UBehaviorTreeComponent& 
 	EPathFollowingRequestResult::Type MoveResult = AIController->MoveToLocation(FleeLocation, 50.0f);
 
 	// Check if move request was accepted (not failed)
-	if (MoveResult != EPathFollowingRequestResult::Failed)
+	using namespace EPathFollowingRequestResult;
+	if (MoveResult == RequestSuccessful || MoveResult == AlreadyAtGoal)
 	{
 		return EBTNodeResult::Succeeded;
 	}
