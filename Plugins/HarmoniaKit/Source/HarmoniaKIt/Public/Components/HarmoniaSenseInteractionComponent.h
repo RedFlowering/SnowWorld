@@ -92,7 +92,7 @@ class HARMONIAKIT_API UHarmoniaSenseInteractionComponent : public USenseReceiver
 	GENERATED_BODY()
 
 public:
-	UHarmoniaSenseInteractionComponent();
+	UHarmoniaSenseInteractionComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;

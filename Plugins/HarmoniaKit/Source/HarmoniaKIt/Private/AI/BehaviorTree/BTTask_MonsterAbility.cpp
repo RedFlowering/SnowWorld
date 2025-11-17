@@ -111,7 +111,8 @@ TSubclassOf<UGameplayAbility> UBTTask_MonsterAbility::FindAbilityToActivate(AHar
 			if (Spec.Ability)
 			{
 				// Get ability tags from the ability class
-				const FGameplayTagContainer& AbilityTagContainer = Spec.Ability->AbilityTags;
+				FGameplayTagContainer AbilityTagContainer;
+				Spec.Ability->GetAssetTags(AbilityTagContainer);
 
 				if (AbilityTagContainer.HasAny(AbilityTags))
 				{
