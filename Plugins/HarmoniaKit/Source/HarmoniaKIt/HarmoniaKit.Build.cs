@@ -29,9 +29,9 @@ public class HarmoniaKit : ModuleRules
                 "OnlineSubsystemUtils",
                 "CommonUI", // For UCommonActivatableWidget
                 "NavigationSystem", // For waypoint pathfinding
-                "AIModule" // For AI navigation
-                // Note: RenderCore, RHI, ImageWrapper moved to HarmoniaEditor module
-                // These are only needed for editor map capture functionality
+                "AIModule", // For AI navigation
+                "RenderCore" // For GWhiteTexture in FogOfWarRenderer (client-side rendering)
+                // Note: RHI, ImageWrapper are in HarmoniaEditor module (editor-only texture capture)
             });
     }
 }

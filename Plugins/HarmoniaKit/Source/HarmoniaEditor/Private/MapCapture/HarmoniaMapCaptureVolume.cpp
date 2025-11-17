@@ -9,6 +9,7 @@
 #include "Engine/Texture2D.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "UObject/Package.h"
+#include "UObject/SavePackage.h"
 #include "PackageTools.h"
 #include "ImageUtils.h"
 #include "Definitions/HarmoniaMapSystemDefinitions.h"

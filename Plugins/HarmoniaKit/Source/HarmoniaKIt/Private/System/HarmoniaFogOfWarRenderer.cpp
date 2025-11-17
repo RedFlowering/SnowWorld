@@ -8,6 +8,7 @@
 #include "Kismet/KismetRenderingLibrary.h"
 #include "CanvasItem.h"
 #include "CanvasTypes.h"
+#include "Engine/Texture.h"
 
 UHarmoniaFogOfWarRenderer::UHarmoniaFogOfWarRenderer()
 {
