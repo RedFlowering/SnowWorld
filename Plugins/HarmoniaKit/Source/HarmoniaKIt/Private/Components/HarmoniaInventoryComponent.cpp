@@ -22,13 +22,13 @@ void UHarmoniaInventoryComponent::BeginPlay()
 void UHarmoniaInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	// ¿À³Ê(º»ÀÎ) Å¬¶ó¿¡¸¸ µ¿±âÈ­
+	// ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½) Å¬ï¿½ó¿¡¸ï¿½ ï¿½ï¿½ï¿½ï¿½È­
 	DOREPLIFETIME_CONDITION(UHarmoniaInventoryComponent, InventoryData, COND_OwnerOnly);
 }
 
 void UHarmoniaInventoryComponent::OnRep_InventoryData()
 {
-	// Å¬¶ó¿¡¼­¸¸ ºê·ÎµåÄ³½ºÆ® ¡æ UI ÀÚµ¿ °»½Å
+	// Å¬ï¿½ó¿¡¼ï¿½ï¿½ï¿½ ï¿½ï¿½Îµï¿½Ä³ï¿½ï¿½Æ® ï¿½ï¿½ UI ï¿½Úµï¿½ ï¿½ï¿½ï¿½ï¿½
 	OnInventoryChanged.Broadcast();
 }
 
@@ -56,8 +56,62 @@ void UHarmoniaInventoryComponent::RequestDropItem(int32 SlotIndex)
 	}
 }
 
+void UHarmoniaInventoryComponent::RequestAddItem(const FHarmoniaID& ItemID, int32 Count, float Durability)
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		AddItem(ItemID, Count, Durability);
+	}
+	else
+	{
+		ServerAddItem(ItemID, Count, Durability);
+	}
+}
+
+void UHarmoniaInventoryComponent::RequestRemoveItem(const FHarmoniaID& ItemID, int32 Count, float Durability)
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		RemoveItem(ItemID, Count, Durability);
+	}
+	else
+	{
+		ServerRemoveItem(ItemID, Count, Durability);
+	}
+}
+
+void UHarmoniaInventoryComponent::RequestSwapSlots(int32 SlotA, int32 SlotB)
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		SwapSlots(SlotA, SlotB);
+	}
+	else
+	{
+		ServerSwapSlots(SlotA, SlotB);
+	}
+}
+
+void UHarmoniaInventoryComponent::RequestClear()
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		Clear();
+	}
+	else
+	{
+		ServerClear();
+	}
+}
+
 bool UHarmoniaInventoryComponent::AddItem(const FHarmoniaID& ItemID, int32 Count, float Durability)
 {
+	// Server-only execution
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return false;
+	}
+
 	if (Count > 0)
 	{
 		for (FInventorySlot& Slot : InventoryData.Slots)
@@ -66,11 +120,12 @@ bool UHarmoniaInventoryComponent::AddItem(const FHarmoniaID& ItemID, int32 Count
 			{
 				Slot.Durability = Durability;
 				Slot.Count += Count;
+				OnInventoryChanged.Broadcast(); // Server-side broadcast
 				return true;
 			}
 		}
 
-		// Num != MaxSlotCount Ã¼Å©´Â »ç½Ç»ó ºÒÇÊ¿ä
+		// Num != MaxSlotCount Ã¼Å©ï¿½ï¿½ ï¿½ï¿½Ç»ï¿½ ï¿½ï¿½ï¿½Ê¿ï¿½
 		for (FInventorySlot& Slot : InventoryData.Slots)
 		{
 			if (Slot.Count == 0)
@@ -78,6 +133,7 @@ bool UHarmoniaInventoryComponent::AddItem(const FHarmoniaID& ItemID, int32 Count
 				Slot.ItemID = ItemID;
 				Slot.Durability = Durability;
 				Slot.Count = Count;
+				OnInventoryChanged.Broadcast(); // Server-side broadcast
 				return true;
 			}
 		}
@@ -88,6 +144,12 @@ bool UHarmoniaInventoryComponent::AddItem(const FHarmoniaID& ItemID, int32 Count
 
 bool UHarmoniaInventoryComponent::RemoveItem(const FHarmoniaID& ItemID, int32 Count, float Durability)
 {
+	// Server-only execution
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return false;
+	}
+
 	if (Count <= 0) return false;
 
 	for (FInventorySlot& Slot : InventoryData.Slots)
@@ -96,7 +158,6 @@ bool UHarmoniaInventoryComponent::RemoveItem(const FHarmoniaID& ItemID, int32 Co
 		{
 			if (Slot.Count >= Count)
 			{
-				Slot.Durability = 1.f;
 				Slot.Count -= Count;
 
 				if (Slot.Count == 0)
@@ -104,6 +165,7 @@ bool UHarmoniaInventoryComponent::RemoveItem(const FHarmoniaID& ItemID, int32 Co
 					Slot.ItemID = FHarmoniaID();
 					Slot.Durability = 0.f;
 				}
+				OnInventoryChanged.Broadcast(); // Server-side broadcast
 				return true;
 			}
 		}
@@ -113,19 +175,33 @@ bool UHarmoniaInventoryComponent::RemoveItem(const FHarmoniaID& ItemID, int32 Co
 
 void UHarmoniaInventoryComponent::SwapSlots(int32 SlotA, int32 SlotB)
 {
+	// Server-only execution
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
 	if (InventoryData.Slots.IsValidIndex(SlotA) && InventoryData.Slots.IsValidIndex(SlotB) && SlotA != SlotB)
 	{
 		InventoryData.Slots.Swap(SlotA, SlotB);
+		OnInventoryChanged.Broadcast(); // Server-side broadcast
 	}
 }
 
 void UHarmoniaInventoryComponent::Clear()
 {
+	// Server-only execution
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
 	for (FInventorySlot& Slot : InventoryData.Slots)
 	{
 		Slot.ItemID = FHarmoniaID();
 		Slot.Count = 0;
 	}
+	OnInventoryChanged.Broadcast(); // Server-side broadcast
 }
 
 int32 UHarmoniaInventoryComponent::GetTotalCount(const FHarmoniaID& ItemID) const
@@ -165,7 +241,7 @@ void UHarmoniaInventoryComponent::DropItem(int32 SlotIndex)
 	{
 		FInventorySlot& Slot = InventoryData.Slots[SlotIndex];
 
-		// ¾ÆÀÌÅÛÀÌ ºñ¾î ÀÖÀ¸¸é ÆÐ½º
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ð½ï¿½
 		if (Slot.ItemID.Id != NAME_None && Slot.Count != 0)
 		{
 			UDataTable* ItemDataTable = GETITEMDATATABLE();
@@ -174,7 +250,7 @@ void UHarmoniaInventoryComponent::DropItem(int32 SlotIndex)
 			{
 				FItemData* Item = ItemDataTable->FindRow<FItemData>(Slot.ItemID.Id, TEXT("FindItemRow"));
 
-				// ¿ùµå¿¡ µå¶ø ¾×ÅÍ »ý¼º
+				// ï¿½ï¿½ï¿½å¿¡ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 				if (Item && Item->WorldActorClass)
 				{
 					AActor* OwnerActor = GetOwner();
@@ -195,7 +271,7 @@ void UHarmoniaInventoryComponent::DropItem(int32 SlotIndex)
 					}
 				}
 
-				// ÀÎº¥Åä¸® ½½·Ô ºñ¿ì±â
+				// ï¿½Îºï¿½ï¿½ä¸® ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 				Slot = FInventorySlot();
 			}
 		}
@@ -205,4 +281,89 @@ void UHarmoniaInventoryComponent::DropItem(int32 SlotIndex)
 void UHarmoniaInventoryComponent::ServerDropItem_Implementation(int32 SlotIndex)
 {
 	DropItem(SlotIndex);
+}
+
+void UHarmoniaInventoryComponent::ServerAddItem_Implementation(const FHarmoniaID& ItemID, int32 Count, float Durability)
+{
+	AddItem(ItemID, Count, Durability);
+}
+
+bool UHarmoniaInventoryComponent::ServerAddItem_Validate(const FHarmoniaID& ItemID, int32 Count, float Durability)
+{
+	// Anti-cheat: Validate item count
+	if (Count <= 0 || Count > 9999)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerAddItem: Invalid count %d for item %s"), Count, *ItemID.ToString());
+		return false;
+	}
+
+	// Validate item ID
+	if (!ItemID.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerAddItem: Invalid ItemID"));
+		return false;
+	}
+
+	return true;
+}
+
+void UHarmoniaInventoryComponent::ServerRemoveItem_Implementation(const FHarmoniaID& ItemID, int32 Count, float Durability)
+{
+	RemoveItem(ItemID, Count, Durability);
+}
+
+bool UHarmoniaInventoryComponent::ServerRemoveItem_Validate(const FHarmoniaID& ItemID, int32 Count, float Durability)
+{
+	// Anti-cheat: Validate item count
+	if (Count <= 0 || Count > 9999)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerRemoveItem: Invalid count %d for item %s"), Count, *ItemID.ToString());
+		return false;
+	}
+
+	// Validate item ID
+	if (!ItemID.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerRemoveItem: Invalid ItemID"));
+		return false;
+	}
+
+	// Validate player actually has the item
+	int32 CurrentCount = GetTotalCount(ItemID);
+	if (CurrentCount < Count)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerRemoveItem: Player doesn't have enough items (Has: %d, Trying to remove: %d)"), CurrentCount, Count);
+		return false;
+	}
+
+	return true;
+}
+
+void UHarmoniaInventoryComponent::ServerSwapSlots_Implementation(int32 SlotA, int32 SlotB)
+{
+	SwapSlots(SlotA, SlotB);
+}
+
+bool UHarmoniaInventoryComponent::ServerSwapSlots_Validate(int32 SlotA, int32 SlotB)
+{
+	// Anti-cheat: Validate slot indices
+	if (!InventoryData.Slots.IsValidIndex(SlotA) || !InventoryData.Slots.IsValidIndex(SlotB))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSwapSlots: Invalid slot indices (A: %d, B: %d, Max: %d)"),
+			SlotA, SlotB, InventoryData.Slots.Num() - 1);
+		return false;
+	}
+
+	if (SlotA == SlotB)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSwapSlots: Cannot swap slot with itself"));
+		return false;
+	}
+
+	return true;
+}
+
+void UHarmoniaInventoryComponent::ServerClear_Implementation()
+{
+	Clear();
 }

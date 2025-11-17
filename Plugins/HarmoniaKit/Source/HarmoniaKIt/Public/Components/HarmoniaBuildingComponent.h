@@ -21,18 +21,18 @@ class HARMONIAKIT_API UHarmoniaBuildingComponent : public UActorComponent
 public:
 	UHarmoniaBuildingComponent();
 
-	// 모드 제어
+	// 모드 제어 (Client requests)
 	UFUNCTION(BlueprintCallable, Category = "Building")
-	void EnterBuildingMode();
+	void RequestEnterBuildingMode();
 
 	UFUNCTION(BlueprintCallable, Category = "Building")
-	void ExitBuildingMode();
+	void RequestExitBuildingMode();
 
 	UFUNCTION(BlueprintCallable, Category = "Building")
-	void SetBuildingMode(EBuildingMode NewMode);
+	void RequestSetBuildingMode(EBuildingMode NewMode);
 
 	UFUNCTION(BlueprintCallable, Category = "Building")
-	void SetSelectedPart(FName PartID);
+	void RequestSetSelectedPart(FName PartID);
 
 	// 현재 선택된 파트 정보
 	UFUNCTION(BlueprintPure, Category = "Building")
@@ -58,6 +58,28 @@ protected:
 	void UpdatePreviewTransform();
 	void DestroyPreviewActor();
 
+	// Server-authoritative functions
+	void EnterBuildingMode();
+	void ExitBuildingMode();
+	void SetBuildingMode(EBuildingMode NewMode);
+	void SetSelectedPart(FName PartID);
+
+	// Server RPCs
+	UFUNCTION(Server, Reliable)
+	void ServerEnterBuildingMode();
+
+	UFUNCTION(Server, Reliable)
+	void ServerExitBuildingMode();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSetBuildingMode(EBuildingMode NewMode);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSetSelectedPart(FName PartID);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerPlacePart(const FVector& Location, const FRotator& Rotation, FName PartID);
+
 	// 배치 처리
 	void PlaceCurrentPart();
 	bool ValidatePlacement(FVector& OutLocation, FRotator& OutRotation);
@@ -65,7 +87,7 @@ protected:
 	// 유틸 함수
 	FBuildingPartData* GetCurrentPartData() const;
 
-	// 자원 검사
+	// 자원 검사 (Server-only)
 	bool CheckAndConsumeResources(const FBuildingPartData& PartData);
 
 private:

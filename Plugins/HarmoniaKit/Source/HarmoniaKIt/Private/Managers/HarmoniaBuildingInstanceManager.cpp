@@ -59,6 +59,14 @@ void UHarmoniaBuildingInstanceManager::Deinitialize()
 
 FGuid UHarmoniaBuildingInstanceManager::PlaceBuilding(const FBuildingPartData& PartData, const FVector& Location, const FRotator& Rotation, AActor* Owner)
 {
+	// Server-only execution
+	UWorld* World = GetWorld();
+	if (!World || World->GetNetMode() == NM_Client)
+	{
+		UE_LOG(LogBuildingInstanceManager, Warning, TEXT("PlaceBuilding called on client - this is a server-only function"));
+		return FGuid();
+	}
+
 	if (!ISMManagerActor)
 	{
 		UE_LOG(LogBuildingInstanceManager, Error, TEXT("ISMManagerActor is null. Cannot place building."));
@@ -129,6 +137,14 @@ FGuid UHarmoniaBuildingInstanceManager::PlaceBuilding(const FBuildingPartData& P
 
 bool UHarmoniaBuildingInstanceManager::RemoveBuilding(const FGuid& BuildingGuid)
 {
+	// Server-only execution
+	UWorld* World = GetWorld();
+	if (!World || World->GetNetMode() == NM_Client)
+	{
+		UE_LOG(LogBuildingInstanceManager, Warning, TEXT("RemoveBuilding called on client - this is a server-only function"));
+		return false;
+	}
+
 	if (!BuildingMetadataMap.Contains(BuildingGuid))
 	{
 		UE_LOG(LogBuildingInstanceManager, Warning, TEXT("Building not found: %s"), *BuildingGuid.ToString());
@@ -165,6 +181,14 @@ bool UHarmoniaBuildingInstanceManager::RemoveBuilding(const FGuid& BuildingGuid)
 
 bool UHarmoniaBuildingInstanceManager::RepairBuilding(const FGuid& BuildingGuid, float RepairAmount)
 {
+	// Server-only execution
+	UWorld* World = GetWorld();
+	if (!World || World->GetNetMode() == NM_Client)
+	{
+		UE_LOG(LogBuildingInstanceManager, Warning, TEXT("RepairBuilding called on client - this is a server-only function"));
+		return false;
+	}
+
 	if (!BuildingMetadataMap.Contains(BuildingGuid))
 		return false;
 
@@ -179,6 +203,14 @@ bool UHarmoniaBuildingInstanceManager::RepairBuilding(const FGuid& BuildingGuid,
 
 bool UHarmoniaBuildingInstanceManager::DamageBuilding(const FGuid& BuildingGuid, float DamageAmount)
 {
+	// Server-only execution
+	UWorld* World = GetWorld();
+	if (!World || World->GetNetMode() == NM_Client)
+	{
+		UE_LOG(LogBuildingInstanceManager, Warning, TEXT("DamageBuilding called on client - this is a server-only function"));
+		return false;
+	}
+
 	if (!BuildingMetadataMap.Contains(BuildingGuid))
 		return false;
 

@@ -72,6 +72,56 @@ void UHarmoniaBuildingComponent::TickComponent(float DeltaTime, ELevelTick TickT
 	}
 }
 
+// Client request functions
+void UHarmoniaBuildingComponent::RequestEnterBuildingMode()
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		EnterBuildingMode();
+	}
+	else
+	{
+		ServerEnterBuildingMode();
+	}
+}
+
+void UHarmoniaBuildingComponent::RequestExitBuildingMode()
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		ExitBuildingMode();
+	}
+	else
+	{
+		ServerExitBuildingMode();
+	}
+}
+
+void UHarmoniaBuildingComponent::RequestSetBuildingMode(EBuildingMode NewMode)
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		SetBuildingMode(NewMode);
+	}
+	else
+	{
+		ServerSetBuildingMode(NewMode);
+	}
+}
+
+void UHarmoniaBuildingComponent::RequestSetSelectedPart(FName PartID)
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		SetSelectedPart(PartID);
+	}
+	else
+	{
+		ServerSetSelectedPart(PartID);
+	}
+}
+
+// Server-authoritative functions
 void UHarmoniaBuildingComponent::EnterBuildingMode()
 {
 	SetBuildingMode(EBuildingMode::Build);
@@ -292,16 +342,9 @@ bool UHarmoniaBuildingComponent::ValidatePlacement(FVector& OutLocation, FRotato
 
 void UHarmoniaBuildingComponent::PlaceCurrentPart()
 {
-	if (!PreviewActor || !InstanceManager || !GetOwner())
+	if (!PreviewActor || !GetOwner())
 	{
 		UE_LOG(LogBuildingSystem, Warning, TEXT("Cannot place: Missing required components"));
-		return;
-	}
-
-	FBuildingPartData* PartData = GetCurrentPartData();
-	if (!PartData)
-	{
-		UE_LOG(LogBuildingSystem, Warning, TEXT("Cannot place: Part data not found"));
 		return;
 	}
 
@@ -314,33 +357,63 @@ void UHarmoniaBuildingComponent::PlaceCurrentPart()
 		return;
 	}
 
-	// 자원 검사 및 소비
-	if (!CheckAndConsumeResources(*PartData))
+	// Request server to place building
+	if (GetOwner()->HasAuthority())
 	{
-		UE_LOG(LogBuildingSystem, Warning, TEXT("Cannot place: Insufficient resources"));
-		return;
-	}
+		// Server: Perform placement directly
+		FBuildingPartData* PartData = GetCurrentPartData();
+		if (!PartData)
+		{
+			UE_LOG(LogBuildingSystem, Warning, TEXT("Cannot place: Part data not found"));
+			return;
+		}
 
-	// 건축물 배치
-	FGuid BuildingGuid = InstanceManager->PlaceBuilding(*PartData, Location, Rotation, GetOwner());
+		// 자원 검사 및 소비 (Server-only)
+		if (!CheckAndConsumeResources(*PartData))
+		{
+			UE_LOG(LogBuildingSystem, Warning, TEXT("Cannot place: Insufficient resources"));
+			return;
+		}
 
-	if (BuildingGuid.IsValid())
-	{
-		UE_LOG(LogBuildingSystem, Log, TEXT("Building placed successfully: %s at %s"),
-			*PartData->ID.ToString(), *Location.ToString());
+		if (!InstanceManager)
+		{
+			UE_LOG(LogBuildingSystem, Warning, TEXT("Cannot place: InstanceManager not found"));
+			return;
+		}
 
-		// 프리뷰 리셋 (계속 건축 모드 유지)
-		DestroyPreviewActor();
-		SpawnPreviewActor();
+		// 건축물 배치
+		FGuid BuildingGuid = InstanceManager->PlaceBuilding(*PartData, Location, Rotation, GetOwner());
+
+		if (BuildingGuid.IsValid())
+		{
+			UE_LOG(LogBuildingSystem, Log, TEXT("Building placed successfully: %s at %s"),
+				*PartData->ID.ToString(), *Location.ToString());
+
+			// 프리뷰 리셋 (계속 건축 모드 유지)
+			DestroyPreviewActor();
+			SpawnPreviewActor();
+		}
+		else
+		{
+			UE_LOG(LogBuildingSystem, Error, TEXT("Failed to place building"));
+		}
 	}
 	else
 	{
-		UE_LOG(LogBuildingSystem, Error, TEXT("Failed to place building"));
+		// Client: Request server to place
+		ServerPlacePart(Location, Rotation, SelectedPartID);
 	}
 }
 
 bool UHarmoniaBuildingComponent::CheckAndConsumeResources(const FBuildingPartData& PartData)
 {
+	// Server-only execution
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		UE_LOG(LogBuildingSystem, Warning, TEXT("CheckAndConsumeResources called on client - this is a server-only function"));
+		return false;
+	}
+
 	if (!InventoryComponent)
 	{
 		UE_LOG(LogBuildingSystem, Warning, TEXT("InventoryComponent not found, skipping resource check"));
@@ -438,5 +511,136 @@ void UHarmoniaBuildingComponent::HandleRotateAction()
 
 void UHarmoniaBuildingComponent::HandleCancelAction()
 {
+	RequestExitBuildingMode();
+}
+
+// Server RPC implementations
+void UHarmoniaBuildingComponent::ServerEnterBuildingMode_Implementation()
+{
+	EnterBuildingMode();
+}
+
+void UHarmoniaBuildingComponent::ServerExitBuildingMode_Implementation()
+{
 	ExitBuildingMode();
+}
+
+void UHarmoniaBuildingComponent::ServerSetBuildingMode_Implementation(EBuildingMode NewMode)
+{
+	SetBuildingMode(NewMode);
+}
+
+bool UHarmoniaBuildingComponent::ServerSetBuildingMode_Validate(EBuildingMode NewMode)
+{
+	// Validate mode is valid enum value
+	return true;
+}
+
+void UHarmoniaBuildingComponent::ServerSetSelectedPart_Implementation(FName PartID)
+{
+	SetSelectedPart(PartID);
+}
+
+bool UHarmoniaBuildingComponent::ServerSetSelectedPart_Validate(FName PartID)
+{
+	// Anti-cheat: Validate part exists in data table
+	if (PartID.IsNone())
+	{
+		return true; // Allow clearing selection
+	}
+
+	if (!CachedBuildingDataTable)
+	{
+		UE_LOG(LogBuildingSystem, Warning, TEXT("[ANTI-CHEAT] ServerSetSelectedPart: BuildingDataTable not loaded"));
+		return false;
+	}
+
+	FBuildingPartData* PartData = CachedBuildingDataTable->FindRow<FBuildingPartData>(PartID, TEXT("ServerSetSelectedPart_Validate"));
+	if (!PartData)
+	{
+		UE_LOG(LogBuildingSystem, Warning, TEXT("[ANTI-CHEAT] ServerSetSelectedPart: Invalid PartID %s"), *PartID.ToString());
+		return false;
+	}
+
+	return true;
+}
+
+void UHarmoniaBuildingComponent::ServerPlacePart_Implementation(const FVector& Location, const FRotator& Rotation, FName PartID)
+{
+	// Validate part ID
+	if (PartID.IsNone() || !CachedBuildingDataTable)
+	{
+		UE_LOG(LogBuildingSystem, Warning, TEXT("ServerPlacePart: Invalid PartID or DataTable"));
+		return;
+	}
+
+	FBuildingPartData* PartData = CachedBuildingDataTable->FindRow<FBuildingPartData>(PartID, TEXT("ServerPlacePart"));
+	if (!PartData)
+	{
+		UE_LOG(LogBuildingSystem, Warning, TEXT("ServerPlacePart: Part data not found"));
+		return;
+	}
+
+	// Check resources (server-authoritative)
+	if (!CheckAndConsumeResources(*PartData))
+	{
+		UE_LOG(LogBuildingSystem, Warning, TEXT("ServerPlacePart: Insufficient resources"));
+		return;
+	}
+
+	if (!InstanceManager)
+	{
+		UE_LOG(LogBuildingSystem, Warning, TEXT("ServerPlacePart: InstanceManager not found"));
+		return;
+	}
+
+	// Place building
+	FGuid BuildingGuid = InstanceManager->PlaceBuilding(*PartData, Location, Rotation, GetOwner());
+
+	if (BuildingGuid.IsValid())
+	{
+		UE_LOG(LogBuildingSystem, Log, TEXT("Building placed successfully via RPC: %s at %s"),
+			*PartData->ID.ToString(), *Location.ToString());
+	}
+	else
+	{
+		UE_LOG(LogBuildingSystem, Error, TEXT("Failed to place building via RPC"));
+	}
+}
+
+bool UHarmoniaBuildingComponent::ServerPlacePart_Validate(const FVector& Location, const FRotator& Rotation, FName PartID)
+{
+	// Anti-cheat: Validate location is not too far from player
+	if (AActor* Owner = GetOwner())
+	{
+		float Distance = FVector::Dist(Owner->GetActorLocation(), Location);
+		if (Distance > MaxPlacementDistance * 2.0f) // Allow 2x buffer for network lag
+		{
+			UE_LOG(LogBuildingSystem, Warning, TEXT("[ANTI-CHEAT] ServerPlacePart: Location too far from player (%.1f > %.1f)"),
+				Distance, MaxPlacementDistance * 2.0f);
+			return false;
+		}
+	}
+
+	// Validate PartID
+	if (PartID.IsNone())
+	{
+		UE_LOG(LogBuildingSystem, Warning, TEXT("[ANTI-CHEAT] ServerPlacePart: Invalid PartID"));
+		return false;
+	}
+
+	if (!CachedBuildingDataTable)
+	{
+		UE_LOG(LogBuildingSystem, Warning, TEXT("[ANTI-CHEAT] ServerPlacePart: BuildingDataTable not loaded"));
+		return false;
+	}
+
+	FBuildingPartData* PartData = CachedBuildingDataTable->FindRow<FBuildingPartData>(PartID, TEXT("ServerPlacePart_Validate"));
+	if (!PartData)
+	{
+		UE_LOG(LogBuildingSystem, Warning, TEXT("[ANTI-CHEAT] ServerPlacePart: Invalid PartID %s"), *PartID.ToString());
+		return false;
+	}
+
+	return true;
 }

@@ -709,8 +709,53 @@ bool UHarmoniaCraftingComponent::MeetsRecipeRequirements(const FCraftingRecipeDa
 //~ Crafting Station System
 //~==============================================
 
+// Client request functions
+void UHarmoniaCraftingComponent::RequestSetCurrentStation(ECraftingStationType StationType, FGameplayTagContainer StationTags)
+{
+	if (GetOwnerRole() == ROLE_Authority)
+	{
+		SetCurrentStation(StationType, StationTags);
+	}
+	else
+	{
+		ServerSetCurrentStation(StationType, StationTags);
+	}
+}
+
+void UHarmoniaCraftingComponent::RequestSetCurrentStationWithActor(AActor* StationActor, ECraftingStationType StationType, FGameplayTagContainer StationTags)
+{
+	if (GetOwnerRole() == ROLE_Authority)
+	{
+		SetCurrentStationWithActor(StationActor, StationType, StationTags);
+	}
+	else
+	{
+		ServerSetCurrentStationWithActor(StationActor, StationType, StationTags);
+	}
+}
+
+void UHarmoniaCraftingComponent::RequestClearCurrentStation()
+{
+	if (GetOwnerRole() == ROLE_Authority)
+	{
+		ClearCurrentStation();
+	}
+	else
+	{
+		ServerClearCurrentStation();
+	}
+}
+
+// Server-authoritative functions
 void UHarmoniaCraftingComponent::SetCurrentStation(ECraftingStationType StationType, FGameplayTagContainer StationTags)
 {
+	// Server-only execution
+	if (GetOwnerRole() != ROLE_Authority)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SetCurrentStation called on client - use RequestSetCurrentStation instead"));
+		return;
+	}
+
 	CurrentStation = StationType;
 	CurrentStationTags = StationTags;
 
@@ -719,8 +764,16 @@ void UHarmoniaCraftingComponent::SetCurrentStation(ECraftingStationType StationT
 
 void UHarmoniaCraftingComponent::ClearCurrentStation()
 {
+	// Server-only execution
+	if (GetOwnerRole() != ROLE_Authority)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ClearCurrentStation called on client - use RequestClearCurrentStation instead"));
+		return;
+	}
+
 	CurrentStation = ECraftingStationType::None;
 	CurrentStationTags.Reset();
+	CurrentStationActor = nullptr;
 
 	UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::ClearCurrentStation - Station cleared"));
 }
@@ -1056,12 +1109,105 @@ bool UHarmoniaCraftingComponent::VerifyStationDistance() const
 
 void UHarmoniaCraftingComponent::SetCurrentStationWithActor(AActor* StationActor, ECraftingStationType StationType, FGameplayTagContainer StationTags)
 {
+	// Server-only execution
+	if (GetOwnerRole() != ROLE_Authority)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SetCurrentStationWithActor called on client - use RequestSetCurrentStationWithActor instead"));
+		return;
+	}
+
 	CurrentStation = StationType;
 	CurrentStationTags = StationTags;
 	CurrentStationActor = StationActor;
 
 	UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::SetCurrentStationWithActor - Station set to: %d with actor: %s"),
 		(int32)StationType, *GetNameSafe(StationActor));
+}
+
+// Server RPC implementations
+void UHarmoniaCraftingComponent::ServerSetCurrentStation_Implementation(ECraftingStationType StationType, FGameplayTagContainer StationTags)
+{
+	SetCurrentStation(StationType, StationTags);
+}
+
+bool UHarmoniaCraftingComponent::ServerSetCurrentStation_Validate(ECraftingStationType StationType, FGameplayTagContainer StationTags)
+{
+	// Anti-cheat: Validate station type is valid
+	if (StationType == ECraftingStationType::None)
+	{
+		return true; // Allow clearing station
+	}
+
+	// Validate station type exists in data
+	FCraftingStationData StationData;
+	if (!GetStationData(StationType, StationData))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStation: Invalid StationType %d"), (int32)StationType);
+		return false;
+	}
+
+	return true;
+}
+
+void UHarmoniaCraftingComponent::ServerSetCurrentStationWithActor_Implementation(AActor* StationActor, ECraftingStationType StationType, FGameplayTagContainer StationTags)
+{
+	// Validate station actor distance
+	if (StationActor && GetOwner())
+	{
+		float Distance = FVector::Dist(GetOwner()->GetActorLocation(), StationActor->GetActorLocation());
+		if (Distance > MaxStationInteractionDistance)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("ServerSetCurrentStationWithActor: Station too far (Distance: %.1f, Max: %.1f)"),
+				Distance, MaxStationInteractionDistance);
+			return;
+		}
+	}
+
+	SetCurrentStationWithActor(StationActor, StationType, StationTags);
+}
+
+bool UHarmoniaCraftingComponent::ServerSetCurrentStationWithActor_Validate(AActor* StationActor, ECraftingStationType StationType, FGameplayTagContainer StationTags)
+{
+	// Anti-cheat: Validate station type
+	if (StationType == ECraftingStationType::None)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Cannot set None with actor"));
+		return false;
+	}
+
+	// Validate station type exists
+	FCraftingStationData StationData;
+	if (!GetStationData(StationType, StationData))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Invalid StationType %d"), (int32)StationType);
+		return false;
+	}
+
+	// Validate station actor exists
+	if (!StationActor)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: StationActor is null"));
+		return false;
+	}
+
+	// Validate distance (2x buffer for network lag)
+	if (GetOwner())
+	{
+		float Distance = FVector::Dist(GetOwner()->GetActorLocation(), StationActor->GetActorLocation());
+		if (Distance > MaxStationInteractionDistance * 2.0f)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Station too far (Distance: %.1f, Max: %.1f)"),
+				Distance, MaxStationInteractionDistance * 2.0f);
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void UHarmoniaCraftingComponent::ServerClearCurrentStation_Implementation()
+{
+	ClearCurrentStation();
 }
 
 //~==============================================

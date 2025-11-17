@@ -175,27 +175,27 @@ public:
 	//~==============================================
 public:
 	/**
-	 * Set current crafting station
+	 * Request to set current crafting station
 	 * @param StationType - Type of station to use
 	 * @param StationTags - Additional tags for custom stations
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Crafting|Station")
-	void SetCurrentStation(ECraftingStationType StationType, FGameplayTagContainer StationTags = FGameplayTagContainer());
+	void RequestSetCurrentStation(ECraftingStationType StationType, FGameplayTagContainer StationTags = FGameplayTagContainer());
 
 	/**
-	 * Set current crafting station with actor reference (for distance verification)
+	 * Request to set current crafting station with actor reference (for distance verification)
 	 * @param StationActor - The station actor
 	 * @param StationType - Type of station to use
 	 * @param StationTags - Additional tags for custom stations
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Crafting|Station")
-	void SetCurrentStationWithActor(AActor* StationActor, ECraftingStationType StationType, FGameplayTagContainer StationTags = FGameplayTagContainer());
+	void RequestSetCurrentStationWithActor(AActor* StationActor, ECraftingStationType StationType, FGameplayTagContainer StationTags = FGameplayTagContainer());
 
 	/**
-	 * Clear current crafting station (return to hand crafting)
+	 * Request to clear current crafting station (return to hand crafting)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Crafting|Station")
-	void ClearCurrentStation();
+	void RequestClearCurrentStation();
 
 	/**
 	 * Get current crafting station type
@@ -295,6 +295,21 @@ public:
 	//~ Internal Crafting Logic
 	//~==============================================
 protected:
+	// Server-authoritative station functions
+	void SetCurrentStation(ECraftingStationType StationType, FGameplayTagContainer StationTags = FGameplayTagContainer());
+	void SetCurrentStationWithActor(AActor* StationActor, ECraftingStationType StationType, FGameplayTagContainer StationTags = FGameplayTagContainer());
+	void ClearCurrentStation();
+
+	// Server RPCs for station management
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSetCurrentStation(ECraftingStationType StationType, FGameplayTagContainer StationTags);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSetCurrentStationWithActor(AActor* StationActor, ECraftingStationType StationType, FGameplayTagContainer StationTags);
+
+	UFUNCTION(Server, Reliable)
+	void ServerClearCurrentStation();
+
 	/**
 	 * Complete the current crafting session
 	 * Determines success/failure and distributes rewards
