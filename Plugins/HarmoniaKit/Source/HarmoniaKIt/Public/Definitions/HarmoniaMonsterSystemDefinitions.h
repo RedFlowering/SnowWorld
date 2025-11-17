@@ -6,13 +6,45 @@
 #include "Engine/DataTable.h"
 #include "GameplayTagContainer.h"
 #include "Engine/DataAsset.h"
-#include "Monsters/HarmoniaMonsterInterface.h"
 #include "HarmoniaMonsterSystemDefinitions.generated.h"
 
 class UGameplayEffect;
 class UGameplayAbility;
 class UAnimMontage;
 class UBehaviorTree;
+
+// ============================================================================
+// Monster State & Behavior Enums
+// ============================================================================
+
+/**
+ * Monster State Enum
+ * Defines the current behavior state of the monster
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaMonsterState : uint8
+{
+	Idle UMETA(DisplayName = "Idle"),
+	Patrol UMETA(DisplayName = "Patrol"),
+	Alert UMETA(DisplayName = "Alert"),
+	Combat UMETA(DisplayName = "Combat"),
+	Retreating UMETA(DisplayName = "Retreating"),
+	Stunned UMETA(DisplayName = "Stunned"),
+	Dead UMETA(DisplayName = "Dead")
+};
+
+/**
+ * Monster Aggro Type
+ * Defines how the monster reacts to players
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaMonsterAggroType : uint8
+{
+	Passive UMETA(DisplayName = "Passive"),		// Never attacks unless provoked
+	Neutral UMETA(DisplayName = "Neutral"),		// Attacks when attacked
+	Aggressive UMETA(DisplayName = "Aggressive"),	// Attacks on sight
+	Territorial UMETA(DisplayName = "Territorial")	// Attacks when in territory
+};
 
 // ============================================================================
 // Faction System
