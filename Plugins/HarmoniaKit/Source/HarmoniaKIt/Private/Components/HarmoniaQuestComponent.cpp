@@ -40,10 +40,12 @@ void UHarmoniaQuestComponent::TickComponent(float DeltaTime, ELevelTick TickType
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// Only server updates time-limited quests
+	// Only server updates time-limited quests and fail conditions
 	if (GetOwnerRole() == ROLE_Authority)
 	{
 		UpdateTimeLimitedQuests(DeltaTime);
+		CheckFailConditions(DeltaTime);
+		UpdateHintSystem(DeltaTime);
 	}
 }
 
@@ -55,6 +57,8 @@ void UHarmoniaQuestComponent::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	DOREPLIFETIME(UHarmoniaQuestComponent, CompletedQuests);
 	DOREPLIFETIME(UHarmoniaQuestComponent, FailedQuests);
 	DOREPLIFETIME(UHarmoniaQuestComponent, TrackedQuest);
+	DOREPLIFETIME(UHarmoniaQuestComponent, QuestStatistics);
+	DOREPLIFETIME(UHarmoniaQuestComponent, QuestLog);
 }
 
 void UHarmoniaQuestComponent::OnRep_ActiveQuests()
@@ -136,13 +140,34 @@ bool UHarmoniaQuestComponent::StartQuest(FHarmoniaID QuestId)
 	FActiveQuestProgress NewProgress;
 	NewProgress.QuestId = QuestId;
 	NewProgress.State = EQuestState::InProgress;
-	NewProgress.ObjectiveProgress = QuestData.Objectives;
+	NewProgress.CurrentPhase = 0;
+
+	// If quest uses phases, set objectives from first phase
+	if (QuestData.Phases.Num() > 0)
+	{
+		NewProgress.ObjectiveProgress = QuestData.Phases[0].PhaseObjectives;
+	}
+	else
+	{
+		NewProgress.ObjectiveProgress = QuestData.Objectives;
+	}
+
 	NewProgress.StartTime = GetWorld()->GetTimeSeconds();
 	NewProgress.ElapsedTime = 0.0f;
 	NewProgress.bTracked = false;
 
 	// Add to active quests
 	ActiveQuests.Add(NewProgress);
+
+	// Update quest log
+	UpdateQuestLog(QuestId, QuestData, false);
+
+	// Trigger OnStart events
+	TriggerQuestEvents(QuestId, EQuestEventTrigger::OnStart);
+
+	// Show notification
+	ShowNotification(EQuestNotificationType::QuestStarted, QuestId,
+		FText::Format(FText::FromString(TEXT("Quest Started: {0}")), QuestData.QuestName));
 
 	// Broadcast event
 	OnQuestStarted.Broadcast(QuestId, QuestData);
@@ -213,8 +238,24 @@ bool UHarmoniaQuestComponent::CompleteQuest(FHarmoniaID QuestId, const TArray<in
 		}
 	}
 
+	// Calculate completion time
+	float CompletionTime = Progress->ElapsedTime;
+
 	// Grant rewards
 	GrantRewards(AllRewards);
+
+	// Check and grant bonus rewards
+	for (const FBonusObjective& BonusObj : QuestData.BonusObjectives)
+	{
+		// Check if bonus objective was completed (this would need custom tracking)
+		// For now, we skip bonus objectives - they would need progress tracking
+	}
+
+	// Update statistics
+	UpdateQuestStatistics(QuestId, QuestData, CompletionTime);
+
+	// Update quest log
+	UpdateQuestLog(QuestId, QuestData, true);
 
 	// Remove from active quests
 	ActiveQuests.RemoveAll([QuestId](const FActiveQuestProgress& Item) {
@@ -230,6 +271,13 @@ bool UHarmoniaQuestComponent::CompleteQuest(FHarmoniaID QuestId, const TArray<in
 	// Remove from failed quests if it was there
 	FailedQuests.Remove(QuestId);
 
+	// Trigger OnComplete events
+	TriggerQuestEvents(QuestId, EQuestEventTrigger::OnComplete);
+
+	// Show notification
+	ShowNotification(EQuestNotificationType::QuestCompleted, QuestId,
+		FText::Format(FText::FromString(TEXT("Quest Completed: {0}")), QuestData.QuestName));
+
 	// Broadcast event
 	OnQuestCompleted.Broadcast(QuestId, QuestData, AllRewards);
 
@@ -242,7 +290,7 @@ bool UHarmoniaQuestComponent::CompleteQuest(FHarmoniaID QuestId, const TArray<in
 	// Check quest chain
 	CheckQuestChain(QuestId);
 
-	UE_LOG(LogTemp, Log, TEXT("Quest %s completed"), *QuestId.ToString());
+	UE_LOG(LogTemp, Log, TEXT("Quest %s completed in %.2f seconds"), *QuestId.ToString(), CompletionTime);
 	return true;
 }
 
@@ -292,6 +340,9 @@ bool UHarmoniaQuestComponent::AbandonQuest(FHarmoniaID QuestId)
 	{
 		TrackedQuest = FHarmoniaID();
 	}
+
+	// Trigger OnAbandon events
+	TriggerQuestEvents(QuestId, EQuestEventTrigger::OnAbandon);
 
 	// Broadcast event
 	OnQuestAbandoned.Broadcast(QuestId, QuestData);
@@ -349,6 +400,13 @@ bool UHarmoniaQuestComponent::FailQuest(FHarmoniaID QuestId)
 		TrackedQuest = FHarmoniaID();
 	}
 
+	// Trigger OnFail events
+	TriggerQuestEvents(QuestId, EQuestEventTrigger::OnFail);
+
+	// Show notification
+	ShowNotification(EQuestNotificationType::QuestFailed, QuestId,
+		FText::Format(FText::FromString(TEXT("Quest Failed: {0}")), QuestData.QuestName));
+
 	// Broadcast event
 	OnQuestFailed.Broadcast(QuestId, QuestData);
 
@@ -398,28 +456,67 @@ bool UHarmoniaQuestComponent::UpdateQuestObjective(FHarmoniaID QuestId, int32 Ob
 	// Broadcast event
 	OnQuestObjectiveUpdated.Broadcast(QuestId, ObjectiveIndex, Objective);
 
+	// Show notification for objective completion
+	if (bObjectiveCompleted)
+	{
+		ShowNotification(EQuestNotificationType::ObjectiveComplete, QuestId, Objective.Description);
+		TriggerQuestEvents(QuestId, EQuestEventTrigger::OnObjectiveComplete);
+	}
+
 	// Notify client
 	if (GetOwnerRole() == ROLE_Authority)
 	{
 		ClientObjectiveUpdated(QuestId, ObjectiveIndex);
 	}
 
-	// Check if all objectives are completed
-	if (QuestProgress->AreObjectivesCompleted())
+	// Get quest data
+	FQuestData QuestData;
+	if (GetQuestData(QuestId, QuestData))
 	{
-		QuestProgress->State = EQuestState::ReadyToComplete;
-
-		// Get quest data
-		FQuestData QuestData;
-		if (GetQuestData(QuestId, QuestData))
+		// Check if all objectives are completed
+		if (QuestProgress->AreObjectivesCompleted())
 		{
-			// Broadcast ready to complete event
-			OnQuestReadyToComplete.Broadcast(QuestId, QuestData);
-
-			// Auto-complete if enabled
-			if (QuestData.bAutoComplete)
+			// Check if this is a phased quest
+			if (QuestData.Phases.Num() > 0)
 			{
-				CompleteQuest(QuestId, TArray<int32>());
+				// Check if we should auto-advance to next phase
+				int32 NextPhase = QuestProgress->CurrentPhase + 1;
+				if (NextPhase < QuestData.Phases.Num())
+				{
+					// Phase complete notification
+					ShowNotification(EQuestNotificationType::PhaseComplete, QuestId,
+						FText::Format(FText::FromString(TEXT("Phase {0} Complete")), FText::AsNumber(QuestProgress->CurrentPhase + 1)));
+
+					// Auto-advance if enabled
+					const FQuestPhase& CurrentPhase = QuestData.Phases[QuestProgress->CurrentPhase];
+					if (CurrentPhase.bAutoAdvance)
+					{
+						AdvanceToNextPhase(QuestId);
+					}
+				}
+				else
+				{
+					// Last phase complete, quest is ready to complete
+					QuestProgress->State = EQuestState::ReadyToComplete;
+					OnQuestReadyToComplete.Broadcast(QuestId, QuestData);
+
+					if (QuestData.bAutoComplete)
+					{
+						CompleteQuest(QuestId, TArray<int32>());
+					}
+				}
+			}
+			else
+			{
+				// Non-phased quest, ready to complete
+				QuestProgress->State = EQuestState::ReadyToComplete;
+				OnQuestReadyToComplete.Broadcast(QuestId, QuestData);
+
+				// Auto-complete if enabled
+				if (QuestData.bAutoComplete)
+				{
+					CompleteQuest(QuestId, TArray<int32>());
+				}
 			}
 		}
 	}
@@ -1055,6 +1152,711 @@ void UHarmoniaQuestComponent::CheckAutoComplete(FHarmoniaID QuestId)
 			CompleteQuest(QuestId, TArray<int32>());
 		}
 	}
+}
+
+//~==============================================
+//~ Quest Phase System
+//~==============================================
+
+int32 UHarmoniaQuestComponent::GetCurrentPhase(FHarmoniaID QuestId) const
+{
+	const FActiveQuestProgress* Progress = FindActiveQuest(QuestId);
+	if (Progress)
+	{
+		return Progress->CurrentPhase;
+	}
+	return -1;
+}
+
+bool UHarmoniaQuestComponent::AdvanceToNextPhase(FHarmoniaID QuestId)
+{
+	// Server only
+	if (GetOwnerRole() < ROLE_Authority)
+	{
+		return false;
+	}
+
+	FActiveQuestProgress* Progress = FindActiveQuest(QuestId);
+	if (!Progress)
+	{
+		return false;
+	}
+
+	FQuestData QuestData;
+	if (!GetQuestData(QuestId, QuestData))
+	{
+		return false;
+	}
+
+	// Check if quest uses phases
+	if (QuestData.Phases.Num() == 0)
+	{
+		return false;
+	}
+
+	// Check if current phase objectives are complete
+	if (!ArePhaseObjectivesComplete(QuestId, Progress->CurrentPhase))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot advance phase: current phase objectives not complete"));
+		return false;
+	}
+
+	int32 NextPhase = Progress->CurrentPhase + 1;
+	if (NextPhase >= QuestData.Phases.Num())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot advance: already at last phase"));
+		return false;
+	}
+
+	// Trigger current phase completion events
+	TriggerPhaseEvents(QuestId, Progress->CurrentPhase);
+
+	// Advance to next phase
+	Progress->CurrentPhase = NextPhase;
+
+	// Update objectives for new phase
+	if (QuestData.Phases.IsValidIndex(NextPhase))
+	{
+		Progress->ObjectiveProgress = QuestData.Phases[NextPhase].PhaseObjectives;
+	}
+
+	// Trigger next phase start events
+	TriggerQuestEvents(QuestId, EQuestEventTrigger::OnPhaseChange);
+
+	UE_LOG(LogTemp, Log, TEXT("Quest %s advanced to phase %d"), *QuestId.ToString(), NextPhase);
+	return true;
+}
+
+bool UHarmoniaQuestComponent::GetPhaseObjectives(FHarmoniaID QuestId, int32 PhaseNumber, TArray<FQuestObjective>& OutObjectives) const
+{
+	FQuestData QuestData;
+	if (!GetQuestData(QuestId, QuestData))
+	{
+		return false;
+	}
+
+	if (!QuestData.Phases.IsValidIndex(PhaseNumber))
+	{
+		return false;
+	}
+
+	OutObjectives = QuestData.Phases[PhaseNumber].PhaseObjectives;
+	return true;
+}
+
+bool UHarmoniaQuestComponent::ArePhaseObjectivesComplete(FHarmoniaID QuestId, int32 PhaseNumber) const
+{
+	const FActiveQuestProgress* Progress = FindActiveQuest(QuestId);
+	if (!Progress)
+	{
+		return false;
+	}
+
+	// If not on the requested phase, return false
+	if (Progress->CurrentPhase != PhaseNumber)
+	{
+		return false;
+	}
+
+	// Check if all objectives are complete
+	return Progress->AreObjectivesCompleted();
+}
+
+void UHarmoniaQuestComponent::TriggerPhaseEvents(FHarmoniaID QuestId, int32 PhaseNumber)
+{
+	FQuestData QuestData;
+	if (!GetQuestData(QuestId, QuestData))
+	{
+		return;
+	}
+
+	if (!QuestData.Phases.IsValidIndex(PhaseNumber))
+	{
+		return;
+	}
+
+	// Trigger phase-specific events
+	const FQuestPhase& Phase = QuestData.Phases[PhaseNumber];
+	for (const FQuestEvent& Event : Phase.PhaseEvents)
+	{
+		ExecuteQuestEvent(Event, QuestId);
+	}
+}
+
+//~==============================================
+//~ Quest Marker System
+//~==============================================
+
+TArray<FQuestMarker> UHarmoniaQuestComponent::GetActiveMarkers(FHarmoniaID QuestId) const
+{
+	TArray<FQuestMarker> Markers;
+
+	FQuestData QuestData;
+	if (!GetQuestData(QuestId, QuestData))
+	{
+		return Markers;
+	}
+
+	const FActiveQuestProgress* Progress = FindActiveQuest(QuestId);
+	if (!Progress)
+	{
+		return Markers;
+	}
+
+	// If using phases, get markers from current phase
+	if (QuestData.Phases.Num() > 0 && QuestData.Phases.IsValidIndex(Progress->CurrentPhase))
+	{
+		Markers = QuestData.Phases[Progress->CurrentPhase].PhaseMarkers;
+	}
+	else
+	{
+		// Otherwise use global markers
+		Markers = QuestData.Markers;
+	}
+
+	return Markers;
+}
+
+TArray<FQuestMarker> UHarmoniaQuestComponent::GetAllActiveMarkers() const
+{
+	TArray<FQuestMarker> AllMarkers;
+
+	for (const FActiveQuestProgress& Progress : ActiveQuests)
+	{
+		TArray<FQuestMarker> QuestMarkers = GetActiveMarkers(Progress.QuestId);
+		AllMarkers.Append(QuestMarkers);
+	}
+
+	return AllMarkers;
+}
+
+void UHarmoniaQuestComponent::UpdateMarkerActor(FHarmoniaID QuestId, int32 MarkerIndex, AActor* NewActor)
+{
+	// This would require storing marker runtime data in ActiveQuestProgress
+	// For now, this is a placeholder for runtime marker updates
+	UE_LOG(LogTemp, Log, TEXT("Marker actor updated for quest %s, marker %d"), *QuestId.ToString(), MarkerIndex);
+}
+
+//~==============================================
+//~ Quest Hint System
+//~==============================================
+
+TArray<FQuestHint> UHarmoniaQuestComponent::GetAvailableHints(FHarmoniaID QuestId)
+{
+	TArray<FQuestHint> AvailableHints;
+
+	FQuestData QuestData;
+	if (!GetQuestData(QuestId, QuestData))
+	{
+		return AvailableHints;
+	}
+
+	const FActiveQuestProgress* Progress = FindActiveQuest(QuestId);
+	if (!Progress)
+	{
+		return AvailableHints;
+	}
+
+	float CurrentTime = GetWorld()->GetTimeSeconds();
+	float QuestTime = CurrentTime - Progress->StartTime;
+
+	// Check each hint if it should be shown
+	for (const FQuestHint& Hint : QuestData.Hints)
+	{
+		// Check if already shown
+		if (Hint.bShown)
+		{
+			continue;
+		}
+
+		// Check time delay
+		if (QuestTime < Hint.ShowAfterSeconds)
+		{
+			continue;
+		}
+
+		// Check if quest is stuck (no progress for a while)
+		if (Hint.bShowIfStuck && Progress->ElapsedTime < Hint.ShowAfterSeconds)
+		{
+			continue;
+		}
+
+		AvailableHints.Add(Hint);
+	}
+
+	return AvailableHints;
+}
+
+void UHarmoniaQuestComponent::MarkHintShown(FHarmoniaID QuestId, int32 HintIndex)
+{
+	// Server only
+	if (GetOwnerRole() < ROLE_Authority)
+	{
+		return;
+	}
+
+	FQuestData QuestData;
+	if (!GetQuestData(QuestId, QuestData))
+	{
+		return;
+	}
+
+	// Note: This modifies the data table, which is not ideal for runtime
+	// In production, you'd want to store shown hints in ActiveQuestProgress
+	if (QuestData.Hints.IsValidIndex(HintIndex))
+	{
+		UE_LOG(LogTemp, Log, TEXT("Hint %d marked as shown for quest %s"), HintIndex, *QuestId.ToString());
+
+		// Show notification
+		ShowNotification(EQuestNotificationType::HintShown, QuestId, QuestData.Hints[HintIndex].HintText);
+	}
+}
+
+void UHarmoniaQuestComponent::UpdateHintSystem(float DeltaTime)
+{
+	// Check hints for all active quests
+	for (const FActiveQuestProgress& Progress : ActiveQuests)
+	{
+		TArray<FQuestHint> Hints = GetAvailableHints(Progress.QuestId);
+
+		// Auto-show hints if any are available
+		for (int32 i = 0; i < Hints.Num(); ++i)
+		{
+			if (!Hints[i].bShown)
+			{
+				// In a real implementation, you'd notify UI to show the hint
+				UE_LOG(LogTemp, Verbose, TEXT("Hint available for quest %s: %s"),
+					*Progress.QuestId.ToString(), *Hints[i].HintText.ToString());
+			}
+		}
+	}
+}
+
+//~==============================================
+//~ Quest Statistics
+//~==============================================
+
+bool UHarmoniaQuestComponent::GetQuestLogEntry(FHarmoniaID QuestId, FQuestLogEntry& OutEntry) const
+{
+	const FQuestLogEntry* Entry = QuestLog.FindByPredicate([QuestId](const FQuestLogEntry& Item) {
+		return Item.QuestId == QuestId;
+	});
+
+	if (Entry)
+	{
+		OutEntry = *Entry;
+		return true;
+	}
+
+	return false;
+}
+
+void UHarmoniaQuestComponent::AddPlayerNote(FHarmoniaID QuestId, const FString& Note)
+{
+	// Server only
+	if (GetOwnerRole() < ROLE_Authority)
+	{
+		return;
+	}
+
+	FQuestLogEntry* Entry = QuestLog.FindByPredicate([QuestId](FQuestLogEntry& Item) {
+		return Item.QuestId == QuestId;
+	});
+
+	if (Entry)
+	{
+		Entry->PlayerNotes = Note;
+		UE_LOG(LogTemp, Log, TEXT("Player note added to quest %s"), *QuestId.ToString());
+	}
+}
+
+void UHarmoniaQuestComponent::UpdateQuestStatistics(FHarmoniaID QuestId, const FQuestData& QuestData, float CompletionTime)
+{
+	// Server only
+	if (GetOwnerRole() < ROLE_Authority)
+	{
+		return;
+	}
+
+	// Update total completed
+	QuestStatistics.TotalQuestsCompleted++;
+
+	// Update by type
+	int32& TypeCount = QuestStatistics.CompletedByType.FindOrAdd(QuestData.QuestType, 0);
+	TypeCount++;
+
+	// Update streak
+	FDateTime CurrentDate = FDateTime::Now();
+	if (QuestStatistics.LastCompletionDate.GetDate() == CurrentDate.GetDate())
+	{
+		// Same day, increment streak
+		QuestStatistics.CurrentStreak++;
+	}
+	else if ((CurrentDate - QuestStatistics.LastCompletionDate).GetDays() == 1)
+	{
+		// Next day, continue streak
+		QuestStatistics.CurrentStreak++;
+	}
+	else
+	{
+		// Streak broken, reset
+		QuestStatistics.CurrentStreak = 1;
+	}
+
+	QuestStatistics.LastCompletionDate = CurrentDate;
+
+	// Update fastest times
+	if (!QuestStatistics.FastestCompletionTimes.Contains(QuestId) ||
+		CompletionTime < QuestStatistics.FastestCompletionTimes[QuestId])
+	{
+		QuestStatistics.FastestCompletionTimes.Add(QuestId, CompletionTime);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Quest statistics updated: %d total, streak: %d"),
+		QuestStatistics.TotalQuestsCompleted, QuestStatistics.CurrentStreak);
+}
+
+void UHarmoniaQuestComponent::UpdateQuestLog(FHarmoniaID QuestId, const FQuestData& QuestData, bool bCompleted)
+{
+	// Server only
+	if (GetOwnerRole() < ROLE_Authority)
+	{
+		return;
+	}
+
+	FQuestLogEntry* ExistingEntry = QuestLog.FindByPredicate([QuestId](FQuestLogEntry& Item) {
+		return Item.QuestId == QuestId;
+	});
+
+	if (ExistingEntry)
+	{
+		// Update existing entry
+		ExistingEntry->bCompleted = bCompleted;
+		ExistingEntry->LastUpdated = FDateTime::Now();
+	}
+	else
+	{
+		// Create new entry
+		FQuestLogEntry NewEntry;
+		NewEntry.QuestId = QuestId;
+		NewEntry.QuestName = QuestData.QuestName;
+		NewEntry.bCompleted = bCompleted;
+		NewEntry.Priority = QuestData.Priority;
+		NewEntry.LastUpdated = FDateTime::Now();
+		QuestLog.Add(NewEntry);
+	}
+}
+
+//~==============================================
+//~ Quest Party System
+//~==============================================
+
+bool UHarmoniaQuestComponent::ShareQuestWithParty(FHarmoniaID QuestId)
+{
+	// Server only
+	if (GetOwnerRole() < ROLE_Authority)
+	{
+		return false;
+	}
+
+	FQuestData QuestData;
+	if (!GetQuestData(QuestId, QuestData))
+	{
+		return false;
+	}
+
+	// Check if quest can be shared
+	if (!QuestData.bCanShare)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Quest %s cannot be shared"), *QuestId.ToString());
+		return false;
+	}
+
+	// Get party members
+	TArray<APlayerController*> PartyMembers = GetPartyMembers();
+
+	// Check party size requirements
+	int32 PartySize = GetPartySize();
+	if (PartySize < QuestData.MinPartySize)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Party too small: %d (min: %d)"), PartySize, QuestData.MinPartySize);
+		return false;
+	}
+
+	if (PartySize > QuestData.MaxPartySize)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Party too large: %d (max: %d)"), PartySize, QuestData.MaxPartySize);
+		return false;
+	}
+
+	// Share quest with all party members
+	for (APlayerController* Member : PartyMembers)
+	{
+		if (Member && Member->GetPawn())
+		{
+			UHarmoniaQuestComponent* MemberQuestComp = Member->GetPawn()->FindComponentByClass<UHarmoniaQuestComponent>();
+			if (MemberQuestComp)
+			{
+				MemberQuestComp->StartQuest(QuestId);
+			}
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Quest %s shared with party (%d members)"), *QuestId.ToString(), PartyMembers.Num());
+	return true;
+}
+
+int32 UHarmoniaQuestComponent::GetPartySize() const
+{
+	// Override in subclass or game-specific implementation
+	// Default: single player
+	return 1;
+}
+
+TArray<APlayerController*> UHarmoniaQuestComponent::GetPartyMembers() const
+{
+	// Override in subclass or game-specific implementation
+	// Default: return owner's controller
+	TArray<APlayerController*> Members;
+
+	AActor* Owner = GetOwner();
+	if (Owner)
+	{
+		APlayerController* PC = Cast<APlayerController>(Owner->GetInstigatorController());
+		if (PC)
+		{
+			Members.Add(PC);
+		}
+	}
+
+	return Members;
+}
+
+//~==============================================
+//~ Quest Event System
+//~==============================================
+
+void UHarmoniaQuestComponent::TriggerQuestEvents(FHarmoniaID QuestId, EQuestEventTrigger TriggerType)
+{
+	FQuestData QuestData;
+	if (!GetQuestData(QuestId, QuestData))
+	{
+		return;
+	}
+
+	// Trigger events matching the trigger type
+	for (const FQuestEvent& Event : QuestData.Events)
+	{
+		if (Event.TriggerType == TriggerType)
+		{
+			ExecuteQuestEvent(Event, QuestId);
+		}
+	}
+}
+
+void UHarmoniaQuestComponent::ExecuteQuestEvent(const FQuestEvent& Event, FHarmoniaID QuestId)
+{
+	switch (Event.EventType)
+	{
+		case EQuestEventType::SpawnActor:
+		{
+			if (Event.ActorToSpawn && Event.SpawnLocation != FVector::ZeroVector)
+			{
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.Owner = GetOwner();
+				GetWorld()->SpawnActor<AActor>(Event.ActorToSpawn, Event.SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+				UE_LOG(LogTemp, Log, TEXT("Quest event: Spawned actor for quest %s"), *QuestId.ToString());
+			}
+			break;
+		}
+
+		case EQuestEventType::PlayCutscene:
+		{
+			// Trigger cutscene (implement based on your cutscene system)
+			UE_LOG(LogTemp, Log, TEXT("Quest event: Play cutscene for quest %s"), *QuestId.ToString());
+			break;
+		}
+
+		case EQuestEventType::GrantReward:
+		{
+			// Grant additional reward
+			if (Event.BonusReward.RewardType != EQuestRewardType::None)
+			{
+				GrantReward(Event.BonusReward);
+				UE_LOG(LogTemp, Log, TEXT("Quest event: Granted bonus reward for quest %s"), *QuestId.ToString());
+			}
+			break;
+		}
+
+		case EQuestEventType::ModifyWorld:
+		{
+			// Trigger world state change (implement based on your world system)
+			UE_LOG(LogTemp, Log, TEXT("Quest event: Modify world for quest %s"), *QuestId.ToString());
+			break;
+		}
+
+		case EQuestEventType::StartQuest:
+		{
+			if (Event.TargetQuestId.IsValid())
+			{
+				StartQuest(Event.TargetQuestId);
+				UE_LOG(LogTemp, Log, TEXT("Quest event: Started quest %s"), *Event.TargetQuestId.ToString());
+			}
+			break;
+		}
+
+		case EQuestEventType::Custom:
+		{
+			// Custom event handling (can be extended)
+			UE_LOG(LogTemp, Log, TEXT("Quest event: Custom event for quest %s"), *QuestId.ToString());
+			break;
+		}
+
+		default:
+			break;
+	}
+}
+
+//~==============================================
+//~ Quest Fail Conditions
+//~==============================================
+
+void UHarmoniaQuestComponent::CheckFailConditions(float DeltaTime)
+{
+	// Server only
+	if (GetOwnerRole() < ROLE_Authority)
+	{
+		return;
+	}
+
+	TArray<FHarmoniaID> QuestsToFail;
+
+	for (const FActiveQuestProgress& Progress : ActiveQuests)
+	{
+		FQuestData QuestData;
+		if (!GetQuestData(Progress.QuestId, QuestData))
+		{
+			continue;
+		}
+
+		// Check each fail condition
+		for (const FQuestFailCondition& Condition : QuestData.FailConditions)
+		{
+			if (CheckFailCondition(Condition, Progress.QuestId))
+			{
+				QuestsToFail.AddUnique(Progress.QuestId);
+				OnFailConditionTriggered(Progress.QuestId, Condition);
+			}
+		}
+	}
+
+	// Fail quests
+	for (const FHarmoniaID& QuestId : QuestsToFail)
+	{
+		FailQuest(QuestId);
+	}
+}
+
+bool UHarmoniaQuestComponent::CheckFailCondition(const FQuestFailCondition& Condition, FHarmoniaID QuestId)
+{
+	switch (Condition.ConditionType)
+	{
+		case EQuestFailConditionType::TimeLimit:
+		{
+			const FActiveQuestProgress* Progress = FindActiveQuest(QuestId);
+			if (Progress)
+			{
+				FQuestData QuestData;
+				if (GetQuestData(QuestId, QuestData))
+				{
+					return Progress->IsTimeUp(QuestData);
+				}
+			}
+			return false;
+		}
+
+		case EQuestFailConditionType::NPCDied:
+		{
+			// Check if required NPC is dead (implement based on your NPC system)
+			// For now, return false
+			return false;
+		}
+
+		case EQuestFailConditionType::ItemLost:
+		{
+			// Check if required item was lost
+			UHarmoniaInventoryComponent* Inventory = const_cast<UHarmoniaQuestComponent*>(this)->GetInventoryComponent();
+			if (Inventory && Condition.RequiredItemId.IsValid())
+			{
+				// Check if player has the item
+				// For now, return false (would need GetItemCount implementation)
+				return false;
+			}
+			return false;
+		}
+
+		case EQuestFailConditionType::LocationLeft:
+		{
+			// Check if player left required location
+			if (Condition.RequiredLocation != FVector::ZeroVector)
+			{
+				AActor* Owner = GetOwner();
+				if (Owner)
+				{
+					float Distance = FVector::Dist(Owner->GetActorLocation(), Condition.RequiredLocation);
+					return Distance > Condition.MaxDistance;
+				}
+			}
+			return false;
+		}
+
+		case EQuestFailConditionType::PlayerDied:
+		{
+			// Check if player died (implement based on your health/death system)
+			// This would typically be called from the death event
+			return false;
+		}
+
+		case EQuestFailConditionType::Custom:
+		{
+			// Custom fail conditions (can be overridden)
+			return false;
+		}
+
+		default:
+			return false;
+	}
+}
+
+void UHarmoniaQuestComponent::OnFailConditionTriggered(FHarmoniaID QuestId, const FQuestFailCondition& Condition)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Fail condition triggered for quest %s: %s"),
+		*QuestId.ToString(), *Condition.FailureMessage.ToString());
+
+	// Show notification
+	ShowNotification(EQuestNotificationType::QuestFailed, QuestId, Condition.FailureMessage);
+}
+
+//~==============================================
+//~ Quest Notifications
+//~==============================================
+
+void UHarmoniaQuestComponent::ShowNotification(EQuestNotificationType Type, FHarmoniaID QuestId, const FText& Message)
+{
+	FQuestNotification Notification = CreateNotification(Type, QuestId, Message);
+	OnNotification.Broadcast(Notification);
+}
+
+FQuestNotification UHarmoniaQuestComponent::CreateNotification(EQuestNotificationType Type, FHarmoniaID QuestId, const FText& Message)
+{
+	FQuestNotification Notification;
+	Notification.NotificationType = Type;
+	Notification.QuestId = QuestId;
+	Notification.Message = Message;
+	Notification.Timestamp = FDateTime::Now();
+	Notification.bShown = false;
+
+	return Notification;
 }
 
 //~==============================================

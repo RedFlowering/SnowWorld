@@ -301,6 +301,216 @@ protected:
 	void CheckQuestChain(FHarmoniaID CompletedQuestId);
 
 	//~==============================================
+	//~ Quest Phase System
+	//~==============================================
+public:
+	/**
+	 * Get current phase for a quest
+	 * @param QuestId - Quest to check
+	 * @return Current phase number (-1 if not using phases)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Quest|Phase")
+	int32 GetCurrentPhase(FHarmoniaID QuestId) const;
+
+	/**
+	 * Advance to next phase
+	 * @param QuestId - Quest to advance
+	 * @return True if advanced successfully
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Quest|Phase")
+	bool AdvanceToNextPhase(FHarmoniaID QuestId);
+
+	/**
+	 * Get phase objectives
+	 * @param QuestId - Quest ID
+	 * @param PhaseNumber - Phase number
+	 * @param OutObjectives - Output objectives
+	 * @return True if phase exists
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Quest|Phase")
+	bool GetPhaseObjectives(FHarmoniaID QuestId, int32 PhaseNumber, TArray<FQuestObjective>& OutObjectives) const;
+
+protected:
+	/**
+	 * Check if current phase objectives are complete
+	 */
+	bool ArePhaseObjectivesComplete(FHarmoniaID QuestId, int32 PhaseNumber) const;
+
+	/**
+	 * Trigger phase events
+	 */
+	void TriggerPhaseEvents(FHarmoniaID QuestId, int32 PhaseNumber);
+
+	//~==============================================
+	//~ Quest Marker System
+	//~==============================================
+public:
+	/**
+	 * Get active markers for a quest
+	 * @param QuestId - Quest ID
+	 * @return Array of markers
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Quest|Markers")
+	TArray<FQuestMarker> GetActiveMarkers(FHarmoniaID QuestId) const;
+
+	/**
+	 * Get all active markers (all quests)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Quest|Markers")
+	TArray<FQuestMarker> GetAllActiveMarkers() const;
+
+	/**
+	 * Update marker actor reference
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Quest|Markers")
+	void UpdateMarkerActor(FHarmoniaID QuestId, int32 MarkerIndex, AActor* NewActor);
+
+	//~==============================================
+	//~ Quest Hint System
+	//~==============================================
+public:
+	/**
+	 * Get available hints for a quest
+	 * @param QuestId - Quest ID
+	 * @return Array of hints that should be shown
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Quest|Hints")
+	TArray<FQuestHint> GetAvailableHints(FHarmoniaID QuestId);
+
+	/**
+	 * Mark hint as shown
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Quest|Hints")
+	void MarkHintShown(FHarmoniaID QuestId, int32 HintIndex);
+
+protected:
+	/**
+	 * Update hint system (check if hints should be shown)
+	 */
+	void UpdateHintSystem(float DeltaTime);
+
+	//~==============================================
+	//~ Quest Statistics
+	//~==============================================
+public:
+	/**
+	 * Get quest statistics
+	 */
+	UFUNCTION(BlueprintPure, Category = "Quest|Statistics")
+	FQuestStatistics GetQuestStatistics() const { return QuestStatistics; }
+
+	/**
+	 * Get quest log entry
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Quest|Statistics")
+	bool GetQuestLogEntry(FHarmoniaID QuestId, FQuestLogEntry& OutEntry) const;
+
+	/**
+	 * Add player note to quest
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Quest|Statistics")
+	void AddPlayerNote(FHarmoniaID QuestId, const FString& Note);
+
+protected:
+	/** Quest statistics */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Quest")
+	FQuestStatistics QuestStatistics;
+
+	/** Quest log entries */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Quest")
+	TArray<FQuestLogEntry> QuestLog;
+
+	/**
+	 * Update statistics on quest completion
+	 */
+	void UpdateQuestStatistics(FHarmoniaID QuestId, const FQuestData& QuestData, float CompletionTime);
+
+	/**
+	 * Create or update quest log entry
+	 */
+	void UpdateQuestLog(FHarmoniaID QuestId, const FQuestData& QuestData, bool bCompleted);
+
+	//~==============================================
+	//~ Quest Party System
+	//~==============================================
+public:
+	/**
+	 * Share quest with party
+	 * @param QuestId - Quest to share
+	 * @return True if shared successfully
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Quest|Party")
+	bool ShareQuestWithParty(FHarmoniaID QuestId);
+
+	/**
+	 * Get party size
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Quest|Party")
+	virtual int32 GetPartySize() const;
+
+	/**
+	 * Get party members
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Quest|Party")
+	virtual TArray<APlayerController*> GetPartyMembers() const;
+
+	//~==============================================
+	//~ Quest Event System
+	//~==============================================
+protected:
+	/**
+	 * Trigger quest events
+	 * @param QuestId - Quest ID
+	 * @param TriggerType - Event trigger type
+	 */
+	void TriggerQuestEvents(FHarmoniaID QuestId, EQuestEventTrigger TriggerType);
+
+	/**
+	 * Execute a quest event
+	 */
+	void ExecuteQuestEvent(const FQuestEvent& Event, FHarmoniaID QuestId);
+
+	//~==============================================
+	//~ Quest Fail Conditions
+	//~==============================================
+protected:
+	/**
+	 * Check fail conditions for active quests
+	 */
+	void CheckFailConditions(float DeltaTime);
+
+	/**
+	 * Check specific fail condition
+	 */
+	bool CheckFailCondition(const FQuestFailCondition& Condition, FHarmoniaID QuestId);
+
+	/**
+	 * Handle fail condition triggered
+	 */
+	void OnFailConditionTriggered(FHarmoniaID QuestId, const FQuestFailCondition& Condition);
+
+	//~==============================================
+	//~ Quest Notifications
+	//~==============================================
+public:
+	/** Delegate for notifications */
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnQuestNotification, const FQuestNotification&, Notification);
+
+	UPROPERTY(BlueprintAssignable, Category = "Quest|Events")
+	FOnQuestNotification OnNotification;
+
+protected:
+	/**
+	 * Create and broadcast notification
+	 */
+	void ShowNotification(EQuestNotificationType Type, FHarmoniaID QuestId, const FText& Message);
+
+	/**
+	 * Create notification struct
+	 */
+	FQuestNotification CreateNotification(EQuestNotificationType Type, FHarmoniaID QuestId, const FText& Message);
+
+	//~==============================================
 	//~ Time-Limited Quests
 	//~==============================================
 protected:
