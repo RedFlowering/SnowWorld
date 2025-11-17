@@ -234,7 +234,7 @@ bool UHarmoniaCraftingComponent::CanCraftRecipe(FHarmoniaID RecipeId, TArray<FCr
 
 	for (const FCraftingMaterial& Material : RecipeData.RequiredMaterials)
 	{
-		int32 CurrentAmount = Inventory->GetItemCount(Material.ItemId);
+		int32 CurrentAmount = Inventory->GetTotalCount(Material.ItemId);
 		if (CurrentAmount < Material.Amount)
 		{
 			OutMissingMaterials.Add(Material);
@@ -254,7 +254,7 @@ bool UHarmoniaCraftingComponent::GetRecipeData(FHarmoniaID RecipeId, FCraftingRe
 
 	// Find recipe by row name
 	static const FString ContextString(TEXT("GetRecipeData"));
-	FCraftingRecipeData* FoundRecipe = RecipeDataTable->FindRow<FCraftingRecipeData>(RecipeId.GetName(), ContextString, false);
+	FCraftingRecipeData* FoundRecipe = RecipeDataTable->FindRow<FCraftingRecipeData>(RecipeId.Id, ContextString, false);
 
 	if (FoundRecipe)
 	{
@@ -504,7 +504,7 @@ bool UHarmoniaCraftingComponent::ConsumeMaterials(const TArray<FCraftingMaterial
 			continue;
 		}
 
-		int32 CurrentAmount = Inventory->GetItemCount(Material.ItemId);
+		int32 CurrentAmount = Inventory->GetTotalCount(Material.ItemId);
 		if (CurrentAmount < Material.Amount)
 		{
 			UE_LOG(LogTemp, Error, TEXT("UHarmoniaCraftingComponent::ConsumeMaterials - Insufficient materials: %s (Required: %d, Has: %d)"),
@@ -521,7 +521,8 @@ bool UHarmoniaCraftingComponent::ConsumeMaterials(const TArray<FCraftingMaterial
 			continue;
 		}
 
-		bool bSuccess = Inventory->RemoveItem(Material.ItemId, Material.Amount);
+		// RemoveItem requires Durability parameter (use 0.0 for any durability)
+		bool bSuccess = Inventory->RemoveItem(Material.ItemId, Material.Amount, 0.0f);
 		if (!bSuccess)
 		{
 			UE_LOG(LogTemp, Error, TEXT("UHarmoniaCraftingComponent::ConsumeMaterials - Failed to remove material: %s"), *Material.ItemId.ToString());
@@ -576,8 +577,8 @@ void UHarmoniaCraftingComponent::DistributeResults(const TArray<FCraftingResultI
 			}
 		}
 
-		// Add item to inventory
-		bool bSuccess = Inventory->AddItem(ResultItem.ItemId, ResultItem.Amount);
+		// Add item to inventory (use max durability = 100.0 for new items)
+		bool bSuccess = Inventory->AddItem(ResultItem.ItemId, ResultItem.Amount, 100.0f);
 		if (bSuccess)
 		{
 			UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::DistributeResults - Added item: %s x%d"), *ResultItem.ItemId.ToString(), ResultItem.Amount);
