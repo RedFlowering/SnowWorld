@@ -51,6 +51,10 @@ class HARMONIAKIT_API UHarmoniaSwarmDirectorComponent : public UActorComponent
 public:
 	UHarmoniaSwarmDirectorComponent();
 
+	//~UActorComponent interface
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	//~End of UActorComponent interface
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -75,11 +79,11 @@ public:
 	float CommandInterval = 1.0f;
 
 	/** Current formation */
-	UPROPERTY(BlueprintReadOnly, Category = "Swarm Director")
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Swarm Director")
 	EHarmoniaSwarmFormation CurrentFormation;
 
 	/** Swarm members */
-	UPROPERTY(BlueprintReadOnly, Category = "Swarm Director")
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Swarm Director")
 	TArray<AHarmoniaMonsterBase*> SwarmMembers;
 
 	UPROPERTY(BlueprintAssignable, Category = "Swarm Director")

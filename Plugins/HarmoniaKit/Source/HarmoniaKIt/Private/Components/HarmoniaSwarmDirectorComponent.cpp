@@ -3,6 +3,7 @@
 #include "Components/HarmoniaSwarmDirectorComponent.h"
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 
 UHarmoniaSwarmDirectorComponent::UHarmoniaSwarmDirectorComponent()
 {
@@ -14,6 +15,17 @@ UHarmoniaSwarmDirectorComponent::UHarmoniaSwarmDirectorComponent()
 	SwarmRadius = 1500.0f;
 	CommandInterval = 1.0f;
 	CurrentFormation = EHarmoniaSwarmFormation::Swarm;
+
+	// Enable replication for multiplayer
+	SetIsReplicatedByDefault(true);
+}
+
+void UHarmoniaSwarmDirectorComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UHarmoniaSwarmDirectorComponent, CurrentFormation);
+	DOREPLIFETIME(UHarmoniaSwarmDirectorComponent, SwarmMembers);
 }
 
 void UHarmoniaSwarmDirectorComponent::BeginPlay()

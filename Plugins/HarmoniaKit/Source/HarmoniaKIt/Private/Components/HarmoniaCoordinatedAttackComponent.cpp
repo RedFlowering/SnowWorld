@@ -42,6 +42,12 @@ void UHarmoniaCoordinatedAttackComponent::TickComponent(float DeltaTime, ELevelT
 
 bool UHarmoniaCoordinatedAttackComponent::InitiateCoordinatedAttack(AActor* Target)
 {
+	// Only run on server
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return false;
+	}
+
 	if (!Target || CooldownTimer > 0.0f)
 	{
 		return false;
@@ -69,6 +75,12 @@ bool UHarmoniaCoordinatedAttackComponent::InitiateCoordinatedAttack(AActor* Targ
 
 void UHarmoniaCoordinatedAttackComponent::AssignRole(AHarmoniaMonsterBase* Monster, EHarmoniaCoordinatedRole Role)
 {
+	// Only run on server
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
 	if (Monster)
 	{
 		ActiveRoles.Add(Monster, Role);
