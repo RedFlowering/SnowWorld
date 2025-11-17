@@ -14,6 +14,7 @@
 #include "SensedStimulStruct.h"
 #include "Items/HarmoniaItemPickup.h"
 #include "Components/HarmoniaAdvancedAIComponent.h"
+#include "Components/HarmoniaAILODComponent.h"
 
 AHarmoniaMonsterBase::AHarmoniaMonsterBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -44,6 +45,9 @@ AHarmoniaMonsterBase::AHarmoniaMonsterBase(const FObjectInitializer& ObjectIniti
 
 	// Create Advanced AI Component (optional, but created by default)
 	AdvancedAIComponent = CreateDefaultSubobject<UHarmoniaAdvancedAIComponent>(TEXT("AdvancedAIComponent"));
+
+	// Create AI LOD Component for performance optimization
+	AILODComponent = CreateDefaultSubobject<UHarmoniaAILODComponent>(TEXT("AILODComponent"));
 
 	// Enable ticking
 	PrimaryActorTick.bCanEverTick = true;

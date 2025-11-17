@@ -253,6 +253,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
 	TObjectPtr<UHarmoniaAdvancedAIComponent> AdvancedAIComponent = nullptr;
 
+	/**
+	 * AI LOD Component (for performance optimization)
+	 * Manages update frequency based on distance and visibility
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	TObjectPtr<UHarmoniaAILODComponent> AILODComponent = nullptr;
+
 	// ============================================================================
 	// Internal State
 	// ============================================================================
