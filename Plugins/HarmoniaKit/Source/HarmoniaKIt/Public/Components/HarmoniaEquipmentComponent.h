@@ -198,17 +198,15 @@ protected:
 	// ============================================================================
 
 	/**
-	 * Apply stat modifiers to attribute set
+	 * Apply stat modifiers as GameplayEffects to attribute set
+	 * Creates dynamic GameplayEffects from StatModifiers and applies them
+	 * @param EquipmentData Equipment data containing stat modifiers
+	 * @param OutEquippedItem Output equipped item to store active effect handles
 	 */
-	void ApplyStatModifiers(const FEquipmentData& EquipmentData);
+	void ApplyStatModifiers(const FEquipmentData& EquipmentData, FEquippedItem& OutEquippedItem);
 
 	/**
-	 * Remove stat modifiers from attribute set
-	 */
-	void RemoveStatModifiers(const FEquipmentData& EquipmentData);
-
-	/**
-	 * Apply gameplay effects
+	 * Apply gameplay effects (GrantedEffects)
 	 */
 	void ApplyGameplayEffects(const FEquipmentData& EquipmentData, FEquippedItem& OutEquippedItem);
 

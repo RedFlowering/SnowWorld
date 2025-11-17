@@ -87,10 +87,10 @@ bool UHarmoniaEquipmentComponent::EquipItem(const FHarmoniaID& EquipmentId, EEqu
 	NewEquippedItem.CurrentDurability = EquipmentData.MaxDurability;
 	NewEquippedItem.InstanceGUID = FGuid::NewGuid();
 
-	// Apply stat modifiers
-	ApplyStatModifiers(EquipmentData);
+	// Apply stat modifiers as GameplayEffects
+	ApplyStatModifiers(EquipmentData, NewEquippedItem);
 
-	// Apply gameplay effects
+	// Apply gameplay effects (GrantedEffects)
 	ApplyGameplayEffects(EquipmentData, NewEquippedItem);
 
 	// Apply visual mesh
@@ -135,10 +135,7 @@ bool UHarmoniaEquipmentComponent::UnequipItem(EEquipmentSlot Slot)
 	FEquipmentData EquipmentData;
 	if (GetEquipmentData(EquippedItem.EquipmentId, EquipmentData))
 	{
-		// Remove stat modifiers
-		RemoveStatModifiers(EquipmentData);
-
-		// Remove gameplay effects
+		// Remove all gameplay effects (including stat modifiers)
 		RemoveGameplayEffects(EquippedItem);
 
 		// Remove visual mesh
@@ -469,7 +466,7 @@ FGameplayAttribute UHarmoniaEquipmentComponent::GetAttributeFromName(const FStri
 	return FGameplayAttribute();
 }
 
-void UHarmoniaEquipmentComponent::ApplyStatModifiers(const FEquipmentData& EquipmentData)
+void UHarmoniaEquipmentComponent::ApplyStatModifiers(const FEquipmentData& EquipmentData, FEquippedItem& OutEquippedItem)
 {
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 	UHarmoniaAttributeSet* AttributeSet = GetAttributeSet();
@@ -479,69 +476,67 @@ void UHarmoniaEquipmentComponent::ApplyStatModifiers(const FEquipmentData& Equip
 		return;
 	}
 
+	// Create and apply a GameplayEffect for each stat modifier
 	for (const FEquipmentStatModifier& Modifier : EquipmentData.StatModifiers)
 	{
 		FGameplayAttribute Attribute = GetAttributeFromName(Modifier.AttributeName);
 
 		if (!Attribute.IsValid())
 		{
+			UE_LOG(LogTemp, Warning, TEXT("ApplyStatModifiers: Invalid attribute name '%s'"), *Modifier.AttributeName);
 			continue;
 		}
 
-		// Apply modifier
-		float CurrentValue = ASC->GetNumericAttribute(Attribute);
-		float NewValue = CurrentValue;
+		// Create a dynamic GameplayEffect
+		UGameplayEffect* GameplayEffect = NewObject<UGameplayEffect>(GetTransientPackage(), FName(TEXT("DynamicEquipmentEffect")));
+		GameplayEffect->DurationPolicy = EGameplayEffectDurationType::Infinite; // Persists until removed
+
+		// Determine the modifier operation based on type
+		EGameplayModOp::Type ModOp;
+		float ModifierMagnitude = Modifier.Value;
 
 		if (Modifier.ModifierType == EStatModifierType::Flat)
 		{
-			NewValue += Modifier.Value;
+			ModOp = EGameplayModOp::Additive;
 		}
 		else if (Modifier.ModifierType == EStatModifierType::Percentage)
 		{
-			NewValue *= (1.0f + Modifier.Value / 100.0f);
+			ModOp = EGameplayModOp::Multiplicative;
+			// Convert percentage to multiplier (e.g., 10% = 0.1)
+			ModifierMagnitude = Modifier.Value / 100.0f;
 		}
 		else if (Modifier.ModifierType == EStatModifierType::Override)
 		{
-			NewValue = Modifier.Value;
+			ModOp = EGameplayModOp::Override;
 		}
-
-		ASC->SetNumericAttributeBase(Attribute, NewValue);
-	}
-}
-
-void UHarmoniaEquipmentComponent::RemoveStatModifiers(const FEquipmentData& EquipmentData)
-{
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	UHarmoniaAttributeSet* AttributeSet = GetAttributeSet();
-
-	if (!ASC || !AttributeSet)
-	{
-		return;
-	}
-
-	for (const FEquipmentStatModifier& Modifier : EquipmentData.StatModifiers)
-	{
-		FGameplayAttribute Attribute = GetAttributeFromName(Modifier.AttributeName);
-
-		if (!Attribute.IsValid())
+		else
 		{
 			continue;
 		}
 
-		// Remove modifier (inverse operation)
-		float CurrentValue = ASC->GetNumericAttribute(Attribute);
-		float NewValue = CurrentValue;
+		// Add modifier to the effect
+		int32 Idx = GameplayEffect->Modifiers.Num();
+		GameplayEffect->Modifiers.SetNum(Idx + 1);
+		FGameplayModifierInfo& ModifierInfo = GameplayEffect->Modifiers[Idx];
+		ModifierInfo.ModifierMagnitude = FScalableFloat(ModifierMagnitude);
+		ModifierInfo.ModifierOp = ModOp;
+		ModifierInfo.Attribute = Attribute;
 
-		if (Modifier.ModifierType == EStatModifierType::Flat)
-		{
-			NewValue -= Modifier.Value;
-		}
-		else if (Modifier.ModifierType == EStatModifierType::Percentage)
-		{
-			NewValue /= (1.0f + Modifier.Value / 100.0f);
-		}
+		// Apply the GameplayEffect
+		FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+		EffectContext.AddSourceObject(this);
 
-		ASC->SetNumericAttributeBase(Attribute, NewValue);
+		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(GameplayEffect->GetClass(), 1.0f, EffectContext);
+		if (SpecHandle.IsValid())
+		{
+			FActiveGameplayEffectHandle ActiveHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+			if (ActiveHandle.IsValid())
+			{
+				OutEquippedItem.ActiveEffectHandles.Add(ActiveHandle);
+				UE_LOG(LogTemp, Verbose, TEXT("ApplyStatModifiers: Applied %s modifier to %s"),
+					*UEnum::GetValueAsString(Modifier.ModifierType), *Modifier.AttributeName);
+			}
+		}
 	}
 }
 
