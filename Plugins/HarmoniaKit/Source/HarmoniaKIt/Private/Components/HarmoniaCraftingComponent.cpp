@@ -12,7 +12,7 @@
 UHarmoniaCraftingComponent::UHarmoniaCraftingComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	PrimaryComponentTick.bStartWithTickEnabled = true;
+	PrimaryComponentTick.bStartWithTickEnabled = false; // Only tick when crafting
 	SetIsReplicatedByDefault(true);
 
 	RecipeDataTable = nullptr;
@@ -21,6 +21,24 @@ UHarmoniaCraftingComponent::UHarmoniaCraftingComponent()
 	StationDataTable = nullptr;
 	InventoryComponent = nullptr;
 	CurrentStation = ECraftingStationType::None;
+
+	// Security: Rate limiting
+	LastCraftingAttempt = 0.0f;
+	CraftingAttemptsThisSecond = 0;
+	LastAttemptResetTime = 0.0f;
+	MinTimeBetweenCrafts = 0.5f;
+	MaxCraftingAttemptsPerSecond = 5;
+
+	// Material refund settings
+	bRefundMaterialsOnCancel = true;
+	MaterialRefundPercentage = 0.5f;
+
+	// Constants
+	MaxItemDurability = 100.0f;
+	AnyDurability = 0.0f;
+
+	// Station distance check
+	MaxStationInteractionDistance = 500.0f;
 }
 
 void UHarmoniaCraftingComponent::BeginPlay()
@@ -29,6 +47,9 @@ void UHarmoniaCraftingComponent::BeginPlay()
 
 	// Cache inventory component
 	GetInventoryComponent();
+
+	// Cache DataTable configurations for fast lookups
+	CacheConfigurationData();
 }
 
 void UHarmoniaCraftingComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -130,6 +151,13 @@ bool UHarmoniaCraftingComponent::StartCrafting(FHarmoniaID RecipeId)
 		return false;
 	}
 
+	// Server-side: Verify player is within range of station (anti-cheat)
+	if (GetOwnerRole() == ROLE_Authority && !VerifyStationDistance())
+	{
+		UE_LOG(LogTemp, Error, TEXT("UHarmoniaCraftingComponent::StartCrafting - Station distance verification failed"));
+		return false;
+	}
+
 	// Check if player has materials
 	TArray<FCraftingMaterial> MissingMaterials;
 	if (!CanCraftRecipe(RecipeId, MissingMaterials))
@@ -151,6 +179,9 @@ bool UHarmoniaCraftingComponent::StartCrafting(FHarmoniaID RecipeId)
 	ActiveSession.TotalCastingTime = RecipeData.CastingTime;
 	ActiveSession.bIsActive = true;
 	ActiveSession.StartTime = GetWorld()->GetTimeSeconds();
+
+	// Enable ticking only when crafting (performance optimization)
+	SetComponentTickEnabled(true);
 
 	// Broadcast start event
 	OnCraftingStarted.Broadcast(RecipeId, RecipeData.CastingTime);
@@ -187,11 +218,43 @@ void UHarmoniaCraftingComponent::CancelCrafting()
 	float ProgressLost = ActiveSession.GetProgress();
 	FHarmoniaID RecipeId = ActiveSession.RecipeId;
 
+	// Refund materials based on progress (less progress = more refund)
+	if (bRefundMaterialsOnCancel)
+	{
+		FCraftingRecipeData RecipeData;
+		if (GetRecipeData(RecipeId, RecipeData))
+		{
+			float Progress = ActiveSession.GetProgress();
+			float RefundMultiplier = MaterialRefundPercentage * (1.0f - Progress);
+
+			UHarmoniaInventoryComponent* Inventory = GetInventoryComponent();
+			if (Inventory)
+			{
+				for (const FCraftingMaterial& Material : RecipeData.RequiredMaterials)
+				{
+					if (Material.bConsumeOnCraft)
+					{
+						int32 RefundAmount = FMath::FloorToInt(Material.Amount * RefundMultiplier);
+						if (RefundAmount > 0)
+						{
+							Inventory->AddItem(Material.ItemId, RefundAmount, MaxItemDurability);
+							UE_LOG(LogTemp, Log, TEXT("Refunded %d x %s (%.0f%% refund)"),
+								RefundAmount, *Material.ItemId.ToString(), RefundMultiplier * 100.0f);
+						}
+					}
+				}
+			}
+		}
+	}
+
 	// Reset session
 	ActiveSession = FActiveCraftingSession();
 
 	// Stop animation on all clients
 	MulticastStopCraftingAnimation();
+
+	// Disable ticking when not crafting (performance optimization)
+	SetComponentTickEnabled(false);
 
 	// Broadcast cancellation
 	OnCraftingCancelled.Broadcast(RecipeId, ProgressLost);
@@ -359,22 +422,12 @@ void UHarmoniaCraftingComponent::ForgetRecipe(FHarmoniaID RecipeId)
 
 bool UHarmoniaCraftingComponent::GetGradeConfig(EItemGrade Grade, FItemGradeConfig& OutGradeConfig) const
 {
-	if (!GradeConfigDataTable)
+	// Use cached lookup for O(1) performance
+	const FItemGradeConfig* Config = GradeConfigCache.Find(Grade);
+	if (Config)
 	{
-		return false;
-	}
-
-	// Find grade config by row
-	TArray<FItemGradeConfig*> AllGradeConfigs;
-	GradeConfigDataTable->GetAllRows<FItemGradeConfig>(TEXT("GetGradeConfig"), AllGradeConfigs);
-
-	for (FItemGradeConfig* Config : AllGradeConfigs)
-	{
-		if (Config && Config->Grade == Grade)
-		{
-			OutGradeConfig = *Config;
-			return true;
-		}
+		OutGradeConfig = *Config;
+		return true;
 	}
 
 	return false;
@@ -486,6 +539,9 @@ void UHarmoniaCraftingComponent::CompleteCrafting()
 
 	// Reset session
 	ActiveSession = FActiveCraftingSession();
+
+	// Disable ticking when not crafting (performance optimization)
+	SetComponentTickEnabled(false);
 }
 
 bool UHarmoniaCraftingComponent::ConsumeMaterials(const TArray<FCraftingMaterial>& Materials)
@@ -521,8 +577,8 @@ bool UHarmoniaCraftingComponent::ConsumeMaterials(const TArray<FCraftingMaterial
 			continue;
 		}
 
-		// RemoveItem requires Durability parameter (use 0.0 for any durability)
-		bool bSuccess = Inventory->RemoveItem(Material.ItemId, Material.Amount, 0.0f);
+		// RemoveItem requires Durability parameter (use AnyDurability for any durability)
+		bool bSuccess = Inventory->RemoveItem(Material.ItemId, Material.Amount, AnyDurability);
 		if (!bSuccess)
 		{
 			UE_LOG(LogTemp, Error, TEXT("UHarmoniaCraftingComponent::ConsumeMaterials - Failed to remove material: %s"), *Material.ItemId.ToString());
@@ -577,8 +633,8 @@ void UHarmoniaCraftingComponent::DistributeResults(const TArray<FCraftingResultI
 			}
 		}
 
-		// Add item to inventory (use max durability = 100.0 for new items)
-		bool bSuccess = Inventory->AddItem(ResultItem.ItemId, ResultItem.Amount, 100.0f);
+		// Add item to inventory (use MaxItemDurability for new items)
+		bool bSuccess = Inventory->AddItem(ResultItem.ItemId, ResultItem.Amount, MaxItemDurability);
 		if (bSuccess)
 		{
 			UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::DistributeResults - Added item: %s x%d"), *ResultItem.ItemId.ToString(), ResultItem.Amount);
@@ -671,22 +727,12 @@ void UHarmoniaCraftingComponent::ClearCurrentStation()
 
 bool UHarmoniaCraftingComponent::GetStationData(ECraftingStationType StationType, FCraftingStationData& OutStationData) const
 {
-	if (!StationDataTable)
+	// Use cached lookup for O(1) performance
+	const FCraftingStationData* Station = StationDataCache.Find(StationType);
+	if (Station)
 	{
-		return false;
-	}
-
-	// Find station data by row
-	TArray<FCraftingStationData*> AllStations;
-	StationDataTable->GetAllRows<FCraftingStationData>(TEXT("GetStationData"), AllStations);
-
-	for (FCraftingStationData* Station : AllStations)
-	{
-		if (Station && Station->StationType == StationType)
-		{
-			OutStationData = *Station;
-			return true;
-		}
+		OutStationData = *Station;
+		return true;
 	}
 
 	return false;
@@ -783,6 +829,49 @@ void UHarmoniaCraftingComponent::ServerStartCrafting_Implementation(FHarmoniaID 
 
 bool UHarmoniaCraftingComponent::ServerStartCrafting_Validate(FHarmoniaID RecipeId)
 {
+	// Reject invalid recipe IDs
+	if (!RecipeId.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartCrafting_Validate: Invalid RecipeId"));
+		return false;
+	}
+
+	// Reject if already crafting (prevent spam)
+	if (ActiveSession.bIsActive)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartCrafting_Validate: Already crafting"));
+		return false;
+	}
+
+	// Rate limiting
+	float CurrentTime = GetWorld()->GetTimeSeconds();
+
+	// Reset counter every second
+	if (CurrentTime - LastAttemptResetTime >= 1.0f)
+	{
+		CraftingAttemptsThisSecond = 0;
+		LastAttemptResetTime = CurrentTime;
+	}
+
+	// Check minimum time between crafts
+	if (CurrentTime - LastCraftingAttempt < MinTimeBetweenCrafts)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Player %s: Crafting spam detected (too fast)"),
+			*GetOwner()->GetName());
+		return false;
+	}
+
+	// Check attempts per second
+	if (CraftingAttemptsThisSecond >= MaxCraftingAttemptsPerSecond)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Player %s: Too many crafting attempts per second"),
+			*GetOwner()->GetName());
+		return false;
+	}
+
+	LastCraftingAttempt = CurrentTime;
+	CraftingAttemptsThisSecond++;
+
 	return true;
 }
 
@@ -803,6 +892,28 @@ void UHarmoniaCraftingComponent::ServerLearnRecipe_Implementation(FHarmoniaID Re
 
 bool UHarmoniaCraftingComponent::ServerLearnRecipe_Validate(FHarmoniaID RecipeId)
 {
+	// Verify recipe ID is valid
+	if (!RecipeId.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerLearnRecipe_Validate: Invalid RecipeId"));
+		return false;
+	}
+
+	// Verify recipe exists in data table
+	FCraftingRecipeData RecipeData;
+	if (!GetRecipeData(RecipeId, RecipeData))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Player %s: Attempted to learn non-existent recipe %s"),
+			*GetOwner()->GetName(), *RecipeId.ToString());
+		return false;
+	}
+
+	// Prevent learning the same recipe multiple times (spam)
+	if (HasLearnedRecipe(RecipeId))
+	{
+		return false; // Already learned, reject silently
+	}
+
 	return true;
 }
 
@@ -874,6 +985,83 @@ int32 UHarmoniaCraftingComponent::GetCraftingSkillLevel() const
 	// Default implementation - override in subclass if you have a skill system
 	// For now, return a high level so requirements are always met
 	return 9999;
+}
+
+void UHarmoniaCraftingComponent::CacheConfigurationData()
+{
+	// Cache grade configs for fast O(1) lookups
+	GradeConfigCache.Empty();
+	if (GradeConfigDataTable)
+	{
+		TArray<FItemGradeConfig*> AllGradeConfigs;
+		GradeConfigDataTable->GetAllRows<FItemGradeConfig>(TEXT("CacheGradeConfig"), AllGradeConfigs);
+		for (FItemGradeConfig* Config : AllGradeConfigs)
+		{
+			if (Config)
+			{
+				GradeConfigCache.Add(Config->Grade, *Config);
+			}
+		}
+		UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::CacheConfigurationData - Cached %d grade configs"), GradeConfigCache.Num());
+	}
+
+	// Cache station data for fast O(1) lookups
+	StationDataCache.Empty();
+	if (StationDataTable)
+	{
+		TArray<FCraftingStationData*> AllStations;
+		StationDataTable->GetAllRows<FCraftingStationData>(TEXT("CacheStationData"), AllStations);
+		for (FCraftingStationData* Station : AllStations)
+		{
+			if (Station)
+			{
+				StationDataCache.Add(Station->StationType, *Station);
+			}
+		}
+		UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::CacheConfigurationData - Cached %d station configs"), StationDataCache.Num());
+	}
+}
+
+bool UHarmoniaCraftingComponent::VerifyStationDistance() const
+{
+	if (CurrentStation == ECraftingStationType::None)
+	{
+		return true; // Hand crafting, no station needed
+	}
+
+	if (!CurrentStationActor.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Player %s: No station actor set but station type is %d"),
+			*GetOwner()->GetName(), (int32)CurrentStation);
+		return false;
+	}
+
+	AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		return false;
+	}
+
+	float Distance = FVector::Dist(Owner->GetActorLocation(), CurrentStationActor->GetActorLocation());
+
+	if (Distance > MaxStationInteractionDistance)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Player %s: Too far from station (Distance: %.2f, Max: %.2f)"),
+			*GetOwner()->GetName(), Distance, MaxStationInteractionDistance);
+		return false;
+	}
+
+	return true;
+}
+
+void UHarmoniaCraftingComponent::SetCurrentStationWithActor(AActor* StationActor, ECraftingStationType StationType, FGameplayTagContainer StationTags)
+{
+	CurrentStation = StationType;
+	CurrentStationTags = StationTags;
+	CurrentStationActor = StationActor;
+
+	UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::SetCurrentStationWithActor - Station set to: %d with actor: %s"),
+		(int32)StationType, *GetNameSafe(StationActor));
 }
 
 //~==============================================
