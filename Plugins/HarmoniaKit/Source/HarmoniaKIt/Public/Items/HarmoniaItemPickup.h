@@ -10,7 +10,7 @@
 
 class UStaticMeshComponent;
 class USenseStimulusComponent;
-class UHarmoniaInteractableComponent;
+class UHarmoniaInteractionComponent;
 class UWidgetComponent;
 
 /**
@@ -108,7 +108,7 @@ public:
 	 * Interactable component for interaction system
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UHarmoniaInteractableComponent> InteractableComponent = nullptr;
+	TObjectPtr<UHarmoniaInteractionComponent> InteractableComponent = nullptr;
 
 	/**
 	 * Widget component for displaying item name/info

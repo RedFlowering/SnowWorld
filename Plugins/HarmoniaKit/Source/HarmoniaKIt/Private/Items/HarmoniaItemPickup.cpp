@@ -4,7 +4,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/WidgetComponent.h"
 #include "SenseStimulusComponent.h"
-#include "Components/HarmoniaInteractableComponent.h"
+#include "Components/HarmoniaInteractionComponent.h"
 #include "Components/HarmoniaInventoryComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
@@ -34,7 +34,7 @@ AHarmoniaItemPickup::AHarmoniaItemPickup()
 	SenseStimulusComponent = CreateDefaultSubobject<USenseStimulusComponent>(TEXT("SenseStimulusComponent"));
 
 	// Create interactable component
-	InteractableComponent = CreateDefaultSubobject<UHarmoniaInteractableComponent>(TEXT("InteractableComponent"));
+	InteractableComponent = CreateDefaultSubobject<UHarmoniaInteractionComponent>(TEXT("InteractableComponent"));
 	InteractableComponent->SetupAttachment(RootComponent);
 
 	// Create widget component for displaying item info
