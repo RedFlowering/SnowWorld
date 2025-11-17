@@ -523,6 +523,39 @@ struct HARMONIAKIT_API FHarmoniaBossPhase
 	bool bInvulnerableDuringTransition = true;
 };
 
+// ============================================================================
+// Group AI Definitions (Forward Declarations)
+// ============================================================================
+
+/**
+ * Squad Formation Type
+ * Defines how squad members position themselves
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaSquadFormationType : uint8
+{
+	Loose UMETA(DisplayName = "Loose"),			// Spread out, maintain distance
+	Tight UMETA(DisplayName = "Tight"),			// Stay close together
+	Circle UMETA(DisplayName = "Circle"),		// Surround target
+	Line UMETA(DisplayName = "Line"),			// Form a line
+	Wedge UMETA(DisplayName = "Wedge"),			// V-formation
+	Flanking UMETA(DisplayName = "Flanking")	// Flank target from sides
+};
+
+/**
+ * Squad Role
+ * Defines the role of a monster within a squad
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaSquadRole : uint8
+{
+	Leader UMETA(DisplayName = "Leader"),		// Leads the squad
+	Tank UMETA(DisplayName = "Tank"),			// Frontline fighter
+	DPS UMETA(DisplayName = "DPS"),				// Damage dealer
+	Support UMETA(DisplayName = "Support"),		// Healer/buffer
+	Scout UMETA(DisplayName = "Scout")			// Reconnaissance
+};
+
 /**
  * Monster Data Asset
  * Primary data asset for defining a monster type
@@ -684,39 +717,6 @@ public:
 	// Squad coordination range
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Group AI", meta = (EditCondition = "bCanFormSquad", ClampMin = "500", ClampMax = "5000"))
 	float SquadCoordinationRange = 2000.0f;
-};
-
-// ============================================================================
-// Group AI Definitions
-// ============================================================================
-
-/**
- * Squad Formation Type
- * Defines how squad members position themselves
- */
-UENUM(BlueprintType)
-enum class EHarmoniaSquadFormationType : uint8
-{
-	Loose UMETA(DisplayName = "Loose"),			// Spread out, maintain distance
-	Tight UMETA(DisplayName = "Tight"),			// Stay close together
-	Circle UMETA(DisplayName = "Circle"),		// Surround target
-	Line UMETA(DisplayName = "Line"),			// Form a line
-	Wedge UMETA(DisplayName = "Wedge"),			// V-formation
-	Flanking UMETA(DisplayName = "Flanking")	// Flank target from sides
-};
-
-/**
- * Squad Role
- * Defines the role of a monster within a squad
- */
-UENUM(BlueprintType)
-enum class EHarmoniaSquadRole : uint8
-{
-	Leader UMETA(DisplayName = "Leader"),		// Leads the squad
-	Tank UMETA(DisplayName = "Tank"),			// Frontline fighter
-	DPS UMETA(DisplayName = "DPS"),				// Damage dealer
-	Support UMETA(DisplayName = "Support"),		// Healer/buffer
-	Scout UMETA(DisplayName = "Scout")			// Reconnaissance
 };
 
 /**

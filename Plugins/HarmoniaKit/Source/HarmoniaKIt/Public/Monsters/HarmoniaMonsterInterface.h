@@ -50,6 +50,12 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Monster")
 	FText GetMonsterName() const;
 
+	/**
+	 * Get the monster's faction
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Monster")
+	EHarmoniaMonsterFaction GetFaction() const;
+
 	// ============================================================================
 	// Monster State
 	// ============================================================================

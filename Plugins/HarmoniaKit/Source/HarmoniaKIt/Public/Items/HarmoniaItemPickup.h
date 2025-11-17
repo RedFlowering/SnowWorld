@@ -5,12 +5,12 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Definitions/HarmoniaMonsterSystemDefinitions.h"
-#include "Interactable/HarmoniaInteractableInterface.h"
+#include "Interface/HarmoniaInteractableInterface.h"
 #include "HarmoniaItemPickup.generated.h"
 
 class UStaticMeshComponent;
 class USenseStimulusComponent;
-class UHarmoniaInteractableComponent;
+class UHarmoniaInteractionComponent;
 class UWidgetComponent;
 
 /**
@@ -36,10 +36,7 @@ public:
 	//~End of AActor interface
 
 	//~IHarmoniaInteractableInterface
-	virtual bool CanInteract_Implementation(AActor* InteractingActor) const override;
-	virtual void Interact_Implementation(AActor* InteractingActor) override;
-	virtual FText GetInteractionPrompt_Implementation() const override;
-	virtual float GetInteractionDuration_Implementation() const override;
+	virtual void OnInteract_Implementation(const FHarmoniaInteractionContext& Context, FHarmoniaInteractionResult& OutResult) override;
 	//~End of IHarmoniaInteractableInterface
 
 	// ============================================================================
@@ -108,7 +105,7 @@ public:
 	 * Interactable component for interaction system
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UHarmoniaInteractableComponent> InteractableComponent = nullptr;
+	TObjectPtr<UHarmoniaInteractionComponent> InteractableComponent = nullptr;
 
 	/**
 	 * Widget component for displaying item name/info

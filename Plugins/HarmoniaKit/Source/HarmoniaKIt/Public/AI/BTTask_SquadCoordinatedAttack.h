@@ -6,6 +6,8 @@
 #include "BehaviorTree/BTTaskNode.h"
 #include "BTTask_SquadCoordinatedAttack.generated.h"
 
+class UHarmoniaSquadComponent;
+
 /**
  * UBTTask_SquadCoordinatedAttack
  *

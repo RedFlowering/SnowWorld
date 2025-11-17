@@ -224,7 +224,7 @@ protected:
 	 * Handle squad member death
 	 */
 	UFUNCTION()
-	void OnMemberDeath(AActor* DeadMember);
+	void OnMemberDeath(AHarmoniaMonsterBase* DeadMember, AActor* Killer);
 
 	// ============================================================================
 	// Internal State
