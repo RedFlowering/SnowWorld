@@ -27,10 +27,9 @@ public class HarmoniaKit : ModuleRules
                 "LyraGame", // For LyraGameplayAbility base class
                 "OnlineSubsystem",
                 "OnlineSubsystemUtils",
-                "CommonUI", // For UCommonActivatableWidget
-                "RenderCore", // For render target and texture operations
-                "RHI", // For reading render target pixels
-                "ImageWrapper" // For image processing
+                "CommonUI" // For UCommonActivatableWidget
+                // Note: RenderCore, RHI, ImageWrapper moved to HarmoniaEditor module
+                // These are only needed for editor map capture functionality
             });
     }
 }
