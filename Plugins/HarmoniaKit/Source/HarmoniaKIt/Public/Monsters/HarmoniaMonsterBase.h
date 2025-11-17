@@ -246,6 +246,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UHarmoniaThreatComponent> ThreatComponent = nullptr;
 
+	/**
+	 * Advanced AI Component (for emotion, combos, tactical positioning)
+	 * Optional - enables advanced AI behaviors when added
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	TObjectPtr<UHarmoniaAdvancedAIComponent> AdvancedAIComponent = nullptr;
+
 	// ============================================================================
 	// Internal State
 	// ============================================================================

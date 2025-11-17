@@ -13,6 +13,7 @@
 #include "Components/HarmoniaThreatComponent.h"
 #include "SensedStimulStruct.h"
 #include "Items/HarmoniaItemPickup.h"
+#include "Components/HarmoniaAdvancedAIComponent.h"
 
 AHarmoniaMonsterBase::AHarmoniaMonsterBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -40,6 +41,9 @@ AHarmoniaMonsterBase::AHarmoniaMonsterBase(const FObjectInitializer& ObjectIniti
 
 	// Create Threat Component for aggro management
 	ThreatComponent = CreateDefaultSubobject<UHarmoniaThreatComponent>(TEXT("ThreatComponent"));
+
+	// Create Advanced AI Component (optional, but created by default)
+	AdvancedAIComponent = CreateDefaultSubobject<UHarmoniaAdvancedAIComponent>(TEXT("AdvancedAIComponent"));
 
 	// Enable ticking
 	PrimaryActorTick.bCanEverTick = true;
