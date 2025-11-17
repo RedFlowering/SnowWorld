@@ -263,6 +263,58 @@ struct FQuestObjective
 };
 
 /**
+ * Quest reward data
+ */
+USTRUCT(BlueprintType)
+struct FQuestReward
+{
+	GENERATED_BODY()
+
+	// Reward type
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	EQuestRewardType RewardType = EQuestRewardType::Experience;
+
+	// Experience amount (for Experience reward)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest", meta = (ClampMin = "0"))
+	int32 ExperienceAmount = 0;
+
+	// Gold amount (for Gold reward)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest", meta = (ClampMin = "0"))
+	int32 GoldAmount = 0;
+
+	// Item ID (for Item reward)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FHarmoniaID ItemId = FHarmoniaID();
+
+	// Item amount (for Item reward)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest", meta = (ClampMin = "1"))
+	int32 ItemAmount = 1;
+
+	// Recipe ID (for Recipe reward)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FHarmoniaID RecipeId = FHarmoniaID();
+
+	// Gameplay tags to grant (for Tag reward)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FGameplayTagContainer TagsToGrant;
+
+	// Quest ID to unlock (for UnlockQuest reward)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FHarmoniaID QuestToUnlock = FHarmoniaID();
+
+	FQuestReward()
+		: RewardType(EQuestRewardType::Experience)
+		, ExperienceAmount(0)
+		, GoldAmount(0)
+		, ItemId()
+		, ItemAmount(1)
+		, RecipeId()
+		, TagsToGrant()
+		, QuestToUnlock()
+	{}
+};
+
+/**
  * Bonus objective data
  * Optional objectives that grant bonus rewards when completed
  */
@@ -673,58 +725,6 @@ struct FQuestNotification
 		, DisplayDuration(5.0f)
 		, Timestamp(FDateTime::Now())
 		, bShown(false)
-	{}
-};
-
-/**
- * Quest reward data
- */
-USTRUCT(BlueprintType)
-struct FQuestReward
-{
-	GENERATED_BODY()
-
-	// Reward type
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
-	EQuestRewardType RewardType = EQuestRewardType::Experience;
-
-	// Experience amount (for Experience reward)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest", meta = (ClampMin = "0"))
-	int32 ExperienceAmount = 0;
-
-	// Gold amount (for Gold reward)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest", meta = (ClampMin = "0"))
-	int32 GoldAmount = 0;
-
-	// Item ID (for Item reward)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
-	FHarmoniaID ItemId = FHarmoniaID();
-
-	// Item amount (for Item reward)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest", meta = (ClampMin = "1"))
-	int32 ItemAmount = 1;
-
-	// Recipe ID (for Recipe reward)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
-	FHarmoniaID RecipeId = FHarmoniaID();
-
-	// Gameplay tags to grant (for Tag reward)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
-	FGameplayTagContainer TagsToGrant;
-
-	// Quest ID to unlock (for UnlockQuest reward)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
-	FHarmoniaID QuestToUnlock = FHarmoniaID();
-
-	FQuestReward()
-		: RewardType(EQuestRewardType::Experience)
-		, ExperienceAmount(0)
-		, GoldAmount(0)
-		, ItemId()
-		, ItemAmount(1)
-		, RecipeId()
-		, TagsToGrant()
-		, QuestToUnlock()
 	{}
 };
 
