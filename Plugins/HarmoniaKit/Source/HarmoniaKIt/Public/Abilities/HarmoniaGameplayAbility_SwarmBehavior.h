@@ -81,6 +81,12 @@ protected:
 	/** Is currently in fear state */
 	bool bInFear = false;
 
+	/** Base stat values (stored per instance to avoid static TMap bug) */
+	float BaseAttackPower = 0.0f;
+	float BaseDefense = 0.0f;
+	float BaseMovementSpeed = 0.0f;
+	bool bBaseStatsStored = false;
+
 	/** Update swarm bonuses */
 	UFUNCTION()
 	void UpdateSwarmBonuses();

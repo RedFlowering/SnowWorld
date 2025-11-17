@@ -61,6 +61,13 @@ void UHarmoniaGameplayAbility_Summon::EndAbility(const FGameplayAbilitySpecHandl
 
 void UHarmoniaGameplayAbility_Summon::PerformSummon()
 {
+	// Only spawn on server
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (!Avatar || !Avatar->HasAuthority())
+	{
+		return;
+	}
+
 	if (SummonConfigs.Num() == 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No summon configurations set!"));
@@ -185,6 +192,13 @@ void UHarmoniaGameplayAbility_Summon::OnSummonedMonsterDied(AHarmoniaMonsterBase
 
 void UHarmoniaGameplayAbility_Summon::DestroyAllSummons()
 {
+	// Only destroy on server
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (!Avatar || !Avatar->HasAuthority())
+	{
+		return;
+	}
+
 	for (AHarmoniaMonsterBase* Summon : ActiveSummons)
 	{
 		if (IsValid(Summon))

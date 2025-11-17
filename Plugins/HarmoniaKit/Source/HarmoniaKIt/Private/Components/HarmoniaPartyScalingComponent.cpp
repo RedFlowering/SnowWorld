@@ -8,6 +8,7 @@
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
+#include "Net/UnrealNetwork.h"
 
 UHarmoniaPartyScalingComponent::UHarmoniaPartyScalingComponent()
 {
@@ -19,6 +20,17 @@ UHarmoniaPartyScalingComponent::UHarmoniaPartyScalingComponent()
 	UpdateInterval = 1.0f;
 	PlayerSeparationDistance = 500.0f;
 	bShowDebug = false;
+
+	// Enable replication for multiplayer
+	SetIsReplicatedByDefault(true);
+}
+
+void UHarmoniaPartyScalingComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UHarmoniaPartyScalingComponent, CurrentPartySize);
+	DOREPLIFETIME(UHarmoniaPartyScalingComponent, DetectedPartyMembers);
 }
 
 void UHarmoniaPartyScalingComponent::BeginPlay()
@@ -76,6 +88,12 @@ void UHarmoniaPartyScalingComponent::TickComponent(float DeltaTime, ELevelTick T
 
 void UHarmoniaPartyScalingComponent::DetectPartyMembers()
 {
+	// Only run on server
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
 	if (!OwnerMonster)
 	{
 		return;
@@ -147,6 +165,12 @@ void UHarmoniaPartyScalingComponent::DetectPartyMembers()
 
 void UHarmoniaPartyScalingComponent::ApplyScaling(int32 PartySize)
 {
+	// Only run on server
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
 	if (!OwnerMonster)
 	{
 		return;
@@ -330,12 +354,26 @@ FHarmoniaPartyScalingConfig UHarmoniaPartyScalingComponent::GetCurrentScaling() 
 
 void UHarmoniaPartyScalingComponent::ForceUpdatePartySize()
 {
+	// Only run on server
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
 	DetectPartyMembers();
 }
 
 void UHarmoniaPartyScalingComponent::SetPartySize(int32 NewSize)
 {
+	// Only run on server
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
+	// Input validation
 	NewSize = FMath::Max(1, NewSize);
+	NewSize = FMath::Min(NewSize, 100); // Cap at reasonable max
 
 	if (NewSize != CurrentPartySize)
 	{

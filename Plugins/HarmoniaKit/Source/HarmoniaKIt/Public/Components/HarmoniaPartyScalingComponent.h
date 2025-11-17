@@ -70,6 +70,7 @@ protected:
 
 public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	// ==================== Configuration ====================
 
@@ -150,14 +151,14 @@ protected:
 	// ==================== State ====================
 
 	/** Current detected party size */
-	UPROPERTY(BlueprintReadOnly, Category = "Party Scaling", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Party Scaling", meta = (AllowPrivateAccess = "true"))
 	int32 CurrentPartySize = 1;
 
 	/** Previously detected party size */
 	int32 PreviousPartySize = 1;
 
 	/** Currently detected party members */
-	UPROPERTY(BlueprintReadOnly, Category = "Party Scaling", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Party Scaling", meta = (AllowPrivateAccess = "true"))
 	TArray<AActor*> DetectedPartyMembers;
 
 	/** Timer for update interval */

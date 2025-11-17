@@ -6,6 +6,7 @@
 #include "AbilitySystemComponent.h"
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 
 UHarmoniaLearningAIComponent::UHarmoniaLearningAIComponent()
 {
@@ -24,6 +25,17 @@ UHarmoniaLearningAIComponent::UHarmoniaLearningAIComponent()
 	CurrentDifficulty = EHarmoniaAdaptiveDifficulty::Normal;
 	AnalysisTimer = 0.0f;
 	bInCombat = false;
+
+	// Enable replication for multiplayer
+	SetIsReplicatedByDefault(true);
+}
+
+void UHarmoniaLearningAIComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UHarmoniaLearningAIComponent, LearnedPatterns);
+	DOREPLIFETIME(UHarmoniaLearningAIComponent, CurrentDifficulty);
 }
 
 void UHarmoniaLearningAIComponent::BeginPlay()
@@ -148,6 +160,12 @@ void UHarmoniaLearningAIComponent::UpdatePatternConfidence(AActor* Player)
 
 void UHarmoniaLearningAIComponent::RecordPlayerDodge(AActor* Player, FVector DodgeDirection)
 {
+	// Only run on server
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
 	if (!Player)
 	{
 		return;
@@ -170,6 +188,12 @@ void UHarmoniaLearningAIComponent::RecordPlayerDodge(AActor* Player, FVector Dod
 
 void UHarmoniaLearningAIComponent::RecordPlayerAttack(AActor* Player, FName AbilityName)
 {
+	// Only run on server
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
 	if (!Player)
 	{
 		return;
@@ -209,6 +233,12 @@ void UHarmoniaLearningAIComponent::RecordPlayerAttack(AActor* Player, FName Abil
 
 void UHarmoniaLearningAIComponent::RecordCombatResult(AActor* Player, bool bPlayerWon, float CombatDuration)
 {
+	// Only run on server
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
 	if (!Player)
 	{
 		return;
@@ -287,6 +317,12 @@ float UHarmoniaLearningAIComponent::GetOptimalAttackTiming(AActor* Player) const
 
 void UHarmoniaLearningAIComponent::AdjustDifficulty()
 {
+	// Only run on server
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
 	if (!bEnableAdaptiveDifficulty)
 	{
 		return;
@@ -359,6 +395,12 @@ float UHarmoniaLearningAIComponent::CalculatePlayerWinRate(AActor* Player) const
 
 void UHarmoniaLearningAIComponent::ApplyDifficultyAdjustments()
 {
+	// Only run on server
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
 	if (!OwnerMonster)
 	{
 		return;

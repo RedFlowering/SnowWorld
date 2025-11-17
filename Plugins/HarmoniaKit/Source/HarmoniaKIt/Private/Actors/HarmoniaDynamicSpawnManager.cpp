@@ -5,6 +5,7 @@
 #include "System/HarmoniaTimeWeatherManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
+#include "Net/UnrealNetwork.h"
 
 AHarmoniaDynamicSpawnManager::AHarmoniaDynamicSpawnManager()
 {
@@ -22,6 +23,18 @@ AHarmoniaDynamicSpawnManager::AHarmoniaDynamicSpawnManager()
 
 	CurrentSpawnRateMultiplier = 1.0f;
 	CurrentMonsterCountMultiplier = 1.0f;
+
+	// Enable replication for multiplayer
+	bReplicates = true;
+	bAlwaysRelevant = true;
+}
+
+void AHarmoniaDynamicSpawnManager::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AHarmoniaDynamicSpawnManager, CurrentWave);
+	DOREPLIFETIME(AHarmoniaDynamicSpawnManager, bWaveActive);
 }
 
 void AHarmoniaDynamicSpawnManager::BeginPlay()
@@ -187,6 +200,19 @@ void AHarmoniaDynamicSpawnManager::OnWeatherChanged(const FHarmoniaWeatherChange
 
 void AHarmoniaDynamicSpawnManager::StartWaveMode()
 {
+	// Only run on server
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	// Prevent duplicate calls
+	if (bWaveActive)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Wave mode already active!"));
+		return;
+	}
+
 	if (WaveConfigs.Num() == 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Cannot start wave mode - no wave configs!"));
@@ -201,9 +227,23 @@ void AHarmoniaDynamicSpawnManager::StartWaveMode()
 
 void AHarmoniaDynamicSpawnManager::StartWave(int32 WaveNumber)
 {
+	// Only run on server
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	// Input validation
 	if (WaveNumber < 1 || WaveNumber > WaveConfigs.Num())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Invalid wave number: %d"), WaveNumber);
+		UE_LOG(LogTemp, Warning, TEXT("Invalid wave number: %d (valid range: 1-%d)"), WaveNumber, WaveConfigs.Num());
+		return;
+	}
+
+	// Prevent duplicate calls
+	if (bWaveActive && CurrentWave == WaveNumber)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Wave %d is already active!"), WaveNumber);
 		return;
 	}
 
@@ -259,10 +299,24 @@ void AHarmoniaDynamicSpawnManager::UpdateWaveSpawning(float DeltaTime)
 
 void AHarmoniaDynamicSpawnManager::SpawnWaveMonsters(const FHarmoniaWaveConfig& WaveConfig)
 {
+	// Only run on server
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	// Simple implementation - would need to be expanded with actual spawning logic
 	// This is a placeholder that shows the structure
 
 	int32 TotalMonstersToSpawn = WaveConfig.MonsterTypes.Num() * WaveConfig.MonstersPerType;
+
+	// Input validation - cap spawn count
+	const int32 MaxMonstersPerWave = 1000;
+	if (TotalMonstersToSpawn > MaxMonstersPerWave)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Wave spawn count exceeds maximum (%d > %d), capping"), TotalMonstersToSpawn, MaxMonstersPerWave);
+		TotalMonstersToSpawn = MaxMonstersPerWave;
+	}
 
 	if (WaveSpawnIndex >= TotalMonstersToSpawn)
 	{

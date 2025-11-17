@@ -78,6 +78,10 @@ class HARMONIAKIT_API UHarmoniaLearningAIComponent : public UActorComponent
 public:
 	UHarmoniaLearningAIComponent();
 
+	//~UActorComponent interface
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	//~End of UActorComponent interface
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -171,11 +175,11 @@ protected:
 	// ==================== State ====================
 
 	/** Learned patterns per player */
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	TMap<AActor*, FHarmoniaPlayerPattern> LearnedPatterns;
 
 	/** Current adaptive difficulty */
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	EHarmoniaAdaptiveDifficulty CurrentDifficulty = EHarmoniaAdaptiveDifficulty::Normal;
 
 	/** Analysis timer */

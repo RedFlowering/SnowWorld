@@ -185,26 +185,19 @@ void UHarmoniaGameplayAbility_SwarmBehavior::ApplySwarmBonuses(int32 MemberCount
 		float DefenseBonus = 1.0f + (EffectiveMembers * DefenseBonusPerMember);
 		float SpeedBonus = 1.0f + (EffectiveMembers * SpeedBonusPerMember);
 
-		float BaseAttack = AttributeSet->GetAttackPower();
-		float BaseDefense = AttributeSet->GetDefense();
-		float BaseSpeed = AttributeSet->GetMovementSpeed();
-
-		// Store base values if first time
-		static TMap<UAbilitySystemComponent*, float> BaseAttackMap;
-		static TMap<UAbilitySystemComponent*, float> BaseDefenseMap;
-		static TMap<UAbilitySystemComponent*, float> BaseSpeedMap;
-
-		if (!BaseAttackMap.Contains(ASC))
+		// Store base values if first time (per instance, not static)
+		if (!bBaseStatsStored)
 		{
-			BaseAttackMap.Add(ASC, BaseAttack);
-			BaseDefenseMap.Add(ASC, BaseDefense);
-			BaseSpeedMap.Add(ASC, BaseSpeed);
+			BaseAttackPower = AttributeSet->GetAttackPower();
+			BaseDefense = AttributeSet->GetDefense();
+			BaseMovementSpeed = AttributeSet->GetMovementSpeed();
+			bBaseStatsStored = true;
 		}
 
-		// Apply bonuses
-		ASC->SetNumericAttributeBase(AttributeSet->GetAttackPowerAttribute(), BaseAttackMap[ASC] * AttackBonus);
-		ASC->SetNumericAttributeBase(AttributeSet->GetDefenseAttribute(), BaseDefenseMap[ASC] * DefenseBonus);
-		ASC->SetNumericAttributeBase(AttributeSet->GetMovementSpeedAttribute(), BaseSpeedMap[ASC] * SpeedBonus);
+		// Apply bonuses using stored base values
+		ASC->SetNumericAttributeBase(AttributeSet->GetAttackPowerAttribute(), BaseAttackPower * AttackBonus);
+		ASC->SetNumericAttributeBase(AttributeSet->GetDefenseAttribute(), BaseDefense * DefenseBonus);
+		ASC->SetNumericAttributeBase(AttributeSet->GetMovementSpeedAttribute(), BaseMovementSpeed * SpeedBonus);
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("Swarm bonuses applied: %d members (Attack: +%.0f%%, Defense: +%.0f%%, Speed: +%.0f%%)"),

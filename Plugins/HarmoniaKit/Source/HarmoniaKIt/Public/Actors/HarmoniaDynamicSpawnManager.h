@@ -114,6 +114,10 @@ class HARMONIAKIT_API AHarmoniaDynamicSpawnManager : public AActor
 public:
 	AHarmoniaDynamicSpawnManager();
 
+	//~AActor interface
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	//~End of AActor interface
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -154,11 +158,11 @@ public:
 	TArray<FHarmoniaWaveConfig> WaveConfigs;
 
 	/** Current wave number */
-	UPROPERTY(BlueprintReadOnly, Category = "Wave Mode")
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Wave Mode")
 	int32 CurrentWave = 0;
 
 	/** Is wave active */
-	UPROPERTY(BlueprintReadOnly, Category = "Wave Mode")
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Wave Mode")
 	bool bWaveActive = false;
 
 	/** Auto-start waves on begin play */
