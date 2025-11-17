@@ -199,8 +199,7 @@ void AHarmoniaMonsterSpawner::InitializeSpawner()
 		{
 			GetWorld()->GetTimerManager().SetTimer(
 				InitialSpawnTimerHandle,
-				this,
-				&AHarmoniaMonsterSpawner::SpawnMonster,
+				FTimerDelegate::CreateUObject(this, &AHarmoniaMonsterSpawner::SpawnMonster),
 				InitialSpawnDelay,
 				false
 			);
@@ -217,8 +216,7 @@ void AHarmoniaMonsterSpawner::InitializeSpawner()
 		{
 			GetWorld()->GetTimerManager().SetTimer(
 				InitialSpawnTimerHandle,
-				this,
-				&AHarmoniaMonsterSpawner::SpawnMonster,
+				FTimerDelegate::CreateUObject(this, &AHarmoniaMonsterSpawner::SpawnMonster),
 				InitialSpawnDelay,
 				false
 			);
@@ -232,8 +230,7 @@ void AHarmoniaMonsterSpawner::InitializeSpawner()
 	case EHarmoniaSpawnMode::Continuous:
 		GetWorld()->GetTimerManager().SetTimer(
 			SpawnTimerHandle,
-			this,
-			&AHarmoniaMonsterSpawner::HandleWaveSpawn,
+			FTimerDelegate::CreateUObject(this, &AHarmoniaMonsterSpawner::HandleWaveSpawn),
 			InitialSpawnDelay > 0.0f ? InitialSpawnDelay : WaveInterval,
 			true
 		);
@@ -359,8 +356,7 @@ void AHarmoniaMonsterSpawner::HandleRespawn()
 
 	GetWorld()->GetTimerManager().SetTimer(
 		SpawnTimerHandle,
-		this,
-		&AHarmoniaMonsterSpawner::SpawnMonster,
+		FTimerDelegate::CreateUObject(this, &AHarmoniaMonsterSpawner::SpawnMonster),
 		RespawnDelay,
 		false
 	);
