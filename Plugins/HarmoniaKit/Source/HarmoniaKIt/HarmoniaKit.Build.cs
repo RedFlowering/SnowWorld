@@ -26,7 +26,12 @@ public class HarmoniaKit : ModuleRules
                 "GameplayTasks",
                 "LyraGame", // For LyraGameplayAbility base class
                 "OnlineSubsystem",
-                "OnlineSubsystemUtils"
+                "OnlineSubsystemUtils",
+                "CommonUI", // For UCommonActivatableWidget
+                "NavigationSystem", // For waypoint pathfinding
+                "AIModule", // For AI navigation
+                "RenderCore" // For GWhiteTexture in FogOfWarRenderer (client-side rendering)
+                // Note: RHI, ImageWrapper are in HarmoniaEditor module (editor-only texture capture)
             });
     }
 }
