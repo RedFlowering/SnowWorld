@@ -6,6 +6,7 @@
 #include "GameplayTagContainer.h"
 #include "GameplayEffectTypes.h"
 #include "Definitions/HarmoniaCoreDefinitions.h"
+#include "Definitions/HarmoniaCraftingSystemDefinitions.h"
 #include "HarmoniaEquipmentSystemDefinitions.generated.h"
 
 /**
@@ -137,9 +138,13 @@ struct FEquipmentData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Properties")
 	float Weight = 1.f;
 
-	// Item rarity/quality
+	// Item rarity/quality (legacy - use Grade instead)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Properties")
 	int32 Rarity = 0;
+
+	// Item grade/tier
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Properties")
+	EItemGrade Grade = EItemGrade::Common;
 };
 
 /**

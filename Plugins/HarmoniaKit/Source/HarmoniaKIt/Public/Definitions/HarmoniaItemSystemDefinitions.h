@@ -4,9 +4,10 @@
 
 #include "Engine/DataTable.h"
 #include "Definitions/HarmoniaCoreDefinitions.h"
+#include "Definitions/HarmoniaCraftingSystemDefinitions.h"
 #include "HarmoniaItemSystemDefinitions.generated.h"
 
-// Ä«Å×°í¸® Á¤ÀÇ
+// Ä«ï¿½×°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 UENUM(BlueprintType)
 enum class EItemCategory : uint8
 {
@@ -18,7 +19,7 @@ enum class EItemCategory : uint8
     Etc
 };
 
-// ¾ÆÀÌÅÛ ±âº» Á¤º¸ µ¥ÀÌÅÍ
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½âº» ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 USTRUCT(BlueprintType)
 struct FItemData : public FTableRowBase
 {
@@ -53,9 +54,13 @@ struct FItemData : public FTableRowBase
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     FText Description = FText();
+
+    // Item grade/tier
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    EItemGrade Grade = EItemGrade::Common;
 };
 
-// ¾ÆÀÌÅÛº° ½ºÅÈ
+// ï¿½ï¿½ï¿½ï¿½ï¿½Ûºï¿½ ï¿½ï¿½ï¿½ï¿½
 USTRUCT(BlueprintType)
 struct FItemStatData : public FTableRowBase
 {
