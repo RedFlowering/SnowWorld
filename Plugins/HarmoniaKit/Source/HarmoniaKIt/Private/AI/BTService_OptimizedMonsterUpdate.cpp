@@ -226,9 +226,3 @@ bool UBTService_OptimizedMonsterUpdate::IsInCombat(AActor* Owner) const
 
 	return false;
 }
-
-// Register memory size
-uint16 UBTService_OptimizedMonsterUpdate::GetInstanceMemorySize() const
-{
-	return sizeof(FBTOptimizedMonsterUpdateMemory);
-}

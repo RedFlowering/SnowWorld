@@ -279,7 +279,7 @@ float UHarmoniaTerritoryDisputeComponent::CalculateCombatPower(AActor* Actor)
 		UHarmoniaSquadComponent* SquadComp = Monster->FindComponentByClass<UHarmoniaSquadComponent>();
 		if (SquadComp)
 		{
-			int32 SquadSize = SquadComp->GetSquadMembers().Num();
+			int32 SquadSize = SquadComp->SquadMembers.Num();
 			CombatPower *= (1.0f + (SquadSize - 1) * 0.3f); // +30% per additional squad member
 		}
 	}
@@ -494,7 +494,7 @@ void UHarmoniaTerritoryDisputeComponent::UpdateDisputeState(float DeltaTime)
 	}
 
 	// Check if opponent is still valid
-	if (!CurrentOpponent->IsValidLowLevel() || CurrentOpponent->IsPendingKill())
+	if (!IsValid(CurrentOpponent))
 	{
 		EndDispute(true);
 		return;

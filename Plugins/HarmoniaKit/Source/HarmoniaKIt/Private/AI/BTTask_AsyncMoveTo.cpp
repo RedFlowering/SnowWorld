@@ -51,17 +51,8 @@ EBTNodeResult::Type UBTTask_AsyncMoveTo::ExecuteTask(UBehaviorTreeComponent& Own
 		Memory->bPathfindingInProgress = false;
 	}
 
-	// Adapt acceptable radius based on LOD
-	float AdaptedRadius = AcceptanceRadius;
-	if (bAdaptRadiusToLOD)
-	{
-		AdaptedRadius = GetLODAdaptedRadius(ControlledPawn);
-	}
-
-	// Store adapted radius for this execution
-	AcceptanceRadius = AdaptedRadius;
-
-	// Use parent implementation with adapted settings
+	// TODO: LOD-based radius adaptation would require modifying parent class property
+	// For now, use parent implementation with default settings
 	return Super::ExecuteTask(OwnerComp, NodeMemory);
 }
 

@@ -472,7 +472,7 @@ FVector UHarmoniaSquadComponent::CalculateFormationOffset(int32 MemberIndex, int
 	case EHarmoniaSquadFormationType::Wedge:
 		{
 			// V-formation
-			int32 Row = FMath::Sqrt(MemberIndex);
+			int32 Row = FMath::Sqrt((float)MemberIndex);
 			int32 PosInRow = MemberIndex - (Row * Row);
 			float XOffset = Row * BaseDistance;
 			float YOffset = (PosInRow - Row / 2.0f) * BaseDistance;
@@ -575,7 +575,7 @@ void UHarmoniaSquadComponent::CheckSquadCohesion()
 	}
 }
 
-void UHarmoniaSquadComponent::OnMemberDeath(AActor* DeadMember)
+void UHarmoniaSquadComponent::OnMemberDeath(AHarmoniaMonsterBase* DeadMember, AActor* Killer)
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 	{

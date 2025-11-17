@@ -68,6 +68,7 @@ public:
 	virtual UHarmoniaMonsterData* GetMonsterData_Implementation() const override;
 	virtual int32 GetMonsterLevel_Implementation() const override;
 	virtual FText GetMonsterName_Implementation() const override;
+	virtual EHarmoniaMonsterFaction GetFaction_Implementation() const override;
 	virtual EHarmoniaMonsterState GetMonsterState_Implementation() const override;
 	virtual void SetMonsterState_Implementation(EHarmoniaMonsterState NewState) override;
 	virtual bool IsInCombat_Implementation() const override;

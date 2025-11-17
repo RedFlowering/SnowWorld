@@ -36,10 +36,7 @@ public:
 	//~End of AActor interface
 
 	//~IHarmoniaInteractableInterface
-	virtual bool CanInteract_Implementation(AActor* InteractingActor) const override;
-	virtual void Interact_Implementation(AActor* InteractingActor) override;
-	virtual FText GetInteractionPrompt_Implementation() const override;
-	virtual float GetInteractionDuration_Implementation() const override;
+	virtual void OnInteract_Implementation(const FHarmoniaInteractionContext& Context, FHarmoniaInteractionResult& OutResult) override;
 	//~End of IHarmoniaInteractableInterface
 
 	// ============================================================================

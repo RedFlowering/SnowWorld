@@ -12,9 +12,6 @@ UHarmoniaGameplayAbility_SwarmBehavior::UHarmoniaGameplayAbility_SwarmBehavior()
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
 
-	bActivateAbilityOnGranted = true;
-	bActivateOnInput = false;
-
 	SwarmDetectionRadius = 500.0f;
 	AttackBonusPerMember = 0.15f;
 	DefenseBonusPerMember = 0.1f;
@@ -30,10 +27,8 @@ void UHarmoniaGameplayAbility_SwarmBehavior::OnAvatarSet(const FGameplayAbilityA
 {
 	Super::OnAvatarSet(ActorInfo, Spec);
 
-	if (bActivateAbilityOnGranted)
-	{
-		ActorInfo->AbilitySystemComponent->TryActivateAbility(Spec.Handle);
-	}
+	// Auto-activate when avatar is set
+	ActorInfo->AbilitySystemComponent->TryActivateAbility(Spec.Handle);
 }
 
 void UHarmoniaGameplayAbility_SwarmBehavior::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)

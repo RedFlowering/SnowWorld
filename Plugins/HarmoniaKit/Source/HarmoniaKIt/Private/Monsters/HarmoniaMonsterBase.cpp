@@ -155,6 +155,15 @@ FText AHarmoniaMonsterBase::GetMonsterName_Implementation() const
 	return FText::FromString(GetName());
 }
 
+EHarmoniaMonsterFaction AHarmoniaMonsterBase::GetFaction_Implementation() const
+{
+	if (MonsterData)
+	{
+		return MonsterData->Faction;
+	}
+	return EHarmoniaMonsterFaction::Hostile;
+}
+
 EHarmoniaMonsterState AHarmoniaMonsterBase::GetMonsterState_Implementation() const
 {
 	return CurrentState;

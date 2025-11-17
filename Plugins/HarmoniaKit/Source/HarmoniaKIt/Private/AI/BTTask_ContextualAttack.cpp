@@ -4,7 +4,7 @@
 #include "AIController.h"
 #include "Components/HarmoniaAdvancedAIComponent.h"
 #include "Monsters/HarmoniaMonsterBase.h"
-#include "Monsters/HarmoniaMonsterData.h"
+#include "Definitions/HarmoniaMonsterSystemDefinitions.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
 UBTTask_ContextualAttack::UBTTask_ContextualAttack()

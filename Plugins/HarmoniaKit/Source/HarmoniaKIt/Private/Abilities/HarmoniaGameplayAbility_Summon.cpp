@@ -119,14 +119,14 @@ void UHarmoniaGameplayAbility_Summon::SummonMonster(const FHarmoniaSummonConfig&
 
 		if (SummonedMonster)
 		{
-			// Initialize with monster data
-			SummonedMonster->InitializeWithMonsterData(MonsterData);
+			// TODO: Initialize with monster data - method not available yet
+			// SummonedMonster->InitializeWithMonsterData(MonsterData);
 
-			// Inherit level if configured
-			if (Config.bInheritSummonerLevel && SummonerMonster)
-			{
-				SummonedMonster->SetMonsterLevel(SummonerMonster->GetMonsterLevel());
-			}
+			// TODO: Inherit level if configured - method not available yet
+			// if (Config.bInheritSummonerLevel && SummonerMonster)
+			// {
+			// 	SummonedMonster->SetMonsterLevel(SummonerMonster->GetMonsterLevel());
+			// }
 
 			// Add to active summons
 			ActiveSummons.Add(SummonedMonster);
@@ -140,7 +140,7 @@ void UHarmoniaGameplayAbility_Summon::SummonMonster(const FHarmoniaSummonConfig&
 				FTimerHandle LifetimeTimer;
 				GetWorld()->GetTimerManager().SetTimer(LifetimeTimer, [SummonedMonster]()
 				{
-					if (SummonedMonster && !SummonedMonster->IsPendingKill())
+					if (IsValid(SummonedMonster))
 					{
 						SummonedMonster->Destroy();
 					}
@@ -170,11 +170,11 @@ void UHarmoniaGameplayAbility_Summon::CleanupDeadSummons()
 {
 	ActiveSummons.RemoveAll([](AHarmoniaMonsterBase* Summon)
 	{
-		return !IsValid(Summon) || Summon->IsPendingKill() || Summon->GetMonsterState() == EHarmoniaMonsterState::Dead;
+		return !IsValid(Summon) || Summon->GetMonsterState() == EHarmoniaMonsterState::Dead;
 	});
 }
 
-void UHarmoniaGameplayAbility_Summon::OnSummonedMonsterDied(AHarmoniaMonsterBase* DeadMonster)
+void UHarmoniaGameplayAbility_Summon::OnSummonedMonsterDied(AHarmoniaMonsterBase* DeadMonster, AActor* Killer)
 {
 	if (DeadMonster)
 	{
@@ -187,7 +187,7 @@ void UHarmoniaGameplayAbility_Summon::DestroyAllSummons()
 {
 	for (AHarmoniaMonsterBase* Summon : ActiveSummons)
 	{
-		if (IsValid(Summon) && !Summon->IsPendingKill())
+		if (IsValid(Summon))
 		{
 			Summon->Destroy();
 		}

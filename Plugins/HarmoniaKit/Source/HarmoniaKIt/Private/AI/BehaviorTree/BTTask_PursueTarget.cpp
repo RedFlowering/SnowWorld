@@ -67,7 +67,7 @@ EBTNodeResult::Type UBTTask_PursueTarget::ExecuteTask(UBehaviorTreeComponent& Ow
 	// Move to target
 	EPathFollowingRequestResult::Type MoveResult = AIController->MoveToActor(Target, AcceptanceRadius);
 
-	if (MoveResult == EPathFollowingRequestResult::RequestSuccessful)
+	if (MoveResult == EPathFollowingRequestResult::Success)
 	{
 		return EBTNodeResult::Succeeded;
 	}

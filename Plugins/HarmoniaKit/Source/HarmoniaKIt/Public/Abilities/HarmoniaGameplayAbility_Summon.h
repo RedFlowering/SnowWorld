@@ -96,7 +96,7 @@ protected:
 
 	/** Called when a summoned monster dies */
 	UFUNCTION()
-	void OnSummonedMonsterDied(AHarmoniaMonsterBase* DeadMonster);
+	void OnSummonedMonsterDied(AHarmoniaMonsterBase* DeadMonster, AActor* Killer);
 
 	/** Destroy all summoned monsters */
 	void DestroyAllSummons();

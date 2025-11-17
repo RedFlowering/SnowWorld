@@ -307,7 +307,7 @@ bool AHarmoniaDynamicSpawnManager::IsWaveComplete() const
 	int32 AliveCount = 0;
 	for (AActor* Monster : CurrentWaveMonsters)
 	{
-		if (IsValid(Monster) && !Monster->IsPendingKill())
+		if (IsValid(Monster))
 		{
 			AliveCount++;
 		}

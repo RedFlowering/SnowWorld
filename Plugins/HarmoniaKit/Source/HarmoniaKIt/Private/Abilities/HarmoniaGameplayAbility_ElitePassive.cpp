@@ -11,10 +11,6 @@ UHarmoniaGameplayAbility_ElitePassive::UHarmoniaGameplayAbility_ElitePassive()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
-
-	// Auto-activate when granted
-	bActivateAbilityOnGranted = true;
-	bActivateOnInput = false;
 }
 
 void UHarmoniaGameplayAbility_ElitePassive::OnAvatarSet(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec)
@@ -22,10 +18,7 @@ void UHarmoniaGameplayAbility_ElitePassive::OnAvatarSet(const FGameplayAbilityAc
 	Super::OnAvatarSet(ActorInfo, Spec);
 
 	// Auto-activate when avatar is set
-	if (bActivateAbilityOnGranted)
-	{
-		ActorInfo->AbilitySystemComponent->TryActivateAbility(Spec.Handle);
-	}
+	ActorInfo->AbilitySystemComponent->TryActivateAbility(Spec.Handle);
 }
 
 void UHarmoniaGameplayAbility_ElitePassive::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
