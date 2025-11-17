@@ -26,7 +26,11 @@ public class HarmoniaKit : ModuleRules
                 "GameplayTasks",
                 "LyraGame", // For LyraGameplayAbility base class
                 "OnlineSubsystem",
-                "OnlineSubsystemUtils"
+                "OnlineSubsystemUtils",
+                "CommonUI", // For UCommonActivatableWidget
+                "RenderCore", // For render target and texture operations
+                "RHI", // For reading render target pixels
+                "ImageWrapper" // For image processing
             });
     }
 }
