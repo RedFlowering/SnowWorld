@@ -520,9 +520,20 @@ void UHarmoniaBuildingComponent::ServerEnterBuildingMode_Implementation()
 	EnterBuildingMode();
 }
 
+bool UHarmoniaBuildingComponent::ServerEnterBuildingMode_Validate()
+{
+	// Basic validation - could add cooldown check or permission check here
+	return true;
+}
+
 void UHarmoniaBuildingComponent::ServerExitBuildingMode_Implementation()
 {
 	ExitBuildingMode();
+}
+
+bool UHarmoniaBuildingComponent::ServerExitBuildingMode_Validate()
+{
+	return true;
 }
 
 void UHarmoniaBuildingComponent::ServerSetBuildingMode_Implementation(EBuildingMode NewMode)

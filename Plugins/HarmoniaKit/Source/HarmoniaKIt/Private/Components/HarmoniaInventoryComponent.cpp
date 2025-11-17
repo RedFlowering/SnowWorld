@@ -233,6 +233,31 @@ void UHarmoniaInventoryComponent::ServerPickupItem_Implementation(AHarmoniaItemA
 	PickupItem(Item);
 }
 
+bool UHarmoniaInventoryComponent::ServerPickupItem_Validate(AHarmoniaItemActor* Item)
+{
+	// Anti-cheat: Validate item is not null
+	if (!Item)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerPickupItem: Item is null"));
+		return false;
+	}
+
+	// Validate item is within pickup range
+	AActor* Owner = GetOwner();
+	if (Owner)
+	{
+		float Distance = FVector::Dist(Owner->GetActorLocation(), Item->GetActorLocation());
+		const float MaxPickupDistance = 500.0f;
+		if (Distance > MaxPickupDistance)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerPickupItem: Item too far (%.1f > %.1f)"), Distance, MaxPickupDistance);
+			return false;
+		}
+	}
+
+	return true;
+}
+
 void UHarmoniaInventoryComponent::DropItem(int32 SlotIndex)
 {
 	if (GetOwner() && GetOwner()->HasAuthority() && InventoryData.Slots.IsValidIndex(SlotIndex))
@@ -279,6 +304,18 @@ void UHarmoniaInventoryComponent::DropItem(int32 SlotIndex)
 void UHarmoniaInventoryComponent::ServerDropItem_Implementation(int32 SlotIndex)
 {
 	DropItem(SlotIndex);
+}
+
+bool UHarmoniaInventoryComponent::ServerDropItem_Validate(int32 SlotIndex)
+{
+	// Anti-cheat: Validate slot index
+	if (!InventoryData.Slots.IsValidIndex(SlotIndex))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerDropItem: Invalid slot index %d (Max: %d)"), SlotIndex, InventoryData.Slots.Num() - 1);
+		return false;
+	}
+
+	return true;
 }
 
 void UHarmoniaInventoryComponent::ServerAddItem_Implementation(const FHarmoniaID& ItemID, int32 Count, float Durability)
@@ -364,4 +401,17 @@ bool UHarmoniaInventoryComponent::ServerSwapSlots_Validate(int32 SlotA, int32 Sl
 void UHarmoniaInventoryComponent::ServerClear_Implementation()
 {
 	Clear();
+}
+
+bool UHarmoniaInventoryComponent::ServerClear_Validate()
+{
+	// [SECURITY] This is a dangerous operation that allows clearing the entire inventory
+	// Consider requiring GM/Admin permission or removing this RPC entirely
+	// For now, disabled for security - implement permission check if needed
+	UE_LOG(LogTemp, Warning, TEXT("[SECURITY] ServerClear called - this operation is restricted for security"));
+
+	// TODO: Add permission check here if this functionality is needed
+	// Example: return HasAdminPermission(GetOwner());
+
+	return false; // Disabled by default for security
 }

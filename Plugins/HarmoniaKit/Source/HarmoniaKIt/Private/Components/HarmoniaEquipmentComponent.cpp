@@ -712,7 +712,33 @@ void UHarmoniaEquipmentComponent::ServerEquipItem_Implementation(const FHarmonia
 	EquipItem(EquipmentId, Slot);
 }
 
+bool UHarmoniaEquipmentComponent::ServerEquipItem_Validate(const FHarmoniaID& EquipmentId, EEquipmentSlot Slot)
+{
+	// Anti-cheat: Validate equipment ID
+	if (!EquipmentId.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerEquipItem: Invalid EquipmentId"));
+		return false;
+	}
+
+	// Validate equipment exists in data table
+	FEquipmentData EquipmentData;
+	if (!GetEquipmentData(EquipmentId, EquipmentData))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerEquipItem: Equipment data not found for ID: %s"), *EquipmentId.ToString());
+		return false;
+	}
+
+	return true;
+}
+
 void UHarmoniaEquipmentComponent::ServerUnequipItem_Implementation(EEquipmentSlot Slot)
 {
 	UnequipItem(Slot);
+}
+
+bool UHarmoniaEquipmentComponent::ServerUnequipItem_Validate(EEquipmentSlot Slot)
+{
+	// Slot validation happens in implementation
+	return true;
 }

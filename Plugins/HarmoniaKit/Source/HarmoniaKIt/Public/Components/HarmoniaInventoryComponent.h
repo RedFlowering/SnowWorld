@@ -52,12 +52,12 @@ public:
 protected:
 	void PickupItem(AHarmoniaItemActor* Item);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerPickupItem(AHarmoniaItemActor* Item);
 
 	void DropItem(int32 SlotIndex);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerDropItem(int32 SlotIndex);
 
 	// Server-authoritative inventory operations
@@ -78,7 +78,7 @@ protected:
 
 	void Clear();
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerClear();
 
 public:

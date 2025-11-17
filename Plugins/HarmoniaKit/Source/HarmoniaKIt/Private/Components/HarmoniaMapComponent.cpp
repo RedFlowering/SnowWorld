@@ -418,14 +418,65 @@ void UHarmoniaMapComponent::ServerCreatePing_Implementation(const FVector& World
 	CreatePing(WorldLocation, Lifetime, PingTag);
 }
 
+bool UHarmoniaMapComponent::ServerCreatePing_Validate(const FVector& WorldLocation, float Lifetime, FGameplayTag PingTag)
+{
+	// Anti-cheat: Validate lifetime
+	if (Lifetime < 0.0f || Lifetime > 60.0f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerCreatePing: Invalid lifetime %.1f"), Lifetime);
+		return false;
+	}
+
+	// TODO: Add rate limiting to prevent ping spam
+	return true;
+}
+
 void UHarmoniaMapComponent::ServerAddExploredRegion_Implementation(const FVector& Center, float Radius)
 {
 	AddExploredRegion(Center, Radius);
 }
 
+bool UHarmoniaMapComponent::ServerAddExploredRegion_Validate(const FVector& Center, float Radius)
+{
+	// Anti-cheat: Validate radius is reasonable
+	if (Radius < 0.0f || Radius > 10000.0f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerAddExploredRegion: Invalid radius %.1f"), Radius);
+		return false;
+	}
+
+	// Validate player is near the region center
+	FVector PlayerPos = GetPlayerWorldPosition();
+	float Distance = FVector::Dist(PlayerPos, Center);
+	if (Distance > Radius * 2.0f) // Allow 2x buffer for network lag
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerAddExploredRegion: Too far from region (%.1f > %.1f)"), Distance, Radius * 2.0f);
+		return false;
+	}
+
+	return true;
+}
+
 void UHarmoniaMapComponent::ServerDiscoverLocation_Implementation(const FMapLocationData& Location)
 {
 	DiscoverLocation(Location);
+}
+
+bool UHarmoniaMapComponent::ServerDiscoverLocation_Validate(const FMapLocationData& Location)
+{
+	// Anti-cheat: Validate player is near the location
+	FVector PlayerPos = GetPlayerWorldPosition();
+	float Distance = FVector::Dist(PlayerPos, Location.WorldPosition);
+
+	const float DiscoveryDistance = ExplorationRadius * 0.5f;
+	if (Distance > DiscoveryDistance * 2.0f) // Allow 2x buffer for network lag
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerDiscoverLocation: Too far from location (%.1f > %.1f)"),
+			Distance, DiscoveryDistance * 2.0f);
+		return false;
+	}
+
+	return true;
 }
 
 void UHarmoniaMapComponent::MulticastOnPingCreated_Implementation(const FMapPingData& Ping)

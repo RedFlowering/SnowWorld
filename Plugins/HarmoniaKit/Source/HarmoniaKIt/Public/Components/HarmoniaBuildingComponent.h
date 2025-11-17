@@ -65,10 +65,10 @@ protected:
 	void SetSelectedPart(FName PartID);
 
 	// Server RPCs
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerEnterBuildingMode();
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerExitBuildingMode();
 
 	UFUNCTION(Server, Reliable, WithValidation)

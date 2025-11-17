@@ -256,13 +256,13 @@ protected:
 	/**
 	 * Server RPC for equipping
 	 */
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerEquipItem(const FHarmoniaID& EquipmentId, EEquipmentSlot Slot);
 
 	/**
 	 * Server RPC for unequipping
 	 */
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerUnequipItem(EEquipmentSlot Slot);
 
 private:

@@ -164,15 +164,15 @@ protected:
 	void UpdatePings(float DeltaTime);
 
 	// Server RPC for creating pings
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerCreatePing(const FVector& WorldLocation, float Lifetime, FGameplayTag PingTag);
 
 	// Server RPC for adding explored regions
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerAddExploredRegion(const FVector& Center, float Radius);
 
 	// Server RPC for discovering locations
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerDiscoverLocation(const FMapLocationData& Location);
 
 	// Multicast RPC for broadcasting ping creation (pings are shared with all players)
