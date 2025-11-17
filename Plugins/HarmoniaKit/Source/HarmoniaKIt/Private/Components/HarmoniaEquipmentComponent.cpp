@@ -11,7 +11,7 @@
 UHarmoniaEquipmentComponent::UHarmoniaEquipmentComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
-	SetIsReplicated(true);
+	SetIsReplicatedByDefault(true);
 	bWantsInitializeComponent = true;
 }
 
@@ -418,6 +418,44 @@ void UHarmoniaEquipmentComponent::SetEquipmentDataTable(UDataTable* InDataTable)
 // Internal Functions
 // ============================================================================
 
+FGameplayAttribute UHarmoniaEquipmentComponent::GetAttributeFromName(const FString& AttributeName) const
+{
+	if (AttributeName == "MaxHealth")
+	{
+		return UHarmoniaAttributeSet::GetMaxHealthAttribute();
+	}
+	else if (AttributeName == "MaxStamina")
+	{
+		return UHarmoniaAttributeSet::GetMaxStaminaAttribute();
+	}
+	else if (AttributeName == "AttackPower")
+	{
+		return UHarmoniaAttributeSet::GetAttackPowerAttribute();
+	}
+	else if (AttributeName == "Defense")
+	{
+		return UHarmoniaAttributeSet::GetDefenseAttribute();
+	}
+	else if (AttributeName == "CriticalChance")
+	{
+		return UHarmoniaAttributeSet::GetCriticalChanceAttribute();
+	}
+	else if (AttributeName == "CriticalDamage")
+	{
+		return UHarmoniaAttributeSet::GetCriticalDamageAttribute();
+	}
+	else if (AttributeName == "MovementSpeed")
+	{
+		return UHarmoniaAttributeSet::GetMovementSpeedAttribute();
+	}
+	else if (AttributeName == "AttackSpeed")
+	{
+		return UHarmoniaAttributeSet::GetAttackSpeedAttribute();
+	}
+
+	return FGameplayAttribute();
+}
+
 void UHarmoniaEquipmentComponent::ApplyStatModifiers(const FEquipmentData& EquipmentData)
 {
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
@@ -430,45 +468,7 @@ void UHarmoniaEquipmentComponent::ApplyStatModifiers(const FEquipmentData& Equip
 
 	for (const FEquipmentStatModifier& Modifier : EquipmentData.StatModifiers)
 	{
-		FGameplayAttribute Attribute;
-
-		// Map attribute name to FGameplayAttribute
-		if (Modifier.AttributeName == "MaxHealth")
-		{
-			Attribute = UHarmoniaAttributeSet::GetMaxHealthAttribute();
-		}
-		else if (Modifier.AttributeName == "MaxStamina")
-		{
-			Attribute = UHarmoniaAttributeSet::GetMaxStaminaAttribute();
-		}
-		else if (Modifier.AttributeName == "AttackPower")
-		{
-			Attribute = UHarmoniaAttributeSet::GetAttackPowerAttribute();
-		}
-		else if (Modifier.AttributeName == "Defense")
-		{
-			Attribute = UHarmoniaAttributeSet::GetDefenseAttribute();
-		}
-		else if (Modifier.AttributeName == "CriticalChance")
-		{
-			Attribute = UHarmoniaAttributeSet::GetCriticalChanceAttribute();
-		}
-		else if (Modifier.AttributeName == "CriticalDamage")
-		{
-			Attribute = UHarmoniaAttributeSet::GetCriticalDamageAttribute();
-		}
-		else if (Modifier.AttributeName == "MovementSpeed")
-		{
-			Attribute = UHarmoniaAttributeSet::GetMovementSpeedAttribute();
-		}
-		else if (Modifier.AttributeName == "AttackSpeed")
-		{
-			Attribute = UHarmoniaAttributeSet::GetAttackSpeedAttribute();
-		}
-		else
-		{
-			continue;
-		}
+		FGameplayAttribute Attribute = GetAttributeFromName(Modifier.AttributeName);
 
 		if (!Attribute.IsValid())
 		{
@@ -508,45 +508,7 @@ void UHarmoniaEquipmentComponent::RemoveStatModifiers(const FEquipmentData& Equi
 
 	for (const FEquipmentStatModifier& Modifier : EquipmentData.StatModifiers)
 	{
-		FGameplayAttribute Attribute;
-
-		// Map attribute name to FGameplayAttribute
-		if (Modifier.AttributeName == "MaxHealth")
-		{
-			Attribute = UHarmoniaAttributeSet::GetMaxHealthAttribute();
-		}
-		else if (Modifier.AttributeName == "MaxStamina")
-		{
-			Attribute = UHarmoniaAttributeSet::GetMaxStaminaAttribute();
-		}
-		else if (Modifier.AttributeName == "AttackPower")
-		{
-			Attribute = UHarmoniaAttributeSet::GetAttackPowerAttribute();
-		}
-		else if (Modifier.AttributeName == "Defense")
-		{
-			Attribute = UHarmoniaAttributeSet::GetDefenseAttribute();
-		}
-		else if (Modifier.AttributeName == "CriticalChance")
-		{
-			Attribute = UHarmoniaAttributeSet::GetCriticalChanceAttribute();
-		}
-		else if (Modifier.AttributeName == "CriticalDamage")
-		{
-			Attribute = UHarmoniaAttributeSet::GetCriticalDamageAttribute();
-		}
-		else if (Modifier.AttributeName == "MovementSpeed")
-		{
-			Attribute = UHarmoniaAttributeSet::GetMovementSpeedAttribute();
-		}
-		else if (Modifier.AttributeName == "AttackSpeed")
-		{
-			Attribute = UHarmoniaAttributeSet::GetAttackSpeedAttribute();
-		}
-		else
-		{
-			continue;
-		}
+		FGameplayAttribute Attribute = GetAttributeFromName(Modifier.AttributeName);
 
 		if (!Attribute.IsValid())
 		{

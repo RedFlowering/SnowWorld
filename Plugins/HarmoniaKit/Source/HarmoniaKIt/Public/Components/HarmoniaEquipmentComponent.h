@@ -243,6 +243,11 @@ protected:
 	USkeletalMeshComponent* GetOwnerMesh() const;
 
 	/**
+	 * Map attribute name to FGameplayAttribute
+	 */
+	FGameplayAttribute GetAttributeFromName(const FString& AttributeName) const;
+
+	/**
 	 * Replication callback
 	 */
 	UFUNCTION()

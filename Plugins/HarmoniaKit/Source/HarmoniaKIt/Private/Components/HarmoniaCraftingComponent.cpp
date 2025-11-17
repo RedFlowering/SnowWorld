@@ -413,6 +413,12 @@ bool UHarmoniaCraftingComponent::HasLearnedRecipe(FHarmoniaID RecipeId) const
 
 void UHarmoniaCraftingComponent::ForgetRecipe(FHarmoniaID RecipeId)
 {
+	// Server-only execution (LearnedRecipes is replicated)
+	if (GetOwnerRole() != ROLE_Authority)
+	{
+		return;
+	}
+
 	LearnedRecipes.Remove(RecipeId);
 }
 

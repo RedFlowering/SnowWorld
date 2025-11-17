@@ -219,13 +219,11 @@ int32 UHarmoniaInventoryComponent::GetTotalCount(const FHarmoniaID& ItemID) cons
 
 void UHarmoniaInventoryComponent::PickupItem(AHarmoniaItemActor* Item)
 {
-	AHarmoniaItemActor* ItemActor = Cast<AHarmoniaItemActor>(Item);
-
-	if (GetOwner() && GetOwner()->HasAuthority() && ItemActor)
+	if (GetOwner() && GetOwner()->HasAuthority() && Item)
 	{
-		if (AddItem(ItemActor->ItemID, ItemActor->Count, ItemActor->Durability))
+		if (AddItem(Item->ItemID, Item->Count, Item->Durability))
 		{
-			ItemActor->Destroy();
+			Item->Destroy();
 		}
 	}
 }

@@ -17,41 +17,38 @@ protected:
     virtual void BeginPlay() override;
 
 public:
-	/** ½Ã¾ß¿¡ ÀÖ´Â ÀÎÅÍ·¢ÅÍºí °¨Áö (Æ®·¹ÀÌ½º) */
+	/** ï¿½Ã¾ß¿ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½Í·ï¿½ï¿½Íºï¿½ ï¿½ï¿½ï¿½ï¿½ (Æ®ï¿½ï¿½ï¿½Ì½ï¿½) */
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
     void SetTargetActor(AActor* TargetActor);
 
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
     AActor* GetTargetActor();
 
-	/** ½ÇÁ¦ »óÈ£ÀÛ¿ë ½Ãµµ (ÀÔ·Â µî¿¡¼­ È£Ãâ) */
+	/** ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È£ï¿½Û¿ï¿½ ï¿½Ãµï¿½ (ï¿½Ô·ï¿½ ï¿½î¿¡ï¿½ï¿½ È£ï¿½ï¿½) */
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
 	void Interact();
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_TryInteract(const FHarmoniaInteractionContext& Context);
 
-	UFUNCTION(Client, Reliable)
-	void Client_OnInteractionResult(const FHarmoniaInteractionResult& Result);
-
 protected:
-    /** ÇöÀç Æ®·¹ÀÌ½ºµÈ »óÈ£ÀÛ¿ë ´ë»ó (Ä³½Ì) */
+    /** ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½Ì½ï¿½ï¿½ï¿½ ï¿½ï¿½È£ï¿½Û¿ï¿½ ï¿½ï¿½ï¿½ (Ä³ï¿½ï¿½) */
     UPROPERTY()
     TObjectPtr<AActor> TargetActor = nullptr;
 
-    /** Æ®·¹ÀÌ½º ÇÁ·ÎÆÄÀÏ/Ã¤³Î ÁöÁ¤ (ÇÊ¿ä½Ã Ä¿½ºÅÒ) */
+    /** Æ®ï¿½ï¿½ï¿½Ì½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/Ã¤ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½Ê¿ï¿½ï¿½ Ä¿ï¿½ï¿½ï¿½ï¿½) */
     UPROPERTY(EditAnywhere, Category="Interaction")
     TEnumAsByte<ECollisionChannel> TraceChannel = ECC_Visibility;
 
-    /** Æ®·¹ÀÌ½º °Å¸® */
+    /** Æ®ï¿½ï¿½ï¿½Ì½ï¿½ ï¿½Å¸ï¿½ */
     UPROPERTY(EditAnywhere, Category="Interaction")
     float TraceDistance = 300.f;
 
-    /** Æ®·¹ÀÌ½º ½Ã ¼ÒÀ¯ÀÚ ½ÃÁ¡ ¿ÀÇÁ¼Â (ÇÊ¿ä½Ã) */
+    /** Æ®ï¿½ï¿½ï¿½Ì½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (ï¿½Ê¿ï¿½ï¿½) */
     UPROPERTY(EditAnywhere, Category="Interaction")
     FVector TraceStartOffset = FVector::ZeroVector;
 
-    /** ¸Å´ÏÀú ¿¬µ¿ */
+    /** ï¿½Å´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ */
     UPROPERTY()
     TObjectPtr<UHarmoniaInteractionManager> InteractionManager = nullptr;
 };
