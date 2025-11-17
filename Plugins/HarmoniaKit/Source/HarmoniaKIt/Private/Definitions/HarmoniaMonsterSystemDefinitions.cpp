@@ -2,6 +2,74 @@
 
 #include "Definitions/HarmoniaMonsterSystemDefinitions.h"
 
+// ============================================================================
+// FHarmoniaFactionSettings Implementation
+// ============================================================================
+
+EFactionRelationship FHarmoniaFactionSettings::GetRelationshipWith(EHarmoniaMonsterFaction OtherFaction) const
+{
+	// Check custom relationships first
+	if (const EFactionRelationship* CustomRelation = CustomRelationships.Find(OtherFaction))
+	{
+		return *CustomRelation;
+	}
+
+	// Default relationship logic
+	if (Faction == OtherFaction)
+	{
+		return bCanAttackSameFaction ? EFactionRelationship::Neutral : EFactionRelationship::Friendly;
+	}
+
+	// Player Friendly is hostile to Player Hostile
+	if (Faction == EHarmoniaMonsterFaction::PlayerFriendly && OtherFaction == EHarmoniaMonsterFaction::PlayerHostile)
+	{
+		return EFactionRelationship::Hostile;
+	}
+
+	// Player Hostile is hostile to Player Friendly
+	if (Faction == EHarmoniaMonsterFaction::PlayerHostile && OtherFaction == EHarmoniaMonsterFaction::PlayerFriendly)
+	{
+		return EFactionRelationship::Hostile;
+	}
+
+	// Monster factions are neutral to each other by default
+	if ((Faction >= EHarmoniaMonsterFaction::Monster1 && Faction <= EHarmoniaMonsterFaction::Monster4) &&
+		(OtherFaction >= EHarmoniaMonsterFaction::Monster1 && OtherFaction <= EHarmoniaMonsterFaction::Monster4))
+	{
+		return EFactionRelationship::Neutral;
+	}
+
+	// Neutral is neutral to everyone
+	if (Faction == EHarmoniaMonsterFaction::Neutral)
+	{
+		return EFactionRelationship::Neutral;
+	}
+
+	// Default: Neutral
+	return EFactionRelationship::Neutral;
+}
+
+bool FHarmoniaFactionSettings::CanAttack(EHarmoniaMonsterFaction OtherFaction) const
+{
+	EFactionRelationship Relationship = GetRelationshipWith(OtherFaction);
+	return Relationship == EFactionRelationship::Hostile;
+}
+
+bool FHarmoniaFactionSettings::ShouldHelp(EHarmoniaMonsterFaction OtherFaction) const
+{
+	if (!bDefendAllies)
+	{
+		return false;
+	}
+
+	EFactionRelationship Relationship = GetRelationshipWith(OtherFaction);
+	return Relationship == EFactionRelationship::Friendly;
+}
+
+// ============================================================================
+// UHarmoniaLootTableData Implementation
+// ============================================================================
+
 TArray<FHarmoniaLootTableRow> UHarmoniaLootTableData::GenerateLoot(int32 MonsterLevel, float LuckModifier) const
 {
 	TArray<FHarmoniaLootTableRow> GeneratedLoot;
