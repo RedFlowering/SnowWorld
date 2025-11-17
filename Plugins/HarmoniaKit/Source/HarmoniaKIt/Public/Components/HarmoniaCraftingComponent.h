@@ -86,9 +86,21 @@ protected:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Crafting")
 	FGameplayTagContainer CurrentStationTags;
 
+	/** Current station actor reference (for distance verification) */
+	UPROPERTY()
+	TWeakObjectPtr<AActor> CurrentStationActor;
+
 	/** Cached inventory component reference */
 	UPROPERTY()
 	UHarmoniaInventoryComponent* InventoryComponent;
+
+	/** Cached grade configurations for fast O(1) lookups */
+	UPROPERTY()
+	TMap<EItemGrade, FItemGradeConfig> GradeConfigCache;
+
+	/** Cached station data for fast O(1) lookups */
+	UPROPERTY()
+	TMap<ECraftingStationType, FCraftingStationData> StationDataCache;
 
 	UFUNCTION()
 	void OnRep_ActiveSession();
@@ -169,6 +181,15 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Crafting|Station")
 	void SetCurrentStation(ECraftingStationType StationType, FGameplayTagContainer StationTags = FGameplayTagContainer());
+
+	/**
+	 * Set current crafting station with actor reference (for distance verification)
+	 * @param StationActor - The station actor
+	 * @param StationType - Type of station to use
+	 * @param StationTags - Additional tags for custom stations
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Crafting|Station")
+	void SetCurrentStationWithActor(AActor* StationActor, ECraftingStationType StationType, FGameplayTagContainer StationTags = FGameplayTagContainer());
 
 	/**
 	 * Clear current crafting station (return to hand crafting)
@@ -403,6 +424,60 @@ protected:
 	 * Get crafting skill level (override in subclass if you have skill system)
 	 */
 	virtual int32 GetCraftingSkillLevel() const;
+
+	/**
+	 * Cache DataTable configurations for fast lookups
+	 */
+	void CacheConfigurationData();
+
+	/**
+	 * Verify player is within range of current station (anti-cheat)
+	 */
+	bool VerifyStationDistance() const;
+
+	//~==============================================
+	//~ Configuration & Constants
+	//~==============================================
+protected:
+	/** Security: Minimum time between crafting attempts */
+	UPROPERTY(EditDefaultsOnly, Category = "Crafting|Security")
+	float MinTimeBetweenCrafts;
+
+	/** Security: Maximum crafting attempts per second */
+	UPROPERTY(EditDefaultsOnly, Category = "Crafting|Security")
+	int32 MaxCraftingAttemptsPerSecond;
+
+	/** Security: Maximum distance from station for crafting */
+	UPROPERTY(EditDefaultsOnly, Category = "Crafting|Security")
+	float MaxStationInteractionDistance;
+
+	/** Material refund: Enable material refund on cancel */
+	UPROPERTY(EditDefaultsOnly, Category = "Crafting|Config")
+	bool bRefundMaterialsOnCancel;
+
+	/** Material refund: Percentage of materials to refund (0.0 - 1.0) */
+	UPROPERTY(EditDefaultsOnly, Category = "Crafting|Config", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float MaterialRefundPercentage;
+
+	/** Constant: Maximum durability for new items */
+	UPROPERTY()
+	float MaxItemDurability;
+
+	/** Constant: Any durability value for item removal */
+	UPROPERTY()
+	float AnyDurability;
+
+	/** Rate limiting: Last crafting attempt time */
+	UPROPERTY()
+	float LastCraftingAttempt;
+
+	/** Rate limiting: Crafting attempts in current second */
+	UPROPERTY()
+	int32 CraftingAttemptsThisSecond;
+
+	/** Rate limiting: Last time counter was reset */
+	UPROPERTY()
+	float LastAttemptResetTime;
 
 	//~==============================================
 	//~ Debug
