@@ -26,14 +26,18 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnInteractionCompletedDelegate, 
 
 /**
  * Interactable Target Info
- * Contains information about a sensed interactable target
+ * Contains information about a sensed target (interactable or general actor)
  */
 USTRUCT(BlueprintType)
 struct FInteractableTargetInfo
 {
 	GENERATED_BODY()
 
-	/** The interactable component */
+	/** The target actor (always valid if target exists) */
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<AActor> TargetActor = nullptr;
+
+	/** The interactable component (optional, only for interactables) */
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UHarmoniaSenseInteractableComponent> InteractableComponent = nullptr;
 
@@ -55,6 +59,11 @@ struct FInteractableTargetInfo
 
 	bool IsValid() const
 	{
+		return TargetActor != nullptr && TargetActor->IsValidLowLevel();
+	}
+
+	bool IsInteractable() const
+	{
 		return InteractableComponent != nullptr && InteractableComponent->IsValidLowLevel();
 	}
 };
@@ -62,18 +71,23 @@ struct FInteractableTargetInfo
 /**
  * Sense-Based Interaction Component
  *
- * This component enables actors to interact with objects through the Sense System.
- * It uses USenseReceiverComponent to detect nearby interactables and processes interactions.
+ * This component extends USenseReceiverComponent to provide easy-to-use interaction features.
+ * Inherits all Sense System capabilities while adding interaction-specific functionality.
  * Supports multiple interaction methods: proximity, vision, sound-based, etc.
  *
  * Usage:
  * - Attach to player character or AI
- * - Configure sensors for different interaction types
+ * - Configure sensors directly (inherits from SenseReceiverComponent)
  * - Bind input actions for manual interactions
  * - Automatic interactions will trigger based on sensor events
+ *
+ * Benefits of inheritance:
+ * - Direct access to all SenseReceiverComponent features
+ * - No need for separate component reference
+ * - Cleaner architecture and easier to extend
  */
 UCLASS(ClassGroup=(HarmoniaKit), meta=(BlueprintSpawnableComponent))
-class HARMONIAKIT_API UHarmoniaSenseInteractionComponent : public UActorComponent
+class HARMONIAKIT_API UHarmoniaSenseInteractionComponent : public USenseReceiverComponent
 {
 	GENERATED_BODY()
 
@@ -83,30 +97,6 @@ public:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
-	// ============================================================================
-	// Sense Receiver Configuration
-	// ============================================================================
-
-	/**
-	 * Sense Receiver Component Reference
-	 * This component detects sense stimuli in the environment
-	 * Can be set manually or will auto-find on owner actor
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sense Interaction")
-	TObjectPtr<USenseReceiverComponent> SenseReceiverComponent = nullptr;
-
-	/**
-	 * Auto-find SenseReceiverComponent on owner actor
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sense Interaction")
-	bool bAutoFindSenseReceiver = true;
-
-	/**
-	 * Auto-create SenseReceiverComponent if not found
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sense Interaction")
-	bool bAutoCreateSenseReceiver = true;
 
 	// ============================================================================
 	// Interaction Settings
@@ -136,6 +126,13 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sense Interaction")
 	bool bEnableAutomaticInteractions = true;
+
+	/**
+	 * Track only HarmoniaSenseInteractableComponent (false = track all sensed actors)
+	 * Set to false for AI combat targeting, true for player interactions
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sense Interaction")
+	bool bInteractableOnly = true;
 
 	/**
 	 * Debug visualization
@@ -256,11 +253,6 @@ public:
 	FOnInteractionCompletedDelegate OnInteractionCompleted;
 
 protected:
-	/**
-	 * Initialize sense receiver component
-	 */
-	virtual void InitializeSenseReceiver();
-
 	/**
 	 * Setup input bindings
 	 */
