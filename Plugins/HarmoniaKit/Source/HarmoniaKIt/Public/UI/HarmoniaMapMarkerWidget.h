@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Definitions/HarmoniaMapSystemDefinitions.h"
 #include "HarmoniaMapMarkerWidget.generated.h"
 
 class UImage;

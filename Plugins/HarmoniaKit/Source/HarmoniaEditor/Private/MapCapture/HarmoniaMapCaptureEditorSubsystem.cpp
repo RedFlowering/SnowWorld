@@ -6,6 +6,7 @@
 #include "EngineUtils.h"
 #include "LevelEditor.h"
 #include "ScopedTransaction.h"
+#include "EditorViewportClient.h"
 
 void UHarmoniaMapCaptureEditorSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -71,10 +72,10 @@ AHarmoniaMapCaptureVolume* UHarmoniaMapCaptureEditorSubsystem::CreateCaptureVolu
     if (GEditor->GetActiveViewport())
     {
         FViewportClient* ViewportClient = GEditor->GetActiveViewport()->GetClient();
-        if (ViewportClient)
+        if (FEditorViewportClient* EditorViewportClient = static_cast<FEditorViewportClient*>(ViewportClient))
         {
-            ViewportLocation = ViewportClient->GetViewLocation();
-            ViewportRotation = ViewportClient->GetViewRotation();
+            ViewportLocation = EditorViewportClient->GetViewLocation();
+            ViewportRotation = EditorViewportClient->GetViewRotation();
         }
     }
 

@@ -18,11 +18,8 @@
 
 AHarmoniaMapCaptureVolume::AHarmoniaMapCaptureVolume()
 {
-    // Set default brush color
-    if (GetBrushComponent())
-    {
-        GetBrushComponent()->ShapeColor = FColor::Green;
-    }
+    // Note: ShapeColor was removed in UE 5.7
+    // Brush color is now set via editor customization or material
 
     // Create scene capture component
     SceneCaptureComponent = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("SceneCaptureComponent"));
@@ -69,10 +66,8 @@ void AHarmoniaMapCaptureVolume::PostEditChangeProperty(FPropertyChangedEvent& Pr
     // Update preview color
     if (PropertyName == GET_MEMBER_NAME_CHECKED(AHarmoniaMapCaptureVolume, PreviewColor))
     {
-        if (GetBrushComponent())
-        {
-            GetBrushComponent()->ShapeColor = PreviewColor.ToFColor(true);
-        }
+        // Note: ShapeColor was removed in UE 5.7
+        // Preview color is now handled via editor customization
     }
 }
 
@@ -264,9 +259,9 @@ void AHarmoniaMapCaptureVolume::CalculateOptimalTiles()
 
     // Calculate optimal tiles based on world size
     // Assume we want ~10 world units per pixel at base resolution
-    float WorldUnitsPerPixel = 10.0f;
-    float DesiredWidthPixels = (Extent.X * 2.0f) / WorldUnitsPerPixel;
-    float DesiredHeightPixels = (Extent.Y * 2.0f) / WorldUnitsPerPixel;
+    float TargetUnitsPerPixel = 10.0f;
+    float DesiredWidthPixels = (Extent.X * 2.0f) / TargetUnitsPerPixel;
+    float DesiredHeightPixels = (Extent.Y * 2.0f) / TargetUnitsPerPixel;
 
     // Calculate how many tiles we need
     int32 TilesX = FMath::CeilToInt(DesiredWidthPixels / TileResolution.X);
@@ -431,7 +426,11 @@ UTexture2D* AHarmoniaMapCaptureVolume::SaveRenderTargetToTexture(UTextureRenderT
 
     // Save package
     FString PackageFileName = FPackageName::LongPackageNameToFilename(PackageName, FPackageName::GetAssetPackageExtension());
-    bool bSaved = UPackage::SavePackage(Package, NewTexture, RF_Public | RF_Standalone, *PackageFileName);
+
+    FSavePackageArgs SaveArgs;
+    SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
+    SaveArgs.SaveFlags = SAVE_NoError;
+    bool bSaved = UPackage::SavePackage(Package, NewTexture, *PackageFileName, SaveArgs);
 
     if (bSaved)
     {
@@ -487,7 +486,11 @@ void AHarmoniaMapCaptureVolume::CreateMapDataAsset(const TArray<UTexture2D*>& Te
     FAssetRegistryModule::AssetCreated(MapDataAsset);
 
     FString PackageFileName = FPackageName::LongPackageNameToFilename(PackagePath, FPackageName::GetAssetPackageExtension());
-    bool bSaved = UPackage::SavePackage(Package, MapDataAsset, RF_Public | RF_Standalone, *PackageFileName);
+
+    FSavePackageArgs SaveArgs;
+    SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
+    SaveArgs.SaveFlags = SAVE_NoError;
+    bool bSaved = UPackage::SavePackage(Package, MapDataAsset, *PackageFileName, SaveArgs);
 
     if (bSaved)
     {

@@ -5,6 +5,7 @@
 #include "System/HarmoniaFogOfWarRenderer.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
