@@ -337,6 +337,14 @@ protected:
 	UFUNCTION(Client, Reliable)
 	void ClientCraftingCancelled(FHarmoniaID RecipeId, float ProgressLost);
 
+	/** Multicast RPC to play crafting animation on all clients */
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPlayCraftingAnimation(UAnimMontage* Montage);
+
+	/** Multicast RPC to stop crafting animation on all clients */
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastStopCraftingAnimation();
+
 	//~==============================================
 	//~ Delegates
 	//~==============================================

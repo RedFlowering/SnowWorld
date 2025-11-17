@@ -69,16 +69,8 @@ void UHarmoniaCraftingComponent::OnRep_ActiveSession()
 	{
 		OnCraftingStarted.Broadcast(ActiveSession.RecipeId, ActiveSession.TotalCastingTime);
 
-		// Play animation on client
-		FCraftingRecipeData RecipeData;
-		if (GetRecipeData(ActiveSession.RecipeId, RecipeData) && RecipeData.CraftingMontage.IsValid())
-		{
-			UAnimMontage* Montage = RecipeData.CraftingMontage.LoadSynchronous();
-			if (Montage)
-			{
-				PlayCraftingAnimation(Montage);
-			}
-		}
+		// Note: Animation is now played via MulticastPlayCraftingAnimation
+		// No need to play it here separately
 	}
 }
 
@@ -163,13 +155,14 @@ bool UHarmoniaCraftingComponent::StartCrafting(FHarmoniaID RecipeId)
 	// Broadcast start event
 	OnCraftingStarted.Broadcast(RecipeId, RecipeData.CastingTime);
 
-	// Play crafting animation
+	// Play crafting animation on all clients (including server)
 	if (RecipeData.CraftingMontage.IsValid())
 	{
 		UAnimMontage* Montage = RecipeData.CraftingMontage.LoadSynchronous();
 		if (Montage)
 		{
-			PlayCraftingAnimation(Montage);
+			// Use Multicast RPC to sync animation to all clients
+			MulticastPlayCraftingAnimation(Montage);
 		}
 	}
 
@@ -197,8 +190,8 @@ void UHarmoniaCraftingComponent::CancelCrafting()
 	// Reset session
 	ActiveSession = FActiveCraftingSession();
 
-	// Stop animation
-	StopCraftingAnimation();
+	// Stop animation on all clients
+	MulticastStopCraftingAnimation();
 
 	// Broadcast cancellation
 	OnCraftingCancelled.Broadcast(RecipeId, ProgressLost);
@@ -479,8 +472,8 @@ void UHarmoniaCraftingComponent::CompleteCrafting()
 	// Distribute results
 	DistributeResults(ResultItems);
 
-	// Stop animation
-	StopCraftingAnimation();
+	// Stop animation on all clients
+	MulticastStopCraftingAnimation();
 
 	// Broadcast completion event
 	OnCraftingCompleted.Broadcast(ActiveSession.RecipeId, Result, ResultItems);
@@ -820,6 +813,18 @@ void UHarmoniaCraftingComponent::ClientCraftingCompleted_Implementation(FHarmoni
 void UHarmoniaCraftingComponent::ClientCraftingCancelled_Implementation(FHarmoniaID RecipeId, float ProgressLost)
 {
 	// Client-side notification (server already broadcasted via OnCraftingCancelled)
+}
+
+void UHarmoniaCraftingComponent::MulticastPlayCraftingAnimation_Implementation(UAnimMontage* Montage)
+{
+	// Play animation on all clients (and server)
+	PlayCraftingAnimation(Montage);
+}
+
+void UHarmoniaCraftingComponent::MulticastStopCraftingAnimation_Implementation()
+{
+	// Stop animation on all clients (and server)
+	StopCraftingAnimation();
 }
 
 //~==============================================

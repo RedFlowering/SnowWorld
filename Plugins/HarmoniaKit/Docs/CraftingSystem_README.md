@@ -707,23 +707,51 @@ CraftingComponent->Debug_InstantCraft();
 
 ## 멀티플레이어 지원 (Multiplayer)
 
-제작 시스템은 완전히 리플리케이션을 지원합니다:
+제작 시스템은 **완전히 리플리케이션을 지원**합니다!
 
-- `ActiveSession`: 서버에서 클라이언트로 복제됨
-- `LearnedRecipes`: 서버에서 클라이언트로 복제됨
-- 모든 제작 요청은 서버에서 검증됨
-- 클라이언트는 UI 업데이트만 담당
+### 동기화되는 항목
 
-**네트워크 플로우:**
+| 항목 | 동기화 방식 | 설명 |
+|------|------------|------|
+| **ActiveSession** | Replicated (OnRep) | 제작 진행 상태 |
+| **LearnedRecipes** | Replicated | 학습한 레시피 목록 |
+| **CurrentStation** | Replicated (OnRep) | 현재 작업대 |
+| **CurrentStationTags** | Replicated | 작업대 태그 |
+| **제작 애니메이션** | Multicast RPC | 모든 플레이어가 볼 수 있음! |
+| **제작 결과물** | 인벤토리 리플리케이션 | 자동 동기화 |
+
+### 네트워크 플로우
+
+**제작 시작:**
 1. 클라이언트: `StartCrafting()` 호출
 2. 클라이언트 → 서버: `ServerStartCrafting` RPC
-3. 서버: 재료 확인 및 소비
+3. 서버: 재료 확인, 스테이션 검증, 재료 소비
 4. 서버: `ActiveSession` 업데이트 (자동 복제)
-5. 클라이언트: `OnRep_ActiveSession()` 호출
-6. 클라이언트: 애니메이션 재생 및 UI 업데이트
-7. 서버: 제작 완료 후 결과 분배
-8. 서버 → 클라이언트: `ClientCraftingCompleted` RPC
-9. 클라이언트: 완료 이벤트 처리
+5. **서버 → 모든 클라이언트: `MulticastPlayCraftingAnimation` RPC** ✨
+6. 모든 클라이언트: 애니메이션 재생 (다른 플레이어도 볼 수 있음!)
+7. 클라이언트: `OnRep_ActiveSession()` 호출 → UI 업데이트
+
+**제작 완료:**
+8. 서버: 제작 완료 후 확률 판정 및 결과 분배
+9. **서버 → 모든 클라이언트: `MulticastStopCraftingAnimation` RPC** ✨
+10. 모든 클라이언트: 애니메이션 정지
+11. 서버: 인벤토리에 아이템 추가 (자동 복제)
+12. 서버 → 클라이언트: `ClientCraftingCompleted` RPC
+13. 클라이언트: 완료 이벤트 처리 (UI 알림 등)
+
+### 주요 특징
+
+✅ **다른 플레이어가 제작하는 모습을 볼 수 있습니다!**
+- Multicast RPC를 통해 애니메이션이 모든 클라이언트에 동기화됩니다.
+- 대장간에서 다른 플레이어가 무기를 제작하는 모습을 실시간으로 볼 수 있습니다.
+
+✅ **모든 검증은 서버에서 수행**
+- 재료 소비, 스테이션 검증, 확률 판정은 모두 서버에서만 실행
+- 클라이언트는 작업을 요청만 할 수 있음 (치팅 방지)
+
+✅ **결과물 자동 동기화**
+- 인벤토리 컴포넌트의 리플리케이션을 통해 자동으로 아이템 동기화
+- 추가 작업 필요 없음
 
 ---
 
