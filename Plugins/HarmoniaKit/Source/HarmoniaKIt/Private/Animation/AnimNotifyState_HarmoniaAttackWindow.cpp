@@ -48,7 +48,7 @@ void UAnimNotifyState_HarmoniaAttackWindow::NotifyBegin(USkeletalMeshComponent* 
 	AttackData.TraceConfig.DetectionDuration = TotalDuration;
 
 	// Start attack
-	AttackComponent->StartAttack(AttackData);
+	AttackComponent->RequestStartAttack(AttackData);
 }
 
 void UAnimNotifyState_HarmoniaAttackWindow::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime, const FAnimNotifyEventReference& EventReference)
@@ -84,7 +84,7 @@ void UAnimNotifyState_HarmoniaAttackWindow::NotifyEnd(USkeletalMeshComponent* Me
 	// Stop attack
 	if (AttackComponent->IsAttacking())
 	{
-		AttackComponent->StopAttack();
+		AttackComponent->RequestStopAttack();
 	}
 }
 

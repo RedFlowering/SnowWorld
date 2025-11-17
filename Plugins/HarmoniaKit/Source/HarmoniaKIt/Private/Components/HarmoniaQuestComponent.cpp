@@ -1015,7 +1015,44 @@ void UHarmoniaQuestComponent::ServerUpdateObjective_Implementation(FHarmoniaID Q
 
 bool UHarmoniaQuestComponent::ServerUpdateObjective_Validate(FHarmoniaID QuestId, int32 ObjectiveIndex, int32 Progress)
 {
-	return QuestId.IsValid() && ObjectiveIndex >= 0;
+	// Anti-cheat: Validate quest ID
+	if (!QuestId.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerUpdateObjective: Invalid QuestId"));
+		return false;
+	}
+
+	// Validate objective index lower bound
+	if (ObjectiveIndex < 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerUpdateObjective: Negative objective index %d"), ObjectiveIndex);
+		return false;
+	}
+
+	// Validate quest is actually active
+	const FActiveQuestProgress* QuestProgress = FindActiveQuest(QuestId);
+	if (!QuestProgress)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerUpdateObjective: Quest not active %s"), *QuestId.ToString());
+		return false;
+	}
+
+	// Validate objective index upper bound
+	if (!QuestProgress->ObjectiveProgress.IsValidIndex(ObjectiveIndex))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerUpdateObjective: Invalid objective index %d (Max: %d)"),
+			ObjectiveIndex, QuestProgress->ObjectiveProgress.Num() - 1);
+		return false;
+	}
+
+	// Validate progress amount is reasonable
+	if (FMath::Abs(Progress) > 1000)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerUpdateObjective: Suspicious progress amount %d"), Progress);
+		return false;
+	}
+
+	return true;
 }
 
 void UHarmoniaQuestComponent::ServerSetTrackedQuest_Implementation(FHarmoniaID QuestId)

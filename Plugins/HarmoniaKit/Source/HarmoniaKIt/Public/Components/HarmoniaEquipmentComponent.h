@@ -73,10 +73,10 @@ public:
 	bool UnequipItem(EEquipmentSlot Slot);
 
 	/**
-	 * Swap equipment between two slots
+	 * Request to swap equipment between two slots (Client callable)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Equipment")
-	bool SwapEquipment(EEquipmentSlot SlotA, EEquipmentSlot SlotB);
+	void RequestSwapEquipment(EEquipmentSlot SlotA, EEquipmentSlot SlotB);
 
 	/**
 	 * Get equipped item in a specific slot
@@ -198,17 +198,15 @@ protected:
 	// ============================================================================
 
 	/**
-	 * Apply stat modifiers to attribute set
+	 * Apply stat modifiers as GameplayEffects to attribute set
+	 * Creates dynamic GameplayEffects from StatModifiers and applies them
+	 * @param EquipmentData Equipment data containing stat modifiers
+	 * @param OutEquippedItem Output equipped item to store active effect handles
 	 */
-	void ApplyStatModifiers(const FEquipmentData& EquipmentData);
+	void ApplyStatModifiers(const FEquipmentData& EquipmentData, FEquippedItem& OutEquippedItem);
 
 	/**
-	 * Remove stat modifiers from attribute set
-	 */
-	void RemoveStatModifiers(const FEquipmentData& EquipmentData);
-
-	/**
-	 * Apply gameplay effects
+	 * Apply gameplay effects (GrantedEffects)
 	 */
 	void ApplyGameplayEffects(const FEquipmentData& EquipmentData, FEquippedItem& OutEquippedItem);
 
@@ -243,6 +241,11 @@ protected:
 	USkeletalMeshComponent* GetOwnerMesh() const;
 
 	/**
+	 * Map attribute name to FGameplayAttribute
+	 */
+	FGameplayAttribute GetAttributeFromName(const FString& AttributeName) const;
+
+	/**
 	 * Replication callback
 	 */
 	UFUNCTION()
@@ -251,14 +254,25 @@ protected:
 	/**
 	 * Server RPC for equipping
 	 */
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerEquipItem(const FHarmoniaID& EquipmentId, EEquipmentSlot Slot);
 
 	/**
 	 * Server RPC for unequipping
 	 */
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerUnequipItem(EEquipmentSlot Slot);
+
+	/**
+	 * Server RPC for swapping equipment
+	 */
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSwapEquipment(EEquipmentSlot SlotA, EEquipmentSlot SlotB);
+
+	/**
+	 * Swap equipment between two slots (Server-only)
+	 */
+	bool SwapEquipment(EEquipmentSlot SlotA, EEquipmentSlot SlotB);
 
 private:
 	// Cached ability system component

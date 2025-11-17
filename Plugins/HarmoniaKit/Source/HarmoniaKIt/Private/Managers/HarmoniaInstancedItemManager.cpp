@@ -8,17 +8,23 @@
 
 AActor* UHarmoniaInstancedItemManager::SpawnWorldActor(const FHarmoniaInstancedObjectData& Data, AController* Requestor)
 {
-    // ¿¹½Ã: ¾ÆÀÌÅÛ Å×ÀÌºí ¶Ç´Â ¸ÅÇÎ ¸Ê¿¡¼­ ¾×ÅÍ Å¬·¡½º Ã£±â
+    // ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ìºï¿½ ï¿½Ç´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ Ã£ï¿½ï¿½
     TSubclassOf<AActor> ItemActorClass = nullptr;
 
-    // ------ ¿¹½Ã ¸ÅÇÎ ÄÚµå ½ÃÀÛ ------
-    // (½ÇÀü¿¡¼­´Â Å×ÀÌºí ¸Å´ÏÀú/¿¡¼Â ¸Å´ÏÀú µî¿¡¼­ Á¶È¸)
+    // ------ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Úµï¿½ ï¿½ï¿½ï¿½ï¿½ ------
+    // (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ìºï¿½ ï¿½Å´ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½ ï¿½Å´ï¿½ï¿½ï¿½ ï¿½î¿¡ï¿½ï¿½ ï¿½ï¿½È¸)
     UDataTable* ItemDataTable = GETITEMDATATABLE();
 
     if (ItemDataTable)
     {
         const FItemData* Item = ItemDataTable->FindRow<FItemData>(Data.DataId, TEXT("FindItemRow"));
-        ItemActorClass = Item->WorldActorClass->GetClass();
+        if (!Item)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("UHarmoniaInstancedItemManager::SpawnWorldActor - Item data not found for ItemId: %s"), *Data.DataId.ToString());
+            return nullptr;
+        }
+
+        ItemActorClass = Item->WorldActorClass.LoadSynchronous();
 
         if (!ItemActorClass)
         {
@@ -38,10 +44,10 @@ AActor* UHarmoniaInstancedItemManager::SpawnWorldActor(const FHarmoniaInstancedO
         {
             RegisterSpawnedActor(Data.InstanceGuid, SpawnedActor);
 
-            // (ÇÊ¿äÇÏ´Ù¸é) ¾×ÅÍ¿¡ ¾ÆÀÌÅÛ µ¥ÀÌÅÍ ÁÖÀÔ µî Ãß°¡ Ã³¸®
+            // (ï¿½Ê¿ï¿½ï¿½Ï´Ù¸ï¿½) ï¿½ï¿½ï¿½Í¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ß°ï¿½ Ã³ï¿½ï¿½
             // ex) IWorldItemInterface::SetItemData(Data);
 
-            // (¿É¼Ç) »óÈ£ÀÛ¿ë ¹ÙÀÎµù, ÀÌÆåÆ® µî
+            // (ï¿½É¼ï¿½) ï¿½ï¿½È£ï¿½Û¿ï¿½ ï¿½ï¿½ï¿½Îµï¿½, ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½
         }
         return SpawnedActor;
     }
@@ -53,7 +59,7 @@ void UHarmoniaInstancedItemManager::DestroyWorldActor(AActor* Actor)
 {
     if (Actor)
     {
-        // (ÇÊ¿ä½Ã) ÆÄ±« Àü¿¡ µ¥ÀÌÅÍ, ÀÌÆåÆ®, ·çÆÃ Ã³¸® µî
+        // (ï¿½Ê¿ï¿½ï¿½) ï¿½Ä±ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½Æ®, ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ ï¿½ï¿½
         Actor->Destroy();
     }
 }

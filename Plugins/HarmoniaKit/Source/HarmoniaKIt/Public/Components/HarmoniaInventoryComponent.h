@@ -9,7 +9,7 @@
 
 class AHarmoniaItemActor;
 
-// µå¶ø ÀÌº¥Æ® µ¨¸®°ÔÀÌÆ®
+// ï¿½ï¿½ï¿½ ï¿½Ìºï¿½Æ® ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryChanged);
 
 UCLASS(ClassGroup = (Harmonia), meta = (BlueprintSpawnableComponent))
@@ -35,37 +35,75 @@ public:
 	void RequestDropItem(int32 SlotIndex);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	bool AddItem(const FHarmoniaID& ItemID, int32 Count, float Durability);
+	void RequestAddItem(const FHarmoniaID& ItemID, int32 Count, float Durability);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	bool RemoveItem(const FHarmoniaID& ItemID, int32 Count, float Durability);
-
-	UFUNCTION(BlueprintCallable)
-	void SwapSlots(int32 SlotA, int32 SlotB);
+	void RequestRemoveItem(const FHarmoniaID& ItemID, int32 Count, float Durability);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	void Clear();
+	void RequestSwapSlots(int32 SlotA, int32 SlotB);
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void RequestClear();
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	int32 GetTotalCount(const FHarmoniaID& ItemID) const;
 
+	// ============================================================================
+	// Internal Operations (Server-only, for plugin-internal use)
+	// WARNING: Do not call these directly from blueprints or client code!
+	// Use Request* functions instead for proper server validation.
+	// ============================================================================
+
+	/**
+	 * Add item to inventory (Server-only, internal use)
+	 * NOTE: Only call from plugin-internal code (Crafting, Building, Quest systems)
+	 */
+	bool AddItem(const FHarmoniaID& ItemID, int32 Count, float Durability);
+
+	/**
+	 * Remove item from inventory (Server-only, internal use)
+	 * NOTE: Only call from plugin-internal code (Crafting, Building, Quest systems)
+	 */
+	bool RemoveItem(const FHarmoniaID& ItemID, int32 Count, float Durability);
+
+	/**
+	 * Swap two inventory slots (Server-only, internal use)
+	 * NOTE: Only call from plugin-internal code (UI widgets with proper validation)
+	 */
+	void SwapSlots(int32 SlotA, int32 SlotB);
+
 protected:
 	void PickupItem(AHarmoniaItemActor* Item);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerPickupItem(AHarmoniaItemActor* Item);
 
 	void DropItem(int32 SlotIndex);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerDropItem(int32 SlotIndex);
 
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerAddItem(const FHarmoniaID& ItemID, int32 Count, float Durability);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRemoveItem(const FHarmoniaID& ItemID, int32 Count, float Durability);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSwapSlots(int32 SlotA, int32 SlotB);
+
+	void Clear();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerClear();
+
 public:
-	// ¼­¹ö <-> ¿À³Ê Å¬¶ó¸¸ µ¿±âÈ­
+	// ï¿½ï¿½ï¿½ï¿½ <-> ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½È­
 	UPROPERTY(ReplicatedUsing = OnRep_InventoryData, EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	FInventoryData InventoryData = FInventoryData();
 
-	// Å¬¶ó UI¿¡¼­ ¹ÙÀÎµùÇÏ´Â º¯°æ ÀÌº¥Æ®
+	// Å¬ï¿½ï¿½ UIï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Îµï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ìºï¿½Æ®
 	UPROPERTY(BlueprintAssignable)
 	FOnInventoryChanged OnInventoryChanged;
 };

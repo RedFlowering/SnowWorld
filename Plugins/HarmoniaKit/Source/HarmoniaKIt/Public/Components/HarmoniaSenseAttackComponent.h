@@ -74,23 +74,23 @@ public:
 	// ============================================================================
 
 	/**
-	 * Start attack detection
+	 * Request to start attack detection (Client -> Server)
 	 * @param InAttackData Optional attack data to override default configuration
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Attack")
-	void StartAttack(const FHarmoniaAttackData& InAttackData);
+	void RequestStartAttack(const FHarmoniaAttackData& InAttackData);
 
 	/**
-	 * Start attack detection with default configuration
+	 * Request to start attack detection with default configuration (Client -> Server)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Attack")
-	void StartAttackDefault();
+	void RequestStartAttackDefault();
 
 	/**
-	 * Stop attack detection
+	 * Request to stop attack detection (Client -> Server)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Attack")
-	void StopAttack();
+	void RequestStopAttack();
 
 	/**
 	 * Check if currently attacking
@@ -133,6 +133,41 @@ public:
 	FOnAttackEndDelegate OnAttackEnd;
 
 protected:
+	// ============================================================================
+	// Server RPCs
+	// ============================================================================
+
+	/**
+	 * Server RPC for starting attack
+	 */
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerStartAttack(const FHarmoniaAttackData& InAttackData);
+
+	/**
+	 * Server RPC for stopping attack
+	 */
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerStopAttack();
+
+	// ============================================================================
+	// Internal Attack Functions (Server-only)
+	// ============================================================================
+
+	/**
+	 * Start attack detection (Server-only)
+	 * @param InAttackData Optional attack data to override default configuration
+	 */
+	virtual void StartAttack(const FHarmoniaAttackData& InAttackData);
+
+	/**
+	 * Stop attack detection (Server-only)
+	 */
+	virtual void StopAttack();
+
+	// ============================================================================
+	// Sense System Integration
+	// ============================================================================
+
 	/**
 	 * Initialize sense stimulus component
 	 */

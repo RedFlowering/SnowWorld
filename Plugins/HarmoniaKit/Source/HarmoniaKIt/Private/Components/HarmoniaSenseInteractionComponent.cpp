@@ -178,6 +178,60 @@ bool UHarmoniaSenseInteractionComponent::TryInteractWithSensor(FName SensorTag)
 	return false;
 }
 
+bool UHarmoniaSenseInteractionComponent::Server_TryInteract_Validate(
+	UHarmoniaSenseInteractableComponent* Target,
+	FName SensorTag)
+{
+	// Validate target exists
+	if (!Target || !Target->IsValidLowLevel())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Server_TryInteract: Invalid target"));
+		return false;
+	}
+
+	// Validate target owner exists
+	AActor* TargetOwner = Target->GetOwner();
+	if (!TargetOwner)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Server_TryInteract: Target has no owner"));
+		return false;
+	}
+
+	// Validate distance
+	AActor* Interactor = GetOwner();
+	if (Interactor)
+	{
+		float Distance = FVector::Dist(Interactor->GetActorLocation(), TargetOwner->GetActorLocation());
+		const float MaxInteractionDistance = 1000.0f; // 10 meters
+
+		if (Distance > MaxInteractionDistance)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Server_TryInteract: Target too far (%.1f > %.1f)"),
+				Distance, MaxInteractionDistance);
+			return false;
+		}
+	}
+
+	// Validate target is currently sensed by this component
+	bool bTargetIsSensed = false;
+	for (const FInteractableTargetInfo& TrackedTarget : TrackedTargets)
+	{
+		if (TrackedTarget.InteractableComponent == Target)
+		{
+			bTargetIsSensed = true;
+			break;
+		}
+	}
+
+	if (!bTargetIsSensed)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Server_TryInteract: Target not in sensed list"));
+		return false;
+	}
+
+	return true;
+}
+
 void UHarmoniaSenseInteractionComponent::Server_TryInteract_Implementation(
 	UHarmoniaSenseInteractableComponent* Target,
 	FName SensorTag)

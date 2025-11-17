@@ -37,17 +37,17 @@ void UAnimNotify_HarmoniaAttackCheck::Notify(USkeletalMeshComponent* MeshComp, U
 	// Stop previous attack if requested
 	if (bStopPreviousAttack && AttackComponent->IsAttacking())
 	{
-		AttackComponent->StopAttack();
+		AttackComponent->RequestStopAttack();
 	}
 
 	// Start attack with appropriate data
 	if (bUseCustomAttackData)
 	{
-		AttackComponent->StartAttack(CustomAttackData);
+		AttackComponent->RequestStartAttack(CustomAttackData);
 	}
 	else
 	{
-		AttackComponent->StartAttackDefault();
+		AttackComponent->RequestStartAttackDefault();
 	}
 }
 

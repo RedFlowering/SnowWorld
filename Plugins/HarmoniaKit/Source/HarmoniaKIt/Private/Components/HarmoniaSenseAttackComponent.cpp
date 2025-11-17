@@ -60,11 +60,116 @@ void UHarmoniaSenseAttackComponent::TickComponent(float DeltaTime, ELevelTick Ti
 }
 
 // ============================================================================
-// Attack Control
+// Attack Control - Public Request Functions
+// ============================================================================
+
+void UHarmoniaSenseAttackComponent::RequestStartAttack(const FHarmoniaAttackData& InAttackData)
+{
+	AActor* Owner = GetOwner();
+	if (Owner && Owner->HasAuthority())
+	{
+		// Server: Execute directly
+		StartAttack(InAttackData);
+	}
+	else
+	{
+		// Client: Send to server
+		ServerStartAttack(InAttackData);
+	}
+}
+
+void UHarmoniaSenseAttackComponent::RequestStartAttackDefault()
+{
+	RequestStartAttack(AttackData);
+}
+
+void UHarmoniaSenseAttackComponent::RequestStopAttack()
+{
+	AActor* Owner = GetOwner();
+	if (Owner && Owner->HasAuthority())
+	{
+		// Server: Execute directly
+		StopAttack();
+	}
+	else
+	{
+		// Client: Send to server
+		ServerStopAttack();
+	}
+}
+
+// ============================================================================
+// Server RPCs
+// ============================================================================
+
+bool UHarmoniaSenseAttackComponent::ServerStartAttack_Validate(const FHarmoniaAttackData& InAttackData)
+{
+	// Validate attack data is enabled
+	if (!InAttackData.bEnabled)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartAttack: Attack data disabled"));
+		return false;
+	}
+
+	// Validate damage values are reasonable
+	if (InAttackData.DamageConfig.BaseDamage < 0.0f || InAttackData.DamageConfig.BaseDamage > 10000.0f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartAttack: Invalid base damage %.1f"),
+			InAttackData.DamageConfig.BaseDamage);
+		return false;
+	}
+
+	if (InAttackData.DamageConfig.DamageMultiplier < 0.0f || InAttackData.DamageConfig.DamageMultiplier > 100.0f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartAttack: Invalid damage multiplier %.1f"),
+			InAttackData.DamageConfig.DamageMultiplier);
+		return false;
+	}
+
+	// Validate attack trace extent
+	const FVector& TraceExtent = InAttackData.TraceConfig.TraceExtent;
+	if (TraceExtent.X < 0.0f || TraceExtent.X > 10000.0f ||
+		TraceExtent.Y < 0.0f || TraceExtent.Y > 10000.0f ||
+		TraceExtent.Z < 0.0f || TraceExtent.Z > 10000.0f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartAttack: Invalid trace extent (%.1f, %.1f, %.1f)"),
+			TraceExtent.X, TraceExtent.Y, TraceExtent.Z);
+		return false;
+	}
+
+	return true;
+}
+
+void UHarmoniaSenseAttackComponent::ServerStartAttack_Implementation(const FHarmoniaAttackData& InAttackData)
+{
+	StartAttack(InAttackData);
+}
+
+bool UHarmoniaSenseAttackComponent::ServerStopAttack_Validate()
+{
+	// Basic validation - always allow stopping
+	return true;
+}
+
+void UHarmoniaSenseAttackComponent::ServerStopAttack_Implementation()
+{
+	StopAttack();
+}
+
+// ============================================================================
+// Internal Attack Functions (Server-only)
 // ============================================================================
 
 void UHarmoniaSenseAttackComponent::StartAttack(const FHarmoniaAttackData& InAttackData)
 {
+	// Server authority check
+	AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("StartAttack called on client - use RequestStartAttack instead"));
+		return;
+	}
+
 	if (bIsAttacking)
 	{
 		StopAttack();
@@ -124,13 +229,16 @@ void UHarmoniaSenseAttackComponent::StartAttack(const FHarmoniaAttackData& InAtt
 	}
 }
 
-void UHarmoniaSenseAttackComponent::StartAttackDefault()
-{
-	StartAttack(AttackData);
-}
-
 void UHarmoniaSenseAttackComponent::StopAttack()
 {
+	// Server authority check
+	AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("StopAttack called on client - use RequestStopAttack instead"));
+		return;
+	}
+
 	if (!bIsAttacking)
 	{
 		return;

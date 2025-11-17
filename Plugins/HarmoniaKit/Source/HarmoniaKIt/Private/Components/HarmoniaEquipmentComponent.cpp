@@ -11,7 +11,7 @@
 UHarmoniaEquipmentComponent::UHarmoniaEquipmentComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
-	SetIsReplicated(true);
+	SetIsReplicatedByDefault(true);
 	bWantsInitializeComponent = true;
 }
 
@@ -87,10 +87,10 @@ bool UHarmoniaEquipmentComponent::EquipItem(const FHarmoniaID& EquipmentId, EEqu
 	NewEquippedItem.CurrentDurability = EquipmentData.MaxDurability;
 	NewEquippedItem.InstanceGUID = FGuid::NewGuid();
 
-	// Apply stat modifiers
-	ApplyStatModifiers(EquipmentData);
+	// Apply stat modifiers as GameplayEffects
+	ApplyStatModifiers(EquipmentData, NewEquippedItem);
 
-	// Apply gameplay effects
+	// Apply gameplay effects (GrantedEffects)
 	ApplyGameplayEffects(EquipmentData, NewEquippedItem);
 
 	// Apply visual mesh
@@ -135,10 +135,7 @@ bool UHarmoniaEquipmentComponent::UnequipItem(EEquipmentSlot Slot)
 	FEquipmentData EquipmentData;
 	if (GetEquipmentData(EquippedItem.EquipmentId, EquipmentData))
 	{
-		// Remove stat modifiers
-		RemoveStatModifiers(EquipmentData);
-
-		// Remove gameplay effects
+		// Remove all gameplay effects (including stat modifiers)
 		RemoveGameplayEffects(EquippedItem);
 
 		// Remove visual mesh
@@ -154,6 +151,19 @@ bool UHarmoniaEquipmentComponent::UnequipItem(EEquipmentSlot Slot)
 	UE_LOG(LogTemp, Log, TEXT("UnequipItem: Successfully unequipped from slot %d"), static_cast<int32>(Slot));
 
 	return true;
+}
+
+void UHarmoniaEquipmentComponent::RequestSwapEquipment(EEquipmentSlot SlotA, EEquipmentSlot SlotB)
+{
+	// Server authority
+	if (GetOwnerRole() == ROLE_Authority)
+	{
+		SwapEquipment(SlotA, SlotB);
+	}
+	else
+	{
+		ServerSwapEquipment(SlotA, SlotB);
+	}
 }
 
 bool UHarmoniaEquipmentComponent::SwapEquipment(EEquipmentSlot SlotA, EEquipmentSlot SlotB)
@@ -418,7 +428,45 @@ void UHarmoniaEquipmentComponent::SetEquipmentDataTable(UDataTable* InDataTable)
 // Internal Functions
 // ============================================================================
 
-void UHarmoniaEquipmentComponent::ApplyStatModifiers(const FEquipmentData& EquipmentData)
+FGameplayAttribute UHarmoniaEquipmentComponent::GetAttributeFromName(const FString& AttributeName) const
+{
+	if (AttributeName == "MaxHealth")
+	{
+		return UHarmoniaAttributeSet::GetMaxHealthAttribute();
+	}
+	else if (AttributeName == "MaxStamina")
+	{
+		return UHarmoniaAttributeSet::GetMaxStaminaAttribute();
+	}
+	else if (AttributeName == "AttackPower")
+	{
+		return UHarmoniaAttributeSet::GetAttackPowerAttribute();
+	}
+	else if (AttributeName == "Defense")
+	{
+		return UHarmoniaAttributeSet::GetDefenseAttribute();
+	}
+	else if (AttributeName == "CriticalChance")
+	{
+		return UHarmoniaAttributeSet::GetCriticalChanceAttribute();
+	}
+	else if (AttributeName == "CriticalDamage")
+	{
+		return UHarmoniaAttributeSet::GetCriticalDamageAttribute();
+	}
+	else if (AttributeName == "MovementSpeed")
+	{
+		return UHarmoniaAttributeSet::GetMovementSpeedAttribute();
+	}
+	else if (AttributeName == "AttackSpeed")
+	{
+		return UHarmoniaAttributeSet::GetAttackSpeedAttribute();
+	}
+
+	return FGameplayAttribute();
+}
+
+void UHarmoniaEquipmentComponent::ApplyStatModifiers(const FEquipmentData& EquipmentData, FEquippedItem& OutEquippedItem)
 {
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 	UHarmoniaAttributeSet* AttributeSet = GetAttributeSet();
@@ -428,145 +476,73 @@ void UHarmoniaEquipmentComponent::ApplyStatModifiers(const FEquipmentData& Equip
 		return;
 	}
 
+	// Create and apply a GameplayEffect for each stat modifier
 	for (const FEquipmentStatModifier& Modifier : EquipmentData.StatModifiers)
 	{
-		FGameplayAttribute Attribute;
-
-		// Map attribute name to FGameplayAttribute
-		if (Modifier.AttributeName == "MaxHealth")
-		{
-			Attribute = UHarmoniaAttributeSet::GetMaxHealthAttribute();
-		}
-		else if (Modifier.AttributeName == "MaxStamina")
-		{
-			Attribute = UHarmoniaAttributeSet::GetMaxStaminaAttribute();
-		}
-		else if (Modifier.AttributeName == "AttackPower")
-		{
-			Attribute = UHarmoniaAttributeSet::GetAttackPowerAttribute();
-		}
-		else if (Modifier.AttributeName == "Defense")
-		{
-			Attribute = UHarmoniaAttributeSet::GetDefenseAttribute();
-		}
-		else if (Modifier.AttributeName == "CriticalChance")
-		{
-			Attribute = UHarmoniaAttributeSet::GetCriticalChanceAttribute();
-		}
-		else if (Modifier.AttributeName == "CriticalDamage")
-		{
-			Attribute = UHarmoniaAttributeSet::GetCriticalDamageAttribute();
-		}
-		else if (Modifier.AttributeName == "MovementSpeed")
-		{
-			Attribute = UHarmoniaAttributeSet::GetMovementSpeedAttribute();
-		}
-		else if (Modifier.AttributeName == "AttackSpeed")
-		{
-			Attribute = UHarmoniaAttributeSet::GetAttackSpeedAttribute();
-		}
-		else
-		{
-			continue;
-		}
+		FGameplayAttribute Attribute = GetAttributeFromName(Modifier.AttributeName);
 
 		if (!Attribute.IsValid())
 		{
+			UE_LOG(LogTemp, Warning, TEXT("ApplyStatModifiers: Invalid attribute name '%s'"), *Modifier.AttributeName);
 			continue;
 		}
 
-		// Apply modifier
-		float CurrentValue = ASC->GetNumericAttribute(Attribute);
-		float NewValue = CurrentValue;
+		// Create a dynamic GameplayEffect
+		UGameplayEffect* GameplayEffect = NewObject<UGameplayEffect>(GetTransientPackage(), FName(TEXT("DynamicEquipmentEffect")));
+		GameplayEffect->DurationPolicy = EGameplayEffectDurationType::Infinite; // Persists until removed
+
+		// Determine the modifier operation based on type
+		EGameplayModOp::Type ModOp;
+		float ModifierMagnitude = Modifier.Value;
 
 		if (Modifier.ModifierType == EStatModifierType::Flat)
 		{
-			NewValue += Modifier.Value;
+			ModOp = EGameplayModOp::Additive;
 		}
-		else if (Modifier.ModifierType == EStatModifierType::Percentage)
+			else if (Modifier.ModifierType == EStatModifierType::Percentage)
 		{
-			NewValue *= (1.0f + Modifier.Value / 100.0f);
+			// Note: Using Additive for percentage modifiers
+			// The magnitude is converted from percentage to actual value based on current attribute
+			// Example: 10% bonus on 100 HP = 100 * (10/100) = 10 HP (additive)
+			ModOp = EGameplayModOp::Additive;
+
+			// Get current attribute value to calculate percentage
+			float CurrentValue = ASC->GetNumericAttribute(Attribute);
+			// Calculate actual value from percentage
+			ModifierMagnitude = CurrentValue * (Modifier.Value / 100.0f);
 		}
 		else if (Modifier.ModifierType == EStatModifierType::Override)
 		{
-			NewValue = Modifier.Value;
-		}
-
-		ASC->SetNumericAttributeBase(Attribute, NewValue);
-	}
-}
-
-void UHarmoniaEquipmentComponent::RemoveStatModifiers(const FEquipmentData& EquipmentData)
-{
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	UHarmoniaAttributeSet* AttributeSet = GetAttributeSet();
-
-	if (!ASC || !AttributeSet)
-	{
-		return;
-	}
-
-	for (const FEquipmentStatModifier& Modifier : EquipmentData.StatModifiers)
-	{
-		FGameplayAttribute Attribute;
-
-		// Map attribute name to FGameplayAttribute
-		if (Modifier.AttributeName == "MaxHealth")
-		{
-			Attribute = UHarmoniaAttributeSet::GetMaxHealthAttribute();
-		}
-		else if (Modifier.AttributeName == "MaxStamina")
-		{
-			Attribute = UHarmoniaAttributeSet::GetMaxStaminaAttribute();
-		}
-		else if (Modifier.AttributeName == "AttackPower")
-		{
-			Attribute = UHarmoniaAttributeSet::GetAttackPowerAttribute();
-		}
-		else if (Modifier.AttributeName == "Defense")
-		{
-			Attribute = UHarmoniaAttributeSet::GetDefenseAttribute();
-		}
-		else if (Modifier.AttributeName == "CriticalChance")
-		{
-			Attribute = UHarmoniaAttributeSet::GetCriticalChanceAttribute();
-		}
-		else if (Modifier.AttributeName == "CriticalDamage")
-		{
-			Attribute = UHarmoniaAttributeSet::GetCriticalDamageAttribute();
-		}
-		else if (Modifier.AttributeName == "MovementSpeed")
-		{
-			Attribute = UHarmoniaAttributeSet::GetMovementSpeedAttribute();
-		}
-		else if (Modifier.AttributeName == "AttackSpeed")
-		{
-			Attribute = UHarmoniaAttributeSet::GetAttackSpeedAttribute();
+			ModOp = EGameplayModOp::Override;
 		}
 		else
 		{
 			continue;
 		}
 
-		if (!Attribute.IsValid())
-		{
-			continue;
-		}
+		// Add modifier to the effect
+		int32 Idx = GameplayEffect->Modifiers.Num();
+		GameplayEffect->Modifiers.SetNum(Idx + 1);
+		FGameplayModifierInfo& ModifierInfo = GameplayEffect->Modifiers[Idx];
+		ModifierInfo.ModifierMagnitude = FScalableFloat(ModifierMagnitude);
+		ModifierInfo.ModifierOp = ModOp;
+		ModifierInfo.Attribute = Attribute;
 
-		// Remove modifier (inverse operation)
-		float CurrentValue = ASC->GetNumericAttribute(Attribute);
-		float NewValue = CurrentValue;
+		// Apply the GameplayEffect
+		FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+		EffectContext.AddSourceObject(this);
 
-		if (Modifier.ModifierType == EStatModifierType::Flat)
+		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(GameplayEffect->GetClass(), 1.0f, EffectContext);
+		if (SpecHandle.IsValid())
 		{
-			NewValue -= Modifier.Value;
+			FActiveGameplayEffectHandle ActiveHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+			if (ActiveHandle.IsValid())
+			{
+				OutEquippedItem.ActiveEffectHandles.Add(ActiveHandle);
+				UE_LOG(LogTemp, Verbose, TEXT("ApplyStatModifiers: Applied %s modifier to %s"),
+					*UEnum::GetValueAsString(Modifier.ModifierType), *Modifier.AttributeName);
+			}
 		}
-		else if (Modifier.ModifierType == EStatModifierType::Percentage)
-		{
-			NewValue /= (1.0f + Modifier.Value / 100.0f);
-		}
-
-		ASC->SetNumericAttributeBase(Attribute, NewValue);
 	}
 }
 
@@ -750,7 +726,50 @@ void UHarmoniaEquipmentComponent::ServerEquipItem_Implementation(const FHarmonia
 	EquipItem(EquipmentId, Slot);
 }
 
+bool UHarmoniaEquipmentComponent::ServerEquipItem_Validate(const FHarmoniaID& EquipmentId, EEquipmentSlot Slot)
+{
+	// Anti-cheat: Validate equipment ID
+	if (!EquipmentId.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerEquipItem: Invalid EquipmentId"));
+		return false;
+	}
+
+	// Validate equipment exists in data table
+	FEquipmentData EquipmentData;
+	if (!GetEquipmentData(EquipmentId, EquipmentData))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerEquipItem: Equipment data not found for ID: %s"), *EquipmentId.ToString());
+		return false;
+	}
+
+	return true;
+}
+
 void UHarmoniaEquipmentComponent::ServerUnequipItem_Implementation(EEquipmentSlot Slot)
 {
 	UnequipItem(Slot);
+}
+
+bool UHarmoniaEquipmentComponent::ServerUnequipItem_Validate(EEquipmentSlot Slot)
+{
+	// Slot validation happens in implementation
+	return true;
+}
+
+void UHarmoniaEquipmentComponent::ServerSwapEquipment_Implementation(EEquipmentSlot SlotA, EEquipmentSlot SlotB)
+{
+	SwapEquipment(SlotA, SlotB);
+}
+
+bool UHarmoniaEquipmentComponent::ServerSwapEquipment_Validate(EEquipmentSlot SlotA, EEquipmentSlot SlotB)
+{
+	// Basic validation - slot equality check
+	if (SlotA == SlotB)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSwapEquipment: Cannot swap slot with itself"));
+		return false;
+	}
+
+	return true;
 }

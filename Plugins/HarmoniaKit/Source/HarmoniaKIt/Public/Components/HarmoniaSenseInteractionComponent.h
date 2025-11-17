@@ -218,7 +218,7 @@ public:
 	/**
 	 * Server RPC for interaction
 	 */
-	UFUNCTION(Server, Reliable, Category = "Sense Interaction")
+	UFUNCTION(Server, Reliable, WithValidation, Category = "Sense Interaction")
 	void Server_TryInteract(UHarmoniaSenseInteractableComponent* Target, FName SensorTag);
 
 	/**

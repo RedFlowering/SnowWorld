@@ -13,7 +13,7 @@ void UHarmoniaInteractionComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-    // ¸Å´ÏÀú ÂüÁ¶ È¹µæ
+    // ë§¤ë‹ˆì € ìºì‹± íšë“
     if (GetWorld() && GetWorld()->GetGameInstance())
     {
         InteractionManager = GetWorld()->GetGameInstance()->GetSubsystem<UHarmoniaInteractionManager>();
@@ -36,21 +36,21 @@ void UHarmoniaInteractionComponent::Interact()
 
 	if (InteractionManager && Target)
 	{
-		// »óÈ£ÀÛ¿ë ÄÁÅØ½ºÆ® ±¸¼º
+		// ì¸í„°ëž™ì…˜ ì»¨í…ìŠ¤íŠ¸ ìƒì„±
 		FHarmoniaInteractionContext Context;
 		Context.Interactor = GetOwner();
 		Context.Interactable = Target;
-		Context.InteractionType = EHarmoniaInteractionType::Custom; // È¤Àº »óÈ²º° ÁöÁ¤
+		Context.InteractionType = EHarmoniaInteractionType::Custom; // í˜¹ì€ ìƒí™©ì— ë§žê²Œ
 
-		// ¸Å´ÏÀú¿¡ »óÈ£ÀÛ¿ë ¿äÃ»
+		// ë§¤ë‹ˆì €ì—ê²Œ ì¸í„°ëž™ì…˜ ìš”ì²­
 		if (GetOwner() && GetOwner()->HasAuthority())
 		{
-			// ¼­¹ö¿¡¼­¸¸ Á÷Á¢ Ã³¸®
+			// ì„œë²„ì—ì„œëŠ” ë°”ë¡œ ì²˜ë¦¬
 			InteractionManager->TryInteract(Context);
 		}
 		else
 		{
-			// Å¬¶óÀÌ¾ðÆ®¡æ¼­¹ö RPC È£Ãâ
+			// í´ë¼ì´ì–¸íŠ¸ì—ì„œëŠ” RPC í˜¸ì¶œ
 			Server_TryInteract(Context);
 		}
 	}
@@ -61,9 +61,6 @@ void UHarmoniaInteractionComponent::Server_TryInteract_Implementation(const FHar
     if (InteractionManager)
     {
         InteractionManager->TryInteract(Context);
-
-        // Ã³¸® °á°ú ¾Ë¸²
-        // Client_OnInteractionResult(Result);
     }
 }
 
@@ -71,7 +68,7 @@ bool UHarmoniaInteractionComponent::Server_TryInteract_Validate(const FHarmoniaI
 {
     if (Context.Interactor && Context.Interactable)
     {
-        // °Å¸® Ã¼Å©
+        // ê±°ë¦¬ ì²´í¬
         float MaxDistance = TraceDistance;
         FVector Start = Context.Interactor->GetActorLocation();
         FVector End = Context.Interactable->GetActorLocation();
@@ -79,24 +76,11 @@ bool UHarmoniaInteractionComponent::Server_TryInteract_Validate(const FHarmoniaI
 
         if (Dist <= MaxDistance)
         {
-            // ¼ÒÀ¯±Ç, ÄðÅ¸ÀÓ µî °ËÁõ
+            // ì„±ê³µì , ê±°ë¦¬ì™€ ë„ ê²€ì¦
 
             return true;
         }
     }
 
     return false;
-}
-
-void UHarmoniaInteractionComponent::Client_OnInteractionResult_Implementation(const FHarmoniaInteractionResult& Result)
-{
-    if (GEngine)
-    {
-        FString Msg = Result.Message.IsEmpty() ? (Result.bSuccess ? TEXT("»óÈ£ÀÛ¿ë ¼º°ø!") : TEXT("»óÈ£ÀÛ¿ë ½ÇÆÐ!")) : Result.Message;
-        FColor Color = Result.bSuccess ? FColor::Green : FColor::Red;
-        GEngine->AddOnScreenDebugMessage(-1, 2.0f, Color, Msg);
-    }
-
-    // ³ªÁß¿¡ UMG À§Á¬¿¡ °á°ú Ç¥½Ã
-    // if (ResultWidget) { ResultWidget->ShowInteractionResult(Result); }
 }

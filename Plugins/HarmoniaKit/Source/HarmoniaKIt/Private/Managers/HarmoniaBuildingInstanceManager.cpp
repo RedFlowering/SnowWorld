@@ -59,6 +59,14 @@ void UHarmoniaBuildingInstanceManager::Deinitialize()
 
 FGuid UHarmoniaBuildingInstanceManager::PlaceBuilding(const FBuildingPartData& PartData, const FVector& Location, const FRotator& Rotation, AActor* Owner)
 {
+	// Server-only execution
+	UWorld* World = GetWorld();
+	if (!World || World->GetNetMode() == NM_Client)
+	{
+		UE_LOG(LogBuildingInstanceManager, Warning, TEXT("PlaceBuilding called on client - this is a server-only function"));
+		return FGuid();
+	}
+
 	if (!ISMManagerActor)
 	{
 		UE_LOG(LogBuildingInstanceManager, Error, TEXT("ISMManagerActor is null. Cannot place building."));
@@ -129,6 +137,14 @@ FGuid UHarmoniaBuildingInstanceManager::PlaceBuilding(const FBuildingPartData& P
 
 bool UHarmoniaBuildingInstanceManager::RemoveBuilding(const FGuid& BuildingGuid)
 {
+	// Server-only execution
+	UWorld* World = GetWorld();
+	if (!World || World->GetNetMode() == NM_Client)
+	{
+		UE_LOG(LogBuildingInstanceManager, Warning, TEXT("RemoveBuilding called on client - this is a server-only function"));
+		return false;
+	}
+
 	if (!BuildingMetadataMap.Contains(BuildingGuid))
 	{
 		UE_LOG(LogBuildingInstanceManager, Warning, TEXT("Building not found: %s"), *BuildingGuid.ToString());
@@ -165,6 +181,14 @@ bool UHarmoniaBuildingInstanceManager::RemoveBuilding(const FGuid& BuildingGuid)
 
 bool UHarmoniaBuildingInstanceManager::RepairBuilding(const FGuid& BuildingGuid, float RepairAmount)
 {
+	// Server-only execution
+	UWorld* World = GetWorld();
+	if (!World || World->GetNetMode() == NM_Client)
+	{
+		UE_LOG(LogBuildingInstanceManager, Warning, TEXT("RepairBuilding called on client - this is a server-only function"));
+		return false;
+	}
+
 	if (!BuildingMetadataMap.Contains(BuildingGuid))
 		return false;
 
@@ -179,6 +203,14 @@ bool UHarmoniaBuildingInstanceManager::RepairBuilding(const FGuid& BuildingGuid,
 
 bool UHarmoniaBuildingInstanceManager::DamageBuilding(const FGuid& BuildingGuid, float DamageAmount)
 {
+	// Server-only execution
+	UWorld* World = GetWorld();
+	if (!World || World->GetNetMode() == NM_Client)
+	{
+		UE_LOG(LogBuildingInstanceManager, Warning, TEXT("DamageBuilding called on client - this is a server-only function"));
+		return false;
+	}
+
 	if (!BuildingMetadataMap.Contains(BuildingGuid))
 		return false;
 
@@ -210,33 +242,171 @@ bool UHarmoniaBuildingInstanceManager::GetBuildingMetadata(const FGuid& Building
 	return false;
 }
 
-bool UHarmoniaBuildingInstanceManager::CheckBuildingOverlap(const FVector& Location, const FRotator& Rotation, const FVector& BoundsExtent, float MinDistance) const
+bool UHarmoniaBuildingInstanceManager::CheckBuildingOverlap(const FVector& Location, const FRotator& Rotation, const FVector& BoundsExtent, EBuildingPartType PlacingPartType, float MinDistance) const
 {
+	if (!BuildingDataTable)
+	{
+		UE_LOG(LogBuildingInstanceManager, Warning, TEXT("BuildingDataTable is null - cannot perform overlap check"));
+		return false;
+	}
+
+	// 배치하려는 건축물의 박스 변환
+	FTransform PlacingTransform(Rotation, Location);
+
 	// 모든 배치된 건축물과 충돌 검사
 	for (const auto& Pair : BuildingMetadataMap)
 	{
 		const FBuildingInstanceMetadata& ExistingBuilding = Pair.Value;
 
-		// 거리 기반 충돌 검사 (빠른 체크)
-		float Distance = FVector::Dist(Location, ExistingBuilding.Location);
-
-		// MinDistance보다 가까우면 충돌로 간주
-		if (Distance < MinDistance)
+		// 기존 건축물 데이터 조회
+		FBuildingPartData* ExistingPartData = BuildingDataTable->FindRow<FBuildingPartData>(ExistingBuilding.PartID, TEXT("CheckOverlap"));
+		if (!ExistingPartData)
 		{
-			UE_LOG(LogBuildingInstanceManager, Warning, TEXT("Building too close: Distance=%.1f, Min=%.1f"), Distance, MinDistance);
-			return true;
+			continue;
 		}
 
-		// 박스 오버랩 검사 (BoundsExtent 사용)
-		if (BoundsExtent.SizeSquared() > 0.0f)
+		// 타입별 오버랩 허용 규칙 체크
+		if (IsOverlapAllowed(PlacingPartType, ExistingPartData->PartType))
 		{
-			// 기존 건축물의 BoundsExtent를 가져오기 위해 BuildingDataTable 조회 필요
-			// 지금은 간단하게 거리 기반으로만 검사
-			// TODO: 실제 박스 오버랩 검사 구현 시 BuildingDataTable에서 기존 건축물의 BoundsExtent 조회
+			// 이 조합은 오버랩 허용 (예: 벽걸이 장식품 + 벽)
+			continue;
+		}
+
+		// 거리 기반 충돌 검사 (MinDistance가 양수일 때만)
+		if (MinDistance >= 0.0f)
+		{
+			float Distance = FVector::Dist(Location, ExistingBuilding.Location);
+			if (Distance < MinDistance)
+			{
+				UE_LOG(LogBuildingInstanceManager, Warning, TEXT("Building too close: Distance=%.1f, Min=%.1f"), Distance, MinDistance);
+				return true; // 충돌 발생
+			}
+		}
+
+		// 박스 오버랩 검사
+		if (BoundsExtent.SizeSquared() > 0.0f && ExistingPartData->BoundsExtent.SizeSquared() > 0.0f)
+		{
+			// 기존 건축물의 박스 변환
+			FTransform ExistingTransform(ExistingBuilding.Rotation, ExistingBuilding.Location);
+
+			// 두 박스가 오버랩되는지 검사
+			if (DoBoxesOverlap(PlacingTransform, BoundsExtent, ExistingTransform, ExistingPartData->BoundsExtent))
+			{
+				UE_LOG(LogBuildingInstanceManager, Warning, TEXT("Building box overlap detected at %s"), *Location.ToString());
+				return true; // 충돌 발생
+			}
 		}
 	}
 
-	return false; // 충돌 없음
+	return false; // 충돌 없음 - 배치 가능
+}
+
+bool UHarmoniaBuildingInstanceManager::IsOverlapAllowed(EBuildingPartType PlacingType, EBuildingPartType ExistingType) const
+{
+	// 벽걸이 장식품은 벽과 오버랩 가능
+	if (PlacingType == EBuildingPartType::WallDecoration && ExistingType == EBuildingPartType::Wall)
+	{
+		return true;
+	}
+
+	// 문은 벽과 오버랩 가능
+	if (PlacingType == EBuildingPartType::Door && ExistingType == EBuildingPartType::Wall)
+	{
+		return true;
+	}
+
+	// 창문은 벽과 오버랩 가능
+	if (PlacingType == EBuildingPartType::Window && ExistingType == EBuildingPartType::Wall)
+	{
+		return true;
+	}
+
+	// 기타 조합은 오버랩 불가
+	return false;
+}
+
+bool UHarmoniaBuildingInstanceManager::DoBoxesOverlap(const FTransform& TransformA, const FVector& ExtentA, const FTransform& TransformB, const FVector& ExtentB) const
+{
+	// Oriented Bounding Box (OBB) 충돌 검사
+	// 간단한 구현: 각 박스의 8개 코너를 변환하고 분리축 정리(SAT)를 사용
+
+	// 박스 A의 로컬 좌표계 축
+	FVector AxisA[3] = {
+		TransformA.GetRotation().GetAxisX(),
+		TransformA.GetRotation().GetAxisY(),
+		TransformA.GetRotation().GetAxisZ()
+	};
+
+	// 박스 B의 로컬 좌표계 축
+	FVector AxisB[3] = {
+		TransformB.GetRotation().GetAxisX(),
+		TransformB.GetRotation().GetAxisY(),
+		TransformB.GetRotation().GetAxisZ()
+	};
+
+	// 두 박스 중심 간의 벡터
+	FVector T = TransformB.GetLocation() - TransformA.GetLocation();
+
+	// 분리축 정리(SAT) 검사
+	// 15개의 축을 검사: A의 3축, B의 3축, 외적으로 만들어진 9축
+
+	// 박스 A의 축 검사
+	for (int i = 0; i < 3; i++)
+	{
+		float ra = ExtentA[i];
+		float rb = ExtentB.X * FMath::Abs(FVector::DotProduct(AxisB[0], AxisA[i])) +
+		           ExtentB.Y * FMath::Abs(FVector::DotProduct(AxisB[1], AxisA[i])) +
+		           ExtentB.Z * FMath::Abs(FVector::DotProduct(AxisB[2], AxisA[i]));
+
+		if (FMath::Abs(FVector::DotProduct(T, AxisA[i])) > ra + rb)
+		{
+			return false; // 분리축 발견 - 오버랩 없음
+		}
+	}
+
+	// 박스 B의 축 검사
+	for (int i = 0; i < 3; i++)
+	{
+		float ra = ExtentA.X * FMath::Abs(FVector::DotProduct(AxisA[0], AxisB[i])) +
+		           ExtentA.Y * FMath::Abs(FVector::DotProduct(AxisA[1], AxisB[i])) +
+		           ExtentA.Z * FMath::Abs(FVector::DotProduct(AxisA[2], AxisB[i]));
+		float rb = ExtentB[i];
+
+		if (FMath::Abs(FVector::DotProduct(T, AxisB[i])) > ra + rb)
+		{
+			return false; // 분리축 발견 - 오버랩 없음
+		}
+	}
+
+	// 외적 축 검사 (9개)
+	// 간단한 구현을 위해 일부 축만 검사 (성능 최적화 가능)
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			FVector Axis = FVector::CrossProduct(AxisA[i], AxisB[j]);
+			if (Axis.SizeSquared() < 1e-6f)
+			{
+				continue; // 평행한 축은 스킵
+			}
+			Axis.Normalize();
+
+			float ra = ExtentA.X * FMath::Abs(FVector::DotProduct(AxisA[0], Axis)) +
+			           ExtentA.Y * FMath::Abs(FVector::DotProduct(AxisA[1], Axis)) +
+			           ExtentA.Z * FMath::Abs(FVector::DotProduct(AxisA[2], Axis));
+
+			float rb = ExtentB.X * FMath::Abs(FVector::DotProduct(AxisB[0], Axis)) +
+			           ExtentB.Y * FMath::Abs(FVector::DotProduct(AxisB[1], Axis)) +
+			           ExtentB.Z * FMath::Abs(FVector::DotProduct(AxisB[2], Axis));
+
+			if (FMath::Abs(FVector::DotProduct(T, Axis)) > ra + rb)
+			{
+				return false; // 분리축 발견 - 오버랩 없음
+			}
+		}
+	}
+
+	return true; // 모든 축 검사 통과 - 오버랩 발생
 }
 
 void UHarmoniaBuildingInstanceManager::GetAllBuildingMetadata(TArray<FBuildingInstanceMetadata>& OutMetadataArray) const
