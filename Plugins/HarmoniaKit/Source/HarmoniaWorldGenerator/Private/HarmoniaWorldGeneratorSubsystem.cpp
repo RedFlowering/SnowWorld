@@ -3131,8 +3131,8 @@ bool UHarmoniaWorldGeneratorSubsystem::GetLandscapeHeightData(
     // Get landscape data using edit interface
     FLandscapeEditDataInterface LandscapeEdit(Landscape->GetLandscapeInfo());
 
-    // Use the batch API to get height data for the entire region
-    LandscapeEdit.GetHeightDataFast(OutMinX, OutMinY, OutMaxX, OutMaxY, OutHeightData.GetData(), 0);
+    // Use GetHeightData to retrieve the height data for the region
+    LandscapeEdit.GetHeightData(OutMinX, OutMinY, OutMaxX, OutMaxY, OutHeightData.GetData(), 0);
 
     return true;
 }
@@ -3161,8 +3161,8 @@ bool UHarmoniaWorldGeneratorSubsystem::SetLandscapeHeightData(
     // Set landscape data using edit interface
     FLandscapeEditDataInterface LandscapeEdit(Landscape->GetLandscapeInfo());
 
-    // Use the batch API to set height data for the entire region
-    LandscapeEdit.SetHeightDataFast(MinX, MinY, MaxX, MaxY, HeightData.GetData(), 0);
+    // Use SetHeightData to set the height data for the region
+    LandscapeEdit.SetHeightData(MinX, MinY, MaxX, MaxY, HeightData.GetData(), 0, true);
 
     LandscapeEdit.Flush();
 
@@ -3345,7 +3345,16 @@ bool UHarmoniaWorldGeneratorSubsystem::SaveChunkCacheToDisk()
         TArray<uint8> FileData;
         FMemoryWriter MemoryWriter(FileData, true);
         FWorldChunkData WritableData = Pair.Value;
-        MemoryWriter << WritableData;
+
+        // Manually serialize each field (USTRUCTs don't have automatic operator<< support)
+        MemoryWriter << WritableData.ChunkCoordinates;
+        MemoryWriter << WritableData.ChunkSize;
+        MemoryWriter << WritableData.HeightData;
+        MemoryWriter << WritableData.Objects;
+        MemoryWriter << WritableData.BiomeData;
+        MemoryWriter << WritableData.GenerationTime;
+        MemoryWriter << WritableData.bIsFullyGenerated;
+        MemoryWriter << WritableData.CacheHash;
 
         if (FFileHelper::SaveArrayToFile(FileData, *FilePath))
         {
@@ -3378,7 +3387,16 @@ bool UHarmoniaWorldGeneratorSubsystem::LoadChunkCacheFromDisk()
         {
             FWorldChunkData ChunkData;
             FMemoryReader MemoryReader(FileData, true);
-            MemoryReader << ChunkData;
+
+            // Manually serialize each field (USTRUCTs don't have automatic operator<< support)
+            MemoryReader << ChunkData.ChunkCoordinates;
+            MemoryReader << ChunkData.ChunkSize;
+            MemoryReader << ChunkData.HeightData;
+            MemoryReader << ChunkData.Objects;
+            MemoryReader << ChunkData.BiomeData;
+            MemoryReader << ChunkData.GenerationTime;
+            MemoryReader << ChunkData.bIsFullyGenerated;
+            MemoryReader << ChunkData.CacheHash;
 
             // Validate hash
             int32 ExpectedHash = CalculateChunkHash(ChunkData);
