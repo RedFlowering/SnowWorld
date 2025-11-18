@@ -1,0 +1,42 @@
+{
+	"FileVersion": 3,
+	"Version": 3,
+	"VersionName": "3.2.3",
+	"FriendlyName": "UEGoreSystem",
+	"Description": "Gore System for Unreal Engine",
+	"Category": "Gore",
+	"CreatedBy": "Klian",
+	"CreatedByURL": "https://forums.unrealengine.com/u/klian",
+	"DocsURL": "https://github.com/Klian326/UEGoreSystem/wiki",
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/58a11c5d7b5047cfbbdc6748c00533f1",
+	"SupportURL": "https://forums.unrealengine.com/u/klian/summary",
+	"EngineVersion": "5.7.0",
+	"CanContainContent": true,
+	"Installed": true,
+	"Modules": [
+		{
+			"Name": "UEGoreSystem",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [
+				"Win64",
+				"Android",
+				"Linux"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "Niagara",
+			"Enabled": true
+		},
+		{
+			"Name": "ControlRig",
+			"Enabled": true
+		},
+		{
+			"Name": "HairStrands",
+			"Enabled": true
+		}
+	]
+}
