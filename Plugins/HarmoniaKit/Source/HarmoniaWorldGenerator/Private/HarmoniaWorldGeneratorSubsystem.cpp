@@ -362,10 +362,85 @@ bool UHarmoniaWorldGeneratorSubsystem::IsValidObjectLocation(
         return false;
     }
 
-    // Don't place on very steep slopes (optional)
-    // You can add slope calculation here if needed
+    // Check slope for structure placement
+    if (X > 0 && X < Config.SizeX - 1 && Y > 0 && Y < Config.SizeY - 1)
+    {
+        // Get neighboring heights
+        const float HeightLeft = (float)HeightData[Y * Config.SizeX + (X - 1)] / 65535.f;
+        const float HeightRight = (float)HeightData[Y * Config.SizeX + (X + 1)] / 65535.f;
+        const float HeightUp = (float)HeightData[(Y - 1) * Config.SizeX + X] / 65535.f;
+        const float HeightDown = (float)HeightData[(Y + 1) * Config.SizeX + X] / 65535.f;
+
+        // Calculate slope
+        const float SlopeX = FMath::Abs(HeightRight - HeightLeft) * Config.MaxHeight / 200.f; // 200 = 2 tiles * 100 UE units
+        const float SlopeY = FMath::Abs(HeightDown - HeightUp) * Config.MaxHeight / 200.f;
+        const float Slope = FMath::Sqrt(SlopeX * SlopeX + SlopeY * SlopeY);
+
+        // Convert to degrees
+        const float SlopeDegrees = FMath::RadiansToDegrees(FMath::Atan(Slope));
+
+        if (SlopeDegrees > Config.MaxStructureSlope)
+        {
+            return false;
+        }
+    }
 
     return true;
+}
+
+float UHarmoniaWorldGeneratorSubsystem::CalculateFlatness(
+    int32 X,
+    int32 Y,
+    int32 Radius,
+    const TArray<int32>& HeightData,
+    const FWorldGeneratorConfig& Config)
+{
+    if (X < Radius || X >= Config.SizeX - Radius ||
+        Y < Radius || Y >= Config.SizeY - Radius)
+    {
+        return 0.f; // Edge areas are not flat enough
+    }
+
+    const int32 CenterIndex = Y * Config.SizeX + X;
+    const float CenterHeight = (float)HeightData[CenterIndex];
+
+    float TotalVariance = 0.f;
+    int32 SampleCount = 0;
+
+    // Check surrounding area
+    for (int32 dy = -Radius; dy <= Radius; ++dy)
+    {
+        for (int32 dx = -Radius; dx <= Radius; ++dx)
+        {
+            const int32 SampleX = X + dx;
+            const int32 SampleY = Y + dy;
+            const int32 SampleIndex = SampleY * Config.SizeX + SampleX;
+
+            const float SampleHeight = (float)HeightData[SampleIndex];
+            const float Variance = FMath::Abs(SampleHeight - CenterHeight);
+
+            TotalVariance += Variance;
+            SampleCount++;
+        }
+    }
+
+    const float AvgVariance = TotalVariance / FMath::Max(1, SampleCount);
+
+    // Normalize to 0-1 (0 = very steep, 1 = perfectly flat)
+    // Max expected variance for "not flat" is about 5000 (out of 65535)
+    const float Flatness = 1.f - FMath::Clamp(AvgVariance / 5000.f, 0.f, 1.f);
+
+    return Flatness;
+}
+
+bool UHarmoniaWorldGeneratorSubsystem::IsFlatEnoughForStructure(
+    int32 X,
+    int32 Y,
+    const TArray<int32>& HeightData,
+    const FWorldGeneratorConfig& Config)
+{
+    const float Flatness = CalculateFlatness(X, Y, 3, HeightData, Config);
+    return Flatness >= Config.StructureGroupSettings.MinFlatness;
 }
 
 void UHarmoniaWorldGeneratorSubsystem::GenerateBiomeMap(
@@ -908,5 +983,399 @@ void UHarmoniaWorldGeneratorSubsystem::FindPath(
             ClampedY * 100.f,
             Height * Config.MaxHeight + 10.f // Slightly above terrain
         ));
+    }
+}
+
+void UHarmoniaWorldGeneratorSubsystem::ApplyErosion(
+    const FWorldGeneratorConfig& Config,
+    TArray<int32>& HeightData)
+{
+    if (!Config.ErosionSettings.bEnableErosion || Config.ErosionSettings.ErosionIterations <= 0)
+    {
+        return;
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Applying erosion simulation: %d iterations..."),
+            Config.ErosionSettings.ErosionIterations);
+    }
+
+    // Convert heightmap to float for better precision during erosion
+    const int32 MapSize = Config.SizeX; // Assuming square map
+    TArray<float> HeightMapFloat;
+    HeightMapFloat.SetNumUninitialized(HeightData.Num());
+
+    for (int32 i = 0; i < HeightData.Num(); ++i)
+    {
+        HeightMapFloat[i] = (float)HeightData[i] / 65535.f;
+    }
+
+    // Run erosion simulation
+    FRandomStream Random(Config.Seed + 5000);
+
+    for (int32 Iteration = 0; Iteration < Config.ErosionSettings.ErosionIterations; ++Iteration)
+    {
+        SimulateDroplet(HeightMapFloat, Config, Random);
+
+        // Progress logging
+        if (Config.bEnableProgressLogging && Iteration % FMath::Max(1, Config.ErosionSettings.ErosionIterations / 10) == 0)
+        {
+            const float Progress = (float)Iteration / (float)Config.ErosionSettings.ErosionIterations * 100.f;
+            UE_LOG(LogTemp, Log, TEXT("Erosion progress: %.1f%% (%d/%d iterations)"),
+                Progress, Iteration, Config.ErosionSettings.ErosionIterations);
+        }
+    }
+
+    // Convert back to int32
+    for (int32 i = 0; i < HeightData.Num(); ++i)
+    {
+        HeightData[i] = FMath::Clamp(
+            FMath::RoundToInt(HeightMapFloat[i] * 65535.f),
+            0,
+            65535
+        );
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Erosion simulation complete!"));
+    }
+}
+
+void UHarmoniaWorldGeneratorSubsystem::SimulateDroplet(
+    TArray<float>& HeightMap,
+    const FWorldGeneratorConfig& Config,
+    FRandomStream& Random)
+{
+    const int32 MapSize = Config.SizeX;
+    const FErosionSettings& Settings = Config.ErosionSettings;
+
+    // Random starting position
+    float PosX = Random.FRandRange(0.f, (float)(MapSize - 1));
+    float PosY = Random.FRandRange(0.f, (float)(MapSize - 1));
+
+    float DirX = 0.f;
+    float DirY = 0.f;
+    float Speed = Settings.InitialSpeed;
+    float Water = Settings.InitialWaterVolume;
+    float Sediment = 0.f;
+
+    for (int32 Lifetime = 0; Lifetime < Settings.MaxDropletLifetime; ++Lifetime)
+    {
+        const int32 NodeX = FMath::FloorToInt(PosX);
+        const int32 NodeY = FMath::FloorToInt(PosY);
+        const int32 DropletIndex = NodeY * MapSize + NodeX;
+
+        // Calculate droplet's offset inside the cell (0,0) = at node, (1,1) = at next node
+        const float CellOffsetX = PosX - NodeX;
+        const float CellOffsetY = PosY - NodeY;
+
+        // Calculate height and gradient
+        FVector2D Gradient;
+        const float Height = CalculateHeightAndGradient(HeightMap, PosX, PosY, MapSize, Gradient);
+
+        // Update direction (lerp between previous direction and gradient)
+        DirX = (DirX * Settings.Inertia - Gradient.X * (1 - Settings.Inertia));
+        DirY = (DirY * Settings.Inertia - Gradient.Y * (1 - Settings.Inertia));
+
+        // Normalize direction
+        const float Len = FMath::Sqrt(DirX * DirX + DirY * DirY);
+        if (Len != 0)
+        {
+            DirX /= Len;
+            DirY /= Len;
+        }
+
+        // Update position
+        const float NewPosX = PosX + DirX;
+        const float NewPosY = PosY + DirY;
+
+        // Stop if out of bounds
+        if (NewPosX < 0 || NewPosX >= MapSize - 1 || NewPosY < 0 || NewPosY >= MapSize - 1)
+        {
+            break;
+        }
+
+        // Calculate new height
+        const FVector2D NewGradient;
+        const float NewHeight = CalculateHeightAndGradient(HeightMap, NewPosX, NewPosY, MapSize, const_cast<FVector2D&>(NewGradient));
+        const float DeltaHeight = NewHeight - Height;
+
+        // Calculate sediment capacity
+        const float SedimentCapacity = FMath::Max(
+            -DeltaHeight * Speed * Water * Settings.SedimentCapacityFactor,
+            Settings.MinSedimentCapacity
+        );
+
+        // Erode or deposit sediment
+        if (Sediment > SedimentCapacity || DeltaHeight > 0)
+        {
+            // Deposit sediment
+            const float AmountToDeposit = (DeltaHeight > 0) ?
+                FMath::Min(DeltaHeight, Sediment) :
+                (Sediment - SedimentCapacity) * Settings.DepositSpeed;
+
+            Sediment -= AmountToDeposit;
+
+            // Deposit at current and surrounding nodes
+            HeightMap[DropletIndex] += AmountToDeposit * (1 - CellOffsetX) * (1 - CellOffsetY);
+            HeightMap[DropletIndex + 1] += AmountToDeposit * CellOffsetX * (1 - CellOffsetY);
+            HeightMap[DropletIndex + MapSize] += AmountToDeposit * (1 - CellOffsetX) * CellOffsetY;
+            HeightMap[DropletIndex + MapSize + 1] += AmountToDeposit * CellOffsetX * CellOffsetY;
+        }
+        else
+        {
+            // Erode terrain
+            const float AmountToErode = FMath::Min(
+                (SedimentCapacity - Sediment) * Settings.ErodeSpeed,
+                -DeltaHeight
+            );
+
+            // Erode from surrounding nodes
+            for (int32 BrushPointIndex = 0; BrushPointIndex < Settings.ErosionRadius * Settings.ErosionRadius; ++BrushPointIndex)
+            {
+                const int32 OffsetX = BrushPointIndex % Settings.ErosionRadius - Settings.ErosionRadius / 2;
+                const int32 OffsetY = BrushPointIndex / Settings.ErosionRadius - Settings.ErosionRadius / 2;
+
+                const int32 ErodeX = NodeX + OffsetX;
+                const int32 ErodeY = NodeY + OffsetY;
+
+                if (ErodeX >= 0 && ErodeX < MapSize && ErodeY >= 0 && ErodeY < MapSize)
+                {
+                    const float WeightX = FMath::Max(0.f, Settings.ErosionRadius - FMath::Abs((float)OffsetX));
+                    const float WeightY = FMath::Max(0.f, Settings.ErosionRadius - FMath::Abs((float)OffsetY));
+                    const float Weight = WeightX * WeightY;
+
+                    HeightMap[ErodeY * MapSize + ErodeX] -= AmountToErode * Weight;
+                }
+            }
+
+            Sediment += AmountToErode;
+        }
+
+        // Update speed and water
+        Speed = FMath::Sqrt(Speed * Speed + DeltaHeight * Settings.Gravity);
+        Water *= (1 - Settings.EvaporateSpeed);
+
+        // Update position
+        PosX = NewPosX;
+        PosY = NewPosY;
+    }
+}
+
+float UHarmoniaWorldGeneratorSubsystem::CalculateHeightAndGradient(
+    const TArray<float>& HeightMap,
+    float PosX,
+    float PosY,
+    int32 MapSize,
+    FVector2D& OutGradient)
+{
+    const int32 CoordX = FMath::FloorToInt(PosX);
+    const int32 CoordY = FMath::FloorToInt(PosY);
+
+    // Calculate droplet's offset inside the cell (0,0) = at node, (1,1) = at next node
+    const float X = PosX - CoordX;
+    const float Y = PosY - CoordY;
+
+    // Calculate heights of the four nodes of the droplet's cell
+    const int32 NodeIndexNW = CoordY * MapSize + CoordX;
+    const float HeightNW = HeightMap[NodeIndexNW];
+    const float HeightNE = HeightMap[NodeIndexNW + 1];
+    const float HeightSW = HeightMap[NodeIndexNW + MapSize];
+    const float HeightSE = HeightMap[NodeIndexNW + MapSize + 1];
+
+    // Calculate gradients in X and Y direction
+    OutGradient.X = (HeightNE - HeightNW) * (1 - Y) + (HeightSE - HeightSW) * Y;
+    OutGradient.Y = (HeightSW - HeightNW) * (1 - X) + (HeightSE - HeightNE) * X;
+
+    // Calculate bilinearly interpolated height
+    const float Height = HeightNW * (1 - X) * (1 - Y) +
+                        HeightNE * X * (1 - Y) +
+                        HeightSW * (1 - X) * Y +
+                        HeightSE * X * Y;
+
+    return Height;
+}
+
+void UHarmoniaWorldGeneratorSubsystem::GenerateStructureGroups(
+    const FWorldGeneratorConfig& Config,
+    const TArray<int32>& HeightData,
+    TMap<EWorldObjectType, TSoftClassPtr<AActor>> ActorClassMap,
+    TArray<FWorldObjectData>& OutObjects)
+{
+    if (!Config.StructureGroupSettings.bEnableStructureGroups ||
+        Config.StructureGroupSettings.GroupCount <= 0)
+    {
+        OutObjects.Empty();
+        return;
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Generating %d structure groups..."),
+            Config.StructureGroupSettings.GroupCount);
+    }
+
+    OutObjects.Empty();
+    FRandomStream Random(Config.Seed + 6000);
+
+    // Find suitable locations for group centers (flat areas)
+    TArray<FIntPoint> FlatLocations;
+    const int32 SearchRadius = 5;
+
+    for (int32 Y = SearchRadius; Y < Config.SizeY - SearchRadius; Y += 10) // Sample every 10 tiles
+    {
+        for (int32 X = SearchRadius; X < Config.SizeX - SearchRadius; X += 10)
+        {
+            if (IsFlatEnoughForStructure(X, Y, HeightData, Config))
+            {
+                const float Height = (float)HeightData[Y * Config.SizeX + X] / 65535.f;
+
+                // Must be above sea level
+                if (Height > Config.SeaLevel + 0.05f)
+                {
+                    FlatLocations.Add(FIntPoint(X, Y));
+                }
+            }
+        }
+    }
+
+    if (FlatLocations.Num() == 0)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("No suitable flat locations found for structure groups!"));
+        return;
+    }
+
+    const int32 GroupsToGenerate = FMath::Min(Config.StructureGroupSettings.GroupCount, FlatLocations.Num());
+
+    // Generate structure groups
+    for (int32 GroupIdx = 0; GroupIdx < GroupsToGenerate; ++GroupIdx)
+    {
+        // Pick random center location
+        const int32 LocationIdx = Random.RandRange(0, FlatLocations.Num() - 1);
+        const FIntPoint Center = FlatLocations[LocationIdx];
+        FlatLocations.RemoveAt(LocationIdx); // Don't reuse this location
+
+        const int32 StructureCount = Random.RandRange(
+            Config.StructureGroupSettings.MinStructuresPerGroup,
+            Config.StructureGroupSettings.MaxStructuresPerGroup
+        );
+
+        // Generate center structure
+        {
+            const int32 CenterIndex = Center.Y * Config.SizeX + Center.X;
+            const float CenterHeight = (float)HeightData[CenterIndex] / 65535.f;
+
+            FWorldObjectData CenterObj;
+            CenterObj.ObjectType = EWorldObjectType::Structure;
+            CenterObj.ActorClass = ActorClassMap.Contains(EWorldObjectType::Structure) ?
+                ActorClassMap[EWorldObjectType::Structure] : nullptr;
+            CenterObj.Location = FVector(
+                Center.X * 100.f,
+                Center.Y * 100.f,
+                CenterHeight * Config.MaxHeight
+            );
+            CenterObj.Rotation = FRotator(0.f, Random.FRandRange(0.f, 360.f), 0.f);
+            CenterObj.Scale = FVector::OneVector;
+            CenterObj.GroupID = GroupIdx;
+            CenterObj.bIsGroupCenter = true;
+
+            OutObjects.Add(CenterObj);
+        }
+
+        // Generate surrounding structures
+        const float GroupRadiusTiles = Config.StructureGroupSettings.GroupRadius / 100.f;
+        const float SpacingTiles = Config.StructureGroupSettings.StructureSpacing / 100.f;
+
+        for (int32 StructIdx = 1; StructIdx < StructureCount; ++StructIdx)
+        {
+            // Try to find a valid location near center
+            bool bFoundLocation = false;
+            int32 Attempts = 0;
+            const int32 MaxAttempts = 20;
+
+            while (!bFoundLocation && Attempts < MaxAttempts)
+            {
+                Attempts++;
+
+                // Random angle and distance
+                const float Angle = Random.FRandRange(0.f, 2.f * PI);
+                const float Distance = Random.FRandRange(SpacingTiles, GroupRadiusTiles);
+
+                const int32 StructX = Center.X + FMath::RoundToInt(FMath::Cos(Angle) * Distance);
+                const int32 StructY = Center.Y + FMath::RoundToInt(FMath::Sin(Angle) * Distance);
+
+                // Check if valid location
+                if (StructX < 0 || StructX >= Config.SizeX ||
+                    StructY < 0 || StructY >= Config.SizeY)
+                {
+                    continue;
+                }
+
+                if (!IsValidObjectLocation(StructX, StructY, HeightData, Config))
+                {
+                    continue;
+                }
+
+                // Check flatness
+                const float Flatness = CalculateFlatness(StructX, StructY, 2, HeightData, Config);
+                if (Flatness < Config.StructureGroupSettings.MinFlatness * 0.8f) // Slightly more lenient for non-center
+                {
+                    continue;
+                }
+
+                // Check distance from other structures in group
+                bool bTooClose = false;
+                for (const FWorldObjectData& ExistingObj : OutObjects)
+                {
+                    if (ExistingObj.GroupID == GroupIdx)
+                    {
+                        const float DistSq = FVector2D::DistSquared(
+                            FVector2D(StructX, StructY),
+                            FVector2D(ExistingObj.Location.X / 100.f, ExistingObj.Location.Y / 100.f)
+                        );
+
+                        if (DistSq < SpacingTiles * SpacingTiles)
+                        {
+                            bTooClose = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (bTooClose)
+                {
+                    continue;
+                }
+
+                // Found valid location!
+                const int32 StructIndex = StructY * Config.SizeX + StructX;
+                const float StructHeight = (float)HeightData[StructIndex] / 65535.f;
+
+                FWorldObjectData StructObj;
+                StructObj.ObjectType = EWorldObjectType::Structure;
+                StructObj.ActorClass = ActorClassMap.Contains(EWorldObjectType::Structure) ?
+                    ActorClassMap[EWorldObjectType::Structure] : nullptr;
+                StructObj.Location = FVector(
+                    StructX * 100.f,
+                    StructY * 100.f,
+                    StructHeight * Config.MaxHeight
+                );
+                StructObj.Rotation = FRotator(0.f, Random.FRandRange(0.f, 360.f), 0.f);
+                StructObj.Scale = FVector(Random.FRandRange(0.9f, 1.1f));
+                StructObj.GroupID = GroupIdx;
+                StructObj.bIsGroupCenter = false;
+
+                OutObjects.Add(StructObj);
+                bFoundLocation = true;
+            }
+        }
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Generated %d structure groups with %d total structures"),
+            GroupsToGenerate, OutObjects.Num());
     }
 }

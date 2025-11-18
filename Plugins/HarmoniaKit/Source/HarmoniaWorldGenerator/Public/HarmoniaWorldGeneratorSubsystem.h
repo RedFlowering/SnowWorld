@@ -115,6 +115,32 @@ public:
         TArray<FRoadSegmentData>& OutRoadSegments
     );
 
+    /**
+     * Apply erosion simulation to heightmap
+     * @param Config         - World generation parameters
+     * @param HeightData     - Heightmap data (will be modified)
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Erosion")
+    void ApplyErosion(
+        const FWorldGeneratorConfig& Config,
+        TArray<int32>& HeightData
+    );
+
+    /**
+     * Generate structure groups (villages, ruins, etc.)
+     * @param Config         - World generation parameters
+     * @param HeightData     - Heightmap data
+     * @param ActorClassMap  - Actor class mapping for object types
+     * @param OutObjects     - Generated grouped structures
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Structures")
+    void GenerateStructureGroups(
+        const FWorldGeneratorConfig& Config,
+        const TArray<int32>& HeightData,
+        TMap<EWorldObjectType, TSoftClassPtr<AActor>> ActorClassMap,
+        TArray<FWorldObjectData>& OutObjects
+    );
+
 private:
     /**
      * Generate heightmap data with chunk-based processing
@@ -218,5 +244,47 @@ private:
         const TArray<int32>& HeightData,
         const FWorldGeneratorConfig& Config,
         TArray<FVector>& OutPath
+    );
+
+    /**
+     * Simulate single water droplet for erosion
+     */
+    void SimulateDroplet(
+        TArray<float>& HeightMap,
+        const FWorldGeneratorConfig& Config,
+        FRandomStream& Random
+    );
+
+    /**
+     * Calculate height and gradient at position
+     */
+    float CalculateHeightAndGradient(
+        const TArray<float>& HeightMap,
+        float PosX,
+        float PosY,
+        int32 MapSize,
+        FVector2D& OutGradient
+    );
+
+    /**
+     * Calculate terrain flatness at location
+     * @return Flatness value (0-1, 1 = perfectly flat)
+     */
+    float CalculateFlatness(
+        int32 X,
+        int32 Y,
+        int32 Radius,
+        const TArray<int32>& HeightData,
+        const FWorldGeneratorConfig& Config
+    );
+
+    /**
+     * Check if location is flat enough for structures
+     */
+    bool IsFlatEnoughForStructure(
+        int32 X,
+        int32 Y,
+        const TArray<int32>& HeightData,
+        const FWorldGeneratorConfig& Config
     );
 };

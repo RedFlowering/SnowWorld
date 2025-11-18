@@ -56,6 +56,51 @@ struct FWorldObjectData
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FVector Scale = FVector::OneVector;
+
+	// Group ID (for grouped structures like villages)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 GroupID = -1;
+
+	// Is this a group center/leader object?
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsGroupCenter = false;
+};
+
+/**
+ * Structure Group Settings (Villages, Ruins, etc.)
+ */
+USTRUCT(BlueprintType)
+struct FStructureGroupSettings
+{
+	GENERATED_BODY()
+
+	// Enable structure group generation
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "StructureGroup")
+	bool bEnableStructureGroups = true;
+
+	// Number of structure groups to generate
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "StructureGroup", meta = (ClampMin = "0", ClampMax = "100"))
+	int32 GroupCount = 5;
+
+	// Minimum structures per group
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "StructureGroup", meta = (ClampMin = "1", ClampMax = "50"))
+	int32 MinStructuresPerGroup = 3;
+
+	// Maximum structures per group
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "StructureGroup", meta = (ClampMin = "1", ClampMax = "50"))
+	int32 MaxStructuresPerGroup = 10;
+
+	// Group radius (in UE units)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "StructureGroup", meta = (ClampMin = "100.0", ClampMax = "10000.0"))
+	float GroupRadius = 2000.0f;
+
+	// Minimum flatness required (0-1, 1 = perfectly flat)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "StructureGroup", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float MinFlatness = 0.8f;
+
+	// Structure spacing within group
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "StructureGroup", meta = (ClampMin = "100.0", ClampMax = "5000.0"))
+	float StructureSpacing = 500.0f;
 };
 
 USTRUCT(BlueprintType)
@@ -358,6 +403,67 @@ struct FBiomeData
 };
 
 /**
+ * Erosion Simulation Settings
+ */
+USTRUCT(BlueprintType)
+struct FErosionSettings
+{
+	GENERATED_BODY()
+
+	// Enable erosion simulation
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Erosion")
+	bool bEnableErosion = true;
+
+	// Number of erosion iterations
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Erosion", meta = (ClampMin = "0", ClampMax = "10000"))
+	int32 ErosionIterations = 100000;
+
+	// Erosion radius (how far sediment spreads)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Erosion", meta = (ClampMin = "1", ClampMax = "10"))
+	int32 ErosionRadius = 3;
+
+	// Inertia (0-1, higher = straighter paths)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Erosion", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float Inertia = 0.05f;
+
+	// Sediment capacity factor
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Erosion", meta = (ClampMin = "0.0", ClampMax = "10.0"))
+	float SedimentCapacityFactor = 4.0f;
+
+	// Minimum sediment capacity
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Erosion", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float MinSedimentCapacity = 0.01f;
+
+	// Erode speed (how fast terrain erodes)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Erosion", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float ErodeSpeed = 0.3f;
+
+	// Deposit speed (how fast sediment deposits)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Erosion", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float DepositSpeed = 0.3f;
+
+	// Evaporate speed (water loss per step)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Erosion", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float EvaporateSpeed = 0.01f;
+
+	// Gravity
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Erosion", meta = (ClampMin = "0.0", ClampMax = "10.0"))
+	float Gravity = 4.0f;
+
+	// Max droplet lifetime (steps)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Erosion", meta = (ClampMin = "1", ClampMax = "200"))
+	int32 MaxDropletLifetime = 30;
+
+	// Initial water volume
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Erosion", meta = (ClampMin = "0.0", ClampMax = "10.0"))
+	float InitialWaterVolume = 1.0f;
+
+	// Initial speed
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Erosion", meta = (ClampMin = "0.0", ClampMax = "10.0"))
+	float InitialSpeed = 1.0f;
+};
+
+/**
  * World Generation Configuration
  * Seed-based generation ensures same world in multiplayer
  */
@@ -438,6 +544,22 @@ struct FWorldGeneratorConfig
 	// Road generation settings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen|Roads")
 	FRoadSettings RoadSettings;
+
+	// ===== Erosion System =====
+
+	// Erosion simulation settings
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen|Erosion")
+	FErosionSettings ErosionSettings;
+
+	// ===== Structure Groups =====
+
+	// Structure group generation settings
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen|Structures")
+	FStructureGroupSettings StructureGroupSettings;
+
+	// Maximum slope for structure placement (in degrees)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen|Structures", meta = (ClampMin = "0.0", ClampMax = "90.0"))
+	float MaxStructureSlope = 15.0f;
 
 	// ===== Performance Settings =====
 
