@@ -452,6 +452,75 @@ public:
         ETerrainFalloffType FalloffType = ETerrainFalloffType::Smooth
     );
 
+    // ========================================
+    // Chunk Caching System
+    // ========================================
+
+    /**
+     * Initialize chunk cache with settings
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Cache")
+    void InitializeChunkCache(const FChunkCacheSettings& Settings);
+
+    /**
+     * Get cached chunk data
+     * @param ChunkCoordinates - Chunk coordinates to retrieve
+     * @param OutChunkData - Retrieved chunk data
+     * @return True if chunk was found in cache
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Cache")
+    bool GetCachedChunk(FIntPoint ChunkCoordinates, FWorldChunkData& OutChunkData);
+
+    /**
+     * Cache a chunk for future reuse
+     * @param ChunkData - Chunk data to cache
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Cache")
+    void CacheChunk(const FWorldChunkData& ChunkData);
+
+    /**
+     * Clear all cached chunks from memory
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Cache")
+    void ClearChunkCache();
+
+    /**
+     * Save chunk cache to disk
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Cache")
+    bool SaveChunkCacheToDisk();
+
+    /**
+     * Load chunk cache from disk
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Cache")
+    bool LoadChunkCacheFromDisk();
+
+    /**
+     * Get cache statistics
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Cache")
+    void GetCacheStatistics(int32& OutCachedChunks, int32& OutMemoryUsageKB, int32& OutDiskCacheSize);
+
+    /**
+     * Remove expired chunks from cache
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Cache")
+    void CleanExpiredChunks();
+
+    /**
+     * Check if chunk exists in cache
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Cache")
+    bool IsChunkCached(FIntPoint ChunkCoordinates) const;
+
+    /**
+     * Preload chunks in a region
+     * Useful for streaming worlds
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Cache")
+    void PreloadChunksInRegion(FIntPoint MinChunk, FIntPoint MaxChunk);
+
 private:
     /**
      * Generate heightmap data with chunk-based processing
@@ -768,6 +837,30 @@ private:
         FVector WorldLocation
     ) const;
 
+    // ========================================
+    // Chunk Cache Helpers
+    // ========================================
+
+    /**
+     * Calculate hash for chunk validation
+     */
+    int32 CalculateChunkHash(const FWorldChunkData& ChunkData) const;
+
+    /**
+     * Get chunk file path for disk cache
+     */
+    FString GetChunkCacheFilePath(FIntPoint ChunkCoordinates) const;
+
+    /**
+     * Evict least recently used chunks if cache is full
+     */
+    void EvictLRUChunks();
+
+    /**
+     * Calculate memory usage of cached chunks
+     */
+    int32 CalculateCacheMemoryUsage() const;
+
     // Async generation state
     std::atomic<bool> bIsGenerating{false};
     std::atomic<bool> bCancelRequested{false};
@@ -790,4 +883,9 @@ private:
     float TimeSpeedMultiplier = 1.0f;
 
     FRandomStream WeatherRandom;
+
+    // Chunk cache state
+    FChunkCacheSettings CacheSettings;
+    TMap<FIntPoint, FWorldChunkData> ChunkCache;
+    TArray<FIntPoint> ChunkAccessOrder; // For LRU eviction
 };

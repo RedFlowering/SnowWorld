@@ -3189,3 +3189,339 @@ FVector2D UHarmoniaWorldGeneratorSubsystem::WorldToLandscapeCoordinates(
     const float ScaleXY = Landscape->GetActorScale3D().X;
     return FVector2D(LocalLocation.X / ScaleXY, LocalLocation.Y / ScaleXY);
 }
+
+// ========================================
+// Chunk Caching System Implementation
+// ========================================
+
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
+#include "HAL/PlatformFileManager.h"
+#include "Serialization/MemoryWriter.h"
+#include "Serialization/MemoryReader.h"
+
+void UHarmoniaWorldGeneratorSubsystem::InitializeChunkCache(const FChunkCacheSettings& Settings)
+{
+    CacheSettings = Settings;
+    ChunkCache.Empty();
+    ChunkAccessOrder.Empty();
+
+    if (CacheSettings.bEnableDiskCache)
+    {
+        // Create cache directory if it doesn't exist
+        const FString CachePath = FPaths::ProjectSavedDir() / CacheSettings.CacheDirectory;
+        IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+        if (!PlatformFile.DirectoryExists(*CachePath))
+        {
+            PlatformFile.CreateDirectory(*CachePath);
+        }
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("Chunk cache initialized - Max chunks: %d, Disk cache: %s"),
+        CacheSettings.MaxCachedChunks, CacheSettings.bEnableDiskCache ? TEXT("Enabled") : TEXT("Disabled"));
+}
+
+bool UHarmoniaWorldGeneratorSubsystem::GetCachedChunk(FIntPoint ChunkCoordinates, FWorldChunkData& OutChunkData)
+{
+    if (!CacheSettings.bEnableCaching)
+    {
+        return false;
+    }
+
+    // Check memory cache first
+    if (FWorldChunkData* CachedData = ChunkCache.Find(ChunkCoordinates))
+    {
+        // Check if expired
+        if (CacheSettings.CacheExpirationHours > 0.0f)
+        {
+            FTimespan TimeSinceGeneration = FDateTime::Now() - CachedData->GenerationTime;
+            if (TimeSinceGeneration.GetTotalHours() > CacheSettings.CacheExpirationHours)
+            {
+                // Expired - remove from cache
+                ChunkCache.Remove(ChunkCoordinates);
+                ChunkAccessOrder.Remove(ChunkCoordinates);
+                return false;
+            }
+        }
+
+        // Update access order for LRU
+        ChunkAccessOrder.Remove(ChunkCoordinates);
+        ChunkAccessOrder.Add(ChunkCoordinates);
+
+        OutChunkData = *CachedData;
+        return true;
+    }
+
+    // Try disk cache
+    if (CacheSettings.bEnableDiskCache)
+    {
+        const FString FilePath = GetChunkCacheFilePath(ChunkCoordinates);
+        if (FPaths::FileExists(FilePath))
+        {
+            TArray<uint8> FileData;
+            if (FFileHelper::LoadFileToArray(FileData, *FilePath))
+            {
+                FMemoryReader MemoryReader(FileData, true);
+                MemoryReader << OutChunkData;
+
+                // Add to memory cache
+                CacheChunk(OutChunkData);
+
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+void UHarmoniaWorldGeneratorSubsystem::CacheChunk(const FWorldChunkData& ChunkData)
+{
+    if (!CacheSettings.bEnableCaching)
+    {
+        return;
+    }
+
+    // Evict LRU chunks if cache is full
+    if (ChunkCache.Num() >= CacheSettings.MaxCachedChunks)
+    {
+        EvictLRUChunks();
+    }
+
+    // Calculate hash
+    FWorldChunkData DataWithHash = ChunkData;
+    DataWithHash.CacheHash = CalculateChunkHash(ChunkData);
+    DataWithHash.GenerationTime = FDateTime::Now();
+
+    // Add to memory cache
+    ChunkCache.Add(ChunkData.ChunkCoordinates, DataWithHash);
+    ChunkAccessOrder.Add(ChunkData.ChunkCoordinates);
+
+    // Save to disk if enabled
+    if (CacheSettings.bEnableDiskCache && CacheSettings.bAutoSaveCache)
+    {
+        const FString FilePath = GetChunkCacheFilePath(ChunkData.ChunkCoordinates);
+        TArray<uint8> FileData;
+        FMemoryWriter MemoryWriter(FileData, true);
+        FWorldChunkData WritableData = DataWithHash;
+        MemoryWriter << WritableData;
+
+        FFileHelper::SaveArrayToFile(FileData, *FilePath);
+    }
+}
+
+void UHarmoniaWorldGeneratorSubsystem::ClearChunkCache()
+{
+    ChunkCache.Empty();
+    ChunkAccessOrder.Empty();
+    UE_LOG(LogTemp, Log, TEXT("Chunk cache cleared"));
+}
+
+bool UHarmoniaWorldGeneratorSubsystem::SaveChunkCacheToDisk()
+{
+    if (!CacheSettings.bEnableDiskCache)
+    {
+        return false;
+    }
+
+    int32 SavedChunks = 0;
+    for (const auto& Pair : ChunkCache)
+    {
+        const FString FilePath = GetChunkCacheFilePath(Pair.Key);
+        TArray<uint8> FileData;
+        FMemoryWriter MemoryWriter(FileData, true);
+        FWorldChunkData WritableData = Pair.Value;
+        MemoryWriter << WritableData;
+
+        if (FFileHelper::SaveArrayToFile(FileData, *FilePath))
+        {
+            SavedChunks++;
+        }
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("Saved %d chunks to disk cache"), SavedChunks);
+    return SavedChunks > 0;
+}
+
+bool UHarmoniaWorldGeneratorSubsystem::LoadChunkCacheFromDisk()
+{
+    if (!CacheSettings.bEnableDiskCache)
+    {
+        return false;
+    }
+
+    const FString CachePath = FPaths::ProjectSavedDir() / CacheSettings.CacheDirectory;
+    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+
+    TArray<FString> CacheFiles;
+    PlatformFile.FindFiles(CacheFiles, *CachePath, TEXT(".chunk"));
+
+    int32 LoadedChunks = 0;
+    for (const FString& FilePath : CacheFiles)
+    {
+        TArray<uint8> FileData;
+        if (FFileHelper::LoadFileToArray(FileData, *FilePath))
+        {
+            FWorldChunkData ChunkData;
+            FMemoryReader MemoryReader(FileData, true);
+            MemoryReader << ChunkData;
+
+            // Validate hash
+            int32 ExpectedHash = CalculateChunkHash(ChunkData);
+            if (ChunkData.CacheHash == ExpectedHash)
+            {
+                ChunkCache.Add(ChunkData.ChunkCoordinates, ChunkData);
+                ChunkAccessOrder.Add(ChunkData.ChunkCoordinates);
+                LoadedChunks++;
+            }
+        }
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("Loaded %d chunks from disk cache"), LoadedChunks);
+    return LoadedChunks > 0;
+}
+
+void UHarmoniaWorldGeneratorSubsystem::GetCacheStatistics(
+    int32& OutCachedChunks,
+    int32& OutMemoryUsageKB,
+    int32& OutDiskCacheSize)
+{
+    OutCachedChunks = ChunkCache.Num();
+    OutMemoryUsageKB = CalculateCacheMemoryUsage() / 1024;
+
+    OutDiskCacheSize = 0;
+    if (CacheSettings.bEnableDiskCache)
+    {
+        const FString CachePath = FPaths::ProjectSavedDir() / CacheSettings.CacheDirectory;
+        IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+
+        TArray<FString> CacheFiles;
+        PlatformFile.FindFilesRecursively(CacheFiles, *CachePath, TEXT(".chunk"));
+
+        for (const FString& FilePath : CacheFiles)
+        {
+            OutDiskCacheSize += PlatformFile.FileSize(*FilePath);
+        }
+    }
+}
+
+void UHarmoniaWorldGeneratorSubsystem::CleanExpiredChunks()
+{
+    if (CacheSettings.CacheExpirationHours <= 0.0f)
+    {
+        return;
+    }
+
+    TArray<FIntPoint> ExpiredChunks;
+    for (const auto& Pair : ChunkCache)
+    {
+        FTimespan TimeSinceGeneration = FDateTime::Now() - Pair.Value.GenerationTime;
+        if (TimeSinceGeneration.GetTotalHours() > CacheSettings.CacheExpirationHours)
+        {
+            ExpiredChunks.Add(Pair.Key);
+        }
+    }
+
+    for (const FIntPoint& ChunkCoord : ExpiredChunks)
+    {
+        ChunkCache.Remove(ChunkCoord);
+        ChunkAccessOrder.Remove(ChunkCoord);
+
+        // Delete disk cache file
+        if (CacheSettings.bEnableDiskCache)
+        {
+            const FString FilePath = GetChunkCacheFilePath(ChunkCoord);
+            IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+            PlatformFile.DeleteFile(*FilePath);
+        }
+    }
+
+    if (ExpiredChunks.Num() > 0)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Cleaned %d expired chunks from cache"), ExpiredChunks.Num());
+    }
+}
+
+bool UHarmoniaWorldGeneratorSubsystem::IsChunkCached(FIntPoint ChunkCoordinates) const
+{
+    return ChunkCache.Contains(ChunkCoordinates);
+}
+
+void UHarmoniaWorldGeneratorSubsystem::PreloadChunksInRegion(FIntPoint MinChunk, FIntPoint MaxChunk)
+{
+    for (int32 Y = MinChunk.Y; Y <= MaxChunk.Y; ++Y)
+    {
+        for (int32 X = MinChunk.X; X <= MaxChunk.X; ++X)
+        {
+            FIntPoint ChunkCoord(X, Y);
+            if (!IsChunkCached(ChunkCoord) && CacheSettings.bEnableDiskCache)
+            {
+                FWorldChunkData ChunkData;
+                GetCachedChunk(ChunkCoord, ChunkData);
+            }
+        }
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("Preloaded chunks in region (%d,%d) to (%d,%d)"),
+        MinChunk.X, MinChunk.Y, MaxChunk.X, MaxChunk.Y);
+}
+
+// Helper functions
+
+int32 UHarmoniaWorldGeneratorSubsystem::CalculateChunkHash(const FWorldChunkData& ChunkData) const
+{
+    int32 Hash = 0;
+
+    // Hash chunk coordinates
+    Hash = ChunkData.ChunkCoordinates.X * 73856093 ^ ChunkData.ChunkCoordinates.Y * 19349663;
+
+    // Hash height data
+    for (int32 Height : ChunkData.HeightData)
+    {
+        Hash = Hash * 31 + Height;
+    }
+
+    // Hash object count (simple)
+    Hash = Hash * 31 + ChunkData.Objects.Num();
+
+    return Hash;
+}
+
+FString UHarmoniaWorldGeneratorSubsystem::GetChunkCacheFilePath(FIntPoint ChunkCoordinates) const
+{
+    const FString CachePath = FPaths::ProjectSavedDir() / CacheSettings.CacheDirectory;
+    return FString::Printf(TEXT("%s/chunk_%d_%d.chunk"), *CachePath, ChunkCoordinates.X, ChunkCoordinates.Y);
+}
+
+void UHarmoniaWorldGeneratorSubsystem::EvictLRUChunks()
+{
+    // Remove 10% of oldest chunks
+    int32 ChunksToRemove = FMath::Max(1, CacheSettings.MaxCachedChunks / 10);
+
+    for (int32 i = 0; i < ChunksToRemove && ChunkAccessOrder.Num() > 0; ++i)
+    {
+        FIntPoint OldestChunk = ChunkAccessOrder[0];
+        ChunkCache.Remove(OldestChunk);
+        ChunkAccessOrder.RemoveAt(0);
+    }
+
+    UE_LOG(LogTemp, Verbose, TEXT("Evicted %d LRU chunks from cache"), ChunksToRemove);
+}
+
+int32 UHarmoniaWorldGeneratorSubsystem::CalculateCacheMemoryUsage() const
+{
+    int32 TotalSize = 0;
+
+    for (const auto& Pair : ChunkCache)
+    {
+        const FWorldChunkData& ChunkData = Pair.Value;
+
+        // Estimate size of arrays
+        TotalSize += ChunkData.HeightData.Num() * sizeof(int32);
+        TotalSize += ChunkData.Objects.Num() * sizeof(FWorldObjectData);
+        TotalSize += ChunkData.BiomeData.Num() * sizeof(FBiomeData);
+        TotalSize += sizeof(FWorldChunkData); // Struct overhead
+    }
+
+    return TotalSize;
+}

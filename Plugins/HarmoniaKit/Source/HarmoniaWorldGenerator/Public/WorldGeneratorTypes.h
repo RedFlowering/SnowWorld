@@ -1261,3 +1261,85 @@ struct FTerrainModificationResult
 	UPROPERTY(BlueprintReadOnly, Category = "TerrainMod")
 	FString ErrorMessage;
 };
+
+// ========================================
+// Chunk Caching System
+// ========================================
+
+/**
+ * Cached chunk data for world generation
+ */
+USTRUCT(BlueprintType)
+struct FWorldChunkData
+{
+	GENERATED_BODY()
+
+	// Chunk coordinates (X, Y)
+	UPROPERTY(BlueprintReadOnly, Category = "Chunk")
+	FIntPoint ChunkCoordinates = FIntPoint::ZeroValue;
+
+	// Chunk size
+	UPROPERTY(BlueprintReadOnly, Category = "Chunk")
+	int32 ChunkSize = 64;
+
+	// Heightmap data for this chunk
+	UPROPERTY(BlueprintReadOnly, Category = "Chunk")
+	TArray<int32> HeightData;
+
+	// Objects in this chunk
+	UPROPERTY(BlueprintReadOnly, Category = "Chunk")
+	TArray<FWorldObjectData> Objects;
+
+	// Biome data for this chunk
+	UPROPERTY(BlueprintReadOnly, Category = "Chunk")
+	TArray<FBiomeData> BiomeData;
+
+	// Generation timestamp
+	UPROPERTY(BlueprintReadOnly, Category = "Chunk")
+	FDateTime GenerationTime;
+
+	// Is this chunk fully generated?
+	UPROPERTY(BlueprintReadOnly, Category = "Chunk")
+	bool bIsFullyGenerated = false;
+
+	// Cache hash (for validation)
+	UPROPERTY(BlueprintReadOnly, Category = "Chunk")
+	int32 CacheHash = 0;
+};
+
+/**
+ * Chunk cache settings
+ */
+USTRUCT(BlueprintType)
+struct FChunkCacheSettings
+{
+	GENERATED_BODY()
+
+	// Enable chunk caching
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cache")
+	bool bEnableCaching = true;
+
+	// Maximum number of chunks to cache in memory
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cache", meta = (ClampMin = "10", ClampMax = "10000"))
+	int32 MaxCachedChunks = 100;
+
+	// Enable disk caching (save/load chunks)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cache")
+	bool bEnableDiskCache = true;
+
+	// Cache directory (relative to project Saved folder)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cache")
+	FString CacheDirectory = TEXT("WorldGeneratorCache");
+
+	// Cache expiration time (in hours, 0 = never expire)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cache", meta = (ClampMin = "0.0", ClampMax = "720.0"))
+	float CacheExpirationHours = 24.0f;
+
+	// Auto-save cache on generation
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cache")
+	bool bAutoSaveCache = true;
+
+	// Compression level (0-9, 0 = no compression)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cache", meta = (ClampMin = "0", ClampMax = "9"))
+	int32 CompressionLevel = 5;
+};
