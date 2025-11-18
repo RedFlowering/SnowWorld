@@ -94,13 +94,16 @@ void UHarmoniaInventoryComponent::RequestSwapSlots(int32 SlotA, int32 SlotB)
 
 void UHarmoniaInventoryComponent::RequestClear()
 {
+	// [SECURITY] Clear is a dangerous operation that can only be executed on the server
+	// Removed ServerClear RPC as it was disabled for security (always returned false in validation)
+	// If this functionality is needed, implement proper permission checks (e.g., GM/Admin only)
 	if (GetOwner() && GetOwner()->HasAuthority())
 	{
 		Clear();
 	}
 	else
 	{
-		ServerClear();
+		UE_LOG(LogTemp, Warning, TEXT("[SECURITY] RequestClear called from client - operation denied for security"));
 	}
 }
 
@@ -398,20 +401,5 @@ bool UHarmoniaInventoryComponent::ServerSwapSlots_Validate(int32 SlotA, int32 Sl
 	return true;
 }
 
-void UHarmoniaInventoryComponent::ServerClear_Implementation()
-{
-	Clear();
-}
-
-bool UHarmoniaInventoryComponent::ServerClear_Validate()
-{
-	// [SECURITY] This is a dangerous operation that allows clearing the entire inventory
-	// Consider requiring GM/Admin permission or removing this RPC entirely
-	// For now, disabled for security - implement permission check if needed
-	UE_LOG(LogTemp, Warning, TEXT("[SECURITY] ServerClear called - this operation is restricted for security"));
-
-	// TODO: Add permission check here if this functionality is needed
-	// Example: return HasAdminPermission(GetOwner());
-
-	return false; // Disabled by default for security
-}
+// [CODE CLEANUP] ServerClear RPC removed - it was always disabled for security (returned false in validation)
+// If clearing inventory from clients is needed in the future, implement proper GM/Admin permission checks

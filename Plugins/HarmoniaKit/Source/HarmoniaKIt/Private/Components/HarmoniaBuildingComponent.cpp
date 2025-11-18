@@ -653,5 +653,22 @@ bool UHarmoniaBuildingComponent::ServerPlacePart_Validate(const FVector& Locatio
 		return false;
 	}
 
+	// [SECURITY ENHANCEMENT] TODO: Implement terrain ownership and building permission system
+	// Currently, players can build anywhere without restrictions. This should be validated.
+	// Implementation options:
+	// 1. Implement terrain ownership zones (e.g., grid-based or radius-based)
+	// 2. Check if player owns or has permission to build at Location
+	// 3. Implement clan/guild territory system with building permissions
+	// 4. Add protected zones (cities, dungeons) where building is restricted
+	// Example:
+	// if (UTerrainOwnershipManager* Manager = GetWorld()->GetSubsystem<UTerrainOwnershipManager>())
+	// {
+	//     if (!Manager->HasBuildingPermission(GetOwner(), Location))
+	//     {
+	//         UE_LOG(LogBuildingSystem, Warning, TEXT("[ANTI-CHEAT] No building permission at location"));
+	//         return false;
+	//     }
+	// }
+
 	return true;
 }

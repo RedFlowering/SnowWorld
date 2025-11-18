@@ -1211,6 +1211,22 @@ bool UHarmoniaCraftingComponent::ServerSetCurrentStationWithActor_Validate(AActo
 		}
 	}
 
+	// [SECURITY ENHANCEMENT] TODO: Validate station actor-type consistency
+	// Currently, clients can claim any actor is any station type. This should be validated.
+	// Implementation options:
+	// 1. Check if StationActor implements ICraftingStation interface and call GetStationType()
+	// 2. Check if StationActor has a UCraftingStationComponent with matching type
+	// 3. Check if StationActor has appropriate ActorTags for the station type
+	// Example:
+	// if (ICraftingStation* Station = Cast<ICraftingStation>(StationActor))
+	// {
+	//     if (Station->GetStationType() != StationType)
+	//     {
+	//         UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Station actor type mismatch"));
+	//         return false;
+	//     }
+	// }
+
 	return true;
 }
 

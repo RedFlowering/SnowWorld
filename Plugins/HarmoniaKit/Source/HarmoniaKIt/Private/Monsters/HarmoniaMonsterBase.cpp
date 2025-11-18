@@ -122,7 +122,9 @@ void AHarmoniaMonsterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AHarmoniaMonsterBase, MonsterLevel);
+	// [BANDWIDTH OPTIMIZATION] MonsterLevel only needs to replicate once at spawn
+	// Level doesn't change during gameplay, so COND_InitialOnly saves bandwidth
+	DOREPLIFETIME_CONDITION(AHarmoniaMonsterBase, MonsterLevel, COND_InitialOnly);
 	DOREPLIFETIME(AHarmoniaMonsterBase, CurrentState);
 	DOREPLIFETIME(AHarmoniaMonsterBase, CurrentTarget);
 }

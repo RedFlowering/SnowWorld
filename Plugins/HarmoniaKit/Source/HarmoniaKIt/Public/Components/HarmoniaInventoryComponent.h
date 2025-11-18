@@ -93,10 +93,11 @@ protected:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerSwapSlots(int32 SlotA, int32 SlotB);
 
+	/**
+	 * Clear entire inventory (Server-only)
+	 * WARNING: This is a destructive operation. Use with caution.
+	 */
 	void Clear();
-
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerClear();
 
 public:
 	// ���� <-> ���� Ŭ�� ����ȭ
