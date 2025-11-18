@@ -11,6 +11,10 @@ class UHarmoniaWorldGeneratorSubsystem;
 class UHarmoniaWorldGeneratorEditorSubsystem;
 class ALandscape;
 
+// Delegate declarations
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGenerationComplete, bool, bSuccess);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnGenerationProgress, float, Progress, const FString&, Message);
+
 /**
  * 하모니아 월드 생성을 위한 에디터 유틸리티 위젯
  * Editor Utility Widget for Harmonia World Generation
