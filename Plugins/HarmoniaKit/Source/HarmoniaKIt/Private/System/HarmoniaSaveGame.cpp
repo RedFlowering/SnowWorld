@@ -5,7 +5,7 @@
 
 UHarmoniaSaveGame::UHarmoniaSaveGame()
 	: SaveSlotName(TEXT("DefaultSave"))
-	, SaveVersion(1)
+	, SaveVersion(2)
 	, TotalPlayTime(0.0f)
 {
 	LastSaveTimestamp = FDateTime::Now();

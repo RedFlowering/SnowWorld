@@ -216,9 +216,17 @@ bool UHarmoniaSaveGameSubsystem::LoadGame(const FString& SaveSlotName, bool bUse
 	}
 
 	// 버전 체크
-	if (LoadedSaveGame->SaveVersion != 1)
+	if (LoadedSaveGame->SaveVersion != 2)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("LoadGame: Save version mismatch (expected 1, got %d)"), LoadedSaveGame->SaveVersion);
+		UE_LOG(LogTemp, Warning, TEXT("LoadGame: Save version mismatch (expected 2, got %d). Some data may not load correctly."), LoadedSaveGame->SaveVersion);
+
+		// Version 1 saves are still compatible, but will be missing new fields
+		if (LoadedSaveGame->SaveVersion < 1)
+		{
+			UE_LOG(LogTemp, Error, TEXT("LoadGame: Save version too old (version %d). Cannot load."), LoadedSaveGame->SaveVersion);
+			OnLoadGameComplete.Broadcast(EHarmoniaSaveGameResult::Failed, nullptr);
+			return false;
+		}
 	}
 
 	CurrentSaveGame = LoadedSaveGame;
@@ -426,14 +434,93 @@ void UHarmoniaSaveGameSubsystem::SaveWorldData(UHarmoniaSaveGame* SaveGameObject
 		return;
 	}
 
-	// 빌딩 데이터 저장 - HarmoniaBuildingInstanceManager를 찾아서 배치된 건물들을 저장
+	FHarmoniaWorldSaveData& WorldData = SaveGameObject->WorldData;
+
+	// ===== 빌딩 데이터 저장 =====
 	if (UHarmoniaBuildingInstanceManager* BuildingManager = World->GetSubsystem<UHarmoniaBuildingInstanceManager>())
 	{
 		// BuildingManager에서 배치된 건물 정보를 가져와 저장
 		// (구체적인 구현은 HarmoniaBuildingInstanceManager의 API에 따라 다름)
+		// TODO: BuildingManager->SaveBuildingsToArray(WorldData.PlacedBuildings);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("SaveWorldData: World data saved"));
+	// ===== 월드 생성 정보 저장 =====
+	// TODO: WorldGeneratorSubsystem에서 월드 시드와 생성 정보를 가져오기
+	// Example:
+	// if (UHarmoniaWorldGeneratorSubsystem* WorldGenSubsystem = World->GetSubsystem<UHarmoniaWorldGeneratorSubsystem>())
+	// {
+	//     WorldData.bIsAutomaticallyGenerated = WorldGenSubsystem->IsAutomaticGeneration();
+	//     WorldData.WorldSeed = WorldGenSubsystem->GetWorldSeed();
+	//     WorldData.WorldSizeX = WorldGenSubsystem->GetWorldSizeX();
+	//     WorldData.WorldSizeY = WorldGenSubsystem->GetWorldSizeY();
+	// }
+
+	// ===== 계절 시스템 저장 =====
+	// TODO: TimeWeatherManager 또는 EnvironmentSubsystem에서 계절 정보 가져오기
+	// Example:
+	// if (UHarmoniaTimeWeatherManager* TimeWeatherManager = World->GetSubsystem<UHarmoniaTimeWeatherManager>())
+	// {
+	//     WorldData.CurrentSeason = (uint8)TimeWeatherManager->GetCurrentSeason();
+	//     WorldData.SeasonProgress = TimeWeatherManager->GetSeasonProgress();
+	//     WorldData.TotalDaysElapsed = TimeWeatherManager->GetTotalDaysElapsed();
+	// }
+
+	// ===== 날씨 시스템 저장 =====
+	// TODO: TimeWeatherManager에서 날씨 정보 가져오기
+	// Example:
+	// if (UHarmoniaTimeWeatherManager* TimeWeatherManager = World->GetSubsystem<UHarmoniaTimeWeatherManager>())
+	// {
+	//     WorldData.CurrentWeatherType = (uint8)TimeWeatherManager->GetCurrentWeather();
+	//     WorldData.PreviousWeatherType = (uint8)TimeWeatherManager->GetPreviousWeather();
+	//     WorldData.WeatherIntensity = TimeWeatherManager->GetWeatherIntensity();
+	//     WorldData.WeatherTransitionProgress = TimeWeatherManager->GetWeatherTransitionProgress();
+	//     WorldData.CurrentWeatherDuration = TimeWeatherManager->GetWeatherDuration();
+	//     WorldData.CurrentWeatherElapsedTime = TimeWeatherManager->GetWeatherElapsedTime();
+	// }
+
+	// ===== 시간 시스템 저장 =====
+	// TODO: TimeWeatherManager에서 시간 정보 가져오기
+	// Example:
+	// if (UHarmoniaTimeWeatherManager* TimeWeatherManager = World->GetSubsystem<UHarmoniaTimeWeatherManager>())
+	// {
+	//     WorldData.CurrentGameHour = TimeWeatherManager->GetCurrentHour();
+	//     WorldData.CurrentGameDay = TimeWeatherManager->GetCurrentDay();
+	//     WorldData.TimeSpeedMultiplier = TimeWeatherManager->GetTimeSpeedMultiplier();
+	//     WorldData.CurrentTimeOfDay = (uint8)TimeWeatherManager->GetTimeOfDay();
+	//     WorldData.bIsTimePaused = TimeWeatherManager->IsTimePaused();
+	// }
+
+	// ===== 리소스 노드 상태 저장 =====
+	// TODO: ResourceManager에서 리소스 노드 상태 저장
+	// Example:
+	// if (UHarmoniaResourceManager* ResourceManager = World->GetSubsystem<UHarmoniaResourceManager>())
+	// {
+	//     ResourceManager->SaveResourceNodeStates(WorldData.ResourceNodeStates);
+	// }
+
+	// ===== POI 진행 상태 저장 =====
+	// TODO: POIManager에서 POI 상태 저장
+	// Example:
+	// if (UHarmoniaPOIManager* POIManager = World->GetSubsystem<UHarmoniaPOIManager>())
+	// {
+	//     POIManager->SavePOIStates(WorldData.POIStates);
+	// }
+
+	// ===== 수동 생성 월드 데이터 저장 =====
+	// Manual world generation일 경우, 배치된 모든 오브젝트 저장
+	// TODO: 수동 생성 월드인 경우에만 월드 오브젝트 저장
+	// if (!WorldData.bIsAutomaticallyGenerated)
+	// {
+	//     // Save all manually placed world objects (trees, rocks, etc.)
+	//     // WorldGenSubsystem->SaveManualWorldObjects(WorldData.ManualObjectLocations, ...);
+	// }
+
+	UE_LOG(LogTemp, Log, TEXT("SaveWorldData: World data saved (Seed: %d, Season: %d, Weather: %d, Hour: %.1f, Day: %d)"),
+		WorldData.WorldSeed,
+		WorldData.CurrentSeason,
+		WorldData.CurrentWeatherType,
+		WorldData.CurrentGameHour,
+		WorldData.CurrentGameDay);
 }
 
 void UHarmoniaSaveGameSubsystem::LoadWorldData(const UHarmoniaSaveGame* SaveGameObject)
@@ -449,14 +536,95 @@ void UHarmoniaSaveGameSubsystem::LoadWorldData(const UHarmoniaSaveGame* SaveGame
 		return;
 	}
 
-	// 빌딩 데이터 로드
-	for (const FHarmoniaSavedBuildingInstance& Building : SaveGameObject->WorldData.PlacedBuildings)
+	const FHarmoniaWorldSaveData& WorldData = SaveGameObject->WorldData;
+
+	// ===== 빌딩 데이터 로드 =====
+	for (const FHarmoniaSavedBuildingInstance& Building : WorldData.PlacedBuildings)
 	{
 		// 빌딩 복원 로직
 		// (구체적인 구현은 HarmoniaBuildingInstanceManager의 API에 따라 다름)
+		// TODO: BuildingManager->SpawnBuildingFromSaveData(Building);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("LoadWorldData: World data loaded"));
+	// ===== 월드 생성 정보 로드 =====
+	// TODO: WorldGeneratorSubsystem에 월드 시드와 생성 정보 전달
+	// Example:
+	// if (UHarmoniaWorldGeneratorSubsystem* WorldGenSubsystem = World->GetSubsystem<UHarmoniaWorldGeneratorSubsystem>())
+	// {
+	//     if (WorldData.bIsAutomaticallyGenerated)
+	//     {
+	//         // 자동 생성 월드: 시드로 재생성
+	//         WorldGenSubsystem->RegenerateWorldFromSeed(WorldData.WorldSeed, WorldData.WorldSizeX, WorldData.WorldSizeY);
+	//     }
+	//     else
+	//     {
+	//         // 수동 생성 월드: 저장된 오브젝트 복원
+	//         WorldGenSubsystem->LoadManualWorldObjects(WorldData.ManualObjectLocations, ...);
+	//     }
+	// }
+
+	// ===== 계절 시스템 로드 =====
+	// TODO: TimeWeatherManager에 계절 정보 복원
+	// Example:
+	// if (UHarmoniaTimeWeatherManager* TimeWeatherManager = World->GetSubsystem<UHarmoniaTimeWeatherManager>())
+	// {
+	//     TimeWeatherManager->SetCurrentSeason((ESeasonType)WorldData.CurrentSeason);
+	//     TimeWeatherManager->SetSeasonProgress(WorldData.SeasonProgress);
+	//     TimeWeatherManager->SetTotalDaysElapsed(WorldData.TotalDaysElapsed);
+	// }
+
+	// ===== 날씨 시스템 로드 =====
+	// TODO: TimeWeatherManager에 날씨 정보 복원
+	// Example:
+	// if (UHarmoniaTimeWeatherManager* TimeWeatherManager = World->GetSubsystem<UHarmoniaTimeWeatherManager>())
+	// {
+	//     TimeWeatherManager->SetCurrentWeather((EWeatherType)WorldData.CurrentWeatherType, WorldData.WeatherIntensity);
+	//     TimeWeatherManager->SetWeatherTransitionProgress(WorldData.WeatherTransitionProgress);
+	//     TimeWeatherManager->SetWeatherDuration(WorldData.CurrentWeatherDuration, WorldData.CurrentWeatherElapsedTime);
+	// }
+
+	// ===== 시간 시스템 로드 =====
+	// TODO: TimeWeatherManager에 시간 정보 복원
+	// Example:
+	// if (UHarmoniaTimeWeatherManager* TimeWeatherManager = World->GetSubsystem<UHarmoniaTimeWeatherManager>())
+	// {
+	//     TimeWeatherManager->SetCurrentTime(WorldData.CurrentGameHour, WorldData.CurrentGameDay);
+	//     TimeWeatherManager->SetTimeSpeedMultiplier(WorldData.TimeSpeedMultiplier);
+	//     TimeWeatherManager->SetTimePaused(WorldData.bIsTimePaused);
+	// }
+
+	// ===== 리소스 노드 상태 로드 =====
+	// TODO: ResourceManager에 리소스 노드 상태 복원
+	// Example:
+	// if (UHarmoniaResourceManager* ResourceManager = World->GetSubsystem<UHarmoniaResourceManager>())
+	// {
+	//     ResourceManager->LoadResourceNodeStates(WorldData.ResourceNodeStates);
+	// }
+
+	// ===== POI 진행 상태 로드 =====
+	// TODO: POIManager에 POI 상태 복원
+	// Example:
+	// if (UHarmoniaPOIManager* POIManager = World->GetSubsystem<UHarmoniaPOIManager>())
+	// {
+	//     POIManager->LoadPOIStates(WorldData.POIStates);
+	// }
+
+	// ===== 변경된 바이옴 데이터 로드 =====
+	// TODO: WorldGeneratorSubsystem에 변경된 바이옴 복원
+	// Example:
+	// if (WorldData.ModifiedBiomeIndices.Num() > 0)
+	// {
+	//     // Apply biome modifications
+	//     WorldGenSubsystem->ApplyBiomeModifications(WorldData.ModifiedBiomeIndices, WorldData.ModifiedBiomeTypes);
+	// }
+
+	UE_LOG(LogTemp, Log, TEXT("LoadWorldData: World data loaded (Seed: %d, Season: %d, Weather: %d, Hour: %.1f, Day: %d, Buildings: %d)"),
+		WorldData.WorldSeed,
+		WorldData.CurrentSeason,
+		WorldData.CurrentWeatherType,
+		WorldData.CurrentGameHour,
+		WorldData.CurrentGameDay,
+		WorldData.PlacedBuildings.Num());
 }
 
 void UHarmoniaSaveGameSubsystem::SavePlayerAttributes(ALyraPlayerState* PlayerState, FHarmoniaSavedPlayerAttributes& OutAttributes)
