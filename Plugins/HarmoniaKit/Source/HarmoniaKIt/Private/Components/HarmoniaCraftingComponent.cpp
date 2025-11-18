@@ -2,6 +2,7 @@
 
 #include "Components/HarmoniaCraftingComponent.h"
 #include "Components/HarmoniaInventoryComponent.h"
+#include "Interfaces/ICraftingStation.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/DataTable.h"
 #include "Animation/AnimMontage.h"
@@ -1211,21 +1212,49 @@ bool UHarmoniaCraftingComponent::ServerSetCurrentStationWithActor_Validate(AActo
 		}
 	}
 
-	// [SECURITY ENHANCEMENT] TODO: Validate station actor-type consistency
-	// Currently, clients can claim any actor is any station type. This should be validated.
-	// Implementation options:
-	// 1. Check if StationActor implements ICraftingStation interface and call GetStationType()
-	// 2. Check if StationActor has a UCraftingStationComponent with matching type
-	// 3. Check if StationActor has appropriate ActorTags for the station type
-	// Example:
-	// if (ICraftingStation* Station = Cast<ICraftingStation>(StationActor))
-	// {
-	//     if (Station->GetStationType() != StationType)
-	//     {
-	//         UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Station actor type mismatch"));
-	//         return false;
-	//     }
-	// }
+	// [SECURITY] Validate station actor-type consistency
+	// Prevent clients from claiming any actor is any station type
+	if (IICraftingStation* Station = Cast<IICraftingStation>(StationActor))
+	{
+		ECraftingStationType ActualStationType = Station->Execute_GetStationType(StationActor);
+
+		if (ActualStationType != StationType)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Station type mismatch (Claimed: %d, Actual: %d)"),
+				(int32)StationType, (int32)ActualStationType);
+			return false;
+		}
+
+		// Validate station tags if custom station
+		if (StationType == ECraftingStationType::Custom)
+		{
+			FGameplayTagContainer ActualTags = Station->Execute_GetStationTags(StationActor);
+
+			// Check if claimed tags are a subset of actual tags
+			for (const FGameplayTag& ClaimedTag : StationTags)
+			{
+				if (!ActualTags.HasTag(ClaimedTag))
+				{
+					UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Station missing claimed tag: %s"),
+						*ClaimedTag.ToString());
+					return false;
+				}
+			}
+		}
+
+		// Check if station is available for use
+		if (!Station->Execute_IsAvailableForUse(StationActor, GetOwner()))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Station not available for use"));
+			return false;
+		}
+	}
+	else
+	{
+		// Station actor doesn't implement ICraftingStation interface
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Station actor doesn't implement ICraftingStation interface"));
+		return false;
+	}
 
 	return true;
 }

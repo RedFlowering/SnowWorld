@@ -131,6 +131,20 @@ struct FBuildingInstanceMetadata
 
     UPROPERTY()
     FString OwnerPlayerID = FString();
+
+    /**
+     * Team ID of the owner (INDEX_NONE if no team)
+     * Used for team-based building permissions
+     */
+    UPROPERTY()
+    int32 OwnerTeamID = INDEX_NONE;
+
+    /**
+     * Whether this building is shared with the owner's team
+     * If true, all team members can interact with this building
+     */
+    UPROPERTY()
+    bool bSharedWithTeam = false;
 };
 
 USTRUCT(BlueprintType)
@@ -152,4 +166,16 @@ struct FBuildingSaveRecord
 
     UPROPERTY()
     FString OwnerPlayerID;
+
+    /**
+     * Team ID of the owner (INDEX_NONE if no team)
+     */
+    UPROPERTY()
+    int32 OwnerTeamID = INDEX_NONE;
+
+    /**
+     * Whether this building is shared with the owner's team
+     */
+    UPROPERTY()
+    bool bSharedWithTeam = false;
 };
