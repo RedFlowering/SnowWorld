@@ -39,7 +39,7 @@ public:
 	//~ Currency Storage
 	/** Current currency amounts */
 	UPROPERTY(ReplicatedUsing = OnRep_CurrencyAmounts, BlueprintReadOnly, Category = "Currency")
-	TMap<EHarmoniaCurrencyType, int32> CurrencyAmounts;
+	TArray<FHarmoniaCurrencyAmount> CurrencyAmounts;
 
 	/** Currency data assets for lookup and validation */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Currency|Config")
@@ -116,6 +116,9 @@ protected:
 
 	/** Notify currency changed */
 	void NotifyCurrencyChanged(EHarmoniaCurrencyType CurrencyType, int32 NewAmount, int32 DeltaAmount);
+
+	/** Internal helper to set currency amount in array */
+	void SetCurrencyInternal(EHarmoniaCurrencyType CurrencyType, int32 Amount);
 
 	//~ Server RPCs
 	UFUNCTION(Server, Reliable)

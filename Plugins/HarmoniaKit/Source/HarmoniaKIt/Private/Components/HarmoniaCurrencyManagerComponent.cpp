@@ -17,9 +17,19 @@ void UHarmoniaCurrencyManagerComponent::BeginPlay()
 	// Initialize all configured currency types to 0 if not already set
 	for (const auto& Pair : CurrencyDataAssets)
 	{
-		if (!CurrencyAmounts.Contains(Pair.Key))
+		bool bFound = false;
+		for (const FHarmoniaCurrencyAmount& Currency : CurrencyAmounts)
 		{
-			CurrencyAmounts.Add(Pair.Key, 0);
+			if (Currency.CurrencyType == Pair.Key)
+			{
+				bFound = true;
+				break;
+			}
+		}
+
+		if (!bFound)
+		{
+			CurrencyAmounts.Add(FHarmoniaCurrencyAmount(Pair.Key, 0));
 		}
 	}
 }
@@ -51,7 +61,7 @@ bool UHarmoniaCurrencyManagerComponent::AddCurrency(EHarmoniaCurrencyType Curren
 		const int32 NewAmount = CurrentAmount + Amount;
 		const int32 ValidatedAmount = ValidateCurrencyAmount(CurrencyType, NewAmount);
 
-		CurrencyAmounts.Add(CurrencyType, ValidatedAmount);
+		SetCurrencyInternal(CurrencyType, ValidatedAmount);
 		NotifyCurrencyChanged(CurrencyType, ValidatedAmount, Amount);
 
 		return true;
@@ -82,7 +92,7 @@ bool UHarmoniaCurrencyManagerComponent::RemoveCurrency(EHarmoniaCurrencyType Cur
 		const int32 CurrentAmount = GetCurrencyAmount(CurrencyType);
 		const int32 NewAmount = FMath::Max(0, CurrentAmount - Amount);
 
-		CurrencyAmounts.Add(CurrencyType, NewAmount);
+		SetCurrencyInternal(CurrencyType, NewAmount);
 		NotifyCurrencyChanged(CurrencyType, NewAmount, -Amount);
 
 		return true;
@@ -102,7 +112,7 @@ void UHarmoniaCurrencyManagerComponent::SetCurrency(EHarmoniaCurrencyType Curren
 		const int32 ValidatedAmount = ValidateCurrencyAmount(CurrencyType, Amount);
 		const int32 DeltaAmount = ValidatedAmount - CurrentAmount;
 
-		CurrencyAmounts.Add(CurrencyType, ValidatedAmount);
+		SetCurrencyInternal(CurrencyType, ValidatedAmount);
 		NotifyCurrencyChanged(CurrencyType, ValidatedAmount, DeltaAmount);
 	}
 	else
@@ -179,9 +189,12 @@ bool UHarmoniaCurrencyManagerComponent::ConvertCurrency(EHarmoniaCurrencyType Fr
 
 int32 UHarmoniaCurrencyManagerComponent::GetCurrencyAmount(EHarmoniaCurrencyType CurrencyType) const
 {
-	if (const int32* Amount = CurrencyAmounts.Find(CurrencyType))
+	for (const FHarmoniaCurrencyAmount& Currency : CurrencyAmounts)
 	{
-		return *Amount;
+		if (Currency.CurrencyType == CurrencyType)
+		{
+			return Currency.Amount;
+		}
 	}
 	return 0;
 }
@@ -219,11 +232,11 @@ TArray<FHarmoniaCurrencyAmount> UHarmoniaCurrencyManagerComponent::GetAllCurrenc
 {
 	TArray<FHarmoniaCurrencyAmount> Result;
 
-	for (const auto& Pair : CurrencyAmounts)
+	for (const FHarmoniaCurrencyAmount& Currency : CurrencyAmounts)
 	{
-		if (Pair.Value > 0)
+		if (Currency.Amount > 0)
 		{
-			Result.Add(FHarmoniaCurrencyAmount(Pair.Key, Pair.Value));
+			Result.Add(Currency);
 		}
 	}
 
@@ -241,7 +254,17 @@ UHarmoniaCurrencyDataAsset* UHarmoniaCurrencyManagerComponent::GetCurrencyDataAs
 
 TMap<EHarmoniaCurrencyType, int32> UHarmoniaCurrencyManagerComponent::ExportCurrencyData() const
 {
-	return CurrencyAmounts;
+	TMap<EHarmoniaCurrencyType, int32> Result;
+
+	for (const FHarmoniaCurrencyAmount& Currency : CurrencyAmounts)
+	{
+		if (Currency.Amount > 0)
+		{
+			Result.Add(Currency.CurrencyType, Currency.Amount);
+		}
+	}
+
+	return Result;
 }
 
 void UHarmoniaCurrencyManagerComponent::ImportCurrencyData(const TMap<EHarmoniaCurrencyType, int32>& SavedCurrencies)
@@ -258,7 +281,7 @@ void UHarmoniaCurrencyManagerComponent::ImportCurrencyData(const TMap<EHarmoniaC
 	for (const auto& Pair : SavedCurrencies)
 	{
 		const int32 ValidatedAmount = ValidateCurrencyAmount(Pair.Key, Pair.Value);
-		CurrencyAmounts.Add(Pair.Key, ValidatedAmount);
+		CurrencyAmounts.Add(FHarmoniaCurrencyAmount(Pair.Key, ValidatedAmount));
 	}
 
 	OnRep_CurrencyAmounts();
@@ -285,6 +308,22 @@ void UHarmoniaCurrencyManagerComponent::NotifyCurrencyChanged(EHarmoniaCurrencyT
 
 	UE_LOG(LogTemp, Log, TEXT("Currency changed: Type=%d, NewAmount=%d, Delta=%d"),
 		static_cast<int32>(CurrencyType), NewAmount, DeltaAmount);
+}
+
+void UHarmoniaCurrencyManagerComponent::SetCurrencyInternal(EHarmoniaCurrencyType CurrencyType, int32 Amount)
+{
+	// Find and update existing entry
+	for (FHarmoniaCurrencyAmount& Currency : CurrencyAmounts)
+	{
+		if (Currency.CurrencyType == CurrencyType)
+		{
+			Currency.Amount = Amount;
+			return;
+		}
+	}
+
+	// Add new entry if not found
+	CurrencyAmounts.Add(FHarmoniaCurrencyAmount(CurrencyType, Amount));
 }
 
 void UHarmoniaCurrencyManagerComponent::Server_AddCurrency_Implementation(EHarmoniaCurrencyType CurrencyType, int32 Amount)
