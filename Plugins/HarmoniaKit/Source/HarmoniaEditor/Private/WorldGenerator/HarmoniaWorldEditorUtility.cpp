@@ -1360,64 +1360,64 @@ void UHarmoniaWorldEditorUtility::CancelBatchGeneration()
 // NEW: Smart Suggestion System
 //=============================================================================
 
-FWorldGeneratorConfig UHarmoniaWorldEditorUtility::GetSuggestedConfig(EWorldType WorldType) const
+FWorldGeneratorConfig UHarmoniaWorldEditorUtility::GetSuggestedConfig(EHarmoniaWorldType WorldType) const
 {
 	FWorldGeneratorConfig SuggestedConfig = WorldConfig;
 
 	switch (WorldType)
 	{
-	case EWorldType::Realistic:
+	case EHarmoniaWorldType::Realistic:
 		SuggestedConfig.NoiseSettings.Octaves = 6;
 		SuggestedConfig.NoiseSettings.Persistence = 0.5f;
 		SuggestedConfig.SeaLevel = 0.4f;
 		SuggestedConfig.ErosionSettings.bEnableErosion = true;
 		break;
 
-	case EWorldType::Fantasy:
+	case EHarmoniaWorldType::Fantasy:
 		SuggestedConfig.NoiseSettings.Octaves = 8;
 		SuggestedConfig.NoiseSettings.Amplitude = 2.0f;
 		SuggestedConfig.MaxHeight = 51200.0f;
 		break;
 
-	case EWorldType::Alien:
+	case EHarmoniaWorldType::Alien:
 		SuggestedConfig.NoiseSettings.Octaves = 10;
 		SuggestedConfig.NoiseSettings.Frequency = 0.02f;
 		SuggestedConfig.SeaLevel = 0.2f;
 		break;
 
-	case EWorldType::Archipelago:
+	case EHarmoniaWorldType::Archipelago:
 		SuggestedConfig.SeaLevel = 0.65f;
 		SuggestedConfig.NoiseSettings.Frequency = 0.005f;
 		break;
 
-	case EWorldType::Canyon:
+	case EHarmoniaWorldType::Canyon:
 		SuggestedConfig.ErosionSettings.bEnableErosion = true;
 		SuggestedConfig.ErosionSettings.Iterations = 200;
 		SuggestedConfig.SeaLevel = 0.3f;
 		break;
 
-	case EWorldType::Plains:
+	case EHarmoniaWorldType::Plains:
 		SuggestedConfig.NoiseSettings.Amplitude = 0.3f;
 		SuggestedConfig.NoiseSettings.Octaves = 3;
 		break;
 
-	case EWorldType::Volcanic:
+	case EHarmoniaWorldType::Volcanic:
 		SuggestedConfig.MaxHeight = 51200.0f;
 		SuggestedConfig.NoiseSettings.Amplitude = 2.5f;
 		SuggestedConfig.SeaLevel = 0.5f;
 		break;
 
-	case EWorldType::Frozen:
+	case EHarmoniaWorldType::Frozen:
 		SuggestedConfig.SeaLevel = 0.5f;
 		// 추가 환경 설정 필요
 		break;
 
-	case EWorldType::Tropical:
+	case EHarmoniaWorldType::Tropical:
 		SuggestedConfig.SeaLevel = 0.45f;
 		SuggestedConfig.NoiseSettings.Frequency = 0.008f;
 		break;
 
-	case EWorldType::Highlands:
+	case EHarmoniaWorldType::Highlands:
 		SuggestedConfig.MaxHeight = 40000.0f;
 		SuggestedConfig.NoiseSettings.Amplitude = 1.5f;
 		SuggestedConfig.SeaLevel = 0.3f;

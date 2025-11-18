@@ -11,6 +11,231 @@ class UHarmoniaWorldGeneratorSubsystem;
 class UHarmoniaWorldGeneratorEditorSubsystem;
 class ALandscape;
 
+// Delegate declarations
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGenerationComplete, bool, bSuccess);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnGenerationProgress, float, Progress, const FString&, Message);
+
+//=============================================================================
+// Supporting Structures - Must be defined before the class that uses them
+//=============================================================================
+
+/** 월드 타입 (제안 시스템용) / World type for suggestion system */
+UENUM(BlueprintType)
+enum class EHarmoniaWorldType : uint8
+{
+	Realistic		UMETA(DisplayName = "Realistic"),
+	Fantasy			UMETA(DisplayName = "Fantasy"),
+	Alien			UMETA(DisplayName = "Alien"),
+	Archipelago		UMETA(DisplayName = "Archipelago"),
+	Canyon			UMETA(DisplayName = "Canyon"),
+	Plains			UMETA(DisplayName = "Plains"),
+	Volcanic		UMETA(DisplayName = "Volcanic"),
+	Frozen			UMETA(DisplayName = "Frozen"),
+	Tropical		UMETA(DisplayName = "Tropical"),
+	Highlands		UMETA(DisplayName = "Highlands")
+};
+
+/** 지형 편집 히스토리 항목 / Terrain edit history entry */
+USTRUCT(BlueprintType)
+struct FTerrainEditHistory
+{
+	GENERATED_BODY()
+
+	/** 편집 타입 / Edit type */
+	UPROPERTY()
+	ETerrainModificationType EditType;
+
+	/** 편집 위치 / Edit location */
+	UPROPERTY()
+	FVector Location;
+
+	/** 영향 받은 지형 데이터 (before) / Affected terrain data (before) */
+	UPROPERTY()
+	TArray<int32> BeforeHeightData;
+
+	/** 영향 받은 지형 데이터 (after) / Affected terrain data (after) */
+	UPROPERTY()
+	TArray<int32> AfterHeightData;
+
+	/** 반경 / Radius */
+	UPROPERTY()
+	float Radius = 0.0f;
+
+	/** 강도 / Strength */
+	UPROPERTY()
+	float Strength = 0.0f;
+
+	/** 타임스탬프 / Timestamp */
+	UPROPERTY()
+	FDateTime Timestamp;
+};
+
+/** 검증 결과 / Validation result */
+USTRUCT(BlueprintType)
+struct FValidationResult
+{
+	GENERATED_BODY()
+
+	/** 경고 목록 / Warning messages */
+	UPROPERTY(BlueprintReadOnly)
+	TArray<FString> Warnings;
+
+	/** 오류 목록 / Error messages */
+	UPROPERTY(BlueprintReadOnly)
+	TArray<FString> Errors;
+
+	/** 예상 메모리 사용량 (MB) / Estimated memory usage in MB */
+	UPROPERTY(BlueprintReadOnly)
+	float EstimatedMemoryMB = 0.0f;
+
+	/** 예상 생성 시간 (초) / Estimated generation time in seconds */
+	UPROPERTY(BlueprintReadOnly)
+	float EstimatedTimeSeconds = 0.0f;
+
+	/** 안전 여부 / Is safe to generate */
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsSafe = true;
+};
+
+/** 월드 통계 / World statistics */
+USTRUCT(BlueprintType)
+struct FWorldStatistics
+{
+	GENERATED_BODY()
+
+	/** 총 오브젝트 수 / Total object count */
+	UPROPERTY(BlueprintReadOnly)
+	int32 TotalObjects = 0;
+
+	/** 바이옴별 비율 / Biome percentages */
+	UPROPERTY(BlueprintReadOnly)
+	TMap<EBiomeType, float> BiomePercentages;
+
+	/** 나무 수 / Tree count */
+	UPROPERTY(BlueprintReadOnly)
+	int32 TreeCount = 0;
+
+	/** 바위 수 / Rock count */
+	UPROPERTY(BlueprintReadOnly)
+	int32 RockCount = 0;
+
+	/** 구조물 수 / Structure count */
+	UPROPERTY(BlueprintReadOnly)
+	int32 StructureCount = 0;
+
+	/** 평균 고도 / Average elevation */
+	UPROPERTY(BlueprintReadOnly)
+	float AverageElevation = 0.0f;
+
+	/** 물 커버리지 (%) / Water coverage percentage */
+	UPROPERTY(BlueprintReadOnly)
+	float WaterCoverage = 0.0f;
+
+	/** 강 수 / River count */
+	UPROPERTY(BlueprintReadOnly)
+	int32 RiverCount = 0;
+
+	/** 호수 수 / Lake count */
+	UPROPERTY(BlueprintReadOnly)
+	int32 LakeCount = 0;
+
+	/** POI 수 / POI count */
+	UPROPERTY(BlueprintReadOnly)
+	int32 POICount = 0;
+
+	/** 동굴 입구 수 / Cave entrance count */
+	UPROPERTY(BlueprintReadOnly)
+	int32 CaveEntranceCount = 0;
+};
+
+/** 월드 템플릿 / World template */
+USTRUCT(BlueprintType)
+struct FWorldTemplate
+{
+	GENERATED_BODY()
+
+	/** 템플릿 이름 / Template name */
+	UPROPERTY(BlueprintReadWrite)
+	FString Name;
+
+	/** 설명 / Description */
+	UPROPERTY(BlueprintReadWrite)
+	FString Description;
+
+	/** 프리뷰 이미지 / Preview image */
+	UPROPERTY(BlueprintReadWrite)
+	UTexture2D* PreviewImage = nullptr;
+
+	/** 월드 설정 / World configuration */
+	UPROPERTY(BlueprintReadWrite)
+	FWorldGeneratorConfig Config;
+
+	/** 태그 / Tags */
+	UPROPERTY(BlueprintReadWrite)
+	TArray<FString> Tags;
+
+	/** 생성 날짜 / Creation date */
+	UPROPERTY(BlueprintReadWrite)
+	FDateTime CreationDate;
+
+	/** 작성자 / Author */
+	UPROPERTY(BlueprintReadWrite)
+	FString Author;
+};
+
+/** 배치 생성 작업 / Batch generation job */
+USTRUCT()
+struct FBatchGenerationJob
+{
+	GENERATED_BODY()
+
+	/** 작업 인덱스 / Job index */
+	int32 Index = 0;
+
+	/** 시드 / Seed */
+	int32 Seed = 0;
+
+	/** 출력 경로 / Output path */
+	FString OutputPath;
+
+	/** 완료 여부 / Is completed */
+	bool bCompleted = false;
+
+	/** 성공 여부 / Is successful */
+	bool bSuccess = false;
+};
+
+/** 월드 버전 / World version */
+USTRUCT(BlueprintType)
+struct FWorldVersion
+{
+	GENERATED_BODY()
+
+	/** 버전 인덱스 / Version index */
+	UPROPERTY(BlueprintReadOnly)
+	int32 VersionIndex = 0;
+
+	/** 타임스탬프 / Timestamp */
+	UPROPERTY(BlueprintReadOnly)
+	FDateTime Timestamp;
+
+	/** 월드 설정 / World configuration */
+	UPROPERTY(BlueprintReadOnly)
+	FWorldGeneratorConfig Config;
+
+	/** 커밋 메시지 / Commit message */
+	UPROPERTY(BlueprintReadOnly)
+	FString CommitMessage;
+
+	/** 스냅샷 이미지 / Snapshot image */
+	UPROPERTY(BlueprintReadOnly)
+	UTexture2D* Snapshot = nullptr;
+
+	/** 파일 경로 / File path */
+	UPROPERTY(BlueprintReadOnly)
+	FString FilePath;
+};
+
 /**
  * 하모니아 월드 생성을 위한 에디터 유틸리티 위젯
  * Editor Utility Widget for Harmonia World Generation
@@ -439,7 +664,7 @@ public:
 
 	/** 원하는 월드 타입에 대한 설정 제안 / Get suggested config for desired world type */
 	UFUNCTION(BlueprintCallable, Category = "World Generation|Suggestions")
-	FWorldGeneratorConfig GetSuggestedConfig(EWorldType WorldType) const;
+	FWorldGeneratorConfig GetSuggestedConfig(EHarmoniaWorldType WorldType) const;
 
 	/** 현재 설정에 대한 최적화 제안 / Get optimization suggestions for current config */
 	UFUNCTION(BlueprintCallable, Category = "World Generation|Suggestions")
@@ -560,225 +785,4 @@ private:
 	void ProcessNextBatchJob();
 	FString GenerateTemplateFilePath(const FString& TemplateName) const;
 	FString GenerateVersionFilePath(int32 VersionIndex) const;
-};
-
-//=============================================================================
-// NEW: Supporting Structures (should be in WorldGeneratorTypes.h ideally)
-//=============================================================================
-
-/** 지형 편집 히스토리 항목 / Terrain edit history entry */
-USTRUCT(BlueprintType)
-struct FTerrainEditHistory
-{
-	GENERATED_BODY()
-
-	/** 편집 타입 / Edit type */
-	UPROPERTY()
-	ETerrainModificationType EditType;
-
-	/** 편집 위치 / Edit location */
-	UPROPERTY()
-	FVector Location;
-
-	/** 영향 받은 지형 데이터 (before) / Affected terrain data (before) */
-	UPROPERTY()
-	TArray<int32> BeforeHeightData;
-
-	/** 영향 받은 지형 데이터 (after) / Affected terrain data (after) */
-	UPROPERTY()
-	TArray<int32> AfterHeightData;
-
-	/** 반경 / Radius */
-	UPROPERTY()
-	float Radius = 0.0f;
-
-	/** 강도 / Strength */
-	UPROPERTY()
-	float Strength = 0.0f;
-
-	/** 타임스탬프 / Timestamp */
-	UPROPERTY()
-	FDateTime Timestamp;
-};
-
-/** 검증 결과 / Validation result */
-USTRUCT(BlueprintType)
-struct FValidationResult
-{
-	GENERATED_BODY()
-
-	/** 경고 목록 / Warning messages */
-	UPROPERTY(BlueprintReadOnly)
-	TArray<FString> Warnings;
-
-	/** 오류 목록 / Error messages */
-	UPROPERTY(BlueprintReadOnly)
-	TArray<FString> Errors;
-
-	/** 예상 메모리 사용량 (MB) / Estimated memory usage in MB */
-	UPROPERTY(BlueprintReadOnly)
-	float EstimatedMemoryMB = 0.0f;
-
-	/** 예상 생성 시간 (초) / Estimated generation time in seconds */
-	UPROPERTY(BlueprintReadOnly)
-	float EstimatedTimeSeconds = 0.0f;
-
-	/** 안전 여부 / Is safe to generate */
-	UPROPERTY(BlueprintReadOnly)
-	bool bIsSafe = true;
-};
-
-/** 월드 통계 / World statistics */
-USTRUCT(BlueprintType)
-struct FWorldStatistics
-{
-	GENERATED_BODY()
-
-	/** 총 오브젝트 수 / Total object count */
-	UPROPERTY(BlueprintReadOnly)
-	int32 TotalObjects = 0;
-
-	/** 바이옴별 비율 / Biome percentages */
-	UPROPERTY(BlueprintReadOnly)
-	TMap<EBiomeType, float> BiomePercentages;
-
-	/** 나무 수 / Tree count */
-	UPROPERTY(BlueprintReadOnly)
-	int32 TreeCount = 0;
-
-	/** 바위 수 / Rock count */
-	UPROPERTY(BlueprintReadOnly)
-	int32 RockCount = 0;
-
-	/** 구조물 수 / Structure count */
-	UPROPERTY(BlueprintReadOnly)
-	int32 StructureCount = 0;
-
-	/** 평균 고도 / Average elevation */
-	UPROPERTY(BlueprintReadOnly)
-	float AverageElevation = 0.0f;
-
-	/** 물 커버리지 (%) / Water coverage percentage */
-	UPROPERTY(BlueprintReadOnly)
-	float WaterCoverage = 0.0f;
-
-	/** 강 수 / River count */
-	UPROPERTY(BlueprintReadOnly)
-	int32 RiverCount = 0;
-
-	/** 호수 수 / Lake count */
-	UPROPERTY(BlueprintReadOnly)
-	int32 LakeCount = 0;
-
-	/** POI 수 / POI count */
-	UPROPERTY(BlueprintReadOnly)
-	int32 POICount = 0;
-
-	/** 동굴 입구 수 / Cave entrance count */
-	UPROPERTY(BlueprintReadOnly)
-	int32 CaveEntranceCount = 0;
-};
-
-/** 월드 템플릿 / World template */
-USTRUCT(BlueprintType)
-struct FWorldTemplate
-{
-	GENERATED_BODY()
-
-	/** 템플릿 이름 / Template name */
-	UPROPERTY(BlueprintReadWrite)
-	FString Name;
-
-	/** 설명 / Description */
-	UPROPERTY(BlueprintReadWrite)
-	FString Description;
-
-	/** 프리뷰 이미지 / Preview image */
-	UPROPERTY(BlueprintReadWrite)
-	UTexture2D* PreviewImage = nullptr;
-
-	/** 월드 설정 / World configuration */
-	UPROPERTY(BlueprintReadWrite)
-	FWorldGeneratorConfig Config;
-
-	/** 태그 / Tags */
-	UPROPERTY(BlueprintReadWrite)
-	TArray<FString> Tags;
-
-	/** 생성 날짜 / Creation date */
-	UPROPERTY(BlueprintReadWrite)
-	FDateTime CreationDate;
-
-	/** 작성자 / Author */
-	UPROPERTY(BlueprintReadWrite)
-	FString Author;
-};
-
-/** 배치 생성 작업 / Batch generation job */
-USTRUCT()
-struct FBatchGenerationJob
-{
-	GENERATED_BODY()
-
-	/** 작업 인덱스 / Job index */
-	int32 Index = 0;
-
-	/** 시드 / Seed */
-	int32 Seed = 0;
-
-	/** 출력 경로 / Output path */
-	FString OutputPath;
-
-	/** 완료 여부 / Is completed */
-	bool bCompleted = false;
-
-	/** 성공 여부 / Is successful */
-	bool bSuccess = false;
-};
-
-/** 월드 버전 / World version */
-USTRUCT(BlueprintType)
-struct FWorldVersion
-{
-	GENERATED_BODY()
-
-	/** 버전 인덱스 / Version index */
-	UPROPERTY(BlueprintReadOnly)
-	int32 VersionIndex = 0;
-
-	/** 타임스탬프 / Timestamp */
-	UPROPERTY(BlueprintReadOnly)
-	FDateTime Timestamp;
-
-	/** 월드 설정 / World configuration */
-	UPROPERTY(BlueprintReadOnly)
-	FWorldGeneratorConfig Config;
-
-	/** 커밋 메시지 / Commit message */
-	UPROPERTY(BlueprintReadOnly)
-	FString CommitMessage;
-
-	/** 스냅샷 이미지 / Snapshot image */
-	UPROPERTY(BlueprintReadOnly)
-	UTexture2D* Snapshot = nullptr;
-
-	/** 파일 경로 / File path */
-	UPROPERTY(BlueprintReadOnly)
-	FString FilePath;
-};
-
-/** 월드 타입 (제안 시스템용) / World type for suggestion system */
-UENUM(BlueprintType)
-enum class EWorldType : uint8
-{
-	Realistic		UMETA(DisplayName = "Realistic"),
-	Fantasy			UMETA(DisplayName = "Fantasy"),
-	Alien			UMETA(DisplayName = "Alien"),
-	Archipelago		UMETA(DisplayName = "Archipelago"),
-	Canyon			UMETA(DisplayName = "Canyon"),
-	Plains			UMETA(DisplayName = "Plains"),
-	Volcanic		UMETA(DisplayName = "Volcanic"),
-	Frozen			UMETA(DisplayName = "Frozen"),
-	Tropical		UMETA(DisplayName = "Tropical"),
-	Highlands		UMETA(DisplayName = "Highlands")
 };
