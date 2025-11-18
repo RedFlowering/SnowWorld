@@ -1,6 +1,7 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "Components/HarmoniaEquipmentComponent.h"
+#include "Components/HarmoniaInventoryComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "Engine/DataTable.h"
