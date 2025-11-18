@@ -7,7 +7,7 @@
 #include "TimerManager.h"
 #include "GameFramework/Character.h"
 
-UHarmoniaBossPatternComponent::UBossPatternComponent()
+UHarmoniaBossPatternComponent::UHarmoniaBossPatternComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = true;
@@ -18,7 +18,7 @@ void UHarmoniaBossPatternComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	BossOwner = Cast<ABossCharacter>(GetOwner());
+	BossOwner = Cast<AHarmoniaBossMonster>(GetOwner());
 }
 
 void UHarmoniaBossPatternComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

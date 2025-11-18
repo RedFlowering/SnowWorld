@@ -94,17 +94,17 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPatternExecutionStart, FName, Pat
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPatternExecutionEnd, FName, PatternName);
 
 /**
- * UBossPatternComponent
+ * UHarmoniaBossPatternComponent
  *
  * Component that manages boss attack patterns and pattern-based combat.
  */
 UCLASS(Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class HARMONIAKIT_API UBossPatternComponent : public UActorComponent
+class HARMONIAKIT_API UHarmoniaBossPatternComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:
-	UBossPatternComponent();
+	UHarmoniaBossPatternComponent();
 
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -146,7 +146,6 @@ public:
 	FName GetCurrentPatternName() const { return CurrentPatternName; }
 
 	/** Get pattern configuration by name */
-	UFUNCTION(BlueprintPure, Category = "Boss|Pattern")
 	const FBossAttackPattern* GetPatternConfig(FName PatternName) const;
 
 	/** Check if pattern is on cooldown */
@@ -229,7 +228,7 @@ protected:
 
 	/** Cached reference to boss owner */
 	UPROPERTY()
-	TObjectPtr<ABossCharacter> BossOwner;
+	TObjectPtr<AHarmoniaBossMonster> BossOwner;
 
 	/** Timer handle for ability delays */
 	FTimerHandle AbilityDelayTimerHandle;
