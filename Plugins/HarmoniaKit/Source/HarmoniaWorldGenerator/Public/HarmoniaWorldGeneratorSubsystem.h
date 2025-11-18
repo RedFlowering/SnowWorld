@@ -11,6 +11,7 @@
  * - Generates terrain heightmap and world objects
  * - Seed-based deterministic generation for multiplayer sync
  * - Chunk-based processing to prevent editor freezing
+ * - Async generation support for large worlds
  */
 UCLASS()
 class HARMONIAWORLDGENERATOR_API UHarmoniaWorldGeneratorSubsystem : public UGameInstanceSubsystem
@@ -18,6 +19,12 @@ class HARMONIAWORLDGENERATOR_API UHarmoniaWorldGeneratorSubsystem : public UGame
     GENERATED_BODY()
 
 public:
+    // Async generation delegates
+    UPROPERTY(BlueprintAssignable, Category = "WorldGenerator|Async")
+    FOnWorldGenerationProgress OnGenerationProgress;
+
+    UPROPERTY(BlueprintAssignable, Category = "WorldGenerator|Async")
+    FOnWorldGenerationComplete OnGenerationComplete;
     /**
      * Generate complete world (heightmap + objects)
      * @param Config         - World generation parameters
@@ -140,6 +147,31 @@ public:
         TMap<EWorldObjectType, TSoftClassPtr<AActor>> ActorClassMap,
         TArray<FWorldObjectData>& OutObjects
     );
+
+    /**
+     * Generate world asynchronously (non-blocking)
+     * Results will be delivered through OnGenerationComplete delegate
+     * Progress updates through OnGenerationProgress delegate
+     * @param Config         - World generation parameters
+     * @param ActorClassMap  - Actor class mapping for object types
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Async")
+    void GenerateWorldAsync(
+        const FWorldGeneratorConfig& Config,
+        TMap<EWorldObjectType, TSoftClassPtr<AActor>> ActorClassMap
+    );
+
+    /**
+     * Check if async generation is currently running
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Async")
+    bool IsGeneratingAsync() const { return bIsGenerating; }
+
+    /**
+     * Cancel ongoing async generation
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Async")
+    void CancelAsyncGeneration();
 
 private:
     /**
@@ -287,4 +319,31 @@ private:
         const TArray<int32>& HeightData,
         const FWorldGeneratorConfig& Config
     );
+
+    /**
+     * Async generation worker function
+     */
+    void AsyncGenerationWorker(
+        FWorldGeneratorConfig Config,
+        TMap<EWorldObjectType, TSoftClassPtr<AActor>> ActorClassMap
+    );
+
+    /**
+     * Update progress on game thread
+     */
+    void UpdateProgress(float Progress);
+
+    /**
+     * Complete async generation on game thread
+     */
+    void CompleteAsyncGeneration(
+        TArray<int32> HeightData,
+        TArray<FWorldObjectData> Objects,
+        bool bSuccess
+    );
+
+    // Async generation state
+    std::atomic<bool> bIsGenerating{false};
+    std::atomic<bool> bCancelRequested{false};
+    std::atomic<float> CurrentProgress{0.0f};
 };

@@ -6,6 +6,19 @@
 #include "UObject/NoExportTypes.h"
 #include "WorldGeneratorTypes.generated.h"
 
+/**
+ * Delegate for async world generation progress
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWorldGenerationProgress, float, Progress);
+
+/**
+ * Delegate for async world generation completion
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnWorldGenerationComplete,
+	const TArray<int32>&, HeightData,
+	const TArray<FWorldObjectData>&, Objects,
+	bool, bSuccess);
+
 UENUM(BlueprintType)
 enum class EWorldObjectType : uint8
 {
