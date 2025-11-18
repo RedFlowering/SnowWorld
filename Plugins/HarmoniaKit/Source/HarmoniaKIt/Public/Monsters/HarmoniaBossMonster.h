@@ -234,6 +234,12 @@ protected:
 	TArray<FActiveGameplayEffectHandle> ActivePhaseEffects;
 
 	/**
+	 * Granted ability handles from current phase
+	 */
+	UPROPERTY(Transient)
+	TArray<FGameplayAbilitySpecHandle> GrantedAbilityHandles;
+
+	/**
 	 * Audio component for boss music
 	 */
 	UPROPERTY(Transient)

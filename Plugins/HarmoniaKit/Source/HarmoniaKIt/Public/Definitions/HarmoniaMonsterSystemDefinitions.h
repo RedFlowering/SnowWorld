@@ -498,25 +498,61 @@ struct HARMONIAKIT_API FHarmoniaBossPhase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
 	TObjectPtr<UAnimMontage> TransitionMontage = nullptr;
 
+	// Transition duration override (0 = use montage length)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation", meta = (ClampMin = "0.0", ClampMax = "10.0"))
+	float TransitionDuration = 0.0f;
+
+	// Particle effect to spawn during phase transition
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX")
+	TObjectPtr<UParticleSystem> TransitionEffect = nullptr;
+
+	// Niagara effect to spawn during phase transition
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX")
+	TObjectPtr<class UNiagaraSystem> TransitionNiagaraEffect = nullptr;
+
 	// Attacks available in this phase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	TArray<FHarmoniaMonsterAttackPattern> PhaseAttacks;
 
+	// Abilities to grant when entering this phase
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	TArray<TSubclassOf<class ULyraGameplayAbility>> PhaseAbilities;
+
+	// Abilities to remove when entering this phase
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	TArray<TSubclassOf<class ULyraGameplayAbility>> AbilitiesToRemove;
+
 	// Gameplay effects to apply when entering this phase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
 	TArray<TSubclassOf<UGameplayEffect>> PhaseEffects;
+
+	// Gameplay tags to apply during this phase
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	FGameplayTagContainer PhaseTags;
+
+	// Gameplay tags to remove when entering this phase
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	FGameplayTagContainer TagsToRemove;
 
 	// Behavior tree to use in this phase (optional)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	TObjectPtr<UBehaviorTree> PhaseBehaviorTree = nullptr;
 
 	// Movement speed multiplier for this phase
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase|Multipliers")
 	float MovementSpeedMultiplier = 1.0f;
 
 	// Attack speed multiplier for this phase
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase|Multipliers")
 	float AttackSpeedMultiplier = 1.0f;
+
+	// Damage multiplier for this phase
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase|Multipliers", meta = (ClampMin = "0.1", ClampMax = "10.0"))
+	float DamageMultiplier = 1.0f;
+
+	// Defense multiplier for this phase (lower = more damage taken)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase|Multipliers", meta = (ClampMin = "0.1", ClampMax = "10.0"))
+	float DefenseMultiplier = 1.0f;
 
 	// Whether boss is invulnerable during transition
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase")

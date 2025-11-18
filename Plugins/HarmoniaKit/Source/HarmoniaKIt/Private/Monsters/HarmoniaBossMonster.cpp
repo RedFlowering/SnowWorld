@@ -7,6 +7,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AIController.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
 
@@ -249,6 +250,28 @@ void AHarmoniaBossMonster::ChangeToPhase(int32 NewPhaseIndex)
 	// Play transition animation
 	PlayPhaseTransitionAnimation(NewPhaseData);
 
+	// Spawn transition VFX - Particle System
+	if (NewPhaseData.TransitionEffect)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			NewPhaseData.TransitionEffect,
+			GetActorLocation(),
+			GetActorRotation()
+		);
+	}
+
+	// Spawn transition VFX - Niagara
+	if (NewPhaseData.TransitionNiagaraEffect)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			NewPhaseData.TransitionNiagaraEffect,
+			GetActorLocation(),
+			GetActorRotation()
+		);
+	}
+
 	// Update phase index
 	CurrentPhaseIndex = NewPhaseIndex;
 
@@ -260,8 +283,10 @@ void AHarmoniaBossMonster::ChangeToPhase(int32 NewPhaseIndex)
 		NewPhaseIndex,
 		*NewPhaseData.PhaseName.ToString());
 
-	// Schedule phase activation after transition animation
-	float TransitionDuration = NewPhaseData.TransitionMontage ? NewPhaseData.TransitionMontage->GetPlayLength() : 1.0f;
+	// Calculate transition duration (use override if set, otherwise use montage length)
+	float TransitionDuration = NewPhaseData.TransitionDuration > 0.0f
+		? NewPhaseData.TransitionDuration
+		: (NewPhaseData.TransitionMontage ? NewPhaseData.TransitionMontage->GetPlayLength() : 1.0f);
 
 	GetWorld()->GetTimerManager().SetTimer(
 		PhaseTransitionTimerHandle,
@@ -281,6 +306,42 @@ void AHarmoniaBossMonster::ApplyPhaseEffects(const FHarmoniaBossPhase& PhaseData
 
 	// Remove previous phase effects
 	RemovePreviousPhaseEffects();
+
+	// Remove specified abilities
+	for (TSubclassOf<class ULyraGameplayAbility> AbilityClass : PhaseData.AbilitiesToRemove)
+	{
+		if (AbilityClass)
+		{
+			FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(AbilityClass);
+			if (Spec)
+			{
+				AbilitySystemComponent->ClearAbility(Spec->Handle);
+			}
+		}
+	}
+
+	// Grant phase abilities
+	for (TSubclassOf<class ULyraGameplayAbility> AbilityClass : PhaseData.PhaseAbilities)
+	{
+		if (AbilityClass)
+		{
+			FGameplayAbilitySpec AbilitySpec(AbilityClass, MonsterLevel, INDEX_NONE, this);
+			FGameplayAbilitySpecHandle Handle = AbilitySystemComponent->GiveAbility(AbilitySpec);
+			GrantedAbilityHandles.Add(Handle);
+		}
+	}
+
+	// Apply gameplay tags
+	if (PhaseData.PhaseTags.Num() > 0)
+	{
+		AbilitySystemComponent->AddLooseGameplayTags(PhaseData.PhaseTags);
+	}
+
+	// Remove specified tags
+	if (PhaseData.TagsToRemove.Num() > 0)
+	{
+		AbilitySystemComponent->RemoveLooseGameplayTags(PhaseData.TagsToRemove);
+	}
 
 	// Apply new phase effects
 	for (TSubclassOf<UGameplayEffect> EffectClass : PhaseData.PhaseEffects)
@@ -302,13 +363,16 @@ void AHarmoniaBossMonster::ApplyPhaseEffects(const FHarmoniaBossPhase& PhaseData
 	// Apply movement speed multiplier
 	if (PhaseData.MovementSpeedMultiplier != 1.0f)
 	{
-		// You could apply this via a gameplay effect or directly
 		if (GetCharacterMovement())
 		{
 			float BaseSpeed = MonsterData->BaseStats.BaseMovementSpeed;
 			GetCharacterMovement()->MaxWalkSpeed = BaseSpeed * PhaseData.MovementSpeedMultiplier;
 		}
 	}
+
+	// TODO: Apply damage and defense multipliers via gameplay effects
+	// You would create dynamic gameplay effects here to modify damage output and damage taken
+	// For now, store them for reference by abilities/damage calculations
 }
 
 void AHarmoniaBossMonster::RemovePreviousPhaseEffects()
@@ -318,6 +382,7 @@ void AHarmoniaBossMonster::RemovePreviousPhaseEffects()
 		return;
 	}
 
+	// Remove previous phase effects
 	for (FActiveGameplayEffectHandle& EffectHandle : ActivePhaseEffects)
 	{
 		if (EffectHandle.IsValid())
@@ -325,8 +390,30 @@ void AHarmoniaBossMonster::RemovePreviousPhaseEffects()
 			AbilitySystemComponent->RemoveActiveGameplayEffect(EffectHandle);
 		}
 	}
-
 	ActivePhaseEffects.Empty();
+
+	// Remove previous phase abilities
+	for (FGameplayAbilitySpecHandle& AbilityHandle : GrantedAbilityHandles)
+	{
+		if (AbilityHandle.IsValid())
+		{
+			AbilitySystemComponent->ClearAbility(AbilityHandle);
+		}
+	}
+	GrantedAbilityHandles.Empty();
+
+	// Remove previous phase tags
+	if (MonsterData && MonsterData->bIsBoss && CurrentPhaseIndex >= 0)
+	{
+		if (CurrentPhaseIndex < MonsterData->BossPhases.Num())
+		{
+			const FHarmoniaBossPhase& OldPhase = MonsterData->BossPhases[CurrentPhaseIndex];
+			if (OldPhase.PhaseTags.Num() > 0)
+			{
+				AbilitySystemComponent->RemoveLooseGameplayTags(OldPhase.PhaseTags);
+			}
+		}
+	}
 }
 
 void AHarmoniaBossMonster::PlayPhaseTransitionAnimation(const FHarmoniaBossPhase& PhaseData)
