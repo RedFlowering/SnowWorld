@@ -3,6 +3,7 @@
 #include "Abilities/HarmoniaGameplayAbility_Dodge.h"
 #include "Components/HarmoniaMeleeCombatComponent.h"
 #include "AbilitySystemComponent.h"
+#include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
@@ -39,8 +40,12 @@ bool UHarmoniaGameplayAbility_Dodge::CanActivateAbility(
 			return false;
 		}
 
+		// Get stamina cost based on equipment load
+		float Distance, Duration, IFrameStart, IFrameDuration, StaminaCost;
+		GetDodgeParameters(Distance, Duration, IFrameStart, IFrameDuration, StaminaCost);
+
 		// Check stamina
-		if (!MeleeComp->HasEnoughStamina(DodgeStaminaCost))
+		if (!MeleeComp->HasEnoughStamina(StaminaCost))
 		{
 			return false;
 		}
@@ -63,10 +68,28 @@ void UHarmoniaGameplayAbility_Dodge::ActivateAbility(
 
 	MeleeCombatComponent = GetMeleeCombatComponent();
 
+	// Get dodge parameters based on equipment load
+	GetDodgeParameters(
+		CurrentDodgeDistance,
+		CurrentDodgeDuration,
+		CurrentIFrameStartTime,
+		CurrentIFrameDuration,
+		CurrentStaminaCost
+	);
+
+	// Determine roll type for logging
+	EDodgeRollType RollType = DetermineRollType();
+	const TCHAR* RollTypeName =
+		(RollType == EDodgeRollType::Light) ? TEXT("Light") :
+		(RollType == EDodgeRollType::Medium) ? TEXT("Medium") : TEXT("Heavy");
+
+	UE_LOG(LogTemp, Log, TEXT("Dodge: Roll type = %s (Distance=%.0f, Duration=%.2f, IFrame=%.2f, Stamina=%.0f)"),
+		RollTypeName, CurrentDodgeDistance, CurrentDodgeDuration, CurrentIFrameDuration, CurrentStaminaCost);
+
 	// Consume stamina
 	if (MeleeCombatComponent)
 	{
-		MeleeCombatComponent->ConsumeStamina(DodgeStaminaCost);
+		MeleeCombatComponent->ConsumeStamina(CurrentStaminaCost);
 	}
 
 	// Apply dodging tags
@@ -88,7 +111,7 @@ void UHarmoniaGameplayAbility_Dodge::ActivateAbility(
 			IFrameStartTimerHandle,
 			this,
 			&UHarmoniaGameplayAbility_Dodge::StartIFrames,
-			IFrameStartTime,
+			CurrentIFrameStartTime,
 			false
 		);
 	}
@@ -125,7 +148,7 @@ void UHarmoniaGameplayAbility_Dodge::ActivateAbility(
 			FVector DodgeDirection = Character->GetActorForwardVector();
 
 			// Apply launch velocity
-			const FVector LaunchVelocity = DodgeDirection * (DodgeDistance / DodgeDuration);
+			const FVector LaunchVelocity = DodgeDirection * (CurrentDodgeDistance / CurrentDodgeDuration);
 			MovementComp->AddImpulse(LaunchVelocity, true);
 		}
 	}
@@ -194,7 +217,7 @@ void UHarmoniaGameplayAbility_Dodge::StartIFrames()
 				IFrameEndTimerHandle,
 				this,
 				&UHarmoniaGameplayAbility_Dodge::EndIFrames,
-				IFrameDuration,
+				CurrentIFrameDuration,
 				false
 			);
 		}
@@ -225,4 +248,87 @@ UHarmoniaMeleeCombatComponent* UHarmoniaGameplayAbility_Dodge::GetMeleeCombatCom
 	}
 
 	return nullptr;
+}
+
+EDodgeRollType UHarmoniaGameplayAbility_Dodge::DetermineRollType() const
+{
+	const FGameplayAbilityActorInfo* ActorInfo = GetCurrentActorInfo();
+	if (!ActorInfo || !ActorInfo->AbilitySystemComponent.IsValid())
+	{
+		return EDodgeRollType::Medium; // Default to medium
+	}
+
+	UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
+
+	// Get EquipLoad and MaxEquipLoad attributes
+	float EquipLoad = ASC->GetNumericAttribute(UHarmoniaAttributeSet::GetEquipLoadAttribute());
+	float MaxEquipLoad = ASC->GetNumericAttribute(UHarmoniaAttributeSet::GetMaxEquipLoadAttribute());
+
+	if (MaxEquipLoad <= 0.f)
+	{
+		return EDodgeRollType::Light; // No equipment = light roll
+	}
+
+	// Calculate load ratio
+	float LoadRatio = EquipLoad / MaxEquipLoad;
+
+	// Determine roll type based on load ratio
+	if (LoadRatio <= 0.3f)
+	{
+		return EDodgeRollType::Light;
+	}
+	else if (LoadRatio <= 0.7f)
+	{
+		return EDodgeRollType::Medium;
+	}
+	else
+	{
+		return EDodgeRollType::Heavy;
+	}
+}
+
+void UHarmoniaGameplayAbility_Dodge::GetDodgeParameters(
+	float& OutDistance,
+	float& OutDuration,
+	float& OutIFrameStart,
+	float& OutIFrameDuration,
+	float& OutStaminaCost) const
+{
+	EDodgeRollType RollType = DetermineRollType();
+
+	switch (RollType)
+	{
+	case EDodgeRollType::Light:
+		OutDistance = LightRollDistance;
+		OutDuration = LightRollDuration;
+		OutIFrameStart = LightRollIFrameStartTime;
+		OutIFrameDuration = LightRollIFrameDuration;
+		OutStaminaCost = LightRollStaminaCost;
+		break;
+
+	case EDodgeRollType::Medium:
+		OutDistance = MediumRollDistance;
+		OutDuration = MediumRollDuration;
+		OutIFrameStart = MediumRollIFrameStartTime;
+		OutIFrameDuration = MediumRollIFrameDuration;
+		OutStaminaCost = MediumRollStaminaCost;
+		break;
+
+	case EDodgeRollType::Heavy:
+		OutDistance = HeavyRollDistance;
+		OutDuration = HeavyRollDuration;
+		OutIFrameStart = HeavyRollIFrameStartTime;
+		OutIFrameDuration = HeavyRollIFrameDuration;
+		OutStaminaCost = HeavyRollStaminaCost;
+		break;
+
+	default:
+		// Fallback to medium
+		OutDistance = MediumRollDistance;
+		OutDuration = MediumRollDuration;
+		OutIFrameStart = MediumRollIFrameStartTime;
+		OutIFrameDuration = MediumRollIFrameDuration;
+		OutStaminaCost = MediumRollStaminaCost;
+		break;
+	}
 }
