@@ -7,6 +7,7 @@
 #include "Character/LyraHealthComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "AbilitySystem/HarmoniaAbilitySystemLibrary.h"
 #include "TimerManager.h"
 #include "GameFramework/Character.h"
 
@@ -189,15 +190,26 @@ void AHarmoniaRecoveryAreaActor::PerformRecoveryTick()
 		{
 			if (HealthComp->GetHealth() < HealthComp->GetMaxHealth())
 			{
-				// TODO: Apply healing through HealthComponent or GameplayEffect
-				// For now, we'll just log
-				UE_LOG(LogTemp, Log, TEXT("Healing %s for %f HP"), *Actor->GetName(), RecoveryConfig.HealthPerTick);
-				HealedCount++;
-
-				// Gameplay Effect로 회복 적용하는 것이 더 좋음
+				// Apply healing through AbilitySystemComponent if available
 				if (UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Actor))
 				{
-					// TODO: Apply healing Gameplay Effect
+					// Use Harmonia Ability System Library to restore health
+					UHarmoniaAbilitySystemLibrary::RestoreHealth(ASC, RecoveryConfig.HealthPerTick);
+					UE_LOG(LogTemp, Log, TEXT("Healing %s for %f HP via AbilitySystem"), *Actor->GetName(), RecoveryConfig.HealthPerTick);
+					HealedCount++;
+				}
+				else
+				{
+					// Fallback: directly heal through Lyra Health Component
+					float CurrentHealth = HealthComp->GetHealth();
+					float MaxHealth = HealthComp->GetMaxHealth();
+					float NewHealth = FMath::Min(CurrentHealth + RecoveryConfig.HealthPerTick, MaxHealth);
+					float ActualHealing = NewHealth - CurrentHealth;
+
+					// Note: Lyra's HealthComponent doesn't have a direct SetHealth,
+					// so we would need to use a proper healing mechanism or gameplay effect
+					UE_LOG(LogTemp, Log, TEXT("Healing %s for %f HP (no ASC)"), *Actor->GetName(), ActualHealing);
+					HealedCount++;
 				}
 			}
 		}

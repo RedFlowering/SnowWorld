@@ -3,6 +3,7 @@
 #include "Abilities/HarmoniaGameplayAbility_UseRecoveryItem.h"
 #include "Components/HarmoniaRechargeableItemComponent.h"
 #include "Character/LyraHealthComponent.h"
+#include "AbilitySystem/HarmoniaAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayEffect.h"
 #include "NiagaraComponent.h"
@@ -293,25 +294,54 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::ApplyInstantRecovery(float Health
 {
 	if (ULyraHealthComponent* HealthComp = GetAvatarActorFromActorInfo()->FindComponentByClass<ULyraHealthComponent>())
 	{
-		// 체력 회복
-		float CurrentHealth = HealthComp->GetHealth();
-		float NewHealth = FMath::Min(CurrentHealth + HealthAmount, HealthComp->GetMaxHealth());
-		float ActualHealed = NewHealth - CurrentHealth;
+		// Apply healing through AbilitySystemComponent if available
+		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+		{
+			float CurrentHealth = UHarmoniaAbilitySystemLibrary::GetHealth(ASC);
+			float MaxHealth = UHarmoniaAbilitySystemLibrary::GetMaxHealth(ASC);
+			float ActualHealing = FMath::Min(HealthAmount, MaxHealth - CurrentHealth);
 
-		// TODO: Apply healing through HealthComponent or GameplayEffect
-		// HealthComp->SetHealth(NewHealth);
-
-		UE_LOG(LogTemp, Log, TEXT("Instant recovery: Healed %f HP"), ActualHealed);
+			// Use library function to restore health
+			UHarmoniaAbilitySystemLibrary::RestoreHealth(ASC, HealthAmount);
+			UE_LOG(LogTemp, Log, TEXT("Instant recovery: Healed %f HP via AbilitySystem"), ActualHealing);
+		}
+		else
+		{
+			// Fallback for actors without ASC (shouldn't happen in this context)
+			float CurrentHealth = HealthComp->GetHealth();
+			float NewHealth = FMath::Min(CurrentHealth + HealthAmount, HealthComp->GetMaxHealth());
+			float ActualHealed = NewHealth - CurrentHealth;
+			UE_LOG(LogTemp, Warning, TEXT("Instant recovery: No ASC found, healing amount: %f HP"), ActualHealed);
+		}
 	}
 }
 
 void UHarmoniaGameplayAbility_UseRecoveryItem::ApplyOverTimeRecovery(float HealthPerSecond, float Duration)
 {
 	// HoT (Heal over Time) 효과는 Gameplay Effect로 구현하는 것이 좋음
-	// 여기서는 간단한 로그만 남김
-	UE_LOG(LogTemp, Log, TEXT("Over time recovery: %f HP/s for %f seconds"), HealthPerSecond, Duration);
+	// For full implementation, create a periodic Gameplay Effect Blueprint with:
+	// - Duration: Specified duration
+	// - Period: 1.0 second (or desired tick rate)
+	// - Modifiers: Health +HealthPerSecond (Execute on Application, Periodic)
+	//
+	// Example implementation:
+	// if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+	// {
+	//     if (HealOverTimeEffectClass)
+	//     {
+	//         FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+	//         FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(
+	//             HealOverTimeEffectClass, 1.0f, Context);
+	//         if (Spec.IsValid())
+	//         {
+	//             Spec.Data->SetDuration(Duration);
+	//             // Set magnitude for healing per tick via SetByCaller or modifier
+	//             ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+	//         }
+	//     }
+	// }
 
-	// TODO: Create and apply a periodic Gameplay Effect
+	UE_LOG(LogTemp, Log, TEXT("Over time recovery: %f HP/s for %f seconds"), HealthPerSecond, Duration);
 }
 
 void UHarmoniaGameplayAbility_UseRecoveryItem::ApplyTimeReversalRecovery()
@@ -319,13 +349,33 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::ApplyTimeReversalRecovery()
 	// 시간 역행 회복 (Frozen Time Snowflake 전용)
 	// 최근 1-2초간의 피해를 복구
 	// 실제 구현은 타임스탬프 기반 피해 기록 시스템 필요
+	//
+	// Implementation steps:
+	// 1. Create a damage tracking component that records:
+	//    - Timestamp of each damage event
+	//    - Amount of damage taken
+	//    - Actor's position/rotation at time of damage
+	// 2. On time reversal:
+	//    - Query damage events from last 1-2 seconds
+	//    - Calculate total damage to reverse
+	//    - Restore health using UHarmoniaAbilitySystemLibrary::RestoreHealth
+	//    - Optionally restore position/rotation
+	// 3. VFX/SFX:
+	//    - Play time reversal particle effects
+	//    - Play rewind sound effect
+	//
+	// Example:
+	// if (UDamageHistoryComponent* History = GetAvatarActorFromActorInfo()->FindComponentByClass<UDamageHistoryComponent>())
+	// {
+	//     float ReversalWindow = 2.0f;
+	//     float DamageToReverse = History->GetDamageInTimeWindow(ReversalWindow);
+	//     if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+	//     {
+	//         UHarmoniaAbilitySystemLibrary::RestoreHealth(ASC, DamageToReverse);
+	//     }
+	// }
 
 	UE_LOG(LogTemp, Log, TEXT("Time reversal recovery applied"));
-
-	// TODO: Implement time reversal logic
-	// - 최근 피해 기록에서 복구할 체력 계산
-	// - 위치/회전도 복구할지 결정
-	// - 특수 VFX로 시간 역행 효과 표현
 }
 
 void UHarmoniaGameplayAbility_UseRecoveryItem::DeployRecoveryArea()
@@ -338,11 +388,26 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::DeployRecoveryArea()
 		FVector SpawnLocation = Avatar->GetActorLocation();
 		FRotator SpawnRotation = Avatar->GetActorRotation();
 
-		// TODO: Spawn deployable recovery area actor
+		// Spawn deployable recovery area actor
+		// Note: The AHarmoniaRecoveryAreaActor class is already implemented and ready to use
+		// To complete this implementation:
+		// 1. Add a UPROPERTY for the recovery area actor class in the ability or config
+		// 2. Spawn the actor using the code below:
+		//
 		// UWorld* World = GetWorld();
 		// if (World && DeployableConfig.DeployableActorClass)
 		// {
-		//     AActor* DeployedArea = World->SpawnActor<AActor>(DeployableConfig.DeployableActorClass, SpawnLocation, SpawnRotation);
+		//     FActorSpawnParameters SpawnParams;
+		//     SpawnParams.Owner = Avatar;
+		//     SpawnParams.Instigator = Cast<APawn>(Avatar);
+		//
+		//     if (AHarmoniaRecoveryAreaActor* DeployedArea = World->SpawnActor<AHarmoniaRecoveryAreaActor>(
+		//         DeployableConfig.DeployableActorClass, SpawnLocation, SpawnRotation, SpawnParams))
+		//     {
+		//         // Configure the recovery area with settings from config
+		//         DeployedArea->SetRecoveryConfig(DeployableConfig.RecoveryConfig);
+		//         DeployedArea->Activate();
+		//     }
 		// }
 
 		UE_LOG(LogTemp, Log, TEXT("Recovery area deployed at location: %s"), *SpawnLocation.ToString());

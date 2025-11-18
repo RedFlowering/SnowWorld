@@ -77,6 +77,10 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Death Penalty|State")
 	FActiveGameplayEffectHandle EtherealStatePenaltyHandle;
 
+	/** Active consecutive death penalty effect */
+	UPROPERTY(BlueprintReadOnly, Category = "Death Penalty|State")
+	FActiveGameplayEffectHandle ConsecutiveDeathPenaltyHandle;
+
 	//~ Delegates
 	/** Fired when death state changes */
 	UPROPERTY(BlueprintAssignable, Category = "Death Penalty|Events")

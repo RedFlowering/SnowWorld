@@ -144,6 +144,31 @@ float UHarmoniaAbilitySystemLibrary::GetHealthPercent(UAbilitySystemComponent* A
 	return AttributeSet->GetHealth() / AttributeSet->GetMaxHealth();
 }
 
+void UHarmoniaAbilitySystemLibrary::RestoreHealth(UAbilitySystemComponent* AbilitySystemComponent, float Amount)
+{
+	if (!AbilitySystemComponent || Amount <= 0.0f)
+	{
+		return;
+	}
+
+	const UHarmoniaAttributeSet* AttributeSet = GetAttributeSetChecked(AbilitySystemComponent);
+	if (!AttributeSet)
+	{
+		return;
+	}
+
+	UHarmoniaAttributeSet* MutableAttributeSet =
+		const_cast<UHarmoniaAttributeSet*>(AttributeSet);
+	if (MutableAttributeSet)
+	{
+		float NewHealth = FMath::Min(
+			AttributeSet->GetHealth() + Amount,
+			AttributeSet->GetMaxHealth()
+		);
+		MutableAttributeSet->SetHealth(NewHealth);
+	}
+}
+
 // ============================================================================
 // Poise Functions
 // ============================================================================
