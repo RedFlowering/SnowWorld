@@ -3263,8 +3263,43 @@ bool UHarmoniaWorldGeneratorSubsystem::GetCachedChunk(FIntPoint ChunkCoordinates
                 MemoryReader << OutChunkData.ChunkCoordinates;
                 MemoryReader << OutChunkData.ChunkSize;
                 MemoryReader << OutChunkData.HeightData;
-                MemoryReader << OutChunkData.Objects;
-                MemoryReader << OutChunkData.BiomeData;
+
+                // Manually serialize Objects array
+                int32 ObjectsCount;
+                MemoryReader << ObjectsCount;
+                OutChunkData.Objects.SetNum(ObjectsCount);
+                for (int32 i = 0; i < ObjectsCount; ++i)
+                {
+                    FWorldObjectData& Obj = OutChunkData.Objects[i];
+                    MemoryReader << Obj.ActorClass;
+                    MemoryReader << Obj.ObjectType;
+                    MemoryReader << Obj.Location;
+                    MemoryReader << Obj.Rotation;
+                    MemoryReader << Obj.Scale;
+                    MemoryReader << Obj.GroupID;
+                    MemoryReader << Obj.bIsGroupCenter;
+                    MemoryReader << Obj.POIType;
+                    MemoryReader << Obj.Difficulty;
+                    MemoryReader << Obj.ResourceType;
+                    MemoryReader << Obj.ResourceAmount;
+                    MemoryReader << Obj.CaveDepth;
+                }
+
+                // Manually serialize BiomeData array
+                int32 BiomeDataCount;
+                MemoryReader << BiomeDataCount;
+                OutChunkData.BiomeData.SetNum(BiomeDataCount);
+                for (int32 i = 0; i < BiomeDataCount; ++i)
+                {
+                    FBiomeData& Biome = OutChunkData.BiomeData[i];
+                    MemoryReader << Biome.X;
+                    MemoryReader << Biome.Y;
+                    MemoryReader << Biome.BiomeType;
+                    MemoryReader << Biome.Temperature;
+                    MemoryReader << Biome.Moisture;
+                    MemoryReader << Biome.Height;
+                }
+
                 MemoryReader << OutChunkData.GenerationTime;
                 MemoryReader << OutChunkData.bIsFullyGenerated;
                 MemoryReader << OutChunkData.CacheHash;
@@ -3314,8 +3349,39 @@ void UHarmoniaWorldGeneratorSubsystem::CacheChunk(const FWorldChunkData& ChunkDa
         MemoryWriter << WritableData.ChunkCoordinates;
         MemoryWriter << WritableData.ChunkSize;
         MemoryWriter << WritableData.HeightData;
-        MemoryWriter << WritableData.Objects;
-        MemoryWriter << WritableData.BiomeData;
+
+        // Manually serialize Objects array
+        int32 ObjectsCount = WritableData.Objects.Num();
+        MemoryWriter << ObjectsCount;
+        for (const FWorldObjectData& Obj : WritableData.Objects)
+        {
+            MemoryWriter << const_cast<TSoftClassPtr<AActor>&>(Obj.ActorClass);
+            MemoryWriter << const_cast<EWorldObjectType&>(Obj.ObjectType);
+            MemoryWriter << const_cast<FVector&>(Obj.Location);
+            MemoryWriter << const_cast<FRotator&>(Obj.Rotation);
+            MemoryWriter << const_cast<FVector&>(Obj.Scale);
+            MemoryWriter << const_cast<int32&>(Obj.GroupID);
+            MemoryWriter << const_cast<bool&>(Obj.bIsGroupCenter);
+            MemoryWriter << const_cast<EPOIType&>(Obj.POIType);
+            MemoryWriter << const_cast<int32&>(Obj.Difficulty);
+            MemoryWriter << const_cast<EResourceType&>(Obj.ResourceType);
+            MemoryWriter << const_cast<float&>(Obj.ResourceAmount);
+            MemoryWriter << const_cast<float&>(Obj.CaveDepth);
+        }
+
+        // Manually serialize BiomeData array
+        int32 BiomeDataCount = WritableData.BiomeData.Num();
+        MemoryWriter << BiomeDataCount;
+        for (const FBiomeData& Biome : WritableData.BiomeData)
+        {
+            MemoryWriter << const_cast<int32&>(Biome.X);
+            MemoryWriter << const_cast<int32&>(Biome.Y);
+            MemoryWriter << const_cast<EBiomeType&>(Biome.BiomeType);
+            MemoryWriter << const_cast<float&>(Biome.Temperature);
+            MemoryWriter << const_cast<float&>(Biome.Moisture);
+            MemoryWriter << const_cast<float&>(Biome.Height);
+        }
+
         MemoryWriter << WritableData.GenerationTime;
         MemoryWriter << WritableData.bIsFullyGenerated;
         MemoryWriter << WritableData.CacheHash;
@@ -3350,8 +3416,39 @@ bool UHarmoniaWorldGeneratorSubsystem::SaveChunkCacheToDisk()
         MemoryWriter << WritableData.ChunkCoordinates;
         MemoryWriter << WritableData.ChunkSize;
         MemoryWriter << WritableData.HeightData;
-        MemoryWriter << WritableData.Objects;
-        MemoryWriter << WritableData.BiomeData;
+
+        // Manually serialize Objects array
+        int32 ObjectsCount = WritableData.Objects.Num();
+        MemoryWriter << ObjectsCount;
+        for (const FWorldObjectData& Obj : WritableData.Objects)
+        {
+            MemoryWriter << const_cast<TSoftClassPtr<AActor>&>(Obj.ActorClass);
+            MemoryWriter << const_cast<EWorldObjectType&>(Obj.ObjectType);
+            MemoryWriter << const_cast<FVector&>(Obj.Location);
+            MemoryWriter << const_cast<FRotator&>(Obj.Rotation);
+            MemoryWriter << const_cast<FVector&>(Obj.Scale);
+            MemoryWriter << const_cast<int32&>(Obj.GroupID);
+            MemoryWriter << const_cast<bool&>(Obj.bIsGroupCenter);
+            MemoryWriter << const_cast<EPOIType&>(Obj.POIType);
+            MemoryWriter << const_cast<int32&>(Obj.Difficulty);
+            MemoryWriter << const_cast<EResourceType&>(Obj.ResourceType);
+            MemoryWriter << const_cast<float&>(Obj.ResourceAmount);
+            MemoryWriter << const_cast<float&>(Obj.CaveDepth);
+        }
+
+        // Manually serialize BiomeData array
+        int32 BiomeDataCount = WritableData.BiomeData.Num();
+        MemoryWriter << BiomeDataCount;
+        for (const FBiomeData& Biome : WritableData.BiomeData)
+        {
+            MemoryWriter << const_cast<int32&>(Biome.X);
+            MemoryWriter << const_cast<int32&>(Biome.Y);
+            MemoryWriter << const_cast<EBiomeType&>(Biome.BiomeType);
+            MemoryWriter << const_cast<float&>(Biome.Temperature);
+            MemoryWriter << const_cast<float&>(Biome.Moisture);
+            MemoryWriter << const_cast<float&>(Biome.Height);
+        }
+
         MemoryWriter << WritableData.GenerationTime;
         MemoryWriter << WritableData.bIsFullyGenerated;
         MemoryWriter << WritableData.CacheHash;
@@ -3392,8 +3489,43 @@ bool UHarmoniaWorldGeneratorSubsystem::LoadChunkCacheFromDisk()
             MemoryReader << ChunkData.ChunkCoordinates;
             MemoryReader << ChunkData.ChunkSize;
             MemoryReader << ChunkData.HeightData;
-            MemoryReader << ChunkData.Objects;
-            MemoryReader << ChunkData.BiomeData;
+
+            // Manually serialize Objects array
+            int32 ObjectsCount;
+            MemoryReader << ObjectsCount;
+            ChunkData.Objects.SetNum(ObjectsCount);
+            for (int32 i = 0; i < ObjectsCount; ++i)
+            {
+                FWorldObjectData& Obj = ChunkData.Objects[i];
+                MemoryReader << Obj.ActorClass;
+                MemoryReader << Obj.ObjectType;
+                MemoryReader << Obj.Location;
+                MemoryReader << Obj.Rotation;
+                MemoryReader << Obj.Scale;
+                MemoryReader << Obj.GroupID;
+                MemoryReader << Obj.bIsGroupCenter;
+                MemoryReader << Obj.POIType;
+                MemoryReader << Obj.Difficulty;
+                MemoryReader << Obj.ResourceType;
+                MemoryReader << Obj.ResourceAmount;
+                MemoryReader << Obj.CaveDepth;
+            }
+
+            // Manually serialize BiomeData array
+            int32 BiomeDataCount;
+            MemoryReader << BiomeDataCount;
+            ChunkData.BiomeData.SetNum(BiomeDataCount);
+            for (int32 i = 0; i < BiomeDataCount; ++i)
+            {
+                FBiomeData& Biome = ChunkData.BiomeData[i];
+                MemoryReader << Biome.X;
+                MemoryReader << Biome.Y;
+                MemoryReader << Biome.BiomeType;
+                MemoryReader << Biome.Temperature;
+                MemoryReader << Biome.Moisture;
+                MemoryReader << Biome.Height;
+            }
+
             MemoryReader << ChunkData.GenerationTime;
             MemoryReader << ChunkData.bIsFullyGenerated;
             MemoryReader << ChunkData.CacheHash;
