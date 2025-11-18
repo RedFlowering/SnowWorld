@@ -7,6 +7,7 @@
 #include "GameplayTagContainer.h"
 #include "Definitions/HarmoniaEquipmentSystemDefinitions.h"
 #include "Definitions/HarmoniaCheckpointSystemDefinitions.h"
+#include "Definitions/HarmoniaDifficultySystemDefinitions.h"
 #include "HarmoniaSaveGame.generated.h"
 
 class ULyraInventoryItemInstance;
@@ -383,6 +384,10 @@ public:
 	/** 플레이 시간 (초 단위) */
 	UPROPERTY(SaveGame)
 	float TotalPlayTime = 0.0f;
+
+	/** 난이도 설정 */
+	UPROPERTY(SaveGame)
+	FHarmoniaDifficultyConfiguration DifficultyConfiguration;
 
 	// Helper functions
 

@@ -102,4 +102,28 @@ namespace HarmoniaGameplayTags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_State_Dodging);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_State_Attacking);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_State_Blocking);
+
+	// ============================================================
+	// Difficulty System Tags
+	// ============================================================
+
+	// Difficulty Pact Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Difficulty_Pact_GlassCannon);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Difficulty_Pact_IronWill);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Difficulty_Pact_SwiftFoes);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Difficulty_Pact_EliteUprising);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Difficulty_Pact_Permadeath);
+
+	// New Game Plus Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Difficulty_NewGamePlus);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Difficulty_NewGamePlus_Active);
+
+	// Dynamic Difficulty Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Difficulty_Dynamic_Enabled);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Difficulty_Dynamic_Adjusting);
+
+	// Event Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Difficulty_PactActivated);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Difficulty_PactDeactivated);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Difficulty_DynamicAdjusted);
 }
