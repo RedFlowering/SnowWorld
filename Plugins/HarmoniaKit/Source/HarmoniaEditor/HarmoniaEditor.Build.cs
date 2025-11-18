@@ -15,6 +15,7 @@ public class HarmoniaEditor : ModuleRules
                 "CoreUObject",
                 "Engine",
                 "HarmoniaKit",
+                "HarmoniaWorldGenerator", // World generator module
                 "UnrealEd", // Editor core
                 "EditorFramework",
                 "EditorSubsystem",
@@ -30,7 +31,9 @@ public class HarmoniaEditor : ModuleRules
                 "ImageWrapper",
                 "LevelEditor",
                 "PropertyEditor",
-                "GameplayTags"
+                "GameplayTags",
+                "Landscape", // Landscape editing
+                "LandscapeEditor" // Landscape editor tools
             });
 
         PrivateDependencyModuleNames.AddRange(
