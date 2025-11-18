@@ -12,6 +12,7 @@ UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Character_Status_Aiming);
 
 class UBaseCharacterMovementComponent;
 class USenseReceiverComponent;
+class ULockOnTargetingComponent;
 
 USTRUCT()
 struct FHandIK
@@ -107,5 +108,12 @@ protected:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Base Character")
 	TObjectPtr<UBaseCharacterMovementComponent> BaseCharacterMovement = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Base Character|Combat")
+	TObjectPtr<ULockOnTargetingComponent> LockOnComponent = nullptr;
+
+public:
+	UFUNCTION(BlueprintPure, Category = "Base Character|Combat")
+	ULockOnTargetingComponent* GetLockOnComponent() const { return LockOnComponent; }
 };
 

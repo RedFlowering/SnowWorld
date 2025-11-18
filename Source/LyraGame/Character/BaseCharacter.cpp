@@ -2,6 +2,7 @@
 
 #include "Character/BaseCharacter.h"
 #include "BaseCharacterMovementComponent.h"
+#include "LockOnTargetingComponent.h"
 #include "LyraCharacterWithAbilities.h"
 #include "AbilitySystem/LyraAbilitySystemComponent.h"
 #include "Settings/AlsCharacterSettings.h"
@@ -13,6 +14,9 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Character_Status_Aiming, "Status.Aiming");
 ABaseCharacter::ABaseCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<UBaseCharacterMovementComponent>(ALyraCharacter::CharacterMovementComponentName))
 {
 	BaseCharacterMovement = Cast<UBaseCharacterMovementComponent>(GetCharacterMovement());
+
+	// Create lock-on targeting component
+	LockOnComponent = CreateDefaultSubobject<ULockOnTargetingComponent>(TEXT("LockOnComponent"));
 }
 
 void ABaseCharacter::PostInitializeComponents()

@@ -9,6 +9,7 @@
 class UHarmoniaMeleeCombatComponent;
 class UHarmoniaEquipmentComponent;
 class UHarmoniaSenseAttackComponent;
+class UHarmoniaLockOnComponent;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
@@ -48,6 +49,10 @@ protected:
 	/** Melee combat component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Melee Combat")
 	TObjectPtr<UHarmoniaMeleeCombatComponent> MeleeCombatComponent;
+
+	/** Lock-on targeting component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	TObjectPtr<UHarmoniaLockOnComponent> LockOnComponent;
 
 	/** Main hand attack component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Melee Combat")
