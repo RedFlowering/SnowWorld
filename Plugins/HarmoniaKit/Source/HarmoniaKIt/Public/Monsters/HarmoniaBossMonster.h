@@ -6,6 +6,7 @@
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "Definitions/HarmoniaMonsterSystemDefinitions.h"
 #include "ActiveGameplayEffectHandle.h"
+#include "GameplayAbilitySpec.h"
 #include "HarmoniaBossMonster.generated.h"
 
 /**
@@ -232,6 +233,12 @@ protected:
 	 */
 	UPROPERTY(Transient)
 	TArray<FActiveGameplayEffectHandle> ActivePhaseEffects;
+
+	/**
+	 * Granted ability handles from current phase
+	 */
+	UPROPERTY(Transient)
+	TArray<FGameplayAbilitySpecHandle> GrantedAbilityHandles;
 
 	/**
 	 * Audio component for boss music
