@@ -4,6 +4,7 @@
 #include "Components/HarmoniaMeleeCombatComponent.h"
 #include "Components/HarmoniaSenseAttackComponent.h"
 #include "Components/HarmoniaEquipmentComponent.h"
+#include "Components/HarmoniaLockOnComponent.h"
 #include "Abilities/HarmoniaGameplayAbility_MeleeAttack.h"
 #include "Abilities/HarmoniaGameplayAbility_Block.h"
 #include "Abilities/HarmoniaGameplayAbility_Parry.h"
@@ -19,6 +20,9 @@ AHarmoniaMeleeCharacterExample::AHarmoniaMeleeCharacterExample(const FObjectInit
 {
 	// Create melee combat component
 	MeleeCombatComponent = CreateDefaultSubobject<UHarmoniaMeleeCombatComponent>(TEXT("MeleeCombatComponent"));
+
+	// Create lock-on component
+	LockOnComponent = CreateDefaultSubobject<UHarmoniaLockOnComponent>(TEXT("LockOnComponent"));
 
 	// Create attack components
 	MainHandAttackComponent = CreateDefaultSubobject<UHarmoniaSenseAttackComponent>(TEXT("MainHandAttackComponent"));
@@ -185,8 +189,10 @@ void AHarmoniaMeleeCharacterExample::OnDodge(const FInputActionValue& Value)
 
 void AHarmoniaMeleeCharacterExample::OnLockOnToggle(const FInputActionValue& Value)
 {
-	// TODO: Implement lock-on system
-	// This would integrate with a target lock component
+	if (LockOnComponent)
+	{
+		LockOnComponent->ToggleLockOn();
+	}
 }
 
 // ============================================================================
