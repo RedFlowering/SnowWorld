@@ -356,62 +356,35 @@ FVector UHarmoniaMapComponent::MapUVToWorld(const FVector2D& UV, float WorldZ) c
 
 void UHarmoniaMapComponent::SaveExplorationData()
 {
-	// Save exploration data via save game subsystem
-	if (UWorld* World = GetWorld())
-	{
-		if (UHarmoniaSaveGameSubsystem* SaveSubsystem = World->GetSubsystem<UHarmoniaSaveGameSubsystem>())
-		{
-			// Get the player pawn/controller to identify the save slot
-			APawn* OwnerPawn = Cast<APawn>(GetOwner());
-			if (OwnerPawn)
-			{
-				// Create save data structure
-				FHarmoniaMapExplorationSaveData SaveData;
-				SaveData.ExploredRegions = ExploredRegions;
-				SaveData.DiscoveredLocations = DiscoveredLocations;
+	// Save exploration data - integrate with your save system
+	// This is a placeholder for save system integration
+	UE_LOG(LogTemp, Log, TEXT("SaveExplorationData called (%d regions, %d locations)"),
+		ExploredRegions.Num(), DiscoveredLocations.Num());
 
-				// Save to subsystem (would be persisted with next save operation)
-				SaveSubsystem->SaveMapExplorationData(SaveData);
-
-				UE_LOG(LogTemp, Log, TEXT("Map exploration data saved (%d regions, %d locations)"),
-					ExploredRegions.Num(), DiscoveredLocations.Num());
-			}
-		}
-	}
+	// TODO: Integrate with HarmoniaSaveGameSubsystem when save data structures are defined
+	// Example implementation:
+	// if (UHarmoniaSaveGameSubsystem* SaveSubsystem = GetWorld()->GetSubsystem<UHarmoniaSaveGameSubsystem>())
+	// {
+	//     SaveSubsystem->SaveMapExploration(ExploredRegions, DiscoveredLocations);
+	// }
 }
 
 void UHarmoniaMapComponent::LoadExplorationData()
 {
-	// Load exploration data from save game subsystem
-	if (UWorld* World = GetWorld())
-	{
-		if (UHarmoniaSaveGameSubsystem* SaveSubsystem = World->GetSubsystem<UHarmoniaSaveGameSubsystem>())
-		{
-			// Get the player pawn/controller to identify the save slot
-			APawn* OwnerPawn = Cast<APawn>(GetOwner());
-			if (OwnerPawn)
-			{
-				// Load from subsystem
-				FHarmoniaMapExplorationSaveData SaveData;
-				if (SaveSubsystem->LoadMapExplorationData(SaveData))
-				{
-					ExploredRegions = SaveData.ExploredRegions;
-					DiscoveredLocations = SaveData.DiscoveredLocations;
+	// Load exploration data - integrate with your save system
+	// This is a placeholder for save system integration
+	UE_LOG(LogTemp, Log, TEXT("LoadExplorationData called"));
 
-					UE_LOG(LogTemp, Log, TEXT("Map exploration data loaded (%d regions, %d locations)"),
-						ExploredRegions.Num(), DiscoveredLocations.Num());
-
-					// Notify replication
-					OnRep_ExploredRegions();
-					OnRep_DiscoveredLocations();
-				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("No saved map exploration data found"));
-				}
-			}
-		}
-	}
+	// TODO: Integrate with HarmoniaSaveGameSubsystem when save data structures are defined
+	// Example implementation:
+	// if (UHarmoniaSaveGameSubsystem* SaveSubsystem = GetWorld()->GetSubsystem<UHarmoniaSaveGameSubsystem>())
+	// {
+	//     if (SaveSubsystem->LoadMapExploration(ExploredRegions, DiscoveredLocations))
+	//     {
+	//         OnRep_ExploredRegions();
+	//         OnRep_DiscoveredLocations();
+	//     }
+	// }
 }
 
 void UHarmoniaMapComponent::UpdateExploration()

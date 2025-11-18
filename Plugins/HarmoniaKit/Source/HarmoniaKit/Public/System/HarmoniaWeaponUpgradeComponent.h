@@ -125,6 +125,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Upgrade|Cost")
 	int32 BaseUpgradeCost = 100;
 
+	/** Base infusion cost */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Upgrade|Cost")
+	int32 BaseInfusionCost = 500;
+
 	// ============================================================================
 	// State
 	// ============================================================================

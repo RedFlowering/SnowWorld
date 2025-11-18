@@ -266,13 +266,7 @@ FText AHarmoniaItemPickup::GetDisplayName() const
 	}
 	else if (LootItem.ItemID != NAME_None)
 	{
-		// Use item name from loot data if available
-		if (!LootItem.ItemName.IsEmpty())
-		{
-			return LootItem.ItemName;
-		}
-
-		// Fallback: format the ItemID into a readable name
+		// Format the ItemID into a readable name
 		// Convert "ItemID_Example" to "Item ID Example"
 		FString ItemIDString = LootItem.ItemID.ToString();
 		ItemIDString = ItemIDString.Replace(TEXT("_"), TEXT(" "));
