@@ -2289,8 +2289,6 @@ float UHarmoniaWorldGeneratorSubsystem::CalculateSlope(
 // Environment System Implementation
 // ========================================
 
-DEFINE_STAT(STAT_HarmoniaWorldGeneratorSubsystem);
-
 void UHarmoniaWorldGeneratorSubsystem::InitializeEnvironmentSystem(const FEnvironmentSystemSettings& Settings)
 {
     EnvironmentSettings = Settings;
@@ -3133,17 +3131,8 @@ bool UHarmoniaWorldGeneratorSubsystem::GetLandscapeHeightData(
     // Get landscape data using edit interface
     FLandscapeEditDataInterface LandscapeEdit(Landscape->GetLandscapeInfo());
 
-    for (int32 Y = 0; Y < SizeY; ++Y)
-    {
-        for (int32 X = 0; X < SizeX; ++X)
-        {
-            const int32 Index = Y * SizeX + X;
-            const int32 LandscapeX = OutMinX + X;
-            const int32 LandscapeY = OutMinY + Y;
-
-            OutHeightData[Index] = LandscapeEdit.GetHeight(LandscapeX, LandscapeY);
-        }
-    }
+    // Use GetHeightData to retrieve the height data for the region
+    LandscapeEdit.GetHeightData(OutMinX, OutMinY, OutMaxX, OutMaxY, OutHeightData.GetData(), 0);
 
     return true;
 }
@@ -3172,17 +3161,8 @@ bool UHarmoniaWorldGeneratorSubsystem::SetLandscapeHeightData(
     // Set landscape data using edit interface
     FLandscapeEditDataInterface LandscapeEdit(Landscape->GetLandscapeInfo());
 
-    for (int32 Y = 0; Y < SizeY; ++Y)
-    {
-        for (int32 X = 0; X < SizeX; ++X)
-        {
-            const int32 Index = Y * SizeX + X;
-            const int32 LandscapeX = MinX + X;
-            const int32 LandscapeY = MinY + Y;
-
-            LandscapeEdit.SetHeight(LandscapeX, LandscapeY, HeightData[Index]);
-        }
-    }
+    // Use SetHeightData to set the height data for the region
+    LandscapeEdit.SetHeightData(MinX, MinY, MaxX, MaxY, HeightData.GetData(), 0, true);
 
     LandscapeEdit.Flush();
 
@@ -3278,7 +3258,51 @@ bool UHarmoniaWorldGeneratorSubsystem::GetCachedChunk(FIntPoint ChunkCoordinates
             if (FFileHelper::LoadFileToArray(FileData, *FilePath))
             {
                 FMemoryReader MemoryReader(FileData, true);
-                MemoryReader << OutChunkData;
+
+                // Manually serialize each field (USTRUCTs don't have automatic operator<< support)
+                MemoryReader << OutChunkData.ChunkCoordinates;
+                MemoryReader << OutChunkData.ChunkSize;
+                MemoryReader << OutChunkData.HeightData;
+
+                // Manually serialize Objects array
+                int32 ObjectsCount;
+                MemoryReader << ObjectsCount;
+                OutChunkData.Objects.SetNum(ObjectsCount);
+                for (int32 i = 0; i < ObjectsCount; ++i)
+                {
+                    FWorldObjectData& Obj = OutChunkData.Objects[i];
+                    MemoryReader << Obj.ActorClass;
+                    MemoryReader << Obj.ObjectType;
+                    MemoryReader << Obj.Location;
+                    MemoryReader << Obj.Rotation;
+                    MemoryReader << Obj.Scale;
+                    MemoryReader << Obj.GroupID;
+                    MemoryReader << Obj.bIsGroupCenter;
+                    MemoryReader << Obj.POIType;
+                    MemoryReader << Obj.Difficulty;
+                    MemoryReader << Obj.ResourceType;
+                    MemoryReader << Obj.ResourceAmount;
+                    MemoryReader << Obj.CaveDepth;
+                }
+
+                // Manually serialize BiomeData array
+                int32 BiomeDataCount;
+                MemoryReader << BiomeDataCount;
+                OutChunkData.BiomeData.SetNum(BiomeDataCount);
+                for (int32 i = 0; i < BiomeDataCount; ++i)
+                {
+                    FBiomeData& Biome = OutChunkData.BiomeData[i];
+                    MemoryReader << Biome.X;
+                    MemoryReader << Biome.Y;
+                    MemoryReader << Biome.BiomeType;
+                    MemoryReader << Biome.Temperature;
+                    MemoryReader << Biome.Moisture;
+                    MemoryReader << Biome.Height;
+                }
+
+                MemoryReader << OutChunkData.GenerationTime;
+                MemoryReader << OutChunkData.bIsFullyGenerated;
+                MemoryReader << OutChunkData.CacheHash;
 
                 // Add to memory cache
                 CacheChunk(OutChunkData);
@@ -3320,7 +3344,47 @@ void UHarmoniaWorldGeneratorSubsystem::CacheChunk(const FWorldChunkData& ChunkDa
         TArray<uint8> FileData;
         FMemoryWriter MemoryWriter(FileData, true);
         FWorldChunkData WritableData = DataWithHash;
-        MemoryWriter << WritableData;
+
+        // Manually serialize each field (USTRUCTs don't have automatic operator<< support)
+        MemoryWriter << WritableData.ChunkCoordinates;
+        MemoryWriter << WritableData.ChunkSize;
+        MemoryWriter << WritableData.HeightData;
+
+        // Manually serialize Objects array
+        int32 ObjectsCount = WritableData.Objects.Num();
+        MemoryWriter << ObjectsCount;
+        for (const FWorldObjectData& Obj : WritableData.Objects)
+        {
+            MemoryWriter << const_cast<TSoftClassPtr<AActor>&>(Obj.ActorClass);
+            MemoryWriter << const_cast<EWorldObjectType&>(Obj.ObjectType);
+            MemoryWriter << const_cast<FVector&>(Obj.Location);
+            MemoryWriter << const_cast<FRotator&>(Obj.Rotation);
+            MemoryWriter << const_cast<FVector&>(Obj.Scale);
+            MemoryWriter << const_cast<int32&>(Obj.GroupID);
+            MemoryWriter << const_cast<bool&>(Obj.bIsGroupCenter);
+            MemoryWriter << const_cast<EPOIType&>(Obj.POIType);
+            MemoryWriter << const_cast<int32&>(Obj.Difficulty);
+            MemoryWriter << const_cast<EResourceType&>(Obj.ResourceType);
+            MemoryWriter << const_cast<float&>(Obj.ResourceAmount);
+            MemoryWriter << const_cast<float&>(Obj.CaveDepth);
+        }
+
+        // Manually serialize BiomeData array
+        int32 BiomeDataCount = WritableData.BiomeData.Num();
+        MemoryWriter << BiomeDataCount;
+        for (const FBiomeData& Biome : WritableData.BiomeData)
+        {
+            MemoryWriter << const_cast<int32&>(Biome.X);
+            MemoryWriter << const_cast<int32&>(Biome.Y);
+            MemoryWriter << const_cast<EBiomeType&>(Biome.BiomeType);
+            MemoryWriter << const_cast<float&>(Biome.Temperature);
+            MemoryWriter << const_cast<float&>(Biome.Moisture);
+            MemoryWriter << const_cast<float&>(Biome.Height);
+        }
+
+        MemoryWriter << WritableData.GenerationTime;
+        MemoryWriter << WritableData.bIsFullyGenerated;
+        MemoryWriter << WritableData.CacheHash;
 
         FFileHelper::SaveArrayToFile(FileData, *FilePath);
     }
@@ -3347,7 +3411,47 @@ bool UHarmoniaWorldGeneratorSubsystem::SaveChunkCacheToDisk()
         TArray<uint8> FileData;
         FMemoryWriter MemoryWriter(FileData, true);
         FWorldChunkData WritableData = Pair.Value;
-        MemoryWriter << WritableData;
+
+        // Manually serialize each field (USTRUCTs don't have automatic operator<< support)
+        MemoryWriter << WritableData.ChunkCoordinates;
+        MemoryWriter << WritableData.ChunkSize;
+        MemoryWriter << WritableData.HeightData;
+
+        // Manually serialize Objects array
+        int32 ObjectsCount = WritableData.Objects.Num();
+        MemoryWriter << ObjectsCount;
+        for (const FWorldObjectData& Obj : WritableData.Objects)
+        {
+            MemoryWriter << const_cast<TSoftClassPtr<AActor>&>(Obj.ActorClass);
+            MemoryWriter << const_cast<EWorldObjectType&>(Obj.ObjectType);
+            MemoryWriter << const_cast<FVector&>(Obj.Location);
+            MemoryWriter << const_cast<FRotator&>(Obj.Rotation);
+            MemoryWriter << const_cast<FVector&>(Obj.Scale);
+            MemoryWriter << const_cast<int32&>(Obj.GroupID);
+            MemoryWriter << const_cast<bool&>(Obj.bIsGroupCenter);
+            MemoryWriter << const_cast<EPOIType&>(Obj.POIType);
+            MemoryWriter << const_cast<int32&>(Obj.Difficulty);
+            MemoryWriter << const_cast<EResourceType&>(Obj.ResourceType);
+            MemoryWriter << const_cast<float&>(Obj.ResourceAmount);
+            MemoryWriter << const_cast<float&>(Obj.CaveDepth);
+        }
+
+        // Manually serialize BiomeData array
+        int32 BiomeDataCount = WritableData.BiomeData.Num();
+        MemoryWriter << BiomeDataCount;
+        for (const FBiomeData& Biome : WritableData.BiomeData)
+        {
+            MemoryWriter << const_cast<int32&>(Biome.X);
+            MemoryWriter << const_cast<int32&>(Biome.Y);
+            MemoryWriter << const_cast<EBiomeType&>(Biome.BiomeType);
+            MemoryWriter << const_cast<float&>(Biome.Temperature);
+            MemoryWriter << const_cast<float&>(Biome.Moisture);
+            MemoryWriter << const_cast<float&>(Biome.Height);
+        }
+
+        MemoryWriter << WritableData.GenerationTime;
+        MemoryWriter << WritableData.bIsFullyGenerated;
+        MemoryWriter << WritableData.CacheHash;
 
         if (FFileHelper::SaveArrayToFile(FileData, *FilePath))
         {
@@ -3380,7 +3484,51 @@ bool UHarmoniaWorldGeneratorSubsystem::LoadChunkCacheFromDisk()
         {
             FWorldChunkData ChunkData;
             FMemoryReader MemoryReader(FileData, true);
-            MemoryReader << ChunkData;
+
+            // Manually serialize each field (USTRUCTs don't have automatic operator<< support)
+            MemoryReader << ChunkData.ChunkCoordinates;
+            MemoryReader << ChunkData.ChunkSize;
+            MemoryReader << ChunkData.HeightData;
+
+            // Manually serialize Objects array
+            int32 ObjectsCount;
+            MemoryReader << ObjectsCount;
+            ChunkData.Objects.SetNum(ObjectsCount);
+            for (int32 i = 0; i < ObjectsCount; ++i)
+            {
+                FWorldObjectData& Obj = ChunkData.Objects[i];
+                MemoryReader << Obj.ActorClass;
+                MemoryReader << Obj.ObjectType;
+                MemoryReader << Obj.Location;
+                MemoryReader << Obj.Rotation;
+                MemoryReader << Obj.Scale;
+                MemoryReader << Obj.GroupID;
+                MemoryReader << Obj.bIsGroupCenter;
+                MemoryReader << Obj.POIType;
+                MemoryReader << Obj.Difficulty;
+                MemoryReader << Obj.ResourceType;
+                MemoryReader << Obj.ResourceAmount;
+                MemoryReader << Obj.CaveDepth;
+            }
+
+            // Manually serialize BiomeData array
+            int32 BiomeDataCount;
+            MemoryReader << BiomeDataCount;
+            ChunkData.BiomeData.SetNum(BiomeDataCount);
+            for (int32 i = 0; i < BiomeDataCount; ++i)
+            {
+                FBiomeData& Biome = ChunkData.BiomeData[i];
+                MemoryReader << Biome.X;
+                MemoryReader << Biome.Y;
+                MemoryReader << Biome.BiomeType;
+                MemoryReader << Biome.Temperature;
+                MemoryReader << Biome.Moisture;
+                MemoryReader << Biome.Height;
+            }
+
+            MemoryReader << ChunkData.GenerationTime;
+            MemoryReader << ChunkData.bIsFullyGenerated;
+            MemoryReader << ChunkData.CacheHash;
 
             // Validate hash
             int32 ExpectedHash = CalculateChunkHash(ChunkData);
