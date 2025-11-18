@@ -1158,3 +1158,106 @@ struct FWorldGeneratorConfig
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen|Debug")
 	bool bVisualizeMoisture = false;
 };
+
+// ========================================
+// Runtime Terrain Modification
+// ========================================
+
+/**
+ * Terrain modification operation type
+ */
+UENUM(BlueprintType)
+enum class ETerrainModificationType : uint8
+{
+	Raise         UMETA(DisplayName = "Raise Terrain"),
+	Lower         UMETA(DisplayName = "Lower Terrain"),
+	Flatten       UMETA(DisplayName = "Flatten Terrain"),
+	Smooth        UMETA(DisplayName = "Smooth Terrain"),
+	Crater        UMETA(DisplayName = "Create Crater"),
+	Hill          UMETA(DisplayName = "Create Hill"),
+	SetHeight     UMETA(DisplayName = "Set Absolute Height"),
+	Paint         UMETA(DisplayName = "Paint Texture"),
+};
+
+/**
+ * Falloff curve type for terrain modifications
+ */
+UENUM(BlueprintType)
+enum class ETerrainFalloffType : uint8
+{
+	Linear        UMETA(DisplayName = "Linear"),
+	Smooth        UMETA(DisplayName = "Smooth (Cosine)"),
+	Spherical     UMETA(DisplayName = "Spherical"),
+	Gaussian      UMETA(DisplayName = "Gaussian"),
+	Sharp         UMETA(DisplayName = "Sharp (No Falloff)"),
+};
+
+/**
+ * Terrain modification parameters
+ */
+USTRUCT(BlueprintType)
+struct FTerrainModification
+{
+	GENERATED_BODY()
+
+	// Center location of modification (world space)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TerrainMod")
+	FVector Location = FVector::ZeroVector;
+
+	// Radius of modification (in UE units)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TerrainMod", meta = (ClampMin = "10.0", ClampMax = "10000.0"))
+	float Radius = 500.0f;
+
+	// Strength of modification (0-1)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TerrainMod", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float Strength = 1.0f;
+
+	// Type of modification
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TerrainMod")
+	ETerrainModificationType ModificationType = ETerrainModificationType::Raise;
+
+	// Falloff curve type
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TerrainMod")
+	ETerrainFalloffType FalloffType = ETerrainFalloffType::Smooth;
+
+	// Target height (for SetHeight and Flatten operations, in UE units)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TerrainMod")
+	float TargetHeight = 0.0f;
+
+	// Smoothing iterations (for Smooth operation)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TerrainMod", meta = (ClampMin = "1", ClampMax = "10"))
+	int32 SmoothIterations = 3;
+
+	// Layer name (for Paint operation)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TerrainMod")
+	FName PaintLayerName = NAME_None;
+
+	// Apply modification instantly (false = queue for batch processing)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TerrainMod")
+	bool bApplyImmediately = true;
+};
+
+/**
+ * Terrain modification result
+ */
+USTRUCT(BlueprintType)
+struct FTerrainModificationResult
+{
+	GENERATED_BODY()
+
+	// Was the modification successful?
+	UPROPERTY(BlueprintReadOnly, Category = "TerrainMod")
+	bool bSuccess = false;
+
+	// Number of landscape components affected
+	UPROPERTY(BlueprintReadOnly, Category = "TerrainMod")
+	int32 AffectedComponents = 0;
+
+	// Number of vertices modified
+	UPROPERTY(BlueprintReadOnly, Category = "TerrainMod")
+	int32 ModifiedVertices = 0;
+
+	// Error message (if any)
+	UPROPERTY(BlueprintReadOnly, Category = "TerrainMod")
+	FString ErrorMessage;
+};

@@ -2667,3 +2667,525 @@ FSeasonVisuals UHarmoniaWorldGeneratorSubsystem::InterpolateSeasonVisuals(
     Result.Temperature = FMath::Lerp(From.Temperature, To.Temperature, Alpha);
     return Result;
 }
+
+// ========================================
+// Runtime Terrain Modification Implementation
+// ========================================
+
+#include "LandscapeEdit.h"
+#include "LandscapeDataAccess.h"
+#include "LandscapeComponent.h"
+
+FTerrainModificationResult UHarmoniaWorldGeneratorSubsystem::ApplyTerrainModification(
+    ALandscape* Landscape,
+    const FTerrainModification& Modification)
+{
+    FTerrainModificationResult Result;
+    Result.bSuccess = false;
+
+    if (!Landscape)
+    {
+        Result.ErrorMessage = TEXT("Landscape is null");
+        return Result;
+    }
+
+    // Create appropriate modification based on type
+    switch (Modification.ModificationType)
+    {
+    case ETerrainModificationType::Raise:
+        return RaiseTerrain(Landscape, Modification.Location, Modification.Radius,
+                          Modification.Strength * 100.0f, Modification.FalloffType);
+
+    case ETerrainModificationType::Lower:
+        return LowerTerrain(Landscape, Modification.Location, Modification.Radius,
+                          Modification.Strength * 100.0f, Modification.FalloffType);
+
+    case ETerrainModificationType::Flatten:
+        return FlattenTerrain(Landscape, Modification.Location, Modification.Radius,
+                            Modification.TargetHeight, Modification.FalloffType);
+
+    case ETerrainModificationType::Smooth:
+        return SmoothTerrain(Landscape, Modification.Location, Modification.Radius,
+                           Modification.SmoothIterations);
+
+    case ETerrainModificationType::Crater:
+        return CreateCrater(Landscape, Modification.Location, Modification.Radius,
+                          Modification.Strength * 200.0f, Modification.FalloffType);
+
+    case ETerrainModificationType::Hill:
+        return CreateHill(Landscape, Modification.Location, Modification.Radius,
+                        Modification.Strength * 200.0f, Modification.FalloffType);
+
+    case ETerrainModificationType::SetHeight:
+        return FlattenTerrain(Landscape, Modification.Location, Modification.Radius,
+                            Modification.TargetHeight, ETerrainFalloffType::Sharp);
+
+    case ETerrainModificationType::Paint:
+        return PaintLandscapeLayer(Landscape, Modification.Location, Modification.Radius,
+                                 Modification.PaintLayerName, Modification.Strength,
+                                 Modification.FalloffType);
+
+    default:
+        Result.ErrorMessage = TEXT("Unknown modification type");
+        return Result;
+    }
+}
+
+FTerrainModificationResult UHarmoniaWorldGeneratorSubsystem::CreateCrater(
+    ALandscape* Landscape,
+    FVector Location,
+    float Radius,
+    float Depth,
+    ETerrainFalloffType FalloffType)
+{
+    FTerrainModificationResult Result;
+    Result.bSuccess = false;
+
+    if (!Landscape)
+    {
+        Result.ErrorMessage = TEXT("Landscape is null");
+        return Result;
+    }
+
+    // Get landscape data
+    TArray<uint16> HeightData;
+    int32 MinX, MinY, MaxX, MaxY;
+
+    if (!GetLandscapeHeightData(Landscape, Location, Radius, HeightData, MinX, MinY, MaxX, MaxY))
+    {
+        Result.ErrorMessage = TEXT("Failed to get landscape height data");
+        return Result;
+    }
+
+    const int32 SizeX = MaxX - MinX + 1;
+    const int32 SizeY = MaxY - MinY + 1;
+    const FVector2D LandscapeCoord = WorldToLandscapeCoordinates(Landscape, Location);
+
+    // Modify heights to create crater
+    for (int32 Y = 0; Y < SizeY; ++Y)
+    {
+        for (int32 X = 0; X < SizeX; ++X)
+        {
+            const int32 Index = Y * SizeX + X;
+            const FVector2D CurrentCoord(MinX + X, MinY + Y);
+            const float Distance = FVector2D::Distance(CurrentCoord, LandscapeCoord);
+
+            if (Distance <= Radius)
+            {
+                const float Falloff = CalculateFalloff(Distance, Radius, FalloffType);
+                const float CurrentHeight = (float)HeightData[Index];
+                const float CraterDepth = Depth * Falloff;
+
+                // Create crater with raised rim (20% of radius)
+                float HeightChange;
+                if (Distance < Radius * 0.2f)
+                {
+                    // Rim - slightly raised
+                    HeightChange = CraterDepth * 0.3f;
+                }
+                else
+                {
+                    // Crater depression
+                    HeightChange = -CraterDepth;
+                }
+
+                const float NewHeight = FMath::Clamp(CurrentHeight + HeightChange, 0.0f, 65535.0f);
+                HeightData[Index] = (uint16)NewHeight;
+                Result.ModifiedVertices++;
+            }
+        }
+    }
+
+    // Set modified data back
+    if (SetLandscapeHeightData(Landscape, HeightData, MinX, MinY, MaxX, MaxY))
+    {
+        Result.bSuccess = true;
+        Result.AffectedComponents = 1; // Simplified
+    }
+    else
+    {
+        Result.ErrorMessage = TEXT("Failed to set landscape height data");
+    }
+
+    return Result;
+}
+
+FTerrainModificationResult UHarmoniaWorldGeneratorSubsystem::FlattenTerrain(
+    ALandscape* Landscape,
+    FVector Location,
+    float Radius,
+    float TargetHeight,
+    ETerrainFalloffType FalloffType)
+{
+    FTerrainModificationResult Result;
+    Result.bSuccess = false;
+
+    if (!Landscape)
+    {
+        Result.ErrorMessage = TEXT("Landscape is null");
+        return Result;
+    }
+
+    TArray<uint16> HeightData;
+    int32 MinX, MinY, MaxX, MaxY;
+
+    if (!GetLandscapeHeightData(Landscape, Location, Radius, HeightData, MinX, MinY, MaxX, MaxY))
+    {
+        Result.ErrorMessage = TEXT("Failed to get landscape height data");
+        return Result;
+    }
+
+    const int32 SizeX = MaxX - MinX + 1;
+    const int32 SizeY = MaxY - MinY + 1;
+    const FVector2D LandscapeCoord = WorldToLandscapeCoordinates(Landscape, Location);
+    const uint16 TargetHeightValue = (uint16)FMath::Clamp(TargetHeight * 128.0f, 0.0f, 65535.0f);
+
+    for (int32 Y = 0; Y < SizeY; ++Y)
+    {
+        for (int32 X = 0; X < SizeX; ++X)
+        {
+            const int32 Index = Y * SizeX + X;
+            const FVector2D CurrentCoord(MinX + X, MinY + Y);
+            const float Distance = FVector2D::Distance(CurrentCoord, LandscapeCoord);
+
+            if (Distance <= Radius)
+            {
+                const float Falloff = CalculateFalloff(Distance, Radius, FalloffType);
+                const float CurrentHeight = (float)HeightData[Index];
+                const float NewHeight = FMath::Lerp(CurrentHeight, (float)TargetHeightValue, Falloff);
+
+                HeightData[Index] = (uint16)FMath::Clamp(NewHeight, 0.0f, 65535.0f);
+                Result.ModifiedVertices++;
+            }
+        }
+    }
+
+    if (SetLandscapeHeightData(Landscape, HeightData, MinX, MinY, MaxX, MaxY))
+    {
+        Result.bSuccess = true;
+        Result.AffectedComponents = 1;
+    }
+    else
+    {
+        Result.ErrorMessage = TEXT("Failed to set landscape height data");
+    }
+
+    return Result;
+}
+
+FTerrainModificationResult UHarmoniaWorldGeneratorSubsystem::CreateHill(
+    ALandscape* Landscape,
+    FVector Location,
+    float Radius,
+    float Height,
+    ETerrainFalloffType FalloffType)
+{
+    FTerrainModificationResult Result;
+    Result.bSuccess = false;
+
+    if (!Landscape)
+    {
+        Result.ErrorMessage = TEXT("Landscape is null");
+        return Result;
+    }
+
+    TArray<uint16> HeightData;
+    int32 MinX, MinY, MaxX, MaxY;
+
+    if (!GetLandscapeHeightData(Landscape, Location, Radius, HeightData, MinX, MinY, MaxX, MaxY))
+    {
+        Result.ErrorMessage = TEXT("Failed to get landscape height data");
+        return Result;
+    }
+
+    const int32 SizeX = MaxX - MinX + 1;
+    const int32 SizeY = MaxY - MinY + 1;
+    const FVector2D LandscapeCoord = WorldToLandscapeCoordinates(Landscape, Location);
+
+    for (int32 Y = 0; Y < SizeY; ++Y)
+    {
+        for (int32 X = 0; X < SizeX; ++X)
+        {
+            const int32 Index = Y * SizeX + X;
+            const FVector2D CurrentCoord(MinX + X, MinY + Y);
+            const float Distance = FVector2D::Distance(CurrentCoord, LandscapeCoord);
+
+            if (Distance <= Radius)
+            {
+                const float Falloff = CalculateFalloff(Distance, Radius, FalloffType);
+                const float CurrentHeight = (float)HeightData[Index];
+                const float HeightChange = Height * Falloff;
+                const float NewHeight = FMath::Clamp(CurrentHeight + HeightChange, 0.0f, 65535.0f);
+
+                HeightData[Index] = (uint16)NewHeight;
+                Result.ModifiedVertices++;
+            }
+        }
+    }
+
+    if (SetLandscapeHeightData(Landscape, HeightData, MinX, MinY, MaxX, MaxY))
+    {
+        Result.bSuccess = true;
+        Result.AffectedComponents = 1;
+    }
+    else
+    {
+        Result.ErrorMessage = TEXT("Failed to set landscape height data");
+    }
+
+    return Result;
+}
+
+FTerrainModificationResult UHarmoniaWorldGeneratorSubsystem::SmoothTerrain(
+    ALandscape* Landscape,
+    FVector Location,
+    float Radius,
+    int32 Iterations)
+{
+    FTerrainModificationResult Result;
+    Result.bSuccess = false;
+
+    if (!Landscape)
+    {
+        Result.ErrorMessage = TEXT("Landscape is null");
+        return Result;
+    }
+
+    TArray<uint16> HeightData;
+    int32 MinX, MinY, MaxX, MaxY;
+
+    if (!GetLandscapeHeightData(Landscape, Location, Radius, HeightData, MinX, MinY, MaxX, MaxY))
+    {
+        Result.ErrorMessage = TEXT("Failed to get landscape height data");
+        return Result;
+    }
+
+    const int32 SizeX = MaxX - MinX + 1;
+    const int32 SizeY = MaxY - MinY + 1;
+    const FVector2D LandscapeCoord = WorldToLandscapeCoordinates(Landscape, Location);
+
+    // Perform smoothing iterations
+    for (int32 Iter = 0; Iter < Iterations; ++Iter)
+    {
+        TArray<uint16> TempData = HeightData;
+
+        for (int32 Y = 1; Y < SizeY - 1; ++Y)
+        {
+            for (int32 X = 1; X < SizeX - 1; ++X)
+            {
+                const FVector2D CurrentCoord(MinX + X, MinY + Y);
+                const float Distance = FVector2D::Distance(CurrentCoord, LandscapeCoord);
+
+                if (Distance <= Radius)
+                {
+                    // 3x3 box filter
+                    float Sum = 0.0f;
+                    for (int32 DY = -1; DY <= 1; ++DY)
+                    {
+                        for (int32 DX = -1; DX <= 1; ++DX)
+                        {
+                            const int32 SampleIndex = (Y + DY) * SizeX + (X + DX);
+                            Sum += (float)HeightData[SampleIndex];
+                        }
+                    }
+
+                    const int32 Index = Y * SizeX + X;
+                    TempData[Index] = (uint16)(Sum / 9.0f);
+                    Result.ModifiedVertices++;
+                }
+            }
+        }
+
+        HeightData = TempData;
+    }
+
+    if (SetLandscapeHeightData(Landscape, HeightData, MinX, MinY, MaxX, MaxY))
+    {
+        Result.bSuccess = true;
+        Result.AffectedComponents = 1;
+    }
+    else
+    {
+        Result.ErrorMessage = TEXT("Failed to set landscape height data");
+    }
+
+    return Result;
+}
+
+FTerrainModificationResult UHarmoniaWorldGeneratorSubsystem::RaiseTerrain(
+    ALandscape* Landscape,
+    FVector Location,
+    float Radius,
+    float Amount,
+    ETerrainFalloffType FalloffType)
+{
+    return CreateHill(Landscape, Location, Radius, Amount, FalloffType);
+}
+
+FTerrainModificationResult UHarmoniaWorldGeneratorSubsystem::LowerTerrain(
+    ALandscape* Landscape,
+    FVector Location,
+    float Radius,
+    float Amount,
+    ETerrainFalloffType FalloffType)
+{
+    return CreateHill(Landscape, Location, Radius, -Amount, FalloffType);
+}
+
+FTerrainModificationResult UHarmoniaWorldGeneratorSubsystem::PaintLandscapeLayer(
+    ALandscape* Landscape,
+    FVector Location,
+    float Radius,
+    FName LayerName,
+    float Strength,
+    ETerrainFalloffType FalloffType)
+{
+    FTerrainModificationResult Result;
+    Result.bSuccess = false;
+    Result.ErrorMessage = TEXT("Landscape painting not yet fully implemented - requires layer info access");
+    return Result;
+}
+
+// ========================================
+// Helper Functions
+// ========================================
+
+float UHarmoniaWorldGeneratorSubsystem::CalculateFalloff(
+    float Distance,
+    float Radius,
+    ETerrainFalloffType FalloffType) const
+{
+    if (Distance >= Radius)
+    {
+        return 0.0f;
+    }
+
+    const float NormalizedDistance = Distance / Radius;
+
+    switch (FalloffType)
+    {
+    case ETerrainFalloffType::Linear:
+        return 1.0f - NormalizedDistance;
+
+    case ETerrainFalloffType::Smooth:
+        // Cosine interpolation
+        return 0.5f * (1.0f + FMath::Cos(NormalizedDistance * PI));
+
+    case ETerrainFalloffType::Spherical:
+        return FMath::Sqrt(1.0f - NormalizedDistance * NormalizedDistance);
+
+    case ETerrainFalloffType::Gaussian:
+        // Gaussian falloff (bell curve)
+        return FMath::Exp(-4.5f * NormalizedDistance * NormalizedDistance);
+
+    case ETerrainFalloffType::Sharp:
+        return 1.0f;
+
+    default:
+        return 1.0f - NormalizedDistance;
+    }
+}
+
+bool UHarmoniaWorldGeneratorSubsystem::GetLandscapeHeightData(
+    ALandscape* Landscape,
+    FVector Center,
+    float Radius,
+    TArray<uint16>& OutHeightData,
+    int32& OutMinX,
+    int32& OutMinY,
+    int32& OutMaxX,
+    int32& OutMaxY)
+{
+    if (!Landscape)
+    {
+        return false;
+    }
+
+    const FVector2D LandscapeCoord = WorldToLandscapeCoordinates(Landscape, Center);
+
+    // Calculate bounds
+    OutMinX = FMath::FloorToInt(LandscapeCoord.X - Radius);
+    OutMinY = FMath::FloorToInt(LandscapeCoord.Y - Radius);
+    OutMaxX = FMath::CeilToInt(LandscapeCoord.X + Radius);
+    OutMaxY = FMath::CeilToInt(LandscapeCoord.Y + Radius);
+
+    const int32 SizeX = OutMaxX - OutMinX + 1;
+    const int32 SizeY = OutMaxY - OutMinY + 1;
+
+    OutHeightData.SetNum(SizeX * SizeY);
+
+    // Get landscape data using edit interface
+    FLandscapeEditDataInterface LandscapeEdit(Landscape->GetLandscapeInfo());
+
+    for (int32 Y = 0; Y < SizeY; ++Y)
+    {
+        for (int32 X = 0; X < SizeX; ++X)
+        {
+            const int32 Index = Y * SizeX + X;
+            const int32 LandscapeX = OutMinX + X;
+            const int32 LandscapeY = OutMinY + Y;
+
+            OutHeightData[Index] = LandscapeEdit.GetHeight(LandscapeX, LandscapeY);
+        }
+    }
+
+    return true;
+}
+
+bool UHarmoniaWorldGeneratorSubsystem::SetLandscapeHeightData(
+    ALandscape* Landscape,
+    const TArray<uint16>& HeightData,
+    int32 MinX,
+    int32 MinY,
+    int32 MaxX,
+    int32 MaxY)
+{
+    if (!Landscape)
+    {
+        return false;
+    }
+
+    const int32 SizeX = MaxX - MinX + 1;
+    const int32 SizeY = MaxY - MinY + 1;
+
+    if (HeightData.Num() != SizeX * SizeY)
+    {
+        return false;
+    }
+
+    // Set landscape data using edit interface
+    FLandscapeEditDataInterface LandscapeEdit(Landscape->GetLandscapeInfo());
+
+    for (int32 Y = 0; Y < SizeY; ++Y)
+    {
+        for (int32 X = 0; X < SizeX; ++X)
+        {
+            const int32 Index = Y * SizeX + X;
+            const int32 LandscapeX = MinX + X;
+            const int32 LandscapeY = MinY + Y;
+
+            LandscapeEdit.SetHeight(LandscapeX, LandscapeY, HeightData[Index]);
+        }
+    }
+
+    LandscapeEdit.Flush();
+
+    return true;
+}
+
+FVector2D UHarmoniaWorldGeneratorSubsystem::WorldToLandscapeCoordinates(
+    ALandscape* Landscape,
+    FVector WorldLocation) const
+{
+    if (!Landscape)
+    {
+        return FVector2D::ZeroVector;
+    }
+
+    const FTransform& LandscapeTransform = Landscape->GetActorTransform();
+    const FVector LocalLocation = LandscapeTransform.InverseTransformPosition(WorldLocation);
+
+    // Convert to landscape coordinates (assuming default scale)
+    const float ScaleXY = Landscape->GetActorScale3D().X;
+    return FVector2D(LocalLocation.X / ScaleXY, LocalLocation.Y / ScaleXY);
+}

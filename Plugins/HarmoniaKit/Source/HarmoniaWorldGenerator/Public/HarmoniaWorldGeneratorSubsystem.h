@@ -349,6 +349,109 @@ public:
     UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Environment")
     void SetTimeSpeed(float SpeedMultiplier);
 
+    // ========================================
+    // Runtime Terrain Modification
+    // ========================================
+
+    /**
+     * Apply terrain modification at runtime
+     * @param Landscape - Target landscape actor
+     * @param Modification - Modification parameters
+     * @return Result of the modification
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|RuntimeModification")
+    FTerrainModificationResult ApplyTerrainModification(
+        ALandscape* Landscape,
+        const FTerrainModification& Modification
+    );
+
+    /**
+     * Create a crater at specified location
+     * Useful for explosions, meteor impacts, etc.
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|RuntimeModification")
+    FTerrainModificationResult CreateCrater(
+        ALandscape* Landscape,
+        FVector Location,
+        float Radius,
+        float Depth,
+        ETerrainFalloffType FalloffType = ETerrainFalloffType::Smooth
+    );
+
+    /**
+     * Flatten terrain in a circular area
+     * Useful for building foundations
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|RuntimeModification")
+    FTerrainModificationResult FlattenTerrain(
+        ALandscape* Landscape,
+        FVector Location,
+        float Radius,
+        float TargetHeight,
+        ETerrainFalloffType FalloffType = ETerrainFalloffType::Smooth
+    );
+
+    /**
+     * Create a hill/mound at specified location
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|RuntimeModification")
+    FTerrainModificationResult CreateHill(
+        ALandscape* Landscape,
+        FVector Location,
+        float Radius,
+        float Height,
+        ETerrainFalloffType FalloffType = ETerrainFalloffType::Smooth
+    );
+
+    /**
+     * Smooth terrain in a circular area
+     * Reduces sharp edges and roughness
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|RuntimeModification")
+    FTerrainModificationResult SmoothTerrain(
+        ALandscape* Landscape,
+        FVector Location,
+        float Radius,
+        int32 Iterations = 3
+    );
+
+    /**
+     * Raise terrain in a circular area
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|RuntimeModification")
+    FTerrainModificationResult RaiseTerrain(
+        ALandscape* Landscape,
+        FVector Location,
+        float Radius,
+        float Amount,
+        ETerrainFalloffType FalloffType = ETerrainFalloffType::Smooth
+    );
+
+    /**
+     * Lower terrain in a circular area
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|RuntimeModification")
+    FTerrainModificationResult LowerTerrain(
+        ALandscape* Landscape,
+        FVector Location,
+        float Radius,
+        float Amount,
+        ETerrainFalloffType FalloffType = ETerrainFalloffType::Smooth
+    );
+
+    /**
+     * Paint landscape layer at location
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|RuntimeModification")
+    FTerrainModificationResult PaintLandscapeLayer(
+        ALandscape* Landscape,
+        FVector Location,
+        float Radius,
+        FName LayerName,
+        float Strength = 1.0f,
+        ETerrainFalloffType FalloffType = ETerrainFalloffType::Smooth
+    );
+
 private:
     /**
      * Generate heightmap data with chunk-based processing
@@ -616,6 +719,53 @@ private:
         const FSeasonVisuals& From,
         const FSeasonVisuals& To,
         float Alpha
+    ) const;
+
+    // ========================================
+    // Runtime Terrain Modification Helpers
+    // ========================================
+
+    /**
+     * Calculate falloff weight based on distance and falloff type
+     */
+    float CalculateFalloff(
+        float Distance,
+        float Radius,
+        ETerrainFalloffType FalloffType
+    ) const;
+
+    /**
+     * Get landscape heightmap data in region
+     */
+    bool GetLandscapeHeightData(
+        ALandscape* Landscape,
+        FVector Center,
+        float Radius,
+        TArray<uint16>& OutHeightData,
+        int32& OutMinX,
+        int32& OutMinY,
+        int32& OutMaxX,
+        int32& OutMaxY
+    );
+
+    /**
+     * Set landscape heightmap data in region
+     */
+    bool SetLandscapeHeightData(
+        ALandscape* Landscape,
+        const TArray<uint16>& HeightData,
+        int32 MinX,
+        int32 MinY,
+        int32 MaxX,
+        int32 MaxY
+    );
+
+    /**
+     * Convert world location to landscape coordinates
+     */
+    FVector2D WorldToLandscapeCoordinates(
+        ALandscape* Landscape,
+        FVector WorldLocation
     ) const;
 
     // Async generation state
