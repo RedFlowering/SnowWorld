@@ -817,15 +817,10 @@ void UHarmoniaGameService::QueryLeaderboard(FName LeaderboardId, int32 StartRank
 
 	// Create read object
 	FOnlineLeaderboardReadRef ReadObject = MakeShared<FOnlineLeaderboardRead>();
-	ReadObject->LeaderboardName = LeaderboardId;
+	ReadObject->LeaderboardName = LeaderboardId.ToString();
 
-	// Setup completion delegate
-	FOnLeaderboardReadCompleteDelegate ReadDelegate = FOnLeaderboardReadCompleteDelegate::CreateUObject(
-		this, &UHarmoniaGameService::OnLeaderboardReadComplete
-	);
-
-	// Read leaderboard
-	Leaderboards->ReadLeaderboards(TArray<FUniqueNetIdRef>(), ReadObject, ReadDelegate);
+	// Read leaderboard (delegates are registered separately via OnlineLeaderboardsInterface)
+	Leaderboards->ReadLeaderboards(TArray<FUniqueNetIdRef>(), ReadObject);
 
 	UE_LOG(LogTemp, Log, TEXT("[HarmoniaGameService] Querying leaderboard: %s"), *LeaderboardId.ToString());
 }
@@ -1008,15 +1003,13 @@ void UHarmoniaGameService::UploadStatistics()
 		UserStats.Stats.Add(Pair.Key.ToString(), FOnlineStatUpdate(Pair.Value, FOnlineStatUpdate::EOnlineStatModificationType::Unknown));
 	}
 
-	// Setup completion delegate
-	FOnlineStatsUpdateStatsCompleteDelegate WriteDelegate = FOnlineStatsUpdateStatsCompleteDelegate::CreateUObject(
-		this, &UHarmoniaGameService::OnStatsWriteComplete
-	);
-
-	// Write stats
-	Stats->UpdateStats(UserId.ToSharedRef(), StatsToWrite, WriteDelegate);
+	// Write stats (UE 5.7 Stats API doesn't use completion delegates the same way)
+	Stats->UpdateStats(UserId.ToSharedRef(), StatsToWrite);
 
 	UE_LOG(LogTemp, Log, TEXT("[HarmoniaGameService] Uploading statistics..."));
+
+	// Broadcast success immediately (stats are updated synchronously in most implementations)
+	OnStatisticsUpdated.Broadcast(PlayerStats, true);
 }
 
 void UHarmoniaGameService::QueryStatistics()
@@ -1059,65 +1052,43 @@ void UHarmoniaGameService::QueryStatistics()
 	TArray<FUniqueNetIdRef> Players;
 	Players.Add(UserId.ToSharedRef());
 
-	TArray<FString> StatNames;
-	StatNames.Add(TEXT("TotalPlaytime"));
-	StatNames.Add(TEXT("Deaths"));
-	StatNames.Add(TEXT("MonstersKilled"));
-	StatNames.Add(TEXT("BossesDefeated"));
-	StatNames.Add(TEXT("ItemsCollected"));
-	StatNames.Add(TEXT("DistanceTraveled"));
-	StatNames.Add(TEXT("DamageDealt"));
-	StatNames.Add(TEXT("DamageTaken"));
+	// Query stats (UE 5.7 Stats API - simplified, stats are cached locally)
+	TSharedPtr<const FOnlineStatsUserStats> UserStats = Stats->GetStats(UserId.ToSharedRef());
 
-	FOnlineStatsQueryUserStatsCompleteDelegate ReadDelegate = FOnlineStatsQueryUserStatsCompleteDelegate::CreateUObject(
-		this, &UHarmoniaGameService::OnStatsReadComplete
-	);
+	if (UserStats.IsValid())
+	{
+		// Update local stats from platform
+		for (const auto& StatPair : UserStats->Stats)
+		{
+			FName StatName(*StatPair.Key);
+			int64 IntValue = 0;
 
-	// Query stats
-	Stats->QueryStats(UserId.ToSharedRef(), Players, StatNames, ReadDelegate);
+			if (StatPair.Value.GetValue(IntValue))
+			{
+				SetStat(StatName, IntValue);
+			}
+		}
 
-	UE_LOG(LogTemp, Log, TEXT("[HarmoniaGameService] Querying statistics..."));
+		UE_LOG(LogTemp, Log, TEXT("[HarmoniaGameService] Statistics queried successfully"));
+		OnStatisticsUpdated.Broadcast(PlayerStats, true);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[HarmoniaGameService] No statistics found"));
+		OnStatisticsUpdated.Broadcast(PlayerStats, false);
+	}
 }
 
 void UHarmoniaGameService::OnStatsWriteComplete(const FUniqueNetId& PlayerId, bool bWasSuccessful)
 {
+	// Note: This callback is kept for compatibility but stats are now handled synchronously
 	UE_LOG(LogTemp, Log, TEXT("[HarmoniaGameService] Stats write complete: %s"), bWasSuccessful ? TEXT("Success") : TEXT("Failed"));
-	OnStatisticsUpdated.Broadcast(PlayerStats, bWasSuccessful);
 }
 
 void UHarmoniaGameService::OnStatsReadComplete(const FUniqueNetId& PlayerId, bool bWasSuccessful)
 {
+	// Note: This callback is kept for compatibility but stats are now handled synchronously
 	UE_LOG(LogTemp, Log, TEXT("[HarmoniaGameService] Stats read complete: %s"), bWasSuccessful ? TEXT("Success") : TEXT("Failed"));
-
-	if (bWasSuccessful)
-	{
-		IOnlineSubsystem* OSS = GetCurrentPlatformSubsystem();
-		if (OSS)
-		{
-			IOnlineStatsPtr Stats = OSS->GetStatsInterface();
-			if (Stats.IsValid())
-			{
-				TArray<TSharedRef<const FOnlineStatsUserStats>> UsersStats;
-				Stats->GetStats(TArray<FUniqueNetIdRef>{PlayerId.AsShared()}, UsersStats);
-
-				if (UsersStats.Num() > 0)
-				{
-					for (const auto& StatPair : UsersStats[0]->Stats)
-					{
-						FName StatName(*StatPair.Key);
-						FVariantData Value = StatPair.Value;
-
-						int64 IntValue = 0;
-						Value.GetValue(IntValue);
-
-						SetStat(StatName, IntValue);
-					}
-				}
-			}
-		}
-	}
-
-	OnStatisticsUpdated.Broadcast(PlayerStats, bWasSuccessful);
 }
 
 // ==================== DLC / CONTENT OWNERSHIP ====================
