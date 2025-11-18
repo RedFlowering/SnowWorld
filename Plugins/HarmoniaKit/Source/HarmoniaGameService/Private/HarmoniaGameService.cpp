@@ -631,7 +631,7 @@ EHarmoniaCloudSaveStatus UHarmoniaGameService::GetCloudSaveStatus(const FString&
 	return EHarmoniaCloudSaveStatus::Idle;
 }
 
-void UHarmoniaGameService::OnCloudSaveWriteComplete(const FUniqueNetId& UserId, bool bWasSuccessful, const FString& FileName)
+void UHarmoniaGameService::OnCloudSaveWriteComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& FileName)
 {
 	UE_LOG(LogTemp, Log, TEXT("[HarmoniaGameService] Cloud save write complete: %s - %s"),
 		*FileName, bWasSuccessful ? TEXT("Success") : TEXT("Failed"));
@@ -659,7 +659,7 @@ void UHarmoniaGameService::OnCloudSaveWriteComplete(const FUniqueNetId& UserId, 
 	}
 }
 
-void UHarmoniaGameService::OnCloudSaveReadComplete(const FUniqueNetId& UserId, bool bWasSuccessful, const FString& FileName)
+void UHarmoniaGameService::OnCloudSaveReadComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& FileName)
 {
 	UE_LOG(LogTemp, Log, TEXT("[HarmoniaGameService] Cloud save read complete: %s - %s"),
 		*FileName, bWasSuccessful ? TEXT("Success") : TEXT("Failed"));
@@ -711,7 +711,7 @@ void UHarmoniaGameService::OnCloudSaveReadComplete(const FUniqueNetId& UserId, b
 	}
 }
 
-void UHarmoniaGameService::OnCloudSaveDeleteComplete(const FUniqueNetId& UserId, bool bWasSuccessful, const FString& FileName)
+void UHarmoniaGameService::OnCloudSaveDeleteComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& FileName)
 {
 	UE_LOG(LogTemp, Log, TEXT("[HarmoniaGameService] Cloud save delete complete: %s - %s"),
 		*FileName, bWasSuccessful ? TEXT("Success") : TEXT("Failed"));

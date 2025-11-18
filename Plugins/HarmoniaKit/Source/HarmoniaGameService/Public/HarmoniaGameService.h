@@ -340,9 +340,9 @@ protected:
 	void OnAchievementQueryComplete(const FUniqueNetId& PlayerId, bool bWasSuccessful);
 
 	// Cloud save helpers
-	void OnCloudSaveWriteComplete(const FUniqueNetId& UserId, bool bWasSuccessful, const FString& FileName);
-	void OnCloudSaveReadComplete(const FUniqueNetId& UserId, bool bWasSuccessful, const FString& FileName);
-	void OnCloudSaveDeleteComplete(const FUniqueNetId& UserId, bool bWasSuccessful, const FString& FileName);
+	void OnCloudSaveWriteComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& FileName);
+	void OnCloudSaveReadComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& FileName);
+	void OnCloudSaveDeleteComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& FileName);
 
 	// Leaderboard helpers
 	void OnLeaderboardWriteComplete(const FName& SessionName, bool bWasSuccessful);
