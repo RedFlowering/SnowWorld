@@ -710,7 +710,7 @@ void UHarmoniaWorldEditorUtility::ShowResourceVisualization()
 		TArray<FWorldObjectData> ResourceNodes;
 		for (const FWorldObjectData& ObjData : GeneratedObjectData)
 		{
-			if (ObjData.ObjectType == EWorldObjectType::ResourceNode)
+			if (ObjData.ObjectType == EWorldObjectType::Resource || ObjData.ObjectType == EWorldObjectType::OreVein)
 			{
 				ResourceNodes.Add(ObjData);
 			}
