@@ -367,3 +367,546 @@ bool UHarmoniaWorldGeneratorSubsystem::IsValidObjectLocation(
 
     return true;
 }
+
+void UHarmoniaWorldGeneratorSubsystem::GenerateBiomeMap(
+    const FWorldGeneratorConfig& Config,
+    const TArray<int32>& HeightData,
+    TArray<FBiomeData>& OutBiomeData)
+{
+    if (!Config.bEnableBiomes)
+    {
+        OutBiomeData.Empty();
+        return;
+    }
+
+    const int32 TotalSize = Config.SizeX * Config.SizeY;
+    OutBiomeData.SetNumUninitialized(TotalSize);
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Generating biome map: %dx%d"), Config.SizeX, Config.SizeY);
+    }
+
+    // Generate biome data for each tile
+    for (int32 Y = 0; Y < Config.SizeY; ++Y)
+    {
+        for (int32 X = 0; X < Config.SizeX; ++X)
+        {
+            const int32 Index = Y * Config.SizeX + X;
+
+            // Get height
+            const float Height = (float)HeightData[Index] / 65535.f;
+
+            // Calculate temperature and moisture
+            const float Temperature = CalculateTemperature(X, Y, Height, Config);
+            const float Moisture = CalculateMoisture(X, Y, Config);
+
+            // Determine biome type
+            const EBiomeType BiomeType = DetermineBiomeType(Temperature, Moisture, Height, Config);
+
+            // Create biome data
+            FBiomeData& BiomeData = OutBiomeData[Index];
+            BiomeData.X = X;
+            BiomeData.Y = Y;
+            BiomeData.BiomeType = BiomeType;
+            BiomeData.Temperature = Temperature;
+            BiomeData.Moisture = Moisture;
+            BiomeData.Height = Height;
+        }
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Biome map generation complete!"));
+    }
+}
+
+float UHarmoniaWorldGeneratorSubsystem::CalculateTemperature(
+    float X,
+    float Y,
+    float Height,
+    const FWorldGeneratorConfig& Config)
+{
+    // Base temperature from latitude (Y position)
+    const float NormY = Y / FMath::Max(1.f, (float)(Config.SizeY - 1));
+    const float LatitudeTemp = 1.0f - FMath::Abs(NormY - 0.5f) * 2.0f; // Warmer at equator (center)
+
+    // Temperature noise for variation
+    const float TempNoise = PerlinNoiseHelper::GetSimpleNoise(
+        X * Config.TemperatureNoiseSettings.Frequency * 0.01f,
+        Y * Config.TemperatureNoiseSettings.Frequency * 0.01f,
+        Config.Seed + 1000,
+        Config.TemperatureNoiseSettings
+    );
+
+    // Convert from [-1, 1] to [0, 1]
+    const float NoiseContribution = (TempNoise + 1.f) * 0.5f;
+
+    // Height affects temperature (higher = colder)
+    const float HeightFactor = 1.0f - (Height * 0.6f);
+
+    // Combine factors
+    float Temperature = (LatitudeTemp * 0.5f + NoiseContribution * 0.3f) * HeightFactor + 0.2f;
+
+    return FMath::Clamp(Temperature, 0.f, 1.f);
+}
+
+float UHarmoniaWorldGeneratorSubsystem::CalculateMoisture(
+    float X,
+    float Y,
+    const FWorldGeneratorConfig& Config)
+{
+    // Moisture from noise
+    const float MoistureNoise = PerlinNoiseHelper::GetSimpleNoise(
+        X * Config.MoistureNoiseSettings.Frequency * 0.01f,
+        Y * Config.MoistureNoiseSettings.Frequency * 0.01f,
+        Config.Seed + 2000,
+        Config.MoistureNoiseSettings
+    );
+
+    // Convert from [-1, 1] to [0, 1]
+    const float Moisture = (MoistureNoise + 1.f) * 0.5f;
+
+    return FMath::Clamp(Moisture, 0.f, 1.f);
+}
+
+EBiomeType UHarmoniaWorldGeneratorSubsystem::DetermineBiomeType(
+    float Temperature,
+    float Moisture,
+    float Height,
+    const FWorldGeneratorConfig& Config)
+{
+    // Ocean (below sea level)
+    if (Height <= Config.SeaLevel)
+    {
+        return EBiomeType::Ocean;
+    }
+
+    // Beach (just above sea level)
+    if (Height <= Config.SeaLevel + 0.05f)
+    {
+        return EBiomeType::Beach;
+    }
+
+    // Mountain (very high)
+    if (Height >= 0.75f)
+    {
+        if (Temperature < 0.3f)
+        {
+            return EBiomeType::Snow;
+        }
+        return EBiomeType::Mountain;
+    }
+
+    // Check configured biomes
+    for (const FBiomeSettings& BiomeSettings : Config.BiomeSettings)
+    {
+        if (Temperature >= BiomeSettings.MinTemperature &&
+            Temperature <= BiomeSettings.MaxTemperature &&
+            Moisture >= BiomeSettings.MinMoisture &&
+            Moisture <= BiomeSettings.MaxMoisture &&
+            Height >= BiomeSettings.MinHeight &&
+            Height <= BiomeSettings.MaxHeight)
+        {
+            return BiomeSettings.BiomeType;
+        }
+    }
+
+    // Fallback biome determination based on temperature and moisture
+    if (Temperature < 0.2f)
+    {
+        return EBiomeType::Tundra;
+    }
+    else if (Temperature < 0.4f)
+    {
+        if (Moisture > 0.5f)
+        {
+            return EBiomeType::Taiga;
+        }
+        return EBiomeType::Grassland;
+    }
+    else if (Temperature < 0.6f)
+    {
+        if (Moisture > 0.6f)
+        {
+            return EBiomeType::Forest;
+        }
+        else if (Moisture < 0.3f)
+        {
+            return EBiomeType::Desert;
+        }
+        return EBiomeType::Grassland;
+    }
+    else // Hot
+    {
+        if (Moisture > 0.6f)
+        {
+            return EBiomeType::Rainforest;
+        }
+        else if (Moisture > 0.3f)
+        {
+            if (Moisture > 0.5f)
+            {
+                return EBiomeType::Swamp;
+            }
+            return EBiomeType::Savanna;
+        }
+        return EBiomeType::Desert;
+    }
+}
+
+const FBiomeSettings* UHarmoniaWorldGeneratorSubsystem::FindBiomeSettings(
+    EBiomeType BiomeType,
+    const FWorldGeneratorConfig& Config) const
+{
+    for (const FBiomeSettings& Settings : Config.BiomeSettings)
+    {
+        if (Settings.BiomeType == BiomeType)
+        {
+            return &Settings;
+        }
+    }
+    return nullptr;
+}
+
+void UHarmoniaWorldGeneratorSubsystem::GenerateRivers(
+    const FWorldGeneratorConfig& Config,
+    const TArray<int32>& HeightData,
+    const TArray<FBiomeData>& BiomeData,
+    TArray<FRoadSegmentData>& OutRiverSegments)
+{
+    if (!Config.RiverSettings.bEnableRivers || Config.RiverSettings.RiverCount <= 0)
+    {
+        OutRiverSegments.Empty();
+        return;
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Generating %d rivers..."), Config.RiverSettings.RiverCount);
+    }
+
+    OutRiverSegments.Empty();
+    FRandomStream Random(Config.Seed + 3000);
+
+    // Find potential river sources (high altitude locations)
+    TArray<FIntPoint> PotentialSources;
+    for (int32 Y = 0; Y < Config.SizeY; ++Y)
+    {
+        for (int32 X = 0; X < Config.SizeX; ++X)
+        {
+            const int32 Index = Y * Config.SizeX + X;
+            const float Height = (float)HeightData[Index] / 65535.f;
+
+            // Check if this is a good river source
+            if (Height >= Config.RiverSettings.MinSourceHeight && Height < 0.9f)
+            {
+                PotentialSources.Add(FIntPoint(X, Y));
+            }
+        }
+    }
+
+    if (PotentialSources.Num() == 0)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("No valid river sources found!"));
+        return;
+    }
+
+    // Generate rivers
+    const int32 RiversToGenerate = FMath::Min(Config.RiverSettings.RiverCount, PotentialSources.Num());
+    for (int32 i = 0; i < RiversToGenerate; ++i)
+    {
+        // Pick random source
+        const int32 SourceIndex = Random.RandRange(0, PotentialSources.Num() - 1);
+        const FIntPoint Source = PotentialSources[SourceIndex];
+
+        // Trace river path
+        TArray<FVector> RiverPath;
+        TraceRiver(Source.X, Source.Y, HeightData, Config, RiverPath);
+
+        // Check if river is long enough
+        if (RiverPath.Num() >= Config.RiverSettings.MinRiverLength)
+        {
+            FRoadSegmentData RiverSegment;
+            RiverSegment.SplinePoints = RiverPath;
+            RiverSegment.SegmentMesh = Config.RiverSettings.RiverSplineMesh;
+            RiverSegment.bIsBridge = false;
+            RiverSegment.Width = Config.RiverSettings.RiverWidth;
+            OutRiverSegments.Add(RiverSegment);
+        }
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Generated %d rivers"), OutRiverSegments.Num());
+    }
+}
+
+void UHarmoniaWorldGeneratorSubsystem::TraceRiver(
+    int32 StartX,
+    int32 StartY,
+    const TArray<int32>& HeightData,
+    const FWorldGeneratorConfig& Config,
+    TArray<FVector>& OutRiverPath)
+{
+    OutRiverPath.Empty();
+
+    int32 CurrentX = StartX;
+    int32 CurrentY = StartY;
+    TSet<int32> VisitedTiles;
+
+    const int32 MaxIterations = Config.RiverSettings.MaxRiverLength;
+
+    for (int32 i = 0; i < MaxIterations; ++i)
+    {
+        const int32 CurrentIndex = CurrentY * Config.SizeX + CurrentX;
+
+        // Check if we've been here before (prevent loops)
+        if (VisitedTiles.Contains(CurrentIndex))
+        {
+            break;
+        }
+        VisitedTiles.Add(CurrentIndex);
+
+        // Get current height
+        const float CurrentHeight = (float)HeightData[CurrentIndex] / 65535.f;
+
+        // Add point to river path
+        const FVector RiverPoint(
+            CurrentX * 100.f,
+            CurrentY * 100.f,
+            CurrentHeight * Config.MaxHeight
+        );
+        OutRiverPath.Add(RiverPoint);
+
+        // Check if we reached sea level
+        if (CurrentHeight <= Config.SeaLevel + 0.01f)
+        {
+            break;
+        }
+
+        // Find lowest neighbor
+        int32 LowestX = CurrentX;
+        int32 LowestY = CurrentY;
+        float LowestHeight = CurrentHeight;
+
+        // Check all 8 neighbors
+        for (int32 dy = -1; dy <= 1; ++dy)
+        {
+            for (int32 dx = -1; dx <= 1; ++dx)
+            {
+                if (dx == 0 && dy == 0) continue;
+
+                const int32 NeighborX = CurrentX + dx;
+                const int32 NeighborY = CurrentY + dy;
+
+                // Check bounds
+                if (NeighborX < 0 || NeighborX >= Config.SizeX ||
+                    NeighborY < 0 || NeighborY >= Config.SizeY)
+                {
+                    continue;
+                }
+
+                const int32 NeighborIndex = NeighborY * Config.SizeX + NeighborX;
+                const float NeighborHeight = (float)HeightData[NeighborIndex] / 65535.f;
+
+                if (NeighborHeight < LowestHeight)
+                {
+                    LowestHeight = NeighborHeight;
+                    LowestX = NeighborX;
+                    LowestY = NeighborY;
+                }
+            }
+        }
+
+        // If we found a lower neighbor, move there
+        if (LowestX != CurrentX || LowestY != CurrentY)
+        {
+            CurrentX = LowestX;
+            CurrentY = LowestY;
+        }
+        else
+        {
+            // No lower neighbor found (we're in a depression)
+            break;
+        }
+    }
+}
+
+void UHarmoniaWorldGeneratorSubsystem::GenerateLakes(
+    const FWorldGeneratorConfig& Config,
+    TArray<int32>& HeightData,
+    const TArray<FBiomeData>& BiomeData,
+    TArray<FVector>& OutLakeLocations)
+{
+    if (!Config.LakeSettings.bEnableLakes || Config.LakeSettings.LakeCount <= 0)
+    {
+        OutLakeLocations.Empty();
+        return;
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Generating %d lakes..."), Config.LakeSettings.LakeCount);
+    }
+
+    OutLakeLocations.Empty();
+    FRandomStream Random(Config.Seed + 4000);
+
+    // Generate lakes
+    for (int32 i = 0; i < Config.LakeSettings.LakeCount; ++i)
+    {
+        // Pick random location
+        const int32 LakeX = Random.RandRange(
+            Config.LakeSettings.MaxLakeRadius,
+            Config.SizeX - Config.LakeSettings.MaxLakeRadius - 1
+        );
+        const int32 LakeY = Random.RandRange(
+            Config.LakeSettings.MaxLakeRadius,
+            Config.SizeY - Config.LakeSettings.MaxLakeRadius - 1
+        );
+
+        const int32 LakeIndex = LakeY * Config.SizeX + LakeX;
+        const float LakeHeight = (float)HeightData[LakeIndex] / 65535.f;
+
+        // Check if height is in preferred range
+        if (LakeHeight < Config.LakeSettings.PreferredMinHeight ||
+            LakeHeight > Config.LakeSettings.PreferredMaxHeight)
+        {
+            continue;
+        }
+
+        // Pick random radius
+        const int32 Radius = Random.RandRange(
+            Config.LakeSettings.MinLakeRadius,
+            Config.LakeSettings.MaxLakeRadius
+        );
+
+        // Store lake location (X, Y, Radius)
+        OutLakeLocations.Add(FVector(LakeX, LakeY, Radius));
+
+        // Flatten terrain for lake
+        for (int32 dy = -Radius; dy <= Radius; ++dy)
+        {
+            for (int32 dx = -Radius; dx <= Radius; ++dx)
+            {
+                const int32 X = LakeX + dx;
+                const int32 Y = LakeY + dy;
+
+                // Check bounds
+                if (X < 0 || X >= Config.SizeX || Y < 0 || Y >= Config.SizeY)
+                {
+                    continue;
+                }
+
+                // Check if within circular radius
+                const float Distance = FMath::Sqrt(dx * dx + dy * dy);
+                if (Distance > Radius)
+                {
+                    continue;
+                }
+
+                // Set height to lake level (slightly below original height)
+                const int32 Index = Y * Config.SizeX + X;
+                const int32 LakeHeightValue = FMath::RoundToInt((LakeHeight - 0.02f) * 65535.f);
+                HeightData[Index] = FMath::Max(LakeHeightValue, FMath::RoundToInt(Config.SeaLevel * 65535.f));
+            }
+        }
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Generated %d lakes"), OutLakeLocations.Num());
+    }
+}
+
+void UHarmoniaWorldGeneratorSubsystem::GenerateRoads(
+    const FWorldGeneratorConfig& Config,
+    const TArray<int32>& HeightData,
+    TArray<FRoadSegmentData>& OutRoadSegments)
+{
+    if (!Config.RoadSettings.bEnableRoads ||
+        Config.RoadSettings.ConnectionPoints.Num() < 2)
+    {
+        OutRoadSegments.Empty();
+        return;
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Generating roads between %d points..."),
+            Config.RoadSettings.ConnectionPoints.Num());
+    }
+
+    OutRoadSegments.Empty();
+
+    // Connect each point to the next
+    for (int32 i = 0; i < Config.RoadSettings.ConnectionPoints.Num() - 1; ++i)
+    {
+        const FVector Start = Config.RoadSettings.ConnectionPoints[i];
+        const FVector End = Config.RoadSettings.ConnectionPoints[i + 1];
+
+        TArray<FVector> RoadPath;
+        FindPath(Start, End, HeightData, Config, RoadPath);
+
+        if (RoadPath.Num() >= 2)
+        {
+            FRoadSegmentData RoadSegment;
+            RoadSegment.SplinePoints = RoadPath;
+            RoadSegment.SegmentMesh = Config.RoadSettings.RoadSplineMesh;
+            RoadSegment.bIsBridge = false; // TODO: Detect water crossings
+            RoadSegment.Width = Config.RoadSettings.RoadWidth;
+            OutRoadSegments.Add(RoadSegment);
+        }
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Generated %d road segments"), OutRoadSegments.Num());
+    }
+}
+
+void UHarmoniaWorldGeneratorSubsystem::FindPath(
+    FVector Start,
+    FVector End,
+    const TArray<int32>& HeightData,
+    const FWorldGeneratorConfig& Config,
+    TArray<FVector>& OutPath)
+{
+    OutPath.Empty();
+
+    // Convert world positions to grid coordinates
+    const int32 StartX = FMath::RoundToInt(Start.X / 100.f);
+    const int32 StartY = FMath::RoundToInt(Start.Y / 100.f);
+    const int32 EndX = FMath::RoundToInt(End.X / 100.f);
+    const int32 EndY = FMath::RoundToInt(End.Y / 100.f);
+
+    // Simple straight line path for now (can be improved with A* later)
+    const int32 Steps = FMath::Max(FMath::Abs(EndX - StartX), FMath::Abs(EndY - StartY));
+
+    if (Steps == 0)
+    {
+        OutPath.Add(Start);
+        return;
+    }
+
+    for (int32 i = 0; i <= Steps; ++i)
+    {
+        const float T = (float)i / (float)Steps;
+        const int32 X = FMath::RoundToInt(FMath::Lerp((float)StartX, (float)EndX, T));
+        const int32 Y = FMath::RoundToInt(FMath::Lerp((float)StartY, (float)EndY, T));
+
+        // Clamp to bounds
+        const int32 ClampedX = FMath::Clamp(X, 0, Config.SizeX - 1);
+        const int32 ClampedY = FMath::Clamp(Y, 0, Config.SizeY - 1);
+
+        const int32 Index = ClampedY * Config.SizeX + ClampedX;
+        const float Height = (float)HeightData[Index] / 65535.f;
+
+        OutPath.Add(FVector(
+            ClampedX * 100.f,
+            ClampedY * 100.f,
+            Height * Config.MaxHeight + 10.f // Slightly above terrain
+        ));
+    }
+}
