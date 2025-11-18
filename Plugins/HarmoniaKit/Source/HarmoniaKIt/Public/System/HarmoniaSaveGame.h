@@ -144,21 +144,191 @@ struct FHarmoniaPlayerSaveData
 	FDateTime LastSaveTime;
 };
 
+/** 리소스 노드 상태 저장 데이터 */
+USTRUCT(BlueprintType)
+struct FHarmoniaSavedResourceNodeState
+{
+	GENERATED_BODY()
+
+	/** 리소스 노드 ID (위치 기반 해시 또는 고유 ID) */
+	UPROPERTY(SaveGame)
+	int32 NodeID = 0;
+
+	/** 고갈 상태 (0.0 = 완전 고갈, 1.0 = 완전 충전) */
+	UPROPERTY(SaveGame)
+	float DepletionAmount = 1.0f;
+
+	/** 리스폰 대기 중인지 */
+	UPROPERTY(SaveGame)
+	bool bIsRespawning = false;
+
+	/** 리스폰까지 남은 시간 (초) */
+	UPROPERTY(SaveGame)
+	float RemainingRespawnTime = 0.0f;
+};
+
+/** POI 진행 상태 저장 데이터 */
+USTRUCT(BlueprintType)
+struct FHarmoniaSavedPOIState
+{
+	GENERATED_BODY()
+
+	/** POI ID */
+	UPROPERTY(SaveGame)
+	int32 POIID = 0;
+
+	/** 클리어 여부 */
+	UPROPERTY(SaveGame)
+	bool bIsCompleted = false;
+
+	/** 보물 획득 여부 */
+	UPROPERTY(SaveGame)
+	bool bTreasureCollected = false;
+
+	/** 방문 횟수 */
+	UPROPERTY(SaveGame)
+	int32 VisitCount = 0;
+
+	/** 마지막 방문 시간 */
+	UPROPERTY(SaveGame)
+	FDateTime LastVisitTime;
+};
+
 /** 월드 세이브 데이터 */
 USTRUCT(BlueprintType)
 struct FHarmoniaWorldSaveData
 {
 	GENERATED_BODY()
 
+	// ===== 빌딩 시스템 =====
+
 	/** 배치된 빌딩 목록 */
 	UPROPERTY(SaveGame)
 	TArray<FHarmoniaSavedBuildingInstance> PlacedBuildings;
 
-	/** 월드 시간 (게임 내 시간) */
+	// ===== 월드 생성 정보 =====
+
+	/** 자동 생성 여부 (true = 시드 기반, false = 수동 생성) */
+	UPROPERTY(SaveGame)
+	bool bIsAutomaticallyGenerated = true;
+
+	/** 월드 시드 (자동 생성 시 필수, 수동 생성 시 무시) */
+	UPROPERTY(SaveGame)
+	int32 WorldSeed = 0;
+
+	/** 월드 크기 X */
+	UPROPERTY(SaveGame)
+	int32 WorldSizeX = 512;
+
+	/** 월드 크기 Y */
+	UPROPERTY(SaveGame)
+	int32 WorldSizeY = 512;
+
+	// ===== 계절 시스템 =====
+
+	/** 현재 계절 */
+	UPROPERTY(SaveGame)
+	uint8 CurrentSeason = 0; // ESeasonType (Spring=0, Summer=1, Fall=2, Winter=3)
+
+	/** 계절 진행도 (0.0 ~ 1.0) */
+	UPROPERTY(SaveGame)
+	float SeasonProgress = 0.0f;
+
+	/** 총 경과 일수 */
+	UPROPERTY(SaveGame)
+	int32 TotalDaysElapsed = 0;
+
+	// ===== 날씨 시스템 =====
+
+	/** 현재 날씨 타입 */
+	UPROPERTY(SaveGame)
+	uint8 CurrentWeatherType = 0; // EWeatherType
+
+	/** 이전 날씨 타입 (전환용) */
+	UPROPERTY(SaveGame)
+	uint8 PreviousWeatherType = 0; // EWeatherType
+
+	/** 날씨 강도 (0.0 ~ 1.0) */
+	UPROPERTY(SaveGame)
+	float WeatherIntensity = 1.0f;
+
+	/** 날씨 전환 진행도 (0.0 ~ 1.0) */
+	UPROPERTY(SaveGame)
+	float WeatherTransitionProgress = 1.0f;
+
+	/** 현재 날씨 지속 시간 (초) */
+	UPROPERTY(SaveGame)
+	float CurrentWeatherDuration = 3600.0f;
+
+	/** 현재 날씨 경과 시간 (초) */
+	UPROPERTY(SaveGame)
+	float CurrentWeatherElapsedTime = 0.0f;
+
+	// ===== 시간 시스템 =====
+
+	/** 현재 게임 시간 (0.0 ~ 24.0) */
+	UPROPERTY(SaveGame)
+	float CurrentGameHour = 8.0f;
+
+	/** 현재 게임 일 (1부터 시작) */
+	UPROPERTY(SaveGame)
+	int32 CurrentGameDay = 1;
+
+	/** 시간 속도 배율 (1.0 = 정상 속도) */
+	UPROPERTY(SaveGame)
+	float TimeSpeedMultiplier = 1.0f;
+
+	/** 현재 시간대 */
+	UPROPERTY(SaveGame)
+	uint8 CurrentTimeOfDay = 2; // ETimeOfDay (Night=0, Dawn=1, Morning=2, Noon=3, Afternoon=4, Dusk=5)
+
+	/** 일시 정지 여부 */
+	UPROPERTY(SaveGame)
+	bool bIsTimePaused = false;
+
+	// ===== 수동 생성 월드 데이터 (bIsAutomaticallyGenerated == false 일 때만 사용) =====
+
+	/** 수동 배치된 월드 오브젝트 (나무, 바위 등) */
+	UPROPERTY(SaveGame)
+	TArray<FVector> ManualObjectLocations;
+
+	/** 수동 배치된 오브젝트 타입 */
+	UPROPERTY(SaveGame)
+	TArray<uint8> ManualObjectTypes; // EWorldObjectType
+
+	/** 수동 배치된 오브젝트 회전 */
+	UPROPERTY(SaveGame)
+	TArray<FRotator> ManualObjectRotations;
+
+	/** 수동 배치된 오브젝트 스케일 */
+	UPROPERTY(SaveGame)
+	TArray<FVector> ManualObjectScales;
+
+	// ===== 동적 상태 (자동/수동 모두 저장) =====
+
+	/** 리소스 노드 상태 목록 */
+	UPROPERTY(SaveGame)
+	TArray<FHarmoniaSavedResourceNodeState> ResourceNodeStates;
+
+	/** POI 진행 상태 목록 */
+	UPROPERTY(SaveGame)
+	TArray<FHarmoniaSavedPOIState> POIStates;
+
+	/** 변경된 바이옴 데이터 (원본과 다른 경우만 저장) */
+	UPROPERTY(SaveGame)
+	TArray<int32> ModifiedBiomeIndices;
+
+	/** 변경된 바이옴 타입 */
+	UPROPERTY(SaveGame)
+	TArray<uint8> ModifiedBiomeTypes; // EBiomeType
+
+	// ===== 레거시 호환성 (Deprecated) =====
+
+	/** [DEPRECATED] 월드 시간 (CurrentGameHour로 대체됨) */
 	UPROPERTY(SaveGame)
 	float WorldTime = 0.0f;
 
-	/** 날씨 상태 */
+	/** [DEPRECATED] 날씨 상태 (CurrentWeatherType으로 대체됨) */
 	UPROPERTY(SaveGame)
 	FString WeatherState;
 };
@@ -181,7 +351,7 @@ public:
 
 	/** 세이브 파일 버전 (호환성 체크용) */
 	UPROPERTY(SaveGame)
-	int32 SaveVersion = 1;
+	int32 SaveVersion = 2;
 
 	/** 마지막 저장 시간 */
 	UPROPERTY(SaveGame)
