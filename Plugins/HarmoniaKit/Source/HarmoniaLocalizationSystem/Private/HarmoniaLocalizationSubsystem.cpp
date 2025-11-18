@@ -7,6 +7,9 @@
 #include "HAL/PlatformFileManager.h"
 #include "Engine/Engine.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
+#include "Dom/JsonObject.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogHarmoniaLocalization, Log, All);
 
@@ -338,8 +341,13 @@ FString UHarmoniaLocalizationSubsystem::FormatDate(const FDateTime& DateTime) co
 		// Use custom format string
 		if (!Settings.CustomDateFormat.IsEmpty())
 		{
-			// TODO: Implement custom format parsing
-			return DateTime.ToString(*Settings.CustomDateFormat);
+			// Custom format parsing
+			// Support patterns: YYYY (year), MM (month), DD (day)
+			FString CustomFormat = Settings.CustomDateFormat;
+			CustomFormat = CustomFormat.Replace(TEXT("YYYY"), *FString::Printf(TEXT("%04d"), DateTime.GetYear()));
+			CustomFormat = CustomFormat.Replace(TEXT("MM"), *FString::Printf(TEXT("%02d"), DateTime.GetMonth()));
+			CustomFormat = CustomFormat.Replace(TEXT("DD"), *FString::Printf(TEXT("%02d"), DateTime.GetDay()));
+			return CustomFormat;
 		}
 		return DateTime.ToString();
 	default:
@@ -417,16 +425,65 @@ void UHarmoniaLocalizationSubsystem::SetLanguageSettings(EHarmoniaLanguage Langu
 
 bool UHarmoniaLocalizationSubsystem::LoadLocalizationConfig(const FString& ConfigPath)
 {
-	// TODO: Implement JSON config loading
-	UE_LOG(LogHarmoniaLocalization, Warning, TEXT("LoadLocalizationConfig not yet implemented"));
-	return false;
+	FString FileContent;
+	if (!FFileHelper::LoadFileToString(FileContent, *ConfigPath))
+	{
+		UE_LOG(LogHarmoniaLocalization, Error, TEXT("Failed to load localization config from: %s"), *ConfigPath);
+		return false;
+	}
+
+	TSharedPtr<FJsonObject> JsonObject;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(FileContent);
+
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid())
+	{
+		UE_LOG(LogHarmoniaLocalization, Error, TEXT("Failed to parse JSON config from: %s"), *ConfigPath);
+		return false;
+	}
+
+	// Parse current language
+	int32 SavedLanguage = JsonObject->GetIntegerField(TEXT("CurrentLanguage"));
+	CurrentLanguage = static_cast<EHarmoniaLanguage>(SavedLanguage);
+
+	// Parse missing translation tracking
+	if (JsonObject->HasField(TEXT("TrackMissingTranslations")))
+	{
+		bTrackMissingTranslations = JsonObject->GetBoolField(TEXT("TrackMissingTranslations"));
+	}
+
+	UE_LOG(LogHarmoniaLocalization, Log, TEXT("Successfully loaded localization config from: %s"), *ConfigPath);
+	return true;
 }
 
 bool UHarmoniaLocalizationSubsystem::SaveLocalizationConfig(const FString& ConfigPath) const
 {
-	// TODO: Implement JSON config saving
-	UE_LOG(LogHarmoniaLocalization, Warning, TEXT("SaveLocalizationConfig not yet implemented"));
-	return false;
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	// Save current language
+	JsonObject->SetNumberField(TEXT("CurrentLanguage"), static_cast<int32>(CurrentLanguage));
+
+	// Save missing translation tracking setting
+	JsonObject->SetBoolField(TEXT("TrackMissingTranslations"), bTrackMissingTranslations);
+
+	// Serialize to JSON string
+	FString OutputString;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+
+	if (!FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer))
+	{
+		UE_LOG(LogHarmoniaLocalization, Error, TEXT("Failed to serialize localization config"));
+		return false;
+	}
+
+	// Save to file
+	if (!FFileHelper::SaveStringToFile(OutputString, *ConfigPath))
+	{
+		UE_LOG(LogHarmoniaLocalization, Error, TEXT("Failed to save localization config to: %s"), *ConfigPath);
+		return false;
+	}
+
+	UE_LOG(LogHarmoniaLocalization, Log, TEXT("Successfully saved localization config to: %s"), *ConfigPath);
+	return true;
 }
 
 // ========================================

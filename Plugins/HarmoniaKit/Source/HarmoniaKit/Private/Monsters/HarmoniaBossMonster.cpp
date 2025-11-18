@@ -370,9 +370,71 @@ void AHarmoniaBossMonster::ApplyPhaseEffects(const FHarmoniaBossPhase& PhaseData
 		}
 	}
 
-	// TODO: Apply damage and defense multipliers via gameplay effects
-	// You would create dynamic gameplay effects here to modify damage output and damage taken
-	// For now, store them for reference by abilities/damage calculations
+	// Apply damage multiplier via gameplay effect
+	if (PhaseData.DamageMultiplier != 1.0f && AttributeSet)
+	{
+		// Get current attack power to calculate percentage bonus
+		float CurrentAttackPower = AttributeSet->GetAttackPower();
+		float BonusAmount = CurrentAttackPower * (PhaseData.DamageMultiplier - 1.0f);
+
+		if (BonusAmount != 0.0f)
+		{
+			// Create dynamic damage multiplier effect
+			UGameplayEffect* DamageEffect = NewObject<UGameplayEffect>(GetTransientPackage(), FName(TEXT("BossPhaseDamageMultiplier")));
+			DamageEffect->DurationPolicy = EGameplayEffectDurationType::Infinite;
+
+			// Add modifier for attack power (additive bonus based on multiplier)
+			int32 Idx = DamageEffect->Modifiers.Num();
+			DamageEffect->Modifiers.SetNum(Idx + 1);
+			FGameplayModifierInfo& DamageModifier = DamageEffect->Modifiers[Idx];
+			DamageModifier.ModifierMagnitude = FScalableFloat(BonusAmount);
+			DamageModifier.ModifierOp = EGameplayModOp::Additive;
+			DamageModifier.Attribute = UHarmoniaAttributeSet::GetAttackPowerAttribute();
+
+			// Apply the effect
+			FGameplayEffectContextHandle DamageContext = AbilitySystemComponent->MakeEffectContext();
+			DamageContext.AddSourceObject(this);
+			FGameplayEffectSpecHandle DamageSpecHandle = AbilitySystemComponent->MakeOutgoingSpec(DamageEffect->GetClass(), MonsterLevel, DamageContext);
+			if (DamageSpecHandle.IsValid())
+			{
+				FActiveGameplayEffectHandle ActiveHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*DamageSpecHandle.Data.Get());
+				ActivePhaseEffects.Add(ActiveHandle);
+			}
+		}
+	}
+
+	// Apply defense multiplier via gameplay effect
+	if (PhaseData.DefenseMultiplier != 1.0f && AttributeSet)
+	{
+		// Get current defense to calculate percentage bonus
+		float CurrentDefense = AttributeSet->GetDefense();
+		float BonusAmount = CurrentDefense * (PhaseData.DefenseMultiplier - 1.0f);
+
+		if (BonusAmount != 0.0f)
+		{
+			// Create dynamic defense multiplier effect
+			UGameplayEffect* DefenseEffect = NewObject<UGameplayEffect>(GetTransientPackage(), FName(TEXT("BossPhaseDefenseMultiplier")));
+			DefenseEffect->DurationPolicy = EGameplayEffectDurationType::Infinite;
+
+			// Add modifier for defense (additive bonus based on multiplier)
+			int32 Idx = DefenseEffect->Modifiers.Num();
+			DefenseEffect->Modifiers.SetNum(Idx + 1);
+			FGameplayModifierInfo& DefenseModifier = DefenseEffect->Modifiers[Idx];
+			DefenseModifier.ModifierMagnitude = FScalableFloat(BonusAmount);
+			DefenseModifier.ModifierOp = EGameplayModOp::Additive;
+			DefenseModifier.Attribute = UHarmoniaAttributeSet::GetDefenseAttribute();
+
+			// Apply the effect
+			FGameplayEffectContextHandle DefenseContext = AbilitySystemComponent->MakeEffectContext();
+			DefenseContext.AddSourceObject(this);
+			FGameplayEffectSpecHandle DefenseSpecHandle = AbilitySystemComponent->MakeOutgoingSpec(DefenseEffect->GetClass(), MonsterLevel, DefenseContext);
+			if (DefenseSpecHandle.IsValid())
+			{
+				FActiveGameplayEffectHandle ActiveHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*DefenseSpecHandle.Data.Get());
+				ActivePhaseEffects.Add(ActiveHandle);
+			}
+		}
+	}
 }
 
 void AHarmoniaBossMonster::RemovePreviousPhaseEffects()

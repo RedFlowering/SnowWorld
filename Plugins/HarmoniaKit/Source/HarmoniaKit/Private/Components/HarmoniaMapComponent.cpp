@@ -3,6 +3,7 @@
 #include "Components/HarmoniaMapComponent.h"
 #include "System/HarmoniaMapSubsystem.h"
 #include "System/HarmoniaFogOfWarRenderer.h"
+#include "System/HarmoniaSaveGameSubsystem.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
@@ -355,16 +356,35 @@ FVector UHarmoniaMapComponent::MapUVToWorld(const FVector2D& UV, float WorldZ) c
 
 void UHarmoniaMapComponent::SaveExplorationData()
 {
-	// TODO: Implement save system integration
-	// This would integrate with your game's save system
-	UE_LOG(LogTemp, Log, TEXT("SaveExplorationData called - implement save system integration"));
+	// Save exploration data - integrate with your save system
+	// This is a placeholder for save system integration
+	UE_LOG(LogTemp, Log, TEXT("SaveExplorationData called (%d regions, %d locations)"),
+		ExploredRegions.Num(), DiscoveredLocations.Num());
+
+	// TODO: Integrate with HarmoniaSaveGameSubsystem when save data structures are defined
+	// Example implementation:
+	// if (UHarmoniaSaveGameSubsystem* SaveSubsystem = GetWorld()->GetSubsystem<UHarmoniaSaveGameSubsystem>())
+	// {
+	//     SaveSubsystem->SaveMapExploration(ExploredRegions, DiscoveredLocations);
+	// }
 }
 
 void UHarmoniaMapComponent::LoadExplorationData()
 {
-	// TODO: Implement save system integration
-	// This would load from your game's save system
-	UE_LOG(LogTemp, Log, TEXT("LoadExplorationData called - implement save system integration"));
+	// Load exploration data - integrate with your save system
+	// This is a placeholder for save system integration
+	UE_LOG(LogTemp, Log, TEXT("LoadExplorationData called"));
+
+	// TODO: Integrate with HarmoniaSaveGameSubsystem when save data structures are defined
+	// Example implementation:
+	// if (UHarmoniaSaveGameSubsystem* SaveSubsystem = GetWorld()->GetSubsystem<UHarmoniaSaveGameSubsystem>())
+	// {
+	//     if (SaveSubsystem->LoadMapExploration(ExploredRegions, DiscoveredLocations))
+	//     {
+	//         OnRep_ExploredRegions();
+	//         OnRep_DiscoveredLocations();
+	//     }
+	// }
 }
 
 void UHarmoniaMapComponent::UpdateExploration()
@@ -439,7 +459,34 @@ bool UHarmoniaMapComponent::ServerCreatePing_Validate(const FVector& WorldLocati
 		return false;
 	}
 
-	// TODO: Add rate limiting to prevent ping spam
+	// Rate limiting to prevent ping spam
+	const float MinTimeBetweenPings = 0.5f; // Minimum 0.5 seconds between pings
+	const int32 MaxPingsPerMinute = 30; // Maximum 30 pings per minute
+
+	float CurrentTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
+
+	// Check time since last ping
+	if (CurrentTime - LastPingTime < MinTimeBetweenPings)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerCreatePing: Ping spam detected (too frequent)"));
+		return false;
+	}
+
+	// Check ping count in the last minute
+	PingTimestamps.RemoveAll([CurrentTime](float Timestamp) {
+		return (CurrentTime - Timestamp) > 60.0f; // Remove timestamps older than 1 minute
+	});
+
+	if (PingTimestamps.Num() >= MaxPingsPerMinute)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerCreatePing: Ping spam detected (too many pings)"));
+		return false;
+	}
+
+	// Update rate limiting trackers
+	LastPingTime = CurrentTime;
+	PingTimestamps.Add(CurrentTime);
+
 	return true;
 }
 

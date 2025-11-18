@@ -198,4 +198,8 @@ private:
 
 	// Initialize fog of war renderer
 	void InitializeFogOfWarRenderer();
+
+	// Rate limiting for ping creation
+	float LastPingTime = 0.0f;
+	TArray<float> PingTimestamps;
 };

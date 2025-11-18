@@ -266,9 +266,18 @@ FText AHarmoniaItemPickup::GetDisplayName() const
 	}
 	else if (LootItem.ItemID != NAME_None)
 	{
-		// TODO: Look up item name from item data table
-		// For now, just use ItemID
-		return FText::FromName(LootItem.ItemID);
+		// Format the ItemID into a readable name
+		// Convert "ItemID_Example" to "Item ID Example"
+		FString ItemIDString = LootItem.ItemID.ToString();
+		ItemIDString = ItemIDString.Replace(TEXT("_"), TEXT(" "));
+
+		// Capitalize first letter
+		if (ItemIDString.Len() > 0)
+		{
+			ItemIDString[0] = FChar::ToUpper(ItemIDString[0]);
+		}
+
+		return FText::FromString(ItemIDString);
 	}
 
 	return FText::FromString("Unknown Item");
