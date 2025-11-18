@@ -308,4 +308,7 @@ private:
 	// Spawned equipment meshes
 	UPROPERTY()
 	TArray<USkeletalMeshComponent*> EquipmentMeshes;
+
+	// Active equipment load penalty effect handle
+	FActiveGameplayEffectHandle ActiveEquipLoadPenaltyHandle;
 };

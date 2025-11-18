@@ -25,6 +25,17 @@ void UHarmoniaEquipmentComponent::EndPlay(const EEndPlayReason::Type EndPlayReas
 {
 	// Clean up all equipment
 	UnequipAll();
+
+	// Remove equipment load penalty effect
+	if (ActiveEquipLoadPenaltyHandle.IsValid())
+	{
+		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+		{
+			ASC->RemoveActiveGameplayEffect(ActiveEquipLoadPenaltyHandle);
+		}
+		ActiveEquipLoadPenaltyHandle.Invalidate();
+	}
+
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -597,6 +608,13 @@ void UHarmoniaEquipmentComponent::ApplyEquipLoadPenalty()
 		SpeedPenalty = -0.4f;
 	}
 
+	// Remove previous penalty effect if it exists
+	if (ActiveEquipLoadPenaltyHandle.IsValid())
+	{
+		ASC->RemoveActiveGameplayEffect(ActiveEquipLoadPenaltyHandle);
+		ActiveEquipLoadPenaltyHandle.Invalidate();
+	}
+
 	// Apply penalty as a gameplay effect
 	// Note: This creates a simple additive modifier
 	// In a production system, you might want to use a proper GameplayEffect class
@@ -614,16 +632,6 @@ void UHarmoniaEquipmentComponent::ApplyEquipLoadPenalty()
 		ModifierInfo.ModifierOp = EGameplayModOp::Additive;
 		ModifierInfo.Attribute = UHarmoniaAttributeSet::GetMovementSpeedAttribute();
 
-		// Remove previous penalty effect if it exists
-		// Tag the effect so we can remove it later
-		FGameplayTag EquipLoadPenaltyTag = FGameplayTag::RequestGameplayTag(FName("Effect.EquipLoadPenalty"));
-		FInheritedTagContainer TagContainer;
-		TagContainer.Added.AddTag(EquipLoadPenaltyTag);
-		GameplayEffect->InheritableOwnedTagsContainer = TagContainer;
-
-		// Remove previous penalty
-		ASC->RemoveActiveGameplayEffectBySourceEffect(GameplayEffect->GetClass(), ASC);
-
 		// Apply new penalty
 		FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
 		EffectContext.AddSourceObject(this);
@@ -631,7 +639,7 @@ void UHarmoniaEquipmentComponent::ApplyEquipLoadPenalty()
 		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(GameplayEffect->GetClass(), 1.0f, EffectContext);
 		if (SpecHandle.IsValid())
 		{
-			ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+			ActiveEquipLoadPenaltyHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 			UE_LOG(LogTemp, Verbose, TEXT("ApplyEquipLoadPenalty: Applied %.1f%% movement speed penalty (Load: %.1f%%)"),
 				SpeedPenalty * 100.f, LoadRatio * 100.f);
 		}
