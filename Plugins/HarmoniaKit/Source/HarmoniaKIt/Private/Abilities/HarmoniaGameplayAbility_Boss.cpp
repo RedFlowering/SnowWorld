@@ -2,35 +2,35 @@
 
 #include "Abilities/HarmoniaGameplayAbility_Boss.h"
 #include "Monsters/HarmoniaBossMonster.h"
-#include "LyraHealthComponent.h"
+#include "Character/LyraHealthComponent.h"
 #include "AbilitySystemComponent.h"
 
-UHarmoniaBossGameplayAbility::UBossGameplayAbility(const FObjectInitializer& ObjectInitializer)
+UHarmoniaGameplayAbility_Boss::UHarmoniaGameplayAbility_Boss(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	MinHealthPercent = 0.0f;
 	MaxHealthPercent = 0.0f;
 }
 
-AHarmoniaBossMonster* UHarmoniaBossGameplayAbility::GetBossCharacter() const
+AHarmoniaBossMonster* UHarmoniaGameplayAbility_Boss::GetBossCharacter() const
 {
-	return Cast<ABossCharacter>(GetAvatarActorFromActorInfo());
+	return Cast<AHarmoniaBossMonster>(GetAvatarActorFromActorInfo());
 }
 
-int32 UHarmoniaBossGameplayAbility::GetBossPhase() const
+int32 UHarmoniaGameplayAbility_Boss::GetBossPhase() const
 {
 	AHarmoniaBossMonster* Boss = GetBossCharacter();
 	return Boss ? Boss->GetCurrentPhase() : 0;
 }
 
-bool UHarmoniaBossGameplayAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
+bool UHarmoniaGameplayAbility_Boss::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
 {
 	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
 	{
 		return false;
 	}
 
-	AHarmoniaBossMonster* Boss = Cast<ABossCharacter>(ActorInfo->AvatarActor.Get());
+	AHarmoniaBossMonster* Boss = Cast<AHarmoniaBossMonster>(ActorInfo->AvatarActor.Get());
 	if (!Boss)
 	{
 		return true; // Allow if not a boss

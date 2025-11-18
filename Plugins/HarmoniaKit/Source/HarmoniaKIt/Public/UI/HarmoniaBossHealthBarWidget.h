@@ -89,12 +89,6 @@ protected:
 	UFUNCTION()
 	virtual void OnBossPhaseChanged(int32 OldPhase, int32 NewPhase, const struct FHarmoniaBossPhase& PhaseData);
 
-	/** Called when boss encounter starts */
-	UFUNCTION()
-
-	/** Called when boss encounter ends */
-	UFUNCTION()
-
 	//~=============================================================================
 	// Animation Events
 	//~=============================================================================
@@ -179,7 +173,7 @@ protected:
 
 	/** Currently bound boss character */
 	UPROPERTY(BlueprintReadOnly, Category = "Boss|UI")
-	TObjectPtr<ABossCharacter> BossCharacter;
+	TObjectPtr<AHarmoniaBossMonster> BossCharacter;
 
 	/** Whether the health bar is visible */
 	UPROPERTY(BlueprintReadOnly, Category = "Boss|UI")

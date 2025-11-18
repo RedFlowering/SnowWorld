@@ -209,20 +209,8 @@ void UHarmoniaBossHealthBarWidget::OnBossPhaseChanged(int32 OldPhase, int32 NewP
 		return;
 	}
 
-	UpdatePhaseDisplay(NewPhase, BossCharacter->());
+	UpdatePhaseDisplay(NewPhase, BossCharacter->GetTotalPhases());
 	PlayPhaseTransitionAnimation(NewPhase);
-}
-
-{
-	ShowBossHealthBar();
-}
-
-{
-	if (bDefeated)
-	{
-		// Could add a delay before hiding
-		HideBossHealthBar();
-	}
 }
 
 //~=============================================================================

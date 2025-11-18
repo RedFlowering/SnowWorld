@@ -3,28 +3,28 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/LyraGameplayAbility.h"
-#include "HarmoniaBossGameplayAbility.generated.h"
+#include "HarmoniaGameplayAbility_Boss.generated.h"
 
 class AHarmoniaBossMonster;
 
 /**
- * UBossGameplayAbility
+ * UHarmoniaGameplayAbility_Boss
  *
  * Base class for boss-specific gameplay abilities.
  * Provides helper functions for accessing boss character and components.
  */
 UCLASS(Abstract)
-class HARMONIAKIT_API UBossGameplayAbility : public ULyraGameplayAbility
+class HARMONIAKIT_API UHarmoniaGameplayAbility_Boss : public ULyraGameplayAbility
 {
 	GENERATED_BODY()
 
 public:
-	UBossGameplayAbility(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	UHarmoniaGameplayAbility_Boss(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 protected:
 	/** Get the boss character that owns this ability */
 	UFUNCTION(BlueprintPure, Category = "Boss|Ability")
-	ABossCharacter* GetBossCharacter() const;
+	AHarmoniaBossMonster* GetBossCharacter() const;
 
 	/** Get current boss phase */
 	UFUNCTION(BlueprintPure, Category = "Boss|Ability")
