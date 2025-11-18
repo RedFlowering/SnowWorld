@@ -13,6 +13,7 @@ class UHarmoniaLockOnComponent;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
+struct FGameplayAbilitySpecHandle;
 
 /**
  * Example Melee Character

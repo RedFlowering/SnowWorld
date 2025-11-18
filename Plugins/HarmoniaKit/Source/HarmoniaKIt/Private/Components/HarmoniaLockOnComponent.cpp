@@ -4,7 +4,7 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/PlayerController.h"
-#include "Components/SenseStimulusComponent.h"
+#include "SenseStimulusComponent.h"
 #include "Components/HarmoniaSenseInteractionComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
