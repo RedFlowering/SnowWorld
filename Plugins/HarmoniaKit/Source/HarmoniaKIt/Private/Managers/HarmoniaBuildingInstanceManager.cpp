@@ -4,8 +4,10 @@
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/Pawn.h"
 #include "Misc/Guid.h"
 #include "HarmoniaLoadManager.h"
+#include "Teams/LyraTeamAgentInterface.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogBuildingInstanceManager, Log, All);
 
@@ -126,6 +128,38 @@ FGuid UHarmoniaBuildingInstanceManager::PlaceBuilding(const FBuildingPartData& P
 	Metadata.Rotation = Rotation;
 	Metadata.Health = 100.0f; // 기본 내구도
 	Metadata.OwnerPlayerID = Owner ? Owner->GetName() : TEXT("");
+
+	// [TEAM SUPPORT] Set team ownership and sharing
+	Metadata.OwnerTeamID = INDEX_NONE;
+	Metadata.bSharedWithTeam = false;
+
+	if (Owner)
+	{
+		// Get team ID from owner
+		if (ILyraTeamAgentInterface* TeamAgent = Cast<ILyraTeamAgentInterface>(Owner))
+		{
+			FGenericTeamId TeamId = TeamAgent->GetGenericTeamId();
+			Metadata.OwnerTeamID = GenericTeamIdToInteger(TeamId);
+		}
+		// Try to get from pawn's controller
+		else if (APawn* Pawn = Cast<APawn>(Owner))
+		{
+			if (Pawn->GetController())
+			{
+				if (ILyraTeamAgentInterface* ControllerTeamAgent = Cast<ILyraTeamAgentInterface>(Pawn->GetController()))
+				{
+					FGenericTeamId TeamId = ControllerTeamAgent->GetGenericTeamId();
+					Metadata.OwnerTeamID = GenericTeamIdToInteger(TeamId);
+				}
+			}
+		}
+
+		// Default: share with team if owner has a team
+		if (Metadata.OwnerTeamID != INDEX_NONE)
+		{
+			Metadata.bSharedWithTeam = true;
+		}
+	}
 
 	BuildingMetadataMap.Add(NewGuid, Metadata);
 
