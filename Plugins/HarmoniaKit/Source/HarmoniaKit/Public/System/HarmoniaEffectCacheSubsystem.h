@@ -49,8 +49,8 @@ public:
 	 * Get effect data by tag (const version)
 	 * @param EffectTag - Gameplay tag identifying the effect
 	 * @return Pointer to cached effect data, or nullptr if not found
+	 * NOTE: C++ only - use GetEffectsByTag for Blueprint
 	 */
-	UFUNCTION(BlueprintPure, Category = "Harmonia|Effects")
 	const FHarmoniaAnimationEffectData* GetEffectData(FGameplayTag EffectTag) const;
 
 	/**

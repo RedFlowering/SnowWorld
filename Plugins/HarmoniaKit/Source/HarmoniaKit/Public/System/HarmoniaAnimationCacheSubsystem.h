@@ -47,8 +47,8 @@ public:
 	 * Get animation data by tag
 	 * @param AnimationTag - Gameplay tag identifying the animation
 	 * @return Pointer to cached animation data, or nullptr if not found
+	 * NOTE: C++ only - use GetAnimationsByTag for Blueprint
 	 */
-	UFUNCTION(BlueprintPure, Category = "Harmonia|Animations")
 	const FHarmoniaAnimationData* GetAnimationData(FGameplayTag AnimationTag) const;
 
 	/**

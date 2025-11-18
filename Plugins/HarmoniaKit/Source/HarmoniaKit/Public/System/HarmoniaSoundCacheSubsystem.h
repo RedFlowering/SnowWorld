@@ -48,8 +48,8 @@ public:
 	 * Get sound data by tag
 	 * @param SoundTag - Gameplay tag identifying the sound
 	 * @return Pointer to cached sound data, or nullptr if not found
+	 * NOTE: C++ only - use GetSoundsByTag for Blueprint
 	 */
-	UFUNCTION(BlueprintPure, Category = "Harmonia|Sounds")
 	const FHarmoniaSoundData* GetSoundData(FGameplayTag SoundTag) const;
 
 	/**
@@ -264,8 +264,7 @@ private:
 	/** Set of tags that failed to load */
 	TSet<FGameplayTag> FailedLoadTags;
 
-	/** Currently playing sounds for concurrency management */
-	UPROPERTY(Transient)
+	/** Currently playing sounds for concurrency management (not exposed to Blueprint) */
 	TMap<FGameplayTag, TArray<TWeakObjectPtr<UAudioComponent>>> PlayingSounds;
 
 	/** Last play time for each sound tag (for MinTimeBetweenPlays) */
