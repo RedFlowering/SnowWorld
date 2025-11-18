@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "Definitions/HarmoniaCombatSystemDefinitions.h"
 #include "Definitions/HarmoniaEquipmentSystemDefinitions.h"
+#include "System/HarmoniaCombatPowerCalculator.h"
 #include "HarmoniaWeaponUpgradeComponent.generated.h"
 
 /**
