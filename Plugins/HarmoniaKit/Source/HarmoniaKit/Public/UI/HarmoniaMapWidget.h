@@ -32,15 +32,15 @@ protected:
 public:
 	// Map image widget (bind in blueprint)
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
-	TObjectPtr<UImage> MapImage;
+	TObjectPtr<UImage> MapImage = nullptr;
 
 	// Fog of war image (bind in blueprint)
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
-	TObjectPtr<UImage> FogOfWarImage;
+	TObjectPtr<UImage> FogOfWarImage = nullptr;
 
 	// Canvas for markers (bind in blueprint)
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
-	TObjectPtr<UCanvasPanel> MarkerCanvas;
+	TObjectPtr<UCanvasPanel> MarkerCanvas = nullptr;
 
 	// Player marker widget class
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map|Markers")
@@ -60,7 +60,7 @@ public:
 
 	// Fog of war material (for masking explored regions)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map|FogOfWar")
-	TObjectPtr<UMaterialInterface> FogOfWarMaterial;
+	TObjectPtr<UMaterialInterface> FogOfWarMaterial = nullptr;
 
 	// Update interval for markers (seconds)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map")
@@ -145,11 +145,11 @@ public:
 protected:
 	// Map component reference
 	UPROPERTY(BlueprintReadOnly, Category = "Map")
-	TObjectPtr<UHarmoniaMapComponent> MapComponent;
+	TObjectPtr<UHarmoniaMapComponent> MapComponent = nullptr;
 
 	// Dynamic material instance for fog of war
 	UPROPERTY()
-	TObjectPtr<UMaterialInstanceDynamic> FogOfWarMaterialInstance;
+	TObjectPtr<UMaterialInstanceDynamic> FogOfWarMaterialInstance = nullptr;
 
 	// Active marker widgets
 	UPROPERTY()
@@ -157,7 +157,7 @@ protected:
 
 	// Player marker widget
 	UPROPERTY()
-	TObjectPtr<UHarmoniaMapMarkerWidget> PlayerMarker;
+	TObjectPtr<UHarmoniaMapMarkerWidget> PlayerMarker = nullptr;
 
 	// Timer for marker updates
 	float MarkerUpdateTimer = 0.0f;
