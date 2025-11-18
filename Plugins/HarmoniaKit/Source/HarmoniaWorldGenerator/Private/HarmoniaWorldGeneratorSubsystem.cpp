@@ -2289,8 +2289,6 @@ float UHarmoniaWorldGeneratorSubsystem::CalculateSlope(
 // Environment System Implementation
 // ========================================
 
-DEFINE_STAT(STAT_HarmoniaWorldGeneratorSubsystem);
-
 void UHarmoniaWorldGeneratorSubsystem::InitializeEnvironmentSystem(const FEnvironmentSystemSettings& Settings)
 {
     EnvironmentSettings = Settings;
@@ -3133,17 +3131,8 @@ bool UHarmoniaWorldGeneratorSubsystem::GetLandscapeHeightData(
     // Get landscape data using edit interface
     FLandscapeEditDataInterface LandscapeEdit(Landscape->GetLandscapeInfo());
 
-    for (int32 Y = 0; Y < SizeY; ++Y)
-    {
-        for (int32 X = 0; X < SizeX; ++X)
-        {
-            const int32 Index = Y * SizeX + X;
-            const int32 LandscapeX = OutMinX + X;
-            const int32 LandscapeY = OutMinY + Y;
-
-            OutHeightData[Index] = LandscapeEdit.GetHeight(LandscapeX, LandscapeY);
-        }
-    }
+    // Use the batch API to get height data for the entire region
+    LandscapeEdit.GetHeightDataFast(OutMinX, OutMinY, OutMaxX, OutMaxY, OutHeightData.GetData(), 0);
 
     return true;
 }
@@ -3172,17 +3161,8 @@ bool UHarmoniaWorldGeneratorSubsystem::SetLandscapeHeightData(
     // Set landscape data using edit interface
     FLandscapeEditDataInterface LandscapeEdit(Landscape->GetLandscapeInfo());
 
-    for (int32 Y = 0; Y < SizeY; ++Y)
-    {
-        for (int32 X = 0; X < SizeX; ++X)
-        {
-            const int32 Index = Y * SizeX + X;
-            const int32 LandscapeX = MinX + X;
-            const int32 LandscapeY = MinY + Y;
-
-            LandscapeEdit.SetHeight(LandscapeX, LandscapeY, HeightData[Index]);
-        }
-    }
+    // Use the batch API to set height data for the entire region
+    LandscapeEdit.SetHeightDataFast(MinX, MinY, MaxX, MaxY, HeightData.GetData(), 0);
 
     LandscapeEdit.Flush();
 
@@ -3278,7 +3258,16 @@ bool UHarmoniaWorldGeneratorSubsystem::GetCachedChunk(FIntPoint ChunkCoordinates
             if (FFileHelper::LoadFileToArray(FileData, *FilePath))
             {
                 FMemoryReader MemoryReader(FileData, true);
-                MemoryReader << OutChunkData;
+
+                // Manually serialize each field (USTRUCTs don't have automatic operator<< support)
+                MemoryReader << OutChunkData.ChunkCoordinates;
+                MemoryReader << OutChunkData.ChunkSize;
+                MemoryReader << OutChunkData.HeightData;
+                MemoryReader << OutChunkData.Objects;
+                MemoryReader << OutChunkData.BiomeData;
+                MemoryReader << OutChunkData.GenerationTime;
+                MemoryReader << OutChunkData.bIsFullyGenerated;
+                MemoryReader << OutChunkData.CacheHash;
 
                 // Add to memory cache
                 CacheChunk(OutChunkData);
@@ -3320,7 +3309,16 @@ void UHarmoniaWorldGeneratorSubsystem::CacheChunk(const FWorldChunkData& ChunkDa
         TArray<uint8> FileData;
         FMemoryWriter MemoryWriter(FileData, true);
         FWorldChunkData WritableData = DataWithHash;
-        MemoryWriter << WritableData;
+
+        // Manually serialize each field (USTRUCTs don't have automatic operator<< support)
+        MemoryWriter << WritableData.ChunkCoordinates;
+        MemoryWriter << WritableData.ChunkSize;
+        MemoryWriter << WritableData.HeightData;
+        MemoryWriter << WritableData.Objects;
+        MemoryWriter << WritableData.BiomeData;
+        MemoryWriter << WritableData.GenerationTime;
+        MemoryWriter << WritableData.bIsFullyGenerated;
+        MemoryWriter << WritableData.CacheHash;
 
         FFileHelper::SaveArrayToFile(FileData, *FilePath);
     }
