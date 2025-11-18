@@ -27,6 +27,39 @@ enum class EWorldObjectType : uint8
 	Rock        UMETA(DisplayName = "Rock"),
 	Resource    UMETA(DisplayName = "Resource"),
 	Structure   UMETA(DisplayName = "Structure"),
+	POI         UMETA(DisplayName = "Point of Interest"),
+	CaveEntrance UMETA(DisplayName = "Cave Entrance"),
+	OreVein     UMETA(DisplayName = "Ore Vein"),
+};
+
+/**
+ * POI (Point of Interest) Types
+ */
+UENUM(BlueprintType)
+enum class EPOIType : uint8
+{
+	None         UMETA(DisplayName = "None"),
+	Dungeon      UMETA(DisplayName = "Dungeon"),
+	Treasure     UMETA(DisplayName = "Treasure"),
+	QuestLocation UMETA(DisplayName = "Quest Location"),
+	Boss         UMETA(DisplayName = "Boss Arena"),
+	Camp         UMETA(DisplayName = "Camp"),
+	Ruins        UMETA(DisplayName = "Ruins"),
+};
+
+/**
+ * Resource Types for Advanced Distribution
+ */
+UENUM(BlueprintType)
+enum class EResourceType : uint8
+{
+	None         UMETA(DisplayName = "None"),
+	IronOre      UMETA(DisplayName = "Iron Ore"),
+	GoldOre      UMETA(DisplayName = "Gold Ore"),
+	CopperOre    UMETA(DisplayName = "Copper Ore"),
+	Coal         UMETA(DisplayName = "Coal"),
+	Gems         UMETA(DisplayName = "Gems"),
+	CrystalOre   UMETA(DisplayName = "Crystal Ore"),
 };
 
 /**
@@ -77,6 +110,26 @@ struct FWorldObjectData
 	// Is this a group center/leader object?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIsGroupCenter = false;
+
+	// POI-specific data
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EPOIType POIType = EPOIType::None;
+
+	// POI difficulty level (0-10)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 Difficulty = 0;
+
+	// Resource-specific data
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EResourceType ResourceType = EResourceType::None;
+
+	// Resource amount/richness (0.0-1.0)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float ResourceAmount = 1.0f;
+
+	// Cave depth (for cave systems, in UE units)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float CaveDepth = 0.0f;
 };
 
 /**
@@ -477,6 +530,244 @@ struct FErosionSettings
 };
 
 /**
+ * Cave System Settings
+ */
+USTRUCT(BlueprintType)
+struct FCaveSettings
+{
+	GENERATED_BODY()
+
+	// Enable cave generation
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caves")
+	bool bEnableCaves = true;
+
+	// Cave density (0.0-1.0, how often caves occur)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caves", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float CaveDensity = 0.3f;
+
+	// Cave threshold (noise value above which caves exist)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caves", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float CaveThreshold = 0.5f;
+
+	// Minimum depth for cave generation (below surface)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caves", meta = (ClampMin = "0.0", ClampMax = "2000.0"))
+	float MinCaveDepth = 200.0f;
+
+	// Maximum depth for cave generation
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caves", meta = (ClampMin = "0.0", ClampMax = "5000.0"))
+	float MaxCaveDepth = 1000.0f;
+
+	// Cave scale (larger = bigger caves)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caves", meta = (ClampMin = "1.0", ClampMax = "100.0"))
+	float CaveScale = 20.0f;
+
+	// 3D noise settings for cave generation
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caves")
+	FPerlinNoiseSettings CaveNoiseSettings;
+
+	// Number of cave entrance markers to place
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caves")
+	int32 CaveEntranceCount = 10;
+
+	// Minimum height for cave entrances (normalized)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caves", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float MinEntranceHeight = 0.3f;
+
+	// Maximum height for cave entrances (normalized)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caves", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float MaxEntranceHeight = 0.8f;
+};
+
+/**
+ * POI System Settings
+ */
+USTRUCT(BlueprintType)
+struct FPOISettings
+{
+	GENERATED_BODY()
+
+	// Enable POI generation
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "POI")
+	bool bEnablePOI = true;
+
+	// Number of POIs to generate
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "POI", meta = (ClampMin = "0", ClampMax = "100"))
+	int32 POICount = 20;
+
+	// Minimum distance between POIs (in UE units)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "POI", meta = (ClampMin = "100.0", ClampMax = "50000.0"))
+	float MinPOIDistance = 5000.0f;
+
+	// POI type probabilities
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "POI")
+	TMap<EPOIType, float> POITypeProbabilities;
+
+	// Difficulty distribution (by distance from center)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "POI")
+	bool bDifficultyByDistance = true;
+
+	// Actor class mapping for POI types
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "POI")
+	TMap<EPOIType, TSoftClassPtr<AActor>> POIActorClasses;
+};
+
+/**
+ * Ore Vein Data
+ */
+USTRUCT(BlueprintType)
+struct FOreVeinData
+{
+	GENERATED_BODY()
+
+	// Center location
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector Location = FVector::ZeroVector;
+
+	// Resource type
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EResourceType ResourceType = EResourceType::None;
+
+	// Vein radius
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Radius = 500.0f;
+
+	// Resource richness (0.0-1.0)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Richness = 1.0f;
+
+	// Number of resource nodes in this vein
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 NodeCount = 10;
+};
+
+/**
+ * Resource Distribution Settings
+ */
+USTRUCT(BlueprintType)
+struct FResourceDistributionSettings
+{
+	GENERATED_BODY()
+
+	// Enable resource distribution
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resources")
+	bool bEnableResources = true;
+
+	// Number of ore veins to generate
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resources", meta = (ClampMin = "0", ClampMax = "1000"))
+	int32 OreVeinCount = 50;
+
+	// Minimum vein radius
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resources", meta = (ClampMin = "100.0", ClampMax = "5000.0"))
+	float MinVeinRadius = 300.0f;
+
+	// Maximum vein radius
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resources", meta = (ClampMin = "100.0", ClampMax = "10000.0"))
+	float MaxVeinRadius = 1000.0f;
+
+	// Resource type probabilities
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resources")
+	TMap<EResourceType, float> ResourceTypeProbabilities;
+
+	// Biome-specific resource multipliers
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resources")
+	TMap<EBiomeType, TMap<EResourceType, float>> BiomeResourceMultipliers;
+
+	// Height-based resource distribution
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resources")
+	TMap<EResourceType, FVector2D> ResourceHeightRanges; // X = min, Y = max (normalized)
+
+	// Actor class mapping for resource types
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resources")
+	TMap<EResourceType, TSoftClassPtr<AActor>> ResourceActorClasses;
+
+	// Nodes per vein
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resources", meta = (ClampMin = "1", ClampMax = "100"))
+	int32 MinNodesPerVein = 5;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resources", meta = (ClampMin = "1", ClampMax = "100"))
+	int32 MaxNodesPerVein = 20;
+};
+
+/**
+ * Splatmap Layer Data
+ */
+USTRUCT(BlueprintType)
+struct FSplatmapLayerData
+{
+	GENERATED_BODY()
+
+	// Layer index (0-7 for Unreal Landscape)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 LayerIndex = 0;
+
+	// Layer name
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName LayerName = NAME_None;
+
+	// Weight data (0-255 per tile)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<uint8> WeightData;
+};
+
+/**
+ * Splatmap Generation Settings
+ */
+USTRUCT(BlueprintType)
+struct FSplatmapSettings
+{
+	GENERATED_BODY()
+
+	// Enable splatmap generation
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Splatmap")
+	bool bEnableSplatmap = true;
+
+	// Biome to layer mapping
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Splatmap")
+	TMap<EBiomeType, FName> BiomeToLayerMap;
+
+	// Height-based layer assignments
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Splatmap")
+	TArray<FName> HeightLayers; // Index 0 = lowest, increasing
+
+	// Height thresholds for layers (normalized 0-1)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Splatmap")
+	TArray<float> HeightThresholds;
+
+	// Slope-based layer (e.g., cliff texture)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Splatmap")
+	FName SlopeLayerName = NAME_None;
+
+	// Slope threshold for cliff texture (in degrees)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Splatmap", meta = (ClampMin = "0.0", ClampMax = "90.0"))
+	float SlopeThreshold = 45.0f;
+
+	// Blend distance between layers (in tiles)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Splatmap", meta = (ClampMin = "0.0", ClampMax = "20.0"))
+	float BlendDistance = 3.0f;
+};
+
+/**
+ * Cave Volume Data (for 3D cave generation)
+ */
+USTRUCT(BlueprintType)
+struct FCaveVolumeData
+{
+	GENERATED_BODY()
+
+	// 3D grid position
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FIntVector GridPosition = FIntVector::ZeroValue;
+
+	// Is this location a cave (vs solid)?
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsCave = false;
+
+	// Cave density value (0.0-1.0)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Density = 0.0f;
+};
+
+/**
  * World Generation Configuration
  * Seed-based generation ensures same world in multiplayer
  */
@@ -573,6 +864,30 @@ struct FWorldGeneratorConfig
 	// Maximum slope for structure placement (in degrees)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen|Structures", meta = (ClampMin = "0.0", ClampMax = "90.0"))
 	float MaxStructureSlope = 15.0f;
+
+	// ===== Cave System =====
+
+	// Cave generation settings
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen|Caves")
+	FCaveSettings CaveSettings;
+
+	// ===== POI System =====
+
+	// POI generation settings
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen|POI")
+	FPOISettings POISettings;
+
+	// ===== Resource Distribution =====
+
+	// Resource distribution settings
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen|Resources")
+	FResourceDistributionSettings ResourceSettings;
+
+	// ===== Splatmap Generation =====
+
+	// Splatmap generation settings
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen|Splatmap")
+	FSplatmapSettings SplatmapSettings;
 
 	// ===== Performance Settings =====
 

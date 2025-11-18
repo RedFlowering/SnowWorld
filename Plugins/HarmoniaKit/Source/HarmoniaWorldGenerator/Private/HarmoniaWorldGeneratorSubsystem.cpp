@@ -1625,3 +1625,666 @@ void UHarmoniaWorldGeneratorSubsystem::CompleteAsyncGeneration(
         }
     });
 }
+
+// ===== Cave System Implementation =====
+
+void UHarmoniaWorldGeneratorSubsystem::GenerateCaveSystem(
+    const FWorldGeneratorConfig& Config,
+    const TArray<int32>& HeightData,
+    TArray<FCaveVolumeData>& OutCaveVolume,
+    TArray<FWorldObjectData>& OutCaveEntrances)
+{
+    if (!Config.CaveSettings.bEnableCaves)
+    {
+        OutCaveVolume.Empty();
+        OutCaveEntrances.Empty();
+        return;
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Generating cave system with 3D noise..."));
+    }
+
+    OutCaveVolume.Empty();
+    OutCaveEntrances.Empty();
+
+    // Generate 3D cave volume
+    const int32 DepthLevels = FMath::CeilToInt((Config.CaveSettings.MaxCaveDepth - Config.CaveSettings.MinCaveDepth) / Config.CaveSettings.CaveScale);
+
+    for (int32 Y = 0; Y < Config.SizeY; ++Y)
+    {
+        for (int32 X = 0; X < Config.SizeX; ++X)
+        {
+            const float SurfaceHeight = (float)HeightData[Y * Config.SizeX + X] / 65535.f * Config.MaxHeight;
+
+            // Generate cave at multiple depth levels
+            for (int32 D = 0; D < DepthLevels; ++D)
+            {
+                const float Depth = Config.CaveSettings.MinCaveDepth + (D * Config.CaveSettings.CaveScale);
+                const float Z = SurfaceHeight - Depth;
+
+                // Calculate 3D cave noise
+                const float CaveNoise = Calculate3DCaveNoise(X, Y, Z, Config);
+
+                // Check if this is a cave location
+                if (CaveNoise > Config.CaveSettings.CaveThreshold)
+                {
+                    FCaveVolumeData CaveData;
+                    CaveData.GridPosition = FIntVector(X, Y, D);
+                    CaveData.bIsCave = true;
+                    CaveData.Density = (CaveNoise - Config.CaveSettings.CaveThreshold) / (1.0f - Config.CaveSettings.CaveThreshold);
+                    OutCaveVolume.Add(CaveData);
+                }
+            }
+        }
+    }
+
+    // Generate cave entrances
+    FRandomStream Random(Config.Seed + 7000);
+
+    for (int32 i = 0; i < Config.CaveSettings.CaveEntranceCount; ++i)
+    {
+        // Find random location
+        const int32 EntranceX = Random.RandRange(10, Config.SizeX - 10);
+        const int32 EntranceY = Random.RandRange(10, Config.SizeY - 10);
+        const int32 Index = EntranceY * Config.SizeX + EntranceX;
+        const float Height = (float)HeightData[Index] / 65535.f;
+
+        // Check height range
+        if (Height < Config.CaveSettings.MinEntranceHeight || Height > Config.CaveSettings.MaxEntranceHeight)
+        {
+            continue;
+        }
+
+        FWorldObjectData Entrance;
+        Entrance.ObjectType = EWorldObjectType::CaveEntrance;
+        Entrance.ActorClass = nullptr; // Set by user
+        Entrance.Location = FVector(
+            EntranceX * 100.f,
+            EntranceY * 100.f,
+            Height * Config.MaxHeight
+        );
+        Entrance.Rotation = FRotator(0.f, Random.FRandRange(0.f, 360.f), 0.f);
+        Entrance.Scale = FVector::OneVector;
+        Entrance.CaveDepth = Config.CaveSettings.MaxCaveDepth;
+
+        OutCaveEntrances.Add(Entrance);
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Generated %d cave volumes and %d entrances"),
+            OutCaveVolume.Num(), OutCaveEntrances.Num());
+    }
+}
+
+float UHarmoniaWorldGeneratorSubsystem::Calculate3DCaveNoise(
+    float X,
+    float Y,
+    float Z,
+    const FWorldGeneratorConfig& Config)
+{
+    const FPerlinNoiseSettings& NoiseSettings = Config.CaveSettings.CaveNoiseSettings;
+
+    // 3D Perlin noise using multiple octaves
+    float Noise = 0.0f;
+    float Amplitude = NoiseSettings.Amplitude;
+    float Frequency = NoiseSettings.Frequency * 0.01f;
+    float MaxValue = 0.0f;
+
+    for (int32 Octave = 0; Octave < NoiseSettings.Octaves; ++Octave)
+    {
+        // Simple 3D noise using combination of 2D noises
+        const float Noise1 = PerlinNoiseHelper::GetSimpleNoise(
+            X * Frequency,
+            Y * Frequency,
+            Config.Seed + Octave * 1000,
+            NoiseSettings
+        );
+
+        const float Noise2 = PerlinNoiseHelper::GetSimpleNoise(
+            Y * Frequency,
+            Z * Frequency * 0.1f, // Scale Z differently
+            Config.Seed + Octave * 1000 + 500,
+            NoiseSettings
+        );
+
+        const float Noise3 = PerlinNoiseHelper::GetSimpleNoise(
+            X * Frequency,
+            Z * Frequency * 0.1f,
+            Config.Seed + Octave * 1000 + 250,
+            NoiseSettings
+        );
+
+        // Combine noises for 3D effect
+        Noise += (Noise1 + Noise2 + Noise3) / 3.0f * Amplitude;
+        MaxValue += Amplitude;
+
+        Amplitude *= NoiseSettings.Persistence;
+        Frequency *= NoiseSettings.Lacunarity;
+    }
+
+    // Normalize to 0-1
+    return (Noise / MaxValue + 1.0f) * 0.5f;
+}
+
+// ===== POI System Implementation =====
+
+void UHarmoniaWorldGeneratorSubsystem::GeneratePOIs(
+    const FWorldGeneratorConfig& Config,
+    const TArray<int32>& HeightData,
+    const TArray<FBiomeData>& BiomeData,
+    TArray<FWorldObjectData>& OutPOIs)
+{
+    if (!Config.POISettings.bEnablePOI || Config.POISettings.POICount <= 0)
+    {
+        OutPOIs.Empty();
+        return;
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Generating %d POIs..."), Config.POISettings.POICount);
+    }
+
+    OutPOIs.Empty();
+    FRandomStream Random(Config.Seed + 8000);
+
+    // Calculate world center for distance-based difficulty
+    const FVector WorldCenter(
+        Config.SizeX * 50.f,
+        Config.SizeY * 50.f,
+        0.f
+    );
+
+    // Generate POIs
+    int32 AttemptsRemaining = Config.POISettings.POICount * 10; // Max attempts
+
+    while (OutPOIs.Num() < Config.POISettings.POICount && AttemptsRemaining > 0)
+    {
+        AttemptsRemaining--;
+
+        // Random location
+        const int32 X = Random.RandRange(10, Config.SizeX - 10);
+        const int32 Y = Random.RandRange(10, Config.SizeY - 10);
+        const int32 Index = Y * Config.SizeX + X;
+        const float Height = (float)HeightData[Index] / 65535.f;
+
+        // Check if valid location
+        if (Height <= Config.SeaLevel + 0.05f)
+        {
+            continue;
+        }
+
+        const FVector POILocation(X * 100.f, Y * 100.f, Height * Config.MaxHeight);
+
+        // Check minimum distance from existing POIs
+        bool bTooClose = false;
+        for (const FWorldObjectData& ExistingPOI : OutPOIs)
+        {
+            const float DistSq = FVector::DistSquared(POILocation, ExistingPOI.Location);
+            if (DistSq < Config.POISettings.MinPOIDistance * Config.POISettings.MinPOIDistance)
+            {
+                bTooClose = true;
+                break;
+            }
+        }
+
+        if (bTooClose)
+        {
+            continue;
+        }
+
+        // Pick POI type
+        EPOIType POIType = PickPOIType(Config.POISettings.POITypeProbabilities, Random);
+        if (POIType == EPOIType::None)
+        {
+            continue;
+        }
+
+        // Calculate difficulty based on distance from center
+        int32 Difficulty = 1;
+        if (Config.POISettings.bDifficultyByDistance)
+        {
+            const float DistanceFromCenter = FVector::Dist(POILocation, WorldCenter);
+            const float MaxDistance = FMath::Sqrt(
+                Config.SizeX * Config.SizeX + Config.SizeY * Config.SizeY
+            ) * 50.f;
+            Difficulty = FMath::CeilToInt((DistanceFromCenter / MaxDistance) * 10.0f);
+            Difficulty = FMath::Clamp(Difficulty, 1, 10);
+        }
+        else
+        {
+            Difficulty = Random.RandRange(1, 10);
+        }
+
+        FWorldObjectData POI;
+        POI.ObjectType = EWorldObjectType::POI;
+        POI.ActorClass = Config.POISettings.POIActorClasses.Contains(POIType) ?
+            Config.POISettings.POIActorClasses[POIType] : nullptr;
+        POI.Location = POILocation;
+        POI.Rotation = FRotator(0.f, Random.FRandRange(0.f, 360.f), 0.f);
+        POI.Scale = FVector::OneVector;
+        POI.POIType = POIType;
+        POI.Difficulty = Difficulty;
+
+        OutPOIs.Add(POI);
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Generated %d POIs"), OutPOIs.Num());
+    }
+}
+
+EPOIType UHarmoniaWorldGeneratorSubsystem::PickPOIType(
+    const TMap<EPOIType, float>& ProbMap,
+    FRandomStream& Random)
+{
+    if (ProbMap.Num() == 0)
+    {
+        return EPOIType::None;
+    }
+
+    float TotalWeight = 0.0f;
+    for (const auto& Pair : ProbMap)
+    {
+        TotalWeight += Pair.Value;
+    }
+
+    if (TotalWeight <= 0.0f)
+    {
+        return EPOIType::None;
+    }
+
+    float RandomValue = Random.FRandRange(0.0f, TotalWeight);
+    float CurrentWeight = 0.0f;
+
+    for (const auto& Pair : ProbMap)
+    {
+        CurrentWeight += Pair.Value;
+        if (RandomValue <= CurrentWeight)
+        {
+            return Pair.Key;
+        }
+    }
+
+    return EPOIType::None;
+}
+
+// ===== Resource Distribution Implementation =====
+
+void UHarmoniaWorldGeneratorSubsystem::GenerateResourceDistribution(
+    const FWorldGeneratorConfig& Config,
+    const TArray<int32>& HeightData,
+    const TArray<FBiomeData>& BiomeData,
+    TArray<FOreVeinData>& OutOreVeins,
+    TArray<FWorldObjectData>& OutResourceNodes)
+{
+    if (!Config.ResourceSettings.bEnableResources || Config.ResourceSettings.OreVeinCount <= 0)
+    {
+        OutOreVeins.Empty();
+        OutResourceNodes.Empty();
+        return;
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Generating %d ore veins..."), Config.ResourceSettings.OreVeinCount);
+    }
+
+    OutOreVeins.Empty();
+    OutResourceNodes.Empty();
+    FRandomStream Random(Config.Seed + 9000);
+
+    // Generate ore veins
+    for (int32 i = 0; i < Config.ResourceSettings.OreVeinCount; ++i)
+    {
+        // Random location
+        const int32 VeinX = Random.RandRange(0, Config.SizeX - 1);
+        const int32 VeinY = Random.RandRange(0, Config.SizeY - 1);
+        const int32 Index = VeinY * Config.SizeX + VeinX;
+        const float Height = (float)HeightData[Index] / 65535.f;
+
+        // Get biome at location
+        EBiomeType BiomeType = EBiomeType::None;
+        if (BiomeData.Num() > Index)
+        {
+            BiomeType = BiomeData[Index].BiomeType;
+        }
+
+        // Pick resource type based on biome and height
+        EResourceType ResourceType = PickResourceType(
+            Config.ResourceSettings.ResourceTypeProbabilities,
+            BiomeType,
+            Height,
+            Config,
+            Random
+        );
+
+        if (ResourceType == EResourceType::None)
+        {
+            continue;
+        }
+
+        // Create vein
+        FOreVeinData Vein;
+        Vein.Location = FVector(VeinX * 100.f, VeinY * 100.f, Height * Config.MaxHeight);
+        Vein.ResourceType = ResourceType;
+        Vein.Radius = Random.FRandRange(
+            Config.ResourceSettings.MinVeinRadius,
+            Config.ResourceSettings.MaxVeinRadius
+        );
+        Vein.Richness = Random.FRandRange(0.5f, 1.0f);
+        Vein.NodeCount = Random.RandRange(
+            Config.ResourceSettings.MinNodesPerVein,
+            Config.ResourceSettings.MaxNodesPerVein
+        );
+
+        OutOreVeins.Add(Vein);
+
+        // Generate resource nodes within vein
+        for (int32 NodeIdx = 0; NodeIdx < Vein.NodeCount; ++NodeIdx)
+        {
+            // Random position within vein radius
+            const float Angle = Random.FRandRange(0.f, 2.f * PI);
+            const float Distance = Random.FRandRange(0.f, Vein.Radius);
+            const int32 NodeX = VeinX + FMath::RoundToInt(FMath::Cos(Angle) * Distance / 100.f);
+            const int32 NodeY = VeinY + FMath::RoundToInt(FMath::Sin(Angle) * Distance / 100.f);
+
+            // Check bounds
+            if (NodeX < 0 || NodeX >= Config.SizeX || NodeY < 0 || NodeY >= Config.SizeY)
+            {
+                continue;
+            }
+
+            const int32 NodeIndex = NodeY * Config.SizeX + NodeX;
+            const float NodeHeight = (float)HeightData[NodeIndex] / 65535.f;
+
+            FWorldObjectData ResourceNode;
+            ResourceNode.ObjectType = EWorldObjectType::OreVein;
+            ResourceNode.ActorClass = Config.ResourceSettings.ResourceActorClasses.Contains(ResourceType) ?
+                Config.ResourceSettings.ResourceActorClasses[ResourceType] : nullptr;
+            ResourceNode.Location = FVector(
+                NodeX * 100.f,
+                NodeY * 100.f,
+                NodeHeight * Config.MaxHeight
+            );
+            ResourceNode.Rotation = FRotator(0.f, Random.FRandRange(0.f, 360.f), 0.f);
+            ResourceNode.Scale = FVector(Random.FRandRange(0.8f, 1.2f));
+            ResourceNode.ResourceType = ResourceType;
+            ResourceNode.ResourceAmount = Vein.Richness * Random.FRandRange(0.8f, 1.2f);
+
+            OutResourceNodes.Add(ResourceNode);
+        }
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Generated %d ore veins with %d total resource nodes"),
+            OutOreVeins.Num(), OutResourceNodes.Num());
+    }
+}
+
+EResourceType UHarmoniaWorldGeneratorSubsystem::PickResourceType(
+    const TMap<EResourceType, float>& ProbMap,
+    EBiomeType BiomeType,
+    float Height,
+    const FWorldGeneratorConfig& Config,
+    FRandomStream& Random)
+{
+    if (ProbMap.Num() == 0)
+    {
+        return EResourceType::None;
+    }
+
+    // Build weighted probability map considering biome and height
+    TMap<EResourceType, float> AdjustedProbabilities;
+
+    for (const auto& Pair : ProbMap)
+    {
+        float Probability = Pair.Value;
+
+        // Apply biome multiplier
+        if (Config.ResourceSettings.BiomeResourceMultipliers.Contains(BiomeType))
+        {
+            const auto& BiomeMultipliers = Config.ResourceSettings.BiomeResourceMultipliers[BiomeType];
+            if (BiomeMultipliers.Contains(Pair.Key))
+            {
+                Probability *= BiomeMultipliers[Pair.Key];
+            }
+        }
+
+        // Apply height range filtering
+        if (Config.ResourceSettings.ResourceHeightRanges.Contains(Pair.Key))
+        {
+            const FVector2D& HeightRange = Config.ResourceSettings.ResourceHeightRanges[Pair.Key];
+            if (Height < HeightRange.X || Height > HeightRange.Y)
+            {
+                Probability = 0.0f; // Outside valid height range
+            }
+        }
+
+        if (Probability > 0.0f)
+        {
+            AdjustedProbabilities.Add(Pair.Key, Probability);
+        }
+    }
+
+    // Pick from adjusted probabilities
+    float TotalWeight = 0.0f;
+    for (const auto& Pair : AdjustedProbabilities)
+    {
+        TotalWeight += Pair.Value;
+    }
+
+    if (TotalWeight <= 0.0f)
+    {
+        return EResourceType::None;
+    }
+
+    float RandomValue = Random.FRandRange(0.0f, TotalWeight);
+    float CurrentWeight = 0.0f;
+
+    for (const auto& Pair : AdjustedProbabilities)
+    {
+        CurrentWeight += Pair.Value;
+        if (RandomValue <= CurrentWeight)
+        {
+            return Pair.Key;
+        }
+    }
+
+    return EResourceType::None;
+}
+
+// ===== Splatmap Generation Implementation =====
+
+void UHarmoniaWorldGeneratorSubsystem::GenerateSplatmap(
+    const FWorldGeneratorConfig& Config,
+    const TArray<int32>& HeightData,
+    const TArray<FBiomeData>& BiomeData,
+    TArray<FSplatmapLayerData>& OutSplatmapLayers)
+{
+    if (!Config.SplatmapSettings.bEnableSplatmap)
+    {
+        OutSplatmapLayers.Empty();
+        return;
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Generating splatmap layers..."));
+    }
+
+    OutSplatmapLayers.Empty();
+
+    // Collect all unique layer names
+    TSet<FName> AllLayers;
+
+    // Add biome layers
+    for (const auto& Pair : Config.SplatmapSettings.BiomeToLayerMap)
+    {
+        AllLayers.Add(Pair.Value);
+    }
+
+    // Add height layers
+    for (const FName& LayerName : Config.SplatmapSettings.HeightLayers)
+    {
+        AllLayers.Add(LayerName);
+    }
+
+    // Add slope layer
+    if (Config.SplatmapSettings.SlopeLayerName != NAME_None)
+    {
+        AllLayers.Add(Config.SplatmapSettings.SlopeLayerName);
+    }
+
+    // Generate weight data for each layer
+    int32 LayerIndex = 0;
+    for (const FName& LayerName : AllLayers)
+    {
+        FSplatmapLayerData LayerData;
+        LayerData.LayerIndex = LayerIndex++;
+        LayerData.LayerName = LayerName;
+        LayerData.WeightData.SetNumZeroed(Config.SizeX * Config.SizeY);
+
+        // Calculate weights for each tile
+        for (int32 Y = 0; Y < Config.SizeY; ++Y)
+        {
+            for (int32 X = 0; X < Config.SizeX; ++X)
+            {
+                const int32 Index = Y * Config.SizeX + X;
+                const uint8 Weight = CalculateLayerWeight(
+                    X, Y, LayerName, HeightData, BiomeData, Config
+                );
+                LayerData.WeightData[Index] = Weight;
+            }
+        }
+
+        OutSplatmapLayers.Add(LayerData);
+    }
+
+    if (Config.bEnableProgressLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Generated %d splatmap layers"), OutSplatmapLayers.Num());
+    }
+}
+
+uint8 UHarmoniaWorldGeneratorSubsystem::CalculateLayerWeight(
+    int32 X,
+    int32 Y,
+    FName LayerName,
+    const TArray<int32>& HeightData,
+    const TArray<FBiomeData>& BiomeData,
+    const FWorldGeneratorConfig& Config)
+{
+    const int32 Index = Y * Config.SizeX + X;
+    const float Height = (float)HeightData[Index] / 65535.f;
+
+    uint8 Weight = 0;
+
+    // Check slope-based layer
+    if (LayerName == Config.SplatmapSettings.SlopeLayerName)
+    {
+        const float Slope = CalculateSlope(X, Y, HeightData, Config);
+        if (Slope >= Config.SplatmapSettings.SlopeThreshold)
+        {
+            // Full weight for steep slopes
+            Weight = 255;
+        }
+        else if (Slope >= Config.SplatmapSettings.SlopeThreshold - 10.0f)
+        {
+            // Blend for near-threshold slopes
+            const float T = (Slope - (Config.SplatmapSettings.SlopeThreshold - 10.0f)) / 10.0f;
+            Weight = FMath::RoundToInt(T * 255.0f);
+        }
+        return Weight;
+    }
+
+    // Check biome-based layer
+    if (BiomeData.Num() > Index)
+    {
+        const EBiomeType BiomeType = BiomeData[Index].BiomeType;
+        if (Config.SplatmapSettings.BiomeToLayerMap.Contains(BiomeType))
+        {
+            if (Config.SplatmapSettings.BiomeToLayerMap[BiomeType] == LayerName)
+            {
+                Weight = 255; // Full weight for matching biome
+            }
+        }
+    }
+
+    // Check height-based layers
+    for (int32 i = 0; i < Config.SplatmapSettings.HeightLayers.Num(); ++i)
+    {
+        if (Config.SplatmapSettings.HeightLayers[i] == LayerName &&
+            i < Config.SplatmapSettings.HeightThresholds.Num())
+        {
+            const float Threshold = Config.SplatmapSettings.HeightThresholds[i];
+
+            if (Height >= Threshold)
+            {
+                // Check if there's a next threshold
+                if (i + 1 < Config.SplatmapSettings.HeightThresholds.Num())
+                {
+                    const float NextThreshold = Config.SplatmapSettings.HeightThresholds[i + 1];
+                    if (Height < NextThreshold)
+                    {
+                        // Within this layer's range
+                        Weight = 255;
+                    }
+                    else if (Height < NextThreshold + Config.SplatmapSettings.BlendDistance * 0.01f)
+                    {
+                        // Blend with next layer
+                        const float T = (Height - NextThreshold) / (Config.SplatmapSettings.BlendDistance * 0.01f);
+                        Weight = FMath::RoundToInt((1.0f - T) * 255.0f);
+                    }
+                }
+                else
+                {
+                    // Highest layer
+                    Weight = 255;
+                }
+            }
+            else if (Height >= Threshold - Config.SplatmapSettings.BlendDistance * 0.01f)
+            {
+                // Blend with previous layer
+                const float T = (Height - (Threshold - Config.SplatmapSettings.BlendDistance * 0.01f)) /
+                               (Config.SplatmapSettings.BlendDistance * 0.01f);
+                Weight = FMath::RoundToInt(T * 255.0f);
+            }
+            break;
+        }
+    }
+
+    return Weight;
+}
+
+float UHarmoniaWorldGeneratorSubsystem::CalculateSlope(
+    int32 X,
+    int32 Y,
+    const TArray<int32>& HeightData,
+    const FWorldGeneratorConfig& Config)
+{
+    // Check bounds
+    if (X <= 0 || X >= Config.SizeX - 1 || Y <= 0 || Y >= Config.SizeY - 1)
+    {
+        return 0.0f;
+    }
+
+    // Get neighboring heights
+    const float HeightLeft = (float)HeightData[Y * Config.SizeX + (X - 1)] / 65535.f;
+    const float HeightRight = (float)HeightData[Y * Config.SizeX + (X + 1)] / 65535.f;
+    const float HeightUp = (float)HeightData[(Y - 1) * Config.SizeX + X] / 65535.f;
+    const float HeightDown = (float)HeightData[(Y + 1) * Config.SizeX + X] / 65535.f;
+
+    // Calculate slope
+    const float SlopeX = FMath::Abs(HeightRight - HeightLeft) * Config.MaxHeight / 200.f;
+    const float SlopeY = FMath::Abs(HeightDown - HeightUp) * Config.MaxHeight / 200.f;
+    const float Slope = FMath::Sqrt(SlopeX * SlopeX + SlopeY * SlopeY);
+
+    // Convert to degrees
+    return FMath::RadiansToDegrees(FMath::Atan(Slope));
+}

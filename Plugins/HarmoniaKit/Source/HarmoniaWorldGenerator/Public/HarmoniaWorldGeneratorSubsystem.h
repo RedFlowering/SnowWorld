@@ -173,6 +173,68 @@ public:
     UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Async")
     void CancelAsyncGeneration();
 
+    /**
+     * Generate cave system using 3D Perlin noise
+     * @param Config         - World generation parameters
+     * @param HeightData     - Heightmap data (for entrance placement)
+     * @param OutCaveVolume  - 3D cave volume data
+     * @param OutCaveEntrances - Cave entrance locations
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Caves")
+    void GenerateCaveSystem(
+        const FWorldGeneratorConfig& Config,
+        const TArray<int32>& HeightData,
+        TArray<FCaveVolumeData>& OutCaveVolume,
+        TArray<FWorldObjectData>& OutCaveEntrances
+    );
+
+    /**
+     * Generate POIs (Points of Interest)
+     * @param Config         - World generation parameters
+     * @param HeightData     - Heightmap data
+     * @param BiomeData      - Biome data
+     * @param OutPOIs        - Generated POI locations
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|POI")
+    void GeneratePOIs(
+        const FWorldGeneratorConfig& Config,
+        const TArray<int32>& HeightData,
+        const TArray<FBiomeData>& BiomeData,
+        TArray<FWorldObjectData>& OutPOIs
+    );
+
+    /**
+     * Generate resource distribution (ore veins)
+     * @param Config         - World generation parameters
+     * @param HeightData     - Heightmap data
+     * @param BiomeData      - Biome data
+     * @param OutOreVeins    - Generated ore vein data
+     * @param OutResourceNodes - Individual resource node objects
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Resources")
+    void GenerateResourceDistribution(
+        const FWorldGeneratorConfig& Config,
+        const TArray<int32>& HeightData,
+        const TArray<FBiomeData>& BiomeData,
+        TArray<FOreVeinData>& OutOreVeins,
+        TArray<FWorldObjectData>& OutResourceNodes
+    );
+
+    /**
+     * Generate splatmap for Landscape texture painting
+     * @param Config         - World generation parameters
+     * @param HeightData     - Heightmap data
+     * @param BiomeData      - Biome data
+     * @param OutSplatmapLayers - Generated splatmap layer data
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Splatmap")
+    void GenerateSplatmap(
+        const FWorldGeneratorConfig& Config,
+        const TArray<int32>& HeightData,
+        const TArray<FBiomeData>& BiomeData,
+        TArray<FSplatmapLayerData>& OutSplatmapLayers
+    );
+
 private:
     /**
      * Generate heightmap data with chunk-based processing
@@ -340,6 +402,57 @@ private:
         TArray<int32> HeightData,
         TArray<FWorldObjectData> Objects,
         bool bSuccess
+    );
+
+    /**
+     * Calculate 3D cave noise value at position
+     */
+    float Calculate3DCaveNoise(
+        float X,
+        float Y,
+        float Z,
+        const FWorldGeneratorConfig& Config
+    );
+
+    /**
+     * Pick random POI type based on probability map
+     */
+    EPOIType PickPOIType(
+        const TMap<EPOIType, float>& ProbMap,
+        FRandomStream& Random
+    );
+
+    /**
+     * Pick random resource type based on probability and biome
+     */
+    EResourceType PickResourceType(
+        const TMap<EResourceType, float>& ProbMap,
+        EBiomeType BiomeType,
+        float Height,
+        const FWorldGeneratorConfig& Config,
+        FRandomStream& Random
+    );
+
+    /**
+     * Calculate slope at location (in degrees)
+     */
+    float CalculateSlope(
+        int32 X,
+        int32 Y,
+        const TArray<int32>& HeightData,
+        const FWorldGeneratorConfig& Config
+    );
+
+    /**
+     * Get splatmap layer weight for location
+     */
+    uint8 CalculateLayerWeight(
+        int32 X,
+        int32 Y,
+        FName LayerName,
+        const TArray<int32>& HeightData,
+        const TArray<FBiomeData>& BiomeData,
+        const FWorldGeneratorConfig& Config
     );
 
     // Async generation state
