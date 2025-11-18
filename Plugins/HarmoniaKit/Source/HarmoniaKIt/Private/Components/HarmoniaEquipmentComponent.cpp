@@ -30,7 +30,10 @@ void UHarmoniaEquipmentComponent::EndPlay(const EEndPlayReason::Type EndPlayReas
 void UHarmoniaEquipmentComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(UHarmoniaEquipmentComponent, EquippedItems);
+	// [BANDWIDTH OPTIMIZATION] Only replicate equipment to the owning client
+	// Other players don't need to know about this player's full equipment details
+	// Visual meshes are still replicated separately for all clients
+	DOREPLIFETIME_CONDITION(UHarmoniaEquipmentComponent, EquippedItems, COND_OwnerOnly);
 }
 
 // ============================================================================
@@ -741,6 +744,32 @@ bool UHarmoniaEquipmentComponent::ServerEquipItem_Validate(const FHarmoniaID& Eq
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerEquipItem: Equipment data not found for ID: %s"), *EquipmentId.ToString());
 		return false;
+	}
+
+	// [SECURITY FIX] Validate player owns the equipment in their inventory
+	// This prevents cheating clients from equipping items they don't have
+	AActor* Owner = GetOwner();
+	if (Owner)
+	{
+		UHarmoniaInventoryComponent* InventoryComponent = Owner->FindComponentByClass<UHarmoniaInventoryComponent>();
+		if (InventoryComponent)
+		{
+			// Check if player has at least 1 of this equipment in inventory
+			int32 ItemCount = InventoryComponent->GetTotalCount(EquipmentId);
+			if (ItemCount <= 0)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerEquipItem: Player %s doesn't own equipment %s in inventory"),
+					*Owner->GetName(), *EquipmentId.ToString());
+				return false;
+			}
+		}
+		else
+		{
+			// If no inventory component, allow for backwards compatibility or special cases
+			// But log a warning for investigation
+			UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerEquipItem: Player %s has no inventory component, allowing equip for compatibility"),
+				*Owner->GetName());
+		}
 	}
 
 	return true;

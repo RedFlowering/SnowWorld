@@ -77,10 +77,13 @@ void UHarmoniaCraftingComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(UHarmoniaCraftingComponent, ActiveSession);
-	DOREPLIFETIME(UHarmoniaCraftingComponent, LearnedRecipes);
-	DOREPLIFETIME(UHarmoniaCraftingComponent, CurrentStation);
-	DOREPLIFETIME(UHarmoniaCraftingComponent, CurrentStationTags);
+	// [BANDWIDTH OPTIMIZATION] Only replicate crafting data to the owning client
+	// Other players don't need to know what recipes this player has learned or what they're crafting
+	// This can save significant bandwidth, especially with hundreds of learned recipes
+	DOREPLIFETIME_CONDITION(UHarmoniaCraftingComponent, ActiveSession, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(UHarmoniaCraftingComponent, LearnedRecipes, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(UHarmoniaCraftingComponent, CurrentStation, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(UHarmoniaCraftingComponent, CurrentStationTags, COND_OwnerOnly);
 }
 
 void UHarmoniaCraftingComponent::OnRep_ActiveSession()
