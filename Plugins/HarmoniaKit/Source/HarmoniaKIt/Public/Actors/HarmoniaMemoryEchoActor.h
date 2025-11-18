@@ -87,7 +87,7 @@ public:
 	//~ Initialization
 	/** Initialize the memory echo with currencies and owner */
 	UFUNCTION(BlueprintCallable, Category = "Memory Echo")
-	void Initialize(const TArray<FHarmoniaCurrencyAmount>& Currencies, APlayerController* Owner, UHarmoniaDeathPenaltyConfigAsset* Config);
+	void Initialize(const TArray<FHarmoniaCurrencyAmount>& Currencies, APlayerController* OwnerController, UHarmoniaDeathPenaltyConfigAsset* Config);
 
 	/** Get total value in a specific currency */
 	UFUNCTION(BlueprintCallable, Category = "Memory Echo")

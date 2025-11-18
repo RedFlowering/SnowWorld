@@ -133,7 +133,7 @@ void AHarmoniaMemoryEchoActor::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 	DOREPLIFETIME(AHarmoniaMemoryEchoActor, TotalDecayPercentage);
 }
 
-void AHarmoniaMemoryEchoActor::Initialize(const TArray<FHarmoniaCurrencyAmount>& Currencies, APlayerController* Owner, UHarmoniaDeathPenaltyConfigAsset* Config)
+void AHarmoniaMemoryEchoActor::Initialize(const TArray<FHarmoniaCurrencyAmount>& Currencies, APlayerController* OwnerController, UHarmoniaDeathPenaltyConfigAsset* Config)
 {
 	if (!HasAuthority())
 	{
@@ -141,12 +141,12 @@ void AHarmoniaMemoryEchoActor::Initialize(const TArray<FHarmoniaCurrencyAmount>&
 	}
 
 	StoredCurrencies = Currencies;
-	OwningPlayerController = Owner;
+	OwningPlayerController = OwnerController;
 	DeathPenaltyConfig = Config;
 
-	if (Owner && Owner->PlayerState)
+	if (OwnerController && OwnerController->PlayerState)
 	{
-		OwningPlayerStateId = Owner->PlayerState->GetUniqueId().ToString();
+		OwningPlayerStateId = OwnerController->PlayerState->GetUniqueId().ToString();
 	}
 
 	// Update resonance sphere radius from config
