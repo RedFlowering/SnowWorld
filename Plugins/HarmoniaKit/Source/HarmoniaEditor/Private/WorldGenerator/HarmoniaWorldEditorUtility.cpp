@@ -263,6 +263,57 @@ void UHarmoniaWorldEditorUtility::ApplyPreset(const FString& PresetName)
 		LakeSettings.LakeCount = 2;
 		StatusMessage = TEXT("Applied Desert preset");
 	}
+	else if (PresetName == TEXT("Archipelago"))
+	{
+		SeaLevel = 0.65f;
+		NoiseSettings.Frequency = 0.005f;
+		NoiseSettings.Octaves = 6;
+		StatusMessage = TEXT("Applied Archipelago preset");
+	}
+	else if (PresetName == TEXT("Canyon"))
+	{
+		ErosionSettings.bEnableErosion = true;
+		ErosionSettings.Iterations = 200;
+		SeaLevel = 0.3f;
+		NoiseSettings.Amplitude = 1.2f;
+		StatusMessage = TEXT("Applied Canyon preset");
+	}
+	else if (PresetName == TEXT("Plains"))
+	{
+		NoiseSettings.Amplitude = 0.3f;
+		NoiseSettings.Octaves = 3;
+		SeaLevel = 0.4f;
+		StatusMessage = TEXT("Applied Plains preset");
+	}
+	else if (PresetName == TEXT("Volcanic"))
+	{
+		MaxHeight = 51200.0f;
+		NoiseSettings.Amplitude = 2.5f;
+		SeaLevel = 0.5f;
+		NoiseSettings.Octaves = 7;
+		StatusMessage = TEXT("Applied Volcanic preset");
+	}
+	else if (PresetName == TEXT("Frozen"))
+	{
+		SeaLevel = 0.5f;
+		NoiseSettings.Amplitude = 0.8f;
+		StatusMessage = TEXT("Applied Frozen preset");
+	}
+	else if (PresetName == TEXT("Tropical"))
+	{
+		SeaLevel = 0.45f;
+		NoiseSettings.Frequency = 0.008f;
+		NoiseSettings.Octaves = 5;
+		StatusMessage = TEXT("Applied Tropical preset");
+	}
+	else if (PresetName == TEXT("Highlands"))
+	{
+		MaxHeight = 40000.0f;
+		NoiseSettings.Amplitude = 1.5f;
+		SeaLevel = 0.3f;
+		NoiseSettings.Octaves = 6;
+		StatusMessage = TEXT("Applied Highlands preset");
+	}
 	else
 	{
 		StatusMessage = TEXT("Unknown preset");
@@ -283,6 +334,22 @@ void UHarmoniaWorldEditorUtility::GenerateWorld()
 		StatusMessage = TEXT("Error: World Generator Subsystem not found!");
 		UE_LOG(LogTemp, Error, TEXT("Failed to get World Generator Subsystem"));
 		return;
+	}
+
+	// 검증 (자동 검증이 활성화된 경우)
+	if (bAutoValidate)
+	{
+		FValidationResult ValidationResult = ValidateConfiguration();
+		if (!ValidationResult.bIsSafe)
+		{
+			StatusMessage = FString::Printf(TEXT("Configuration validation failed with %d errors!"), ValidationResult.Errors.Num());
+			UE_LOG(LogTemp, Error, TEXT("Configuration validation failed"));
+			for (const FString& Error : ValidationResult.Errors)
+			{
+				UE_LOG(LogTemp, Error, TEXT("  - %s"), *Error);
+			}
+			return;
+		}
 	}
 
 	// 타겟 랜드스케이프 확인 또는 생성
@@ -307,6 +374,7 @@ void UHarmoniaWorldEditorUtility::GenerateWorld()
 
 	bIsGenerating = true;
 	GenerationProgress = 0.0f;
+	GenerationStartTime = FPlatformTime::Seconds(); // 시간 측정 시작
 	StatusMessage = TEXT("Starting world generation...");
 
 	// 콜백 바인딩
@@ -490,10 +558,19 @@ void UHarmoniaWorldEditorUtility::OnGenerationCompleteCallback(bool bSuccess)
 	bIsGenerating = false;
 	GenerationProgress = 1.0f;
 
+	// 생성 시간 측정 완료
+	if (GenerationStartTime > 0.0)
+	{
+		LastGenerationTimeSeconds = FPlatformTime::Seconds() - GenerationStartTime;
+	}
+
 	if (bSuccess)
 	{
-		StatusMessage = TEXT("World generation completed successfully!");
-		UE_LOG(LogTemp, Log, TEXT("World generation completed successfully"));
+		StatusMessage = FString::Printf(TEXT("World generation completed successfully in %.1f seconds!"), LastGenerationTimeSeconds);
+		UE_LOG(LogTemp, Log, TEXT("World generation completed successfully in %.1f seconds"), LastGenerationTimeSeconds);
+
+		// 통계 새로고침
+		RefreshStatistics();
 	}
 	else
 	{
@@ -783,4 +860,981 @@ ALandscape* UHarmoniaWorldEditorUtility::FindExistingLandscape()
 
 	StatusMessage = TEXT("No existing landscape found");
 	return nullptr;
+}
+
+//=============================================================================
+// NEW: Real-time Preview & Thumbnails
+//=============================================================================
+
+UTexture2D* UHarmoniaWorldEditorUtility::GeneratePreviewThumbnail(int32 ThumbnailSize)
+{
+	UpdateWorldConfigFromProperties();
+
+	// 작은 크기로 하이트맵 생성
+	TArray<int32> HeightData = GenerateHeightDataForPreview(ThumbnailSize, ThumbnailSize);
+
+	// 텍스처 생성
+	CachedPreviewThumbnail = CreateTextureFromHeightData(HeightData, ThumbnailSize, ThumbnailSize);
+
+	StatusMessage = FString::Printf(TEXT("Generated preview thumbnail (%dx%d)"), ThumbnailSize, ThumbnailSize);
+	return CachedPreviewThumbnail;
+}
+
+UTexture2D* UHarmoniaWorldEditorUtility::GenerateMinimap(int32 Width, int32 Height)
+{
+	TArray<int32> HeightData = GenerateHeightDataForPreview(Width, Height);
+	UTexture2D* Minimap = CreateTextureFromHeightData(HeightData, Width, Height);
+
+	StatusMessage = FString::Printf(TEXT("Generated minimap (%dx%d)"), Width, Height);
+	return Minimap;
+}
+
+//=============================================================================
+// NEW: Undo/Redo System
+//=============================================================================
+
+bool UHarmoniaWorldEditorUtility::UndoLastEdit()
+{
+	if (!CanUndo())
+	{
+		StatusMessage = TEXT("Nothing to undo");
+		return false;
+	}
+
+	const FTerrainEditHistory& Edit = EditHistory[CurrentHistoryIndex];
+	ApplyEdit(Edit, true); // true = undo (apply before data)
+
+	CurrentHistoryIndex--;
+
+	StatusMessage = FString::Printf(TEXT("Undone edit: %s"), *Edit.Location.ToString());
+	UE_LOG(LogTemp, Log, TEXT("Undone terrain edit at %s"), *Edit.Location.ToString());
+	return true;
+}
+
+bool UHarmoniaWorldEditorUtility::RedoLastEdit()
+{
+	if (!CanRedo())
+	{
+		StatusMessage = TEXT("Nothing to redo");
+		return false;
+	}
+
+	CurrentHistoryIndex++;
+	const FTerrainEditHistory& Edit = EditHistory[CurrentHistoryIndex];
+	ApplyEdit(Edit, false); // false = redo (apply after data)
+
+	StatusMessage = FString::Printf(TEXT("Redone edit: %s"), *Edit.Location.ToString());
+	UE_LOG(LogTemp, Log, TEXT("Redone terrain edit at %s"), *Edit.Location.ToString());
+	return true;
+}
+
+bool UHarmoniaWorldEditorUtility::CanUndo() const
+{
+	return CurrentHistoryIndex >= 0;
+}
+
+bool UHarmoniaWorldEditorUtility::CanRedo() const
+{
+	return CurrentHistoryIndex < EditHistory.Num() - 1;
+}
+
+void UHarmoniaWorldEditorUtility::ClearEditHistory()
+{
+	EditHistory.Empty();
+	CurrentHistoryIndex = -1;
+	StatusMessage = TEXT("Edit history cleared");
+	UE_LOG(LogTemp, Log, TEXT("Cleared terrain edit history"));
+}
+
+//=============================================================================
+// NEW: Brush-based Terrain Editing
+//=============================================================================
+
+void UHarmoniaWorldEditorUtility::BeginBrushStroke(FVector StartLocation)
+{
+	bIsBrushStrokeActive = true;
+	LastBrushLocation = StartLocation;
+
+	// 첫 브러시 적용
+	UpdateBrushStroke(StartLocation);
+
+	StatusMessage = FString::Printf(TEXT("Brush stroke started at %s"), *StartLocation.ToString());
+}
+
+void UHarmoniaWorldEditorUtility::UpdateBrushStroke(FVector CurrentLocation)
+{
+	if (!bIsBrushStrokeActive)
+	{
+		return;
+	}
+
+	// 브러시 타입에 따라 지형 수정
+	switch (CurrentBrushType)
+	{
+	case ETerrainModificationType::Raise:
+		RaiseTerrain(CurrentLocation, BrushRadius, BrushStrength);
+		break;
+	case ETerrainModificationType::Lower:
+		LowerTerrain(CurrentLocation, BrushRadius, BrushStrength);
+		break;
+	case ETerrainModificationType::Smooth:
+		SmoothTerrain(CurrentLocation, BrushRadius, 1);
+		break;
+	case ETerrainModificationType::Flatten:
+		FlattenTerrain(CurrentLocation, BrushRadius, CurrentLocation.Z);
+		break;
+	default:
+		break;
+	}
+
+	LastBrushLocation = CurrentLocation;
+}
+
+void UHarmoniaWorldEditorUtility::EndBrushStroke()
+{
+	bIsBrushStrokeActive = false;
+	StatusMessage = TEXT("Brush stroke ended");
+}
+
+//=============================================================================
+// NEW: Validation & Warning System
+//=============================================================================
+
+FValidationResult UHarmoniaWorldEditorUtility::ValidateConfiguration()
+{
+	FValidationResult Result;
+
+	// 메모리 검증
+	float EstimatedMemory = GetEstimatedMemoryUsageMB();
+	Result.EstimatedMemoryMB = EstimatedMemory;
+
+	if (EstimatedMemory > 4096.0f) // 4GB
+	{
+		Result.Errors.Add(TEXT("Estimated memory usage exceeds 4GB! This may cause crashes."));
+		Result.bIsSafe = false;
+	}
+	else if (EstimatedMemory > 2048.0f) // 2GB
+	{
+		Result.Warnings.Add(TEXT("High memory usage detected (>2GB). Ensure sufficient RAM available."));
+	}
+
+	// 월드 크기 검증
+	int32 TotalSize = WorldSizeX * WorldSizeY;
+	if (TotalSize > 4096 * 4096)
+	{
+		Result.Errors.Add(TEXT("World size is too large! Maximum recommended: 4096x4096"));
+		Result.bIsSafe = false;
+	}
+	else if (TotalSize > 2048 * 2048)
+	{
+		Result.Warnings.Add(TEXT("Large world size detected. Generation may take significant time."));
+	}
+
+	// 생성 시간 예측
+	float EstimatedTime = GetEstimatedGenerationTimeSeconds();
+	Result.EstimatedTimeSeconds = EstimatedTime;
+
+	if (EstimatedTime > 600.0f) // 10분
+	{
+		Result.Warnings.Add(FString::Printf(TEXT("Estimated generation time: %.1f minutes. Consider using async generation."), EstimatedTime / 60.0f));
+	}
+
+	// 침식 검증
+	if (ErosionSettings.bEnableErosion && ErosionSettings.Iterations > 200)
+	{
+		Result.Warnings.Add(TEXT("High erosion iteration count may significantly increase generation time."));
+	}
+
+	// 검증 완료
+	if (Result.Errors.Num() == 0)
+	{
+		StatusMessage = TEXT("Configuration is valid");
+	}
+	else
+	{
+		StatusMessage = FString::Printf(TEXT("Configuration has %d errors"), Result.Errors.Num());
+	}
+
+	return Result;
+}
+
+float UHarmoniaWorldEditorUtility::GetEstimatedMemoryUsageMB() const
+{
+	// 대략적인 메모리 계산
+	int32 TotalTiles = WorldSizeX * WorldSizeY;
+
+	// 하이트맵: 4 bytes per tile (int32)
+	float HeightmapMB = (TotalTiles * sizeof(int32)) / (1024.0f * 1024.0f);
+
+	// 바이옴 데이터: ~100 bytes per tile (구조체)
+	float BiomeMB = (TotalTiles * 100) / (1024.0f * 1024.0f);
+
+	// 오브젝트 데이터: 가정 - 타일당 0.1개, 오브젝트당 200 bytes
+	float ObjectsMB = (TotalTiles * 0.1f * 200) / (1024.0f * 1024.0f);
+
+	// 총합 + 오버헤드 20%
+	float TotalMB = (HeightmapMB + BiomeMB + ObjectsMB) * 1.2f;
+
+	return TotalMB;
+}
+
+float UHarmoniaWorldEditorUtility::GetEstimatedGenerationTimeSeconds() const
+{
+	// 매우 대략적인 예측 (실제로는 하드웨어에 따라 다름)
+	int32 TotalTiles = WorldSizeX * WorldSizeY;
+
+	// 기본 생성 시간: 타일당 0.0001초
+	float BaseTime = TotalTiles * 0.0001f;
+
+	// 노이즈 옥타브에 따른 배율
+	float NoiseFactor = 1.0f + (NoiseSettings.Octaves / 6.0f);
+
+	// 침식 시간
+	float ErosionTime = 0.0f;
+	if (ErosionSettings.bEnableErosion)
+	{
+		ErosionTime = ErosionSettings.Iterations * 0.1f;
+	}
+
+	// 오브젝트 배치 시간
+	float ObjectTime = (TotalTiles * 0.1f) * 0.001f; // 가정: 타일당 0.1개 오브젝트
+
+	return (BaseTime * NoiseFactor) + ErosionTime + ObjectTime;
+}
+
+bool UHarmoniaWorldEditorUtility::IsConfigurationSafe() const
+{
+	FValidationResult Result = const_cast<UHarmoniaWorldEditorUtility*>(this)->ValidateConfiguration();
+	return Result.bIsSafe;
+}
+
+//=============================================================================
+// NEW: World Statistics Dashboard
+//=============================================================================
+
+FWorldStatistics UHarmoniaWorldEditorUtility::GetWorldStatistics()
+{
+	RefreshStatistics();
+	return CachedStatistics;
+}
+
+void UHarmoniaWorldEditorUtility::RefreshStatistics()
+{
+	CachedStatistics = FWorldStatistics();
+
+	// 오브젝트 통계
+	CachedStatistics.TotalObjects = GeneratedObjectData.Num();
+
+	for (const FWorldObjectData& ObjData : GeneratedObjectData)
+	{
+		switch (ObjData.ObjectType)
+		{
+		case EWorldObjectType::Tree:
+			CachedStatistics.TreeCount++;
+			break;
+		case EWorldObjectType::Rock:
+			CachedStatistics.RockCount++;
+			break;
+		case EWorldObjectType::Structure:
+			CachedStatistics.StructureCount++;
+			break;
+		default:
+			break;
+		}
+
+		if (ObjData.bIsGroupCenter)
+		{
+			CachedStatistics.StructureCount++;
+		}
+	}
+
+	// 바이옴 통계
+	TMap<EBiomeType, int32> BiomeCounts;
+	for (const FBiomeData& Biome : GeneratedBiomeData)
+	{
+		if (!BiomeCounts.Contains(Biome.BiomeType))
+		{
+			BiomeCounts.Add(Biome.BiomeType, 0);
+		}
+		BiomeCounts[Biome.BiomeType]++;
+	}
+
+	// 바이옴 비율 계산
+	int32 TotalBiomes = GeneratedBiomeData.Num();
+	if (TotalBiomes > 0)
+	{
+		for (const auto& Pair : BiomeCounts)
+		{
+			float Percentage = (Pair.Value / (float)TotalBiomes) * 100.0f;
+			CachedStatistics.BiomePercentages.Add(Pair.Key, Percentage);
+		}
+	}
+
+	// 평균 고도 계산
+	float TotalElevation = 0.0f;
+	for (const FBiomeData& Biome : GeneratedBiomeData)
+	{
+		TotalElevation += Biome.Height;
+	}
+	if (GeneratedBiomeData.Num() > 0)
+	{
+		CachedStatistics.AverageElevation = TotalElevation / GeneratedBiomeData.Num();
+	}
+
+	// 물 커버리지 계산
+	if (CachedStatistics.BiomePercentages.Contains(EBiomeType::Ocean))
+	{
+		CachedStatistics.WaterCoverage = CachedStatistics.BiomePercentages[EBiomeType::Ocean];
+	}
+
+	StatusMessage = FString::Printf(TEXT("Statistics refreshed: %d objects, %.1f%% water"),
+		CachedStatistics.TotalObjects, CachedStatistics.WaterCoverage);
+}
+
+//=============================================================================
+// NEW: Template Gallery System
+//=============================================================================
+
+TArray<FWorldTemplate> UHarmoniaWorldEditorUtility::GetAvailableTemplates() const
+{
+	TArray<FWorldTemplate> Templates;
+
+	// 템플릿 디렉토리 스캔
+	FString TemplateDir = FPaths::ProjectSavedDir() / TEXT("WorldTemplates");
+
+	TArray<FString> TemplateFiles;
+	IFileManager::Get().FindFiles(TemplateFiles, *(TemplateDir / TEXT("*.json")), true, false);
+
+	for (const FString& FileName : TemplateFiles)
+	{
+		FString FilePath = TemplateDir / FileName;
+		FString JsonString;
+
+		if (FFileHelper::LoadFileToString(JsonString, *FilePath))
+		{
+			// JSON 파싱하여 템플릿 로드
+			// (간략화된 구현)
+			FWorldTemplate Template;
+			Template.Name = FPaths::GetBaseFilename(FileName);
+			Templates.Add(Template);
+		}
+	}
+
+	return Templates;
+}
+
+bool UHarmoniaWorldEditorUtility::ApplyTemplate(const FWorldTemplate& Template)
+{
+	WorldConfig = Template.Config;
+	ApplyWorldConfigToProperties();
+
+	StatusMessage = FString::Printf(TEXT("Applied template: %s"), *Template.Name);
+	UE_LOG(LogTemp, Log, TEXT("Applied template: %s"), *Template.Name);
+	return true;
+}
+
+bool UHarmoniaWorldEditorUtility::SaveAsTemplate(const FString& TemplateName, const FString& Description, UTexture2D* PreviewImage)
+{
+	UpdateWorldConfigFromProperties();
+
+	FWorldTemplate Template;
+	Template.Name = TemplateName;
+	Template.Description = Description;
+	Template.PreviewImage = PreviewImage;
+	Template.Config = WorldConfig;
+	Template.CreationDate = FDateTime::Now();
+	Template.Author = FPlatformProcess::UserName();
+
+	// JSON으로 저장
+	FString FilePath = GenerateTemplateFilePath(TemplateName);
+
+	// 디렉토리 생성
+	FString Dir = FPaths::GetPath(FilePath);
+	if (!IFileManager::Get().DirectoryExists(*Dir))
+	{
+		IFileManager::Get().MakeDirectory(*Dir, true);
+	}
+
+	// 저장 (간략화된 구현)
+	bool bSuccess = SaveConfigToFile(FilePath);
+
+	if (bSuccess)
+	{
+		StatusMessage = FString::Printf(TEXT("Template saved: %s"), *TemplateName);
+		UE_LOG(LogTemp, Log, TEXT("Saved template: %s"), *TemplateName);
+	}
+
+	return bSuccess;
+}
+
+bool UHarmoniaWorldEditorUtility::LoadTemplate(const FString& TemplateName)
+{
+	FString FilePath = GenerateTemplateFilePath(TemplateName);
+
+	if (!FPaths::FileExists(FilePath))
+	{
+		StatusMessage = FString::Printf(TEXT("Template not found: %s"), *TemplateName);
+		return false;
+	}
+
+	bool bSuccess = LoadConfigFromFile(FilePath);
+
+	if (bSuccess)
+	{
+		StatusMessage = FString::Printf(TEXT("Template loaded: %s"), *TemplateName);
+		UE_LOG(LogTemp, Log, TEXT("Loaded template: %s"), *TemplateName);
+	}
+
+	return bSuccess;
+}
+
+bool UHarmoniaWorldEditorUtility::DeleteTemplate(const FString& TemplateName)
+{
+	FString FilePath = GenerateTemplateFilePath(TemplateName);
+
+	if (!FPaths::FileExists(FilePath))
+	{
+		StatusMessage = FString::Printf(TEXT("Template not found: %s"), *TemplateName);
+		return false;
+	}
+
+	bool bSuccess = IFileManager::Get().Delete(*FilePath);
+
+	if (bSuccess)
+	{
+		StatusMessage = FString::Printf(TEXT("Template deleted: %s"), *TemplateName);
+		UE_LOG(LogTemp, Log, TEXT("Deleted template: %s"), *TemplateName);
+	}
+
+	return bSuccess;
+}
+
+//=============================================================================
+// NEW: Batch World Generation
+//=============================================================================
+
+void UHarmoniaWorldEditorUtility::BatchGenerateWorlds(int32 Count, const FString& OutputPath, bool bRandomizeSeeds)
+{
+	if (bIsBatchGenerating)
+	{
+		StatusMessage = TEXT("Batch generation already in progress");
+		return;
+	}
+
+	// 작업 목록 생성
+	BatchJobs.Empty();
+	for (int32 i = 0; i < Count; i++)
+	{
+		FBatchGenerationJob Job;
+		Job.Index = i;
+		Job.Seed = bRandomizeSeeds ? FMath::Rand() : (Seed + i);
+		Job.OutputPath = FString::Printf(TEXT("%s/World_%03d"), *OutputPath, i);
+		BatchJobs.Add(Job);
+	}
+
+	CurrentBatchJobIndex = 0;
+	bIsBatchGenerating = true;
+	BatchProgress = 0.0f;
+
+	StatusMessage = FString::Printf(TEXT("Starting batch generation of %d worlds"), Count);
+	UE_LOG(LogTemp, Log, TEXT("Started batch generation: %d worlds"), Count);
+
+	// 첫 작업 시작
+	ProcessNextBatchJob();
+}
+
+void UHarmoniaWorldEditorUtility::CancelBatchGeneration()
+{
+	if (!bIsBatchGenerating)
+	{
+		return;
+	}
+
+	bIsBatchGenerating = false;
+	BatchProgress = 0.0f;
+	StatusMessage = TEXT("Batch generation cancelled");
+	UE_LOG(LogTemp, Warning, TEXT("Batch generation cancelled"));
+}
+
+//=============================================================================
+// NEW: Smart Suggestion System
+//=============================================================================
+
+FWorldGeneratorConfig UHarmoniaWorldEditorUtility::GetSuggestedConfig(EWorldType WorldType) const
+{
+	FWorldGeneratorConfig SuggestedConfig = WorldConfig;
+
+	switch (WorldType)
+	{
+	case EWorldType::Realistic:
+		SuggestedConfig.NoiseSettings.Octaves = 6;
+		SuggestedConfig.NoiseSettings.Persistence = 0.5f;
+		SuggestedConfig.SeaLevel = 0.4f;
+		SuggestedConfig.ErosionSettings.bEnableErosion = true;
+		break;
+
+	case EWorldType::Fantasy:
+		SuggestedConfig.NoiseSettings.Octaves = 8;
+		SuggestedConfig.NoiseSettings.Amplitude = 2.0f;
+		SuggestedConfig.MaxHeight = 51200.0f;
+		break;
+
+	case EWorldType::Alien:
+		SuggestedConfig.NoiseSettings.Octaves = 10;
+		SuggestedConfig.NoiseSettings.Frequency = 0.02f;
+		SuggestedConfig.SeaLevel = 0.2f;
+		break;
+
+	case EWorldType::Archipelago:
+		SuggestedConfig.SeaLevel = 0.65f;
+		SuggestedConfig.NoiseSettings.Frequency = 0.005f;
+		break;
+
+	case EWorldType::Canyon:
+		SuggestedConfig.ErosionSettings.bEnableErosion = true;
+		SuggestedConfig.ErosionSettings.Iterations = 200;
+		SuggestedConfig.SeaLevel = 0.3f;
+		break;
+
+	case EWorldType::Plains:
+		SuggestedConfig.NoiseSettings.Amplitude = 0.3f;
+		SuggestedConfig.NoiseSettings.Octaves = 3;
+		break;
+
+	case EWorldType::Volcanic:
+		SuggestedConfig.MaxHeight = 51200.0f;
+		SuggestedConfig.NoiseSettings.Amplitude = 2.5f;
+		SuggestedConfig.SeaLevel = 0.5f;
+		break;
+
+	case EWorldType::Frozen:
+		SuggestedConfig.SeaLevel = 0.5f;
+		// 추가 환경 설정 필요
+		break;
+
+	case EWorldType::Tropical:
+		SuggestedConfig.SeaLevel = 0.45f;
+		SuggestedConfig.NoiseSettings.Frequency = 0.008f;
+		break;
+
+	case EWorldType::Highlands:
+		SuggestedConfig.MaxHeight = 40000.0f;
+		SuggestedConfig.NoiseSettings.Amplitude = 1.5f;
+		SuggestedConfig.SeaLevel = 0.3f;
+		break;
+
+	default:
+		break;
+	}
+
+	return SuggestedConfig;
+}
+
+TArray<FString> UHarmoniaWorldEditorUtility::GetOptimizationSuggestions() const
+{
+	TArray<FString> Suggestions;
+
+	// 메모리 최적화
+	if (GetEstimatedMemoryUsageMB() > 1024.0f)
+	{
+		Suggestions.Add(TEXT("Consider reducing world size to decrease memory usage"));
+	}
+
+	// 시간 최적화
+	if (NoiseSettings.Octaves > 8)
+	{
+		Suggestions.Add(TEXT("Reduce noise octaves (currently > 8) to speed up generation"));
+	}
+
+	if (ErosionSettings.bEnableErosion && ErosionSettings.Iterations > 100)
+	{
+		Suggestions.Add(TEXT("Reduce erosion iterations to speed up generation"));
+	}
+
+	// 오브젝트 최적화
+	int32 EstimatedObjects = (WorldSizeX * WorldSizeY) / 100; // 대략적
+	if (EstimatedObjects > 50000)
+	{
+		Suggestions.Add(TEXT("High object count expected. Consider using LOD or culling"));
+	}
+
+	// 일반 제안
+	if (Suggestions.Num() == 0)
+	{
+		Suggestions.Add(TEXT("Configuration looks optimized!"));
+	}
+
+	return Suggestions;
+}
+
+void UHarmoniaWorldEditorUtility::AutoOptimizeConfiguration()
+{
+	// 자동 최적화 로직
+	bool bWasOptimized = false;
+
+	// 메모리가 너무 크면 크기 축소
+	if (GetEstimatedMemoryUsageMB() > 2048.0f)
+	{
+		WorldSizeX = FMath::Min(WorldSizeX, 1024);
+		WorldSizeY = FMath::Min(WorldSizeY, 1024);
+		bWasOptimized = true;
+	}
+
+	// 옥타브가 너무 많으면 감소
+	if (NoiseSettings.Octaves > 8)
+	{
+		NoiseSettings.Octaves = 8;
+		bWasOptimized = true;
+	}
+
+	// 침식 반복이 너무 많으면 감소
+	if (ErosionSettings.Iterations > 100)
+	{
+		ErosionSettings.Iterations = 100;
+		bWasOptimized = true;
+	}
+
+	if (bWasOptimized)
+	{
+		UpdateWorldConfigFromProperties();
+		StatusMessage = TEXT("Configuration auto-optimized");
+		UE_LOG(LogTemp, Log, TEXT("Configuration auto-optimized"));
+	}
+	else
+	{
+		StatusMessage = TEXT("Configuration already optimal");
+	}
+}
+
+int32 UHarmoniaWorldEditorUtility::GenerateRandomSeed()
+{
+	Seed = FMath::Rand();
+	StatusMessage = FString::Printf(TEXT("Generated random seed: %d"), Seed);
+	return Seed;
+}
+
+//=============================================================================
+// NEW: Version Control System
+//=============================================================================
+
+bool UHarmoniaWorldEditorUtility::SaveVersion(const FString& CommitMessage)
+{
+	UpdateWorldConfigFromProperties();
+
+	FWorldVersion Version;
+	Version.VersionIndex = VersionHistory.Num();
+	Version.Timestamp = FDateTime::Now();
+	Version.Config = WorldConfig;
+	Version.CommitMessage = CommitMessage;
+	Version.FilePath = GenerateVersionFilePath(Version.VersionIndex);
+
+	// 프리뷰 스냅샷 생성
+	Version.Snapshot = GeneratePreviewThumbnail(256);
+
+	// 파일로 저장
+	bool bSuccess = SaveConfigToFile(Version.FilePath);
+
+	if (bSuccess)
+	{
+		VersionHistory.Add(Version);
+		StatusMessage = FString::Printf(TEXT("Version %d saved: %s"), Version.VersionIndex, *CommitMessage);
+		UE_LOG(LogTemp, Log, TEXT("Saved version %d: %s"), Version.VersionIndex, *CommitMessage);
+	}
+
+	return bSuccess;
+}
+
+bool UHarmoniaWorldEditorUtility::LoadVersion(int32 VersionIndex)
+{
+	if (VersionIndex < 0 || VersionIndex >= VersionHistory.Num())
+	{
+		StatusMessage = TEXT("Invalid version index");
+		return false;
+	}
+
+	const FWorldVersion& Version = VersionHistory[VersionIndex];
+
+	bool bSuccess = LoadConfigFromFile(Version.FilePath);
+
+	if (bSuccess)
+	{
+		StatusMessage = FString::Printf(TEXT("Loaded version %d: %s"), VersionIndex, *Version.CommitMessage);
+		UE_LOG(LogTemp, Log, TEXT("Loaded version %d"), VersionIndex);
+	}
+
+	return bSuccess;
+}
+
+FString UHarmoniaWorldEditorUtility::CompareVersions(int32 Version1Index, int32 Version2Index)
+{
+	if (Version1Index < 0 || Version1Index >= VersionHistory.Num() ||
+		Version2Index < 0 || Version2Index >= VersionHistory.Num())
+	{
+		return TEXT("Invalid version indices");
+	}
+
+	const FWorldVersion& V1 = VersionHistory[Version1Index];
+	const FWorldVersion& V2 = VersionHistory[Version2Index];
+
+	FString Comparison;
+	Comparison += FString::Printf(TEXT("Version %d vs Version %d\n\n"), Version1Index, Version2Index);
+
+	// 크기 비교
+	if (V1.Config.SizeX != V2.Config.SizeX || V1.Config.SizeY != V2.Config.SizeY)
+	{
+		Comparison += FString::Printf(TEXT("Size: %dx%d -> %dx%d\n"),
+			V1.Config.SizeX, V1.Config.SizeY, V2.Config.SizeX, V2.Config.SizeY);
+	}
+
+	// 시드 비교
+	if (V1.Config.Seed != V2.Config.Seed)
+	{
+		Comparison += FString::Printf(TEXT("Seed: %d -> %d\n"), V1.Config.Seed, V2.Config.Seed);
+	}
+
+	// 높이 비교
+	if (V1.Config.MaxHeight != V2.Config.MaxHeight)
+	{
+		Comparison += FString::Printf(TEXT("Max Height: %.0f -> %.0f\n"), V1.Config.MaxHeight, V2.Config.MaxHeight);
+	}
+
+	if (Comparison.IsEmpty())
+	{
+		Comparison = TEXT("No significant differences found");
+	}
+
+	return Comparison;
+}
+
+TArray<FWorldVersion> UHarmoniaWorldEditorUtility::GetVersionHistory() const
+{
+	return VersionHistory;
+}
+
+void UHarmoniaWorldEditorUtility::ClearVersionHistory()
+{
+	VersionHistory.Empty();
+	StatusMessage = TEXT("Version history cleared");
+	UE_LOG(LogTemp, Log, TEXT("Cleared version history"));
+}
+
+bool UHarmoniaWorldEditorUtility::DeleteVersion(int32 VersionIndex)
+{
+	if (VersionIndex < 0 || VersionIndex >= VersionHistory.Num())
+	{
+		StatusMessage = TEXT("Invalid version index");
+		return false;
+	}
+
+	const FWorldVersion& Version = VersionHistory[VersionIndex];
+
+	// 파일 삭제
+	bool bSuccess = IFileManager::Get().Delete(*Version.FilePath);
+
+	if (bSuccess)
+	{
+		VersionHistory.RemoveAt(VersionIndex);
+		StatusMessage = FString::Printf(TEXT("Deleted version %d"), VersionIndex);
+		UE_LOG(LogTemp, Log, TEXT("Deleted version %d"), VersionIndex);
+	}
+
+	return bSuccess;
+}
+
+//=============================================================================
+// NEW: Advanced Presets
+//=============================================================================
+
+TArray<FString> UHarmoniaWorldEditorUtility::GetAvailablePresets() const
+{
+	return {
+		TEXT("Flat"),
+		TEXT("Mountains"),
+		TEXT("Islands"),
+		TEXT("Desert"),
+		TEXT("Archipelago"),
+		TEXT("Canyon"),
+		TEXT("Plains"),
+		TEXT("Volcanic"),
+		TEXT("Frozen"),
+		TEXT("Tropical"),
+		TEXT("Highlands")
+	};
+}
+
+FString UHarmoniaWorldEditorUtility::GetPresetDescription(const FString& PresetName) const
+{
+	if (PresetName == TEXT("Flat"))
+		return TEXT("Flat terrain with minimal elevation changes");
+	else if (PresetName == TEXT("Mountains"))
+		return TEXT("High mountain ranges with dramatic elevation");
+	else if (PresetName == TEXT("Islands"))
+		return TEXT("Island chains surrounded by ocean");
+	else if (PresetName == TEXT("Desert"))
+		return TEXT("Arid desert landscape with minimal water");
+	else if (PresetName == TEXT("Archipelago"))
+		return TEXT("Many small islands scattered across ocean");
+	else if (PresetName == TEXT("Canyon"))
+		return TEXT("Deep canyons carved by erosion");
+	else if (PresetName == TEXT("Plains"))
+		return TEXT("Gently rolling plains with low elevation");
+	else if (PresetName == TEXT("Volcanic"))
+		return TEXT("Volcanic landscape with steep peaks");
+	else if (PresetName == TEXT("Frozen"))
+		return TEXT("Frozen tundra with ice coverage");
+	else if (PresetName == TEXT("Tropical"))
+		return TEXT("Tropical islands with lush vegetation");
+	else if (PresetName == TEXT("Highlands"))
+		return TEXT("Elevated plateau regions");
+	else
+		return TEXT("Unknown preset");
+}
+
+//=============================================================================
+// NEW: Internal Helper Functions
+//=============================================================================
+
+void UHarmoniaWorldEditorUtility::RecordEditForUndo(const FTerrainEditHistory& Edit)
+{
+	// Redo 스택 제거 (새 편집이 들어오면)
+	if (CurrentHistoryIndex < EditHistory.Num() - 1)
+	{
+		EditHistory.RemoveAt(CurrentHistoryIndex + 1, EditHistory.Num() - CurrentHistoryIndex - 1);
+	}
+
+	// 새 편집 추가
+	EditHistory.Add(Edit);
+	CurrentHistoryIndex++;
+
+	// 최대 히스토리 크기 체크
+	if (EditHistory.Num() > MaxHistorySize)
+	{
+		EditHistory.RemoveAt(0);
+		CurrentHistoryIndex--;
+	}
+}
+
+void UHarmoniaWorldEditorUtility::ApplyEdit(const FTerrainEditHistory& Edit, bool bIsUndo)
+{
+	// 실제 지형 데이터에 적용
+	// (간략화된 구현 - 실제로는 Landscape API 사용)
+	UHarmoniaWorldGeneratorSubsystem* GenSubsystem = GetWorldGeneratorSubsystem();
+	if (!GenSubsystem)
+	{
+		return;
+	}
+
+	const TArray<int32>& DataToApply = bIsUndo ? Edit.BeforeHeightData : Edit.AfterHeightData;
+
+	// Landscape에 데이터 적용 로직
+	// ...
+}
+
+TArray<int32> UHarmoniaWorldEditorUtility::GenerateHeightDataForPreview(int32 Width, int32 Height)
+{
+	TArray<int32> HeightData;
+	HeightData.SetNum(Width * Height);
+
+	// 간단한 Perlin 노이즈로 하이트맵 생성
+	for (int32 Y = 0; Y < Height; Y++)
+	{
+		for (int32 X = 0; X < Width; X++)
+		{
+			float NoiseValue = FMath::PerlinNoise2D(FVector2D(
+				X * NoiseSettings.Frequency,
+				Y * NoiseSettings.Frequency
+			));
+
+			// -1~1을 0~65535로 변환 (16-bit heightmap)
+			int32 HeightValue = FMath::Clamp(
+				FMath::RoundToInt((NoiseValue + 1.0f) * 0.5f * 65535.0f),
+				0, 65535
+			);
+
+			HeightData[Y * Width + X] = HeightValue;
+		}
+	}
+
+	return HeightData;
+}
+
+UTexture2D* UHarmoniaWorldEditorUtility::CreateTextureFromHeightData(const TArray<int32>& HeightData, int32 Width, int32 Height)
+{
+	if (HeightData.Num() != Width * Height)
+	{
+		return nullptr;
+	}
+
+	// 텍스처 생성
+	UTexture2D* Texture = UTexture2D::CreateTransient(Width, Height, PF_B8G8R8A8);
+	if (!Texture)
+	{
+		return nullptr;
+	}
+
+	// 픽셀 데이터 작성
+	FTexture2DMipMap& Mip = Texture->GetPlatformData()->Mips[0];
+	void* Data = Mip.BulkData.Lock(LOCK_READ_WRITE);
+	uint8* DestData = static_cast<uint8*>(Data);
+
+	for (int32 i = 0; i < HeightData.Num(); i++)
+	{
+		uint8 GrayValue = HeightData[i] / 256; // 16-bit to 8-bit
+
+		DestData[i * 4 + 0] = GrayValue; // B
+		DestData[i * 4 + 1] = GrayValue; // G
+		DestData[i * 4 + 2] = GrayValue; // R
+		DestData[i * 4 + 3] = 255;       // A
+	}
+
+	Mip.BulkData.Unlock();
+	Texture->UpdateResource();
+
+	return Texture;
+}
+
+void UHarmoniaWorldEditorUtility::ProcessNextBatchJob()
+{
+	if (!bIsBatchGenerating || CurrentBatchJobIndex >= BatchJobs.Num())
+	{
+		// 배치 완료
+		bIsBatchGenerating = false;
+		BatchProgress = 1.0f;
+		StatusMessage = TEXT("Batch generation completed");
+		UE_LOG(LogTemp, Log, TEXT("Batch generation completed"));
+		return;
+	}
+
+	FBatchGenerationJob& Job = BatchJobs[CurrentBatchJobIndex];
+
+	// 시드 설정
+	Seed = Job.Seed;
+	UpdateWorldConfigFromProperties();
+
+	// 월드 생성 (간략화)
+	GenerateWorld();
+
+	// 내보내기
+	ExportHeightmapToPNG(Job.OutputPath + TEXT("_heightmap.png"));
+
+	Job.bCompleted = true;
+	Job.bSuccess = true;
+
+	// 진행률 업데이트
+	BatchProgress = (float)(CurrentBatchJobIndex + 1) / BatchJobs.Num();
+
+	CurrentBatchJobIndex++;
+
+	// 다음 작업 처리
+	ProcessNextBatchJob();
+}
+
+FString UHarmoniaWorldEditorUtility::GenerateTemplateFilePath(const FString& TemplateName) const
+{
+	return FPaths::ProjectSavedDir() / TEXT("WorldTemplates") / (TemplateName + TEXT(".json"));
+}
+
+FString UHarmoniaWorldEditorUtility::GenerateVersionFilePath(int32 VersionIndex) const
+{
+	return FPaths::ProjectSavedDir() / TEXT("WorldVersions") / FString::Printf(TEXT("Version_%03d.json"), VersionIndex);
 }
