@@ -76,6 +76,51 @@ enum class EHarmoniaHitReactionType : uint8
 	Ragdoll UMETA(DisplayName = "Ragdoll")
 };
 
+/**
+ * Melee Weapon Type
+ * Soul-like melee weapon categories
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaMeleeWeaponType : uint8
+{
+	None UMETA(DisplayName = "None"),
+	Sword UMETA(DisplayName = "Sword"),						// Balanced weapon
+	GreatSword UMETA(DisplayName = "Great Sword"),			// Slow, powerful
+	Dagger UMETA(DisplayName = "Dagger"),					// Fast, low damage
+	Axe UMETA(DisplayName = "Axe"),							// High damage, slow
+	Spear UMETA(DisplayName = "Spear"),						// Long reach
+	Hammer UMETA(DisplayName = "Hammer"),					// High poise damage
+	Katana UMETA(DisplayName = "Katana"),					// Fast combos
+	Shield UMETA(DisplayName = "Shield"),					// Defensive
+	Fist UMETA(DisplayName = "Fist"),						// Unarmed
+	Whip UMETA(DisplayName = "Whip"),						// Unique range
+	Scythe UMETA(DisplayName = "Scythe"),					// Wide sweeping
+	// Extended weapon types
+	Halberd UMETA(DisplayName = "Halberd"),					// Spear + Axe hybrid
+	Rapier UMETA(DisplayName = "Rapier"),					// Thrust-focused
+	Mace UMETA(DisplayName = "Mace"),						// Blunt weapon
+	DualBlades UMETA(DisplayName = "Dual Blades"),			// Twin weapons
+	GreatAxe UMETA(DisplayName = "Great Axe"),				// Two-handed axe
+	Flail UMETA(DisplayName = "Flail"),						// Chained weapon
+	Crossbow UMETA(DisplayName = "Crossbow"),				// Ranged/Melee hybrid
+	Staff UMETA(DisplayName = "Staff"),						// Magic weapon
+	Custom UMETA(DisplayName = "Custom")					// User-defined
+};
+
+/**
+ * Defense State
+ * Defines the current defensive state
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaDefenseState : uint8
+{
+	None UMETA(DisplayName = "None"),
+	Blocking UMETA(DisplayName = "Blocking"),				// Active block
+	Parrying UMETA(DisplayName = "Parrying"),				// Parry window
+	Dodging UMETA(DisplayName = "Dodging"),					// I-frames active
+	Stunned UMETA(DisplayName = "Stunned")					// Cannot defend
+};
+
 // ============================================================================
 // Structs
 // ============================================================================
@@ -421,4 +466,254 @@ struct HARMONIAKIT_API FHitReactionData : public FTableRowBase
 			return HitMontage_Front;
 		}
 	}
+};
+
+// ============================================================================
+// Melee Combat Structs
+// ============================================================================
+
+/**
+ * Melee Weapon Data
+ * Defines properties for a melee weapon type
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaMeleeWeaponData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	// Weapon type
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
+	EHarmoniaMeleeWeaponType WeaponType = EHarmoniaMeleeWeaponType::Sword;
+
+	// Display name
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
+	FText DisplayName;
+
+	// Base damage multiplier for this weapon type
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Damage")
+	float BaseDamageMultiplier = 1.0f;
+
+	// Attack speed multiplier (higher = faster)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	float AttackSpeedMultiplier = 1.0f;
+
+	// Stamina cost per light attack
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stamina")
+	float LightAttackStaminaCost = 10.0f;
+
+	// Stamina cost per heavy attack
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stamina")
+	float HeavyAttackStaminaCost = 25.0f;
+
+	// Poise damage (ability to stagger enemies)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	float PoiseDamage = 10.0f;
+
+	// Default attack trace configuration
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	FHarmoniaAttackTraceConfig DefaultTraceConfig;
+
+	// Can this weapon parry?
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Defense")
+	bool bCanParry = false;
+
+	// Can this weapon block?
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Defense")
+	bool bCanBlock = false;
+
+	// Block damage reduction percentage (0-1)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Defense", meta = (EditCondition = "bCanBlock", ClampMin = "0.0", ClampMax = "1.0"))
+	float BlockDamageReduction = 0.5f;
+
+	// Stamina cost per blocked hit
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Defense", meta = (EditCondition = "bCanBlock"))
+	float BlockStaminaCost = 15.0f;
+
+	// Maximum combo chain length
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
+	int32 MaxComboChain = 3;
+
+	// Combo window duration (time to input next attack)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
+	float ComboWindowDuration = 0.5f;
+};
+
+/**
+ * Combo Attack Step
+ * Individual attack in a combo sequence
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaComboAttackStep
+{
+	GENERATED_BODY()
+
+	// Animation montage for this step
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	TObjectPtr<UAnimMontage> AttackMontage;
+
+	// Montage section name to play
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	FName MontageSectionName = NAME_None;
+
+	// Attack data override (if empty, uses weapon default)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	FHarmoniaAttackData AttackDataOverride;
+
+	// Use custom attack data?
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	bool bUseAttackDataOverride = false;
+
+	// Damage multiplier for this combo step
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
+	float DamageMultiplier = 1.0f;
+
+	// Stamina cost multiplier for this step
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina")
+	float StaminaCostMultiplier = 1.0f;
+
+	// Can be canceled into dodge/block?
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combo")
+	bool bCanBeCanceled = true;
+
+	// Minimum time before can be canceled
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combo", meta = (EditCondition = "bCanBeCanceled"))
+	float MinimumCancelTime = 0.2f;
+};
+
+/**
+ * Combo Attack Sequence
+ * Full combo chain for a weapon
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaComboAttackSequence : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	// Combo name
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
+	FText ComboName;
+
+	// Weapon type this combo belongs to
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
+	EHarmoniaMeleeWeaponType WeaponType = EHarmoniaMeleeWeaponType::Sword;
+
+	// Is this a light or heavy combo?
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
+	bool bIsHeavyCombo = false;
+
+	// Combo steps
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
+	TArray<FHarmoniaComboAttackStep> ComboSteps;
+
+	// Gameplay tags required to perform this combo
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
+	FGameplayTagContainer RequiredTags;
+
+	// Gameplay tags blocked by this combo
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
+	FGameplayTagContainer BlockedTags;
+};
+
+/**
+ * Defense Configuration
+ * Defines blocking/parrying properties
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaDefenseConfig
+{
+	GENERATED_BODY()
+
+	// Can block attacks?
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defense")
+	bool bCanBlock = true;
+
+	// Block damage reduction (0-1)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defense", meta = (EditCondition = "bCanBlock"))
+	float BlockDamageReduction = 0.7f;
+
+	// Stamina cost per blocked hit
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defense", meta = (EditCondition = "bCanBlock"))
+	float BlockStaminaCost = 15.0f;
+
+	// Can parry attacks?
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defense")
+	bool bCanParry = true;
+
+	// Parry window duration (seconds)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defense", meta = (EditCondition = "bCanParry"))
+	float ParryWindowDuration = 0.2f;
+
+	// Stamina cost for parry attempt
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defense", meta = (EditCondition = "bCanParry"))
+	float ParryStaminaCost = 10.0f;
+
+	// Parry success animation
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	TObjectPtr<UAnimMontage> ParrySuccessMontage;
+
+	// Parry fail animation
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	TObjectPtr<UAnimMontage> ParryFailMontage;
+
+	// Block start animation
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	TObjectPtr<UAnimMontage> BlockStartMontage;
+
+	// Block loop animation
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	TObjectPtr<UAnimMontage> BlockLoopMontage;
+
+	// Block end animation
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	TObjectPtr<UAnimMontage> BlockEndMontage;
+
+	// Block hit reaction animation
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	TObjectPtr<UAnimMontage> BlockHitMontage;
+};
+
+/**
+ * Dodge Configuration
+ * Defines dodge/roll properties
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaDodgeConfig
+{
+	GENERATED_BODY()
+
+	// Dodge type (roll, sidestep, backstep)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodge")
+	FName DodgeType = FName("Roll");
+
+	// Dodge distance
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodge")
+	float DodgeDistance = 400.0f;
+
+	// Dodge duration (seconds)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodge")
+	float DodgeDuration = 0.6f;
+
+	// I-frame start time (seconds into dodge)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodge")
+	float IFrameStartTime = 0.1f;
+
+	// I-frame duration (seconds)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodge")
+	float IFrameDuration = 0.3f;
+
+	// Stamina cost
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina")
+	float StaminaCost = 20.0f;
+
+	// Dodge animation montage
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	TObjectPtr<UAnimMontage> DodgeMontage;
+
+	// Can attack immediately after dodge?
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodge")
+	bool bCanAttackAfterDodge = true;
+
+	// Minimum time before can attack after dodge
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodge", meta = (EditCondition = "bCanAttackAfterDodge"))
+	float MinimumAttackDelay = 0.3f;
 };
