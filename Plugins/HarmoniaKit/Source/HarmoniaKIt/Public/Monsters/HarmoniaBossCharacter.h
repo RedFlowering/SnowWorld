@@ -2,16 +2,16 @@
 
 #pragma once
 
-#include "BaseCharacter.h"
+#include "Monsters/HarmoniaMonsterBase.h"
 #include "GameplayTagContainer.h"
-#include "BossCharacter.generated.h"
+#include "HarmoniaBossCharacter.generated.h"
 
-class UBossPhaseComponent;
-class UBossPatternComponent;
+class UHarmoniaBossPhaseComponent;
+class UHarmoniaBossPatternComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBossPhaseChanged, int32, OldPhase, int32, NewPhase);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBossEncounterStart, ABossCharacter*, Boss);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBossEncounterEnd, ABossCharacter*, Boss, bool, bDefeated);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBossEncounterStart, AHarmoniaBossCharacter*, Boss);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBossEncounterEnd, AHarmoniaBossCharacter*, Boss, bool, bDefeated);
 
 /**
  * ABossCharacter
@@ -20,7 +20,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBossEncounterEnd, ABossCharacter
  * Inherits from BaseCharacter to use existing combat systems (lock-on, GAS, etc.)
  */
 UCLASS(Blueprintable)
-class LYRAGAME_API ABossCharacter : public ABaseCharacter
+class HARMONIAKIT_API ABossCharacter : public AHarmoniaMonsterBase
 {
 	GENERATED_BODY()
 

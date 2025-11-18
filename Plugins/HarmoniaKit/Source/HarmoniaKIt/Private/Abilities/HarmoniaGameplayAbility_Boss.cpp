@@ -1,36 +1,36 @@
 // Copyright 2024 Snow Game Studio.
 
-#include "BossGameplayAbility.h"
-#include "BossCharacter.h"
+#include "Abilities/HarmoniaGameplayAbility_Boss.h"
+#include "Monsters/HarmoniaBossCharacter.h"
 #include "LyraHealthComponent.h"
 #include "AbilitySystemComponent.h"
 
-UBossGameplayAbility::UBossGameplayAbility(const FObjectInitializer& ObjectInitializer)
+UHarmoniaBossGameplayAbility::UBossGameplayAbility(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	MinHealthPercent = 0.0f;
 	MaxHealthPercent = 0.0f;
 }
 
-ABossCharacter* UBossGameplayAbility::GetBossCharacter() const
+AHarmoniaBossCharacter* UHarmoniaBossGameplayAbility::GetBossCharacter() const
 {
 	return Cast<ABossCharacter>(GetAvatarActorFromActorInfo());
 }
 
-int32 UBossGameplayAbility::GetBossPhase() const
+int32 UHarmoniaBossGameplayAbility::GetBossPhase() const
 {
-	ABossCharacter* Boss = GetBossCharacter();
+	AHarmoniaBossCharacter* Boss = GetBossCharacter();
 	return Boss ? Boss->GetCurrentPhase() : 0;
 }
 
-bool UBossGameplayAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
+bool UHarmoniaBossGameplayAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
 {
 	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
 	{
 		return false;
 	}
 
-	ABossCharacter* Boss = Cast<ABossCharacter>(ActorInfo->AvatarActor.Get());
+	AHarmoniaBossCharacter* Boss = Cast<ABossCharacter>(ActorInfo->AvatarActor.Get());
 	if (!Boss)
 	{
 		return true; // Allow if not a boss

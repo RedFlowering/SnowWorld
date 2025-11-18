@@ -1,27 +1,27 @@
 // Copyright 2024 Snow Game Studio.
 
-#include "BossPatternComponent.h"
-#include "BossCharacter.h"
+#include "Components/HarmoniaBossPatternComponent.h"
+#include "Monsters/HarmoniaBossCharacter.h"
 #include "AbilitySystem/LyraAbilitySystemComponent.h"
 #include "AbilitySystem/Abilities/LyraGameplayAbility.h"
 #include "TimerManager.h"
 #include "GameFramework/Character.h"
 
-UBossPatternComponent::UBossPatternComponent()
+UHarmoniaBossPatternComponent::UBossPatternComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = true;
 	SetIsReplicatedByDefault(true);
 }
 
-void UBossPatternComponent::BeginPlay()
+void UHarmoniaBossPatternComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
 	BossOwner = Cast<ABossCharacter>(GetOwner());
 }
 
-void UBossPatternComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UHarmoniaBossPatternComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
@@ -32,7 +32,7 @@ void UBossPatternComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 // Pattern Execution
 //~=============================================================================
 
-bool UBossPatternComponent::ExecutePattern(FName PatternName)
+bool UHarmoniaBossPatternComponent::ExecutePattern(FName PatternName)
 {
 	if (!BossOwner)
 	{
@@ -54,7 +54,7 @@ bool UBossPatternComponent::ExecutePattern(FName PatternName)
 	return true;
 }
 
-bool UBossPatternComponent::ExecuteRandomPattern()
+bool UHarmoniaBossPatternComponent::ExecuteRandomPattern()
 {
 	FName RandomPattern = SelectRandomPattern();
 	if (RandomPattern.IsNone())
@@ -65,7 +65,7 @@ bool UBossPatternComponent::ExecuteRandomPattern()
 	return ExecutePattern(RandomPattern);
 }
 
-void UBossPatternComponent::StopCurrentPattern()
+void UHarmoniaBossPatternComponent::StopCurrentPattern()
 {
 	if (!bIsExecutingPattern)
 	{
@@ -82,7 +82,7 @@ void UBossPatternComponent::StopCurrentPattern()
 	CompletePatternExecution();
 }
 
-bool UBossPatternComponent::IsPatternAvailable(FName PatternName) const
+bool UHarmoniaBossPatternComponent::IsPatternAvailable(FName PatternName) const
 {
 	const FBossAttackPattern* Pattern = GetPatternConfig(PatternName);
 	if (!Pattern)
@@ -93,7 +93,7 @@ bool UBossPatternComponent::IsPatternAvailable(FName PatternName) const
 	return CanExecutePattern(*Pattern);
 }
 
-TArray<FName> UBossPatternComponent::GetAvailablePatterns() const
+TArray<FName> UHarmoniaBossPatternComponent::GetAvailablePatterns() const
 {
 	TArray<FName> AvailablePatterns;
 
@@ -108,18 +108,18 @@ TArray<FName> UBossPatternComponent::GetAvailablePatterns() const
 	return AvailablePatterns;
 }
 
-const FBossAttackPattern* UBossPatternComponent::GetPatternConfig(FName PatternName) const
+const FBossAttackPattern* UHarmoniaBossPatternComponent::GetPatternConfig(FName PatternName) const
 {
 	return AttackPatterns.Find(PatternName);
 }
 
-bool UBossPatternComponent::IsPatternOnCooldown(FName PatternName) const
+bool UHarmoniaBossPatternComponent::IsPatternOnCooldown(FName PatternName) const
 {
 	const float* Cooldown = PatternCooldowns.Find(PatternName);
 	return Cooldown && *Cooldown > 0.0f;
 }
 
-float UBossPatternComponent::GetPatternCooldownRemaining(FName PatternName) const
+float UHarmoniaBossPatternComponent::GetPatternCooldownRemaining(FName PatternName) const
 {
 	const float* Cooldown = PatternCooldowns.Find(PatternName);
 	return Cooldown ? *Cooldown : 0.0f;
@@ -129,7 +129,7 @@ float UBossPatternComponent::GetPatternCooldownRemaining(FName PatternName) cons
 // Pattern Execution Implementation
 //~=============================================================================
 
-void UBossPatternComponent::StartPatternExecution(const FBossAttackPattern& Pattern)
+void UHarmoniaBossPatternComponent::StartPatternExecution(const FBossAttackPattern& Pattern)
 {
 	if (bIsExecutingPattern && !Pattern.bCanBeInterrupted)
 	{
@@ -191,7 +191,7 @@ void UBossPatternComponent::StartPatternExecution(const FBossAttackPattern& Patt
 	}
 }
 
-void UBossPatternComponent::ExecuteNextAbility()
+void UHarmoniaBossPatternComponent::ExecuteNextAbility()
 {
 	if (!bIsExecutingPattern)
 	{
@@ -213,7 +213,7 @@ void UBossPatternComponent::ExecuteNextAbility()
 				GetWorld()->GetTimerManager().SetTimer(
 					RepeatDelayTimerHandle,
 					this,
-					&UBossPatternComponent::OnRepeatDelayComplete,
+					&UHarmoniaBossPatternComponent::OnRepeatDelayComplete,
 					ActivePattern.RepeatDelay,
 					false
 				);
@@ -245,7 +245,7 @@ void UBossPatternComponent::ExecuteNextAbility()
 			GetWorld()->GetTimerManager().SetTimer(
 				AbilityDelayTimerHandle,
 				this,
-				&UBossPatternComponent::OnAbilityDelayComplete,
+				&UHarmoniaBossPatternComponent::OnAbilityDelayComplete,
 				ActivePattern.AbilityDelay,
 				false
 			);
@@ -267,7 +267,7 @@ void UBossPatternComponent::ExecuteNextAbility()
 	}
 }
 
-void UBossPatternComponent::ExecuteAbilityAtIndex(int32 AbilityIndex)
+void UHarmoniaBossPatternComponent::ExecuteAbilityAtIndex(int32 AbilityIndex)
 {
 	if (!BossOwner)
 	{
@@ -306,7 +306,7 @@ void UBossPatternComponent::ExecuteAbilityAtIndex(int32 AbilityIndex)
 	}
 }
 
-void UBossPatternComponent::CompletePatternExecution()
+void UHarmoniaBossPatternComponent::CompletePatternExecution()
 {
 	FName CompletedPattern = CurrentPatternName;
 
@@ -332,7 +332,7 @@ void UBossPatternComponent::CompletePatternExecution()
 	OnPatternExecutionEnd.Broadcast(CompletedPattern);
 }
 
-bool UBossPatternComponent::CanExecutePattern(const FBossAttackPattern& Pattern) const
+bool UHarmoniaBossPatternComponent::CanExecutePattern(const FBossAttackPattern& Pattern) const
 {
 	if (!BossOwner)
 	{
@@ -385,7 +385,7 @@ bool UBossPatternComponent::CanExecutePattern(const FBossAttackPattern& Pattern)
 	return true;
 }
 
-FName UBossPatternComponent::SelectRandomPattern() const
+FName UHarmoniaBossPatternComponent::SelectRandomPattern() const
 {
 	TArray<FName> AvailablePatternNames;
 	TArray<float> Weights;
@@ -436,7 +436,7 @@ FName UBossPatternComponent::SelectRandomPattern() const
 	return AvailablePatternNames.Last();
 }
 
-void UBossPatternComponent::UpdateCooldowns(float DeltaTime)
+void UHarmoniaBossPatternComponent::UpdateCooldowns(float DeltaTime)
 {
 	TArray<FName> PatternsToRemove;
 
@@ -455,12 +455,12 @@ void UBossPatternComponent::UpdateCooldowns(float DeltaTime)
 	}
 }
 
-void UBossPatternComponent::OnAbilityDelayComplete()
+void UHarmoniaBossPatternComponent::OnAbilityDelayComplete()
 {
 	ExecuteNextAbility();
 }
 
-void UBossPatternComponent::OnRepeatDelayComplete()
+void UHarmoniaBossPatternComponent::OnRepeatDelayComplete()
 {
 	ExecuteNextAbility();
 }

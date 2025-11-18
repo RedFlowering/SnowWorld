@@ -1,13 +1,13 @@
 // Copyright 2024 Snow Game Studio.
 
-#include "BossHealthBarWidget.h"
-#include "Character/BossCharacter.h"
+#include "UI/HarmoniaBossHealthBarWidget.h"
+#include "Monsters/HarmoniaBossCharacter.h"
 #include "Character/LyraHealthComponent.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "Kismet/KismetMathLibrary.h"
 
-UBossHealthBarWidget::UBossHealthBarWidget(const FObjectInitializer& ObjectInitializer)
+UHarmoniaBossHealthBarWidget::UBossHealthBarWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	bIsVisible = false;
@@ -28,7 +28,7 @@ UBossHealthBarWidget::UBossHealthBarWidget(const FObjectInitializer& ObjectIniti
 	HealthBarInterpolationSpeed = 5.0f;
 }
 
-void UBossHealthBarWidget::NativeConstruct()
+void UHarmoniaBossHealthBarWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
@@ -38,14 +38,14 @@ void UBossHealthBarWidget::NativeConstruct()
 	}
 }
 
-void UBossHealthBarWidget::NativeDestruct()
+void UHarmoniaBossHealthBarWidget::NativeDestruct()
 {
 	UnbindFromBoss();
 
 	Super::NativeDestruct();
 }
 
-void UBossHealthBarWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+void UHarmoniaBossHealthBarWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
@@ -78,7 +78,7 @@ void UBossHealthBarWidget::NativeTick(const FGeometry& MyGeometry, float InDelta
 // Boss Binding
 //~=============================================================================
 
-void UBossHealthBarWidget::SetBossCharacter(ABossCharacter* InBossCharacter)
+void UHarmoniaBossHealthBarWidget::SetBossCharacter(AHarmoniaBossCharacter* InBossCharacter)
 {
 	if (BossCharacter == InBossCharacter)
 	{
@@ -99,7 +99,7 @@ void UBossHealthBarWidget::SetBossCharacter(ABossCharacter* InBossCharacter)
 // Display Control
 //~=============================================================================
 
-void UBossHealthBarWidget::ShowBossHealthBar_Implementation()
+void UHarmoniaBossHealthBarWidget::ShowBossHealthBar_Implementation()
 {
 	bIsVisible = true;
 	SetVisibility(ESlateVisibility::Visible);
@@ -120,7 +120,7 @@ void UBossHealthBarWidget::ShowBossHealthBar_Implementation()
 	}
 }
 
-void UBossHealthBarWidget::HideBossHealthBar_Implementation()
+void UHarmoniaBossHealthBarWidget::HideBossHealthBar_Implementation()
 {
 	bIsVisible = false;
 	SetVisibility(ESlateVisibility::Collapsed);
@@ -130,7 +130,7 @@ void UBossHealthBarWidget::HideBossHealthBar_Implementation()
 // Update Functions
 //~=============================================================================
 
-void UBossHealthBarWidget::UpdateHealthBar_Implementation(float HealthPercent)
+void UHarmoniaBossHealthBarWidget::UpdateHealthBar_Implementation(float HealthPercent)
 {
 	TargetHealth = FMath::Clamp(HealthPercent, 0.0f, 1.0f);
 
@@ -156,7 +156,7 @@ void UBossHealthBarWidget::UpdateHealthBar_Implementation(float HealthPercent)
 	}
 }
 
-void UBossHealthBarWidget::UpdateBossName_Implementation(const FText& InBossName, const FText& InBossTitle)
+void UHarmoniaBossHealthBarWidget::UpdateBossName_Implementation(const FText& InBossName, const FText& InBossTitle)
 {
 	if (BossNameText)
 	{
@@ -169,7 +169,7 @@ void UBossHealthBarWidget::UpdateBossName_Implementation(const FText& InBossName
 	}
 }
 
-void UBossHealthBarWidget::UpdatePhaseDisplay_Implementation(int32 CurrentPhase, int32 MaxPhases)
+void UHarmoniaBossHealthBarWidget::UpdatePhaseDisplay_Implementation(int32 CurrentPhase, int32 MaxPhases)
 {
 	if (!bShowPhaseIndicator || !PhaseText)
 	{
@@ -184,7 +184,7 @@ void UBossHealthBarWidget::UpdatePhaseDisplay_Implementation(int32 CurrentPhase,
 // Event Handlers
 //~=============================================================================
 
-void UBossHealthBarWidget::OnBossHealthChanged(ULyraHealthComponent* HealthComponent, float OldValue, float NewValue, AActor* Instigator)
+void UHarmoniaBossHealthBarWidget::OnBossHealthChanged(ULyraHealthComponent* HealthComponent, float OldValue, float NewValue, AActor* Instigator)
 {
 	if (!HealthComponent)
 	{
@@ -202,7 +202,7 @@ void UBossHealthBarWidget::OnBossHealthChanged(ULyraHealthComponent* HealthCompo
 	}
 }
 
-void UBossHealthBarWidget::OnBossPhaseChanged(int32 OldPhase, int32 NewPhase)
+void UHarmoniaBossHealthBarWidget::OnBossPhaseChanged(int32 OldPhase, int32 NewPhase)
 {
 	if (!BossCharacter)
 	{
@@ -213,12 +213,12 @@ void UBossHealthBarWidget::OnBossPhaseChanged(int32 OldPhase, int32 NewPhase)
 	PlayPhaseTransitionAnimation(NewPhase);
 }
 
-void UBossHealthBarWidget::OnBossEncounterStart(ABossCharacter* Boss)
+void UHarmoniaBossHealthBarWidget::OnBossEncounterStart(AHarmoniaBossCharacter* Boss)
 {
 	ShowBossHealthBar();
 }
 
-void UBossHealthBarWidget::OnBossEncounterEnd(ABossCharacter* Boss, bool bDefeated)
+void UHarmoniaBossHealthBarWidget::OnBossEncounterEnd(AHarmoniaBossCharacter* Boss, bool bDefeated)
 {
 	if (bDefeated)
 	{
@@ -231,12 +231,12 @@ void UBossHealthBarWidget::OnBossEncounterEnd(ABossCharacter* Boss, bool bDefeat
 // Animation Events
 //~=============================================================================
 
-void UBossHealthBarWidget::PlayPhaseTransitionAnimation_Implementation(int32 NewPhase)
+void UHarmoniaBossHealthBarWidget::PlayPhaseTransitionAnimation_Implementation(int32 NewPhase)
 {
 	// Blueprint can implement phase transition animations
 }
 
-void UBossHealthBarWidget::PlayDamageTakenAnimation_Implementation(float DamagePercent)
+void UHarmoniaBossHealthBarWidget::PlayDamageTakenAnimation_Implementation(float DamagePercent)
 {
 	// Blueprint can implement damage flash/shake animations
 }
@@ -245,7 +245,7 @@ void UBossHealthBarWidget::PlayDamageTakenAnimation_Implementation(float DamageP
 // Private Functions
 //~=============================================================================
 
-void UBossHealthBarWidget::UnbindFromBoss()
+void UHarmoniaBossHealthBarWidget::UnbindFromBoss()
 {
 	if (!BossCharacter)
 	{
@@ -255,16 +255,16 @@ void UBossHealthBarWidget::UnbindFromBoss()
 	// Unbind from health component
 	if (ULyraHealthComponent* HealthComp = ULyraHealthComponent::FindHealthComponent(BossCharacter))
 	{
-		HealthComp->OnHealthChanged.RemoveDynamic(this, &UBossHealthBarWidget::OnBossHealthChanged);
+		HealthComp->OnHealthChanged.RemoveDynamic(this, &UHarmoniaBossHealthBarWidget::OnBossHealthChanged);
 	}
 
 	// Unbind from boss events
-	BossCharacter->OnBossPhaseChanged.RemoveDynamic(this, &UBossHealthBarWidget::OnBossPhaseChanged);
-	BossCharacter->OnBossEncounterStart.RemoveDynamic(this, &UBossHealthBarWidget::OnBossEncounterStart);
-	BossCharacter->OnBossEncounterEnd.RemoveDynamic(this, &UBossHealthBarWidget::OnBossEncounterEnd);
+	BossCharacter->OnBossPhaseChanged.RemoveDynamic(this, &UHarmoniaBossHealthBarWidget::OnBossPhaseChanged);
+	BossCharacter->OnBossEncounterStart.RemoveDynamic(this, &UHarmoniaBossHealthBarWidget::OnBossEncounterStart);
+	BossCharacter->OnBossEncounterEnd.RemoveDynamic(this, &UHarmoniaBossHealthBarWidget::OnBossEncounterEnd);
 }
 
-void UBossHealthBarWidget::BindToBoss()
+void UHarmoniaBossHealthBarWidget::BindToBoss()
 {
 	if (!BossCharacter)
 	{
@@ -274,7 +274,7 @@ void UBossHealthBarWidget::BindToBoss()
 	// Bind to health component
 	if (ULyraHealthComponent* HealthComp = ULyraHealthComponent::FindHealthComponent(BossCharacter))
 	{
-		HealthComp->OnHealthChanged.AddDynamic(this, &UBossHealthBarWidget::OnBossHealthChanged);
+		HealthComp->OnHealthChanged.AddDynamic(this, &UHarmoniaBossHealthBarWidget::OnBossHealthChanged);
 
 		// Initialize health display
 		float HealthPercent = HealthComp->GetHealthNormalized();
@@ -283,16 +283,16 @@ void UBossHealthBarWidget::BindToBoss()
 	}
 
 	// Bind to boss events
-	BossCharacter->OnBossPhaseChanged.AddDynamic(this, &UBossHealthBarWidget::OnBossPhaseChanged);
-	BossCharacter->OnBossEncounterStart.AddDynamic(this, &UBossHealthBarWidget::OnBossEncounterStart);
-	BossCharacter->OnBossEncounterEnd.AddDynamic(this, &UBossHealthBarWidget::OnBossEncounterEnd);
+	BossCharacter->OnBossPhaseChanged.AddDynamic(this, &UHarmoniaBossHealthBarWidget::OnBossPhaseChanged);
+	BossCharacter->OnBossEncounterStart.AddDynamic(this, &UHarmoniaBossHealthBarWidget::OnBossEncounterStart);
+	BossCharacter->OnBossEncounterEnd.AddDynamic(this, &UHarmoniaBossHealthBarWidget::OnBossEncounterEnd);
 
 	// Update name and phase
 	UpdateBossName(BossCharacter->BossName, BossCharacter->BossTitle);
 	UpdatePhaseDisplay(BossCharacter->GetCurrentPhase(), BossCharacter->GetMaxPhases());
 }
 
-FLinearColor UBossHealthBarWidget::GetHealthBarColor(float HealthPercent) const
+FLinearColor UHarmoniaBossHealthBarWidget::GetHealthBarColor(float HealthPercent) const
 {
 	if (HealthPercent <= LowHealthThreshold)
 	{

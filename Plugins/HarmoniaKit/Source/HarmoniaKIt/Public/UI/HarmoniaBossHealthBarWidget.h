@@ -3,9 +3,9 @@
 #pragma once
 
 #include "Blueprint/UserWidget.h"
-#include "BossHealthBarWidget.generated.h"
+#include "HarmoniaBossHealthBarWidget.generated.h"
 
-class ABossCharacter;
+class AHarmoniaBossCharacter;
 class ULyraHealthComponent;
 class UProgressBar;
 class UTextBlock;
@@ -16,7 +16,7 @@ class UTextBlock;
  * Widget for displaying boss health, name, and phase information.
  */
 UCLASS(Abstract, Blueprintable)
-class LYRAGAME_API UBossHealthBarWidget : public UUserWidget
+class HARMONIAKIT_API UBossHealthBarWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
@@ -33,11 +33,11 @@ public:
 
 	/** Set the boss character to monitor */
 	UFUNCTION(BlueprintCallable, Category = "Boss|UI")
-	void SetBossCharacter(ABossCharacter* InBossCharacter);
+	void SetBossCharacter(AHarmoniaBossCharacter* InBossCharacter);
 
 	/** Get the currently bound boss character */
 	UFUNCTION(BlueprintPure, Category = "Boss|UI")
-	ABossCharacter* GetBossCharacter() const { return BossCharacter; }
+	AHarmoniaBossCharacter* GetBossCharacter() const { return BossCharacter; }
 
 	//~=============================================================================
 	// Display Control
@@ -91,11 +91,11 @@ protected:
 
 	/** Called when boss encounter starts */
 	UFUNCTION()
-	virtual void OnBossEncounterStart(ABossCharacter* Boss);
+	virtual void OnBossEncounterStart(AHarmoniaBossCharacter* Boss);
 
 	/** Called when boss encounter ends */
 	UFUNCTION()
-	virtual void OnBossEncounterEnd(ABossCharacter* Boss, bool bDefeated);
+	virtual void OnBossEncounterEnd(AHarmoniaBossCharacter* Boss, bool bDefeated);
 
 	//~=============================================================================
 	// Animation Events

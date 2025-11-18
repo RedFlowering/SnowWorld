@@ -2,18 +2,19 @@
 
 #pragma once
 
+#include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "GameplayTagContainer.h"
-#include "BossPhaseComponent.generated.h"
+#include "HarmoniaBossPhaseComponent.generated.h"
 
-class ABossCharacter;
+class AHarmoniaBossCharacter;
 class ULyraGameplayAbility;
 
 /**
  * Phase configuration for a boss
  */
 USTRUCT(BlueprintType)
-struct FBossPhaseConfig
+struct FHarmoniaBossPhaseConfig
 {
 	GENERATED_BODY()
 
@@ -70,20 +71,20 @@ struct FBossPhaseConfig
 	TObjectPtr<class UNiagaraSystem> TransitionNiagaraEffect = nullptr;
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPhaseTransitionComplete, int32, NewPhase);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBossPhaseTransitionComplete, int32, NewPhase);
 
 /**
- * UBossPhaseComponent
+ * UHarmoniaBossPhaseComponent
  *
  * Component that manages boss phase transitions and phase-specific behavior.
  */
 UCLASS(Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class LYRAGAME_API UBossPhaseComponent : public UActorComponent
+class HARMONIAKIT_API UHarmoniaBossPhaseComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:
-	UBossPhaseComponent();
+	UHarmoniaBossPhaseComponent();
 
 	virtual void BeginPlay() override;
 
@@ -97,11 +98,11 @@ public:
 
 	/** Get configuration for specific phase */
 	UFUNCTION(BlueprintPure, Category = "Boss|Phase")
-	const FBossPhaseConfig* GetPhaseConfig(int32 PhaseIndex) const;
+	const FHarmoniaBossPhaseConfig* GetPhaseConfig(int32 PhaseIndex) const;
 
 	/** Get current phase config */
 	UFUNCTION(BlueprintPure, Category = "Boss|Phase")
-	const FBossPhaseConfig* GetCurrentPhaseConfig() const;
+	const FHarmoniaBossPhaseConfig* GetCurrentPhaseConfig() const;
 
 	/** Check if currently transitioning phases */
 	UFUNCTION(BlueprintPure, Category = "Boss|Phase")
@@ -119,10 +120,10 @@ protected:
 	void CompletePhaseTransition();
 
 	/** Apply phase configuration */
-	void ApplyPhaseConfig(const FBossPhaseConfig& Config);
+	void ApplyPhaseConfig(const FHarmoniaBossPhaseConfig& Config);
 
 	/** Remove phase configuration */
-	void RemovePhaseConfig(const FBossPhaseConfig& Config);
+	void RemovePhaseConfig(const FHarmoniaBossPhaseConfig& Config);
 
 	/** Grant phase abilities */
 	void GrantPhaseAbilities(const TArray<TSubclassOf<ULyraGameplayAbility>>& Abilities);
@@ -137,12 +138,12 @@ protected:
 public:
 	/** Broadcast when phase transition completes */
 	UPROPERTY(BlueprintAssignable, Category = "Boss|Phase")
-	FOnPhaseTransitionComplete OnPhaseTransitionComplete;
+	FOnBossPhaseTransitionComplete OnPhaseTransitionComplete;
 
 protected:
 	/** Phase configurations (one per phase) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Phase")
-	TMap<int32, FBossPhaseConfig> PhaseConfigs;
+	TMap<int32, FHarmoniaBossPhaseConfig> PhaseConfigs;
 
 	/** Current active phase */
 	UPROPERTY(BlueprintReadOnly, Category = "Boss|Phase")
@@ -154,7 +155,7 @@ protected:
 
 	/** Cached reference to boss owner */
 	UPROPERTY()
-	TObjectPtr<ABossCharacter> BossOwner;
+	TObjectPtr<AHarmoniaBossCharacter> BossOwner;
 
 	/** Timer handle for phase transition */
 	FTimerHandle TransitionTimerHandle;

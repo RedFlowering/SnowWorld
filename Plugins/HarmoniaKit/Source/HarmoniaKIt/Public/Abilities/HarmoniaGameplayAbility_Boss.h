@@ -3,9 +3,9 @@
 #pragma once
 
 #include "AbilitySystem/Abilities/LyraGameplayAbility.h"
-#include "BossGameplayAbility.generated.h"
+#include "HarmoniaBossGameplayAbility.generated.h"
 
-class ABossCharacter;
+class AHarmoniaBossCharacter;
 
 /**
  * UBossGameplayAbility
@@ -14,7 +14,7 @@ class ABossCharacter;
  * Provides helper functions for accessing boss character and components.
  */
 UCLASS(Abstract)
-class LYRAGAME_API UBossGameplayAbility : public ULyraGameplayAbility
+class HARMONIAKIT_API UBossGameplayAbility : public ULyraGameplayAbility
 {
 	GENERATED_BODY()
 

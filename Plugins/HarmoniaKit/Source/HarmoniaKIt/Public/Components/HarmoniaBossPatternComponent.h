@@ -4,9 +4,9 @@
 
 #include "Components/ActorComponent.h"
 #include "GameplayTagContainer.h"
-#include "BossPatternComponent.generated.h"
+#include "HarmoniaBossPatternComponent.generated.h"
 
-class ABossCharacter;
+class AHarmoniaBossCharacter;
 class ULyraGameplayAbility;
 
 /**
@@ -99,7 +99,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPatternExecutionEnd, FName, Patte
  * Component that manages boss attack patterns and pattern-based combat.
  */
 UCLASS(Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class LYRAGAME_API UBossPatternComponent : public UActorComponent
+class HARMONIAKIT_API UBossPatternComponent : public UActorComponent
 {
 	GENERATED_BODY()
 

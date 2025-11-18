@@ -1,7 +1,7 @@
 // Copyright 2024 Snow Game Studio.
 
-#include "BossPhaseComponent.h"
-#include "BossCharacter.h"
+#include "Components/HarmoniaBossPhaseComponent.h"
+#include "Monsters/HarmoniaBossCharacter.h"
 #include "AbilitySystem/LyraAbilitySystemComponent.h"
 #include "AbilitySystem/Abilities/LyraGameplayAbility.h"
 #include "TimerManager.h"
@@ -11,24 +11,24 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
 
-UBossPhaseComponent::UBossPhaseComponent()
+UHarmoniaBossPhaseComponent::UHarmoniaBossPhaseComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 	SetIsReplicatedByDefault(true);
 }
 
-void UBossPhaseComponent::BeginPlay()
+void UHarmoniaBossPhaseComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	BossOwner = Cast<ABossCharacter>(GetOwner());
+	BossOwner = Cast<AHarmoniaBossCharacter>(GetOwner());
 }
 
 //~=============================================================================
 // Phase Management
 //~=============================================================================
 
-void UBossPhaseComponent::OnPhaseTransition(int32 NewPhase)
+void UHarmoniaBossPhaseComponent::OnPhaseTransition(int32 NewPhase)
 {
 	if (!BossOwner)
 	{
@@ -43,12 +43,12 @@ void UBossPhaseComponent::OnPhaseTransition(int32 NewPhase)
 	StartPhaseTransition(NewPhase);
 }
 
-const FBossPhaseConfig* UBossPhaseComponent::GetPhaseConfig(int32 PhaseIndex) const
+const FHarmoniaBossPhaseConfig* UHarmoniaBossPhaseComponent::GetPhaseConfig(int32 PhaseIndex) const
 {
 	return PhaseConfigs.Find(PhaseIndex);
 }
 
-const FBossPhaseConfig* UBossPhaseComponent::GetCurrentPhaseConfig() const
+const FHarmoniaBossPhaseConfig* UHarmoniaBossPhaseComponent::GetCurrentPhaseConfig() const
 {
 	return GetPhaseConfig(CurrentPhaseIndex);
 }
@@ -57,7 +57,7 @@ const FBossPhaseConfig* UBossPhaseComponent::GetCurrentPhaseConfig() const
 // Phase Transition Implementation
 //~=============================================================================
 
-void UBossPhaseComponent::StartPhaseTransition(int32 NewPhase)
+void UHarmoniaBossPhaseComponent::StartPhaseTransition(int32 NewPhase)
 {
 	if (bIsTransitioning)
 	{
@@ -67,7 +67,7 @@ void UBossPhaseComponent::StartPhaseTransition(int32 NewPhase)
 	bIsTransitioning = true;
 
 	// Remove old phase config
-	if (const FBossPhaseConfig* OldConfig = GetPhaseConfig(CurrentPhaseIndex))
+	if (const FHarmoniaBossPhaseConfig* OldConfig = GetPhaseConfig(CurrentPhaseIndex))
 	{
 		RemovePhaseConfig(*OldConfig);
 	}
@@ -76,7 +76,7 @@ void UBossPhaseComponent::StartPhaseTransition(int32 NewPhase)
 	CurrentPhaseIndex = NewPhase;
 
 	// Get new phase config
-	const FBossPhaseConfig* NewConfig = GetPhaseConfig(NewPhase);
+	const FHarmoniaBossPhaseConfig* NewConfig = GetPhaseConfig(NewPhase);
 	if (!NewConfig)
 	{
 		CompletePhaseTransition();
@@ -133,7 +133,7 @@ void UBossPhaseComponent::StartPhaseTransition(int32 NewPhase)
 		GetWorld()->GetTimerManager().SetTimer(
 			TransitionTimerHandle,
 			this,
-			&UBossPhaseComponent::OnTransitionTimerComplete,
+			&UHarmoniaBossPhaseComponent::OnTransitionTimerComplete,
 			NewConfig->TransitionDuration,
 			false
 		);
@@ -144,10 +144,10 @@ void UBossPhaseComponent::StartPhaseTransition(int32 NewPhase)
 	}
 }
 
-void UBossPhaseComponent::CompletePhaseTransition()
+void UHarmoniaBossPhaseComponent::CompletePhaseTransition()
 {
 	// Apply new phase config
-	if (const FBossPhaseConfig* NewConfig = GetPhaseConfig(CurrentPhaseIndex))
+	if (const FHarmoniaBossPhaseConfig* NewConfig = GetPhaseConfig(CurrentPhaseIndex))
 	{
 		ApplyPhaseConfig(*NewConfig);
 
@@ -169,7 +169,7 @@ void UBossPhaseComponent::CompletePhaseTransition()
 	OnPhaseTransitionComplete.Broadcast(CurrentPhaseIndex);
 }
 
-void UBossPhaseComponent::ApplyPhaseConfig(const FBossPhaseConfig& Config)
+void UHarmoniaBossPhaseComponent::ApplyPhaseConfig(const FHarmoniaBossPhaseConfig& Config)
 {
 	if (!BossOwner)
 	{
@@ -204,7 +204,7 @@ void UBossPhaseComponent::ApplyPhaseConfig(const FBossPhaseConfig& Config)
 	// For now, this is a placeholder for where you'd apply damage/defense/speed multipliers
 }
 
-void UBossPhaseComponent::RemovePhaseConfig(const FBossPhaseConfig& Config)
+void UHarmoniaBossPhaseComponent::RemovePhaseConfig(const FHarmoniaBossPhaseConfig& Config)
 {
 	if (!BossOwner)
 	{
@@ -227,7 +227,7 @@ void UBossPhaseComponent::RemovePhaseConfig(const FBossPhaseConfig& Config)
 	}
 }
 
-void UBossPhaseComponent::GrantPhaseAbilities(const TArray<TSubclassOf<ULyraGameplayAbility>>& Abilities)
+void UHarmoniaBossPhaseComponent::GrantPhaseAbilities(const TArray<TSubclassOf<ULyraGameplayAbility>>& Abilities)
 {
 	if (!BossOwner)
 	{
@@ -254,7 +254,7 @@ void UBossPhaseComponent::GrantPhaseAbilities(const TArray<TSubclassOf<ULyraGame
 	}
 }
 
-void UBossPhaseComponent::RemovePhaseAbilities(const TArray<TSubclassOf<ULyraGameplayAbility>>& Abilities)
+void UHarmoniaBossPhaseComponent::RemovePhaseAbilities(const TArray<TSubclassOf<ULyraGameplayAbility>>& Abilities)
 {
 	if (!BossOwner)
 	{
@@ -279,7 +279,7 @@ void UBossPhaseComponent::RemovePhaseAbilities(const TArray<TSubclassOf<ULyraGam
 	}
 }
 
-void UBossPhaseComponent::OnTransitionTimerComplete()
+void UHarmoniaBossPhaseComponent::OnTransitionTimerComplete()
 {
 	CompletePhaseTransition();
 }

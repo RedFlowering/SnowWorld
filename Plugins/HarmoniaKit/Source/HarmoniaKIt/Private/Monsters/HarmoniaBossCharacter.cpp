@@ -1,20 +1,20 @@
 // Copyright 2024 Snow Game Studio.
 
-#include "BossCharacter.h"
-#include "BossPhaseComponent.h"
-#include "BossPatternComponent.h"
+#include "Monsters/HarmoniaBossCharacter.h"
+#include "Components/HarmoniaBossPhaseComponent.h"
+#include "Components/HarmoniaBossPatternComponent.h"
 #include "LyraHealthComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "AbilitySystem/LyraAbilitySystemComponent.h"
 
-ABossCharacter::ABossCharacter(const FObjectInitializer& ObjectInitializer)
+AHarmoniaBossCharacter::ABossCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	// Create boss phase component
-	BossPhaseComponent = CreateDefaultSubobject<UBossPhaseComponent>(TEXT("BossPhaseComponent"));
+	BossPhaseComponent = CreateDefaultSubobject<UHarmoniaBossPhaseComponent>(TEXT("BossPhaseComponent"));
 
 	// Create boss pattern component
-	BossPatternComponent = CreateDefaultSubobject<UBossPatternComponent>(TEXT("BossPatternComponent"));
+	BossPatternComponent = CreateDefaultSubobject<UHarmoniaBossPatternComponent>(TEXT("BossPatternComponent"));
 
 	// Default phase configuration (3 phases at 66% and 33% health)
 	PhaseHealthThresholds = {0.66f, 0.33f};
@@ -30,18 +30,18 @@ ABossCharacter::ABossCharacter(const FObjectInitializer& ObjectInitializer)
 	SetReplicateMovement(true);
 }
 
-void ABossCharacter::PostInitializeComponents()
+void AHarmoniaBossCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
 	// Bind to health component
 	if (ULyraHealthComponent* HealthComponent = ULyraHealthComponent::FindHealthComponent(this))
 	{
-		HealthComponent->OnHealthChanged.AddDynamic(this, &ABossCharacter::OnHealthChanged);
+		HealthComponent->OnHealthChanged.AddDynamic(this, &AHarmoniaBossCharacter::OnHealthChanged);
 	}
 }
 
-void ABossCharacter::BeginPlay()
+void AHarmoniaBossCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -51,7 +51,7 @@ void ABossCharacter::BeginPlay()
 	}
 }
 
-void ABossCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void AHarmoniaBossCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
@@ -63,7 +63,7 @@ void ABossCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 // Boss Encounter Management
 //~=============================================================================
 
-void ABossCharacter::StartEncounter()
+void AHarmoniaBossCharacter::StartEncounter()
 {
 	if (bEncounterActive)
 	{
@@ -80,7 +80,7 @@ void ABossCharacter::StartEncounter()
 	OnBossEncounterStart.Broadcast(this);
 }
 
-void ABossCharacter::EndEncounter(bool bDefeated)
+void AHarmoniaBossCharacter::EndEncounter(bool bDefeated)
 {
 	if (!bEncounterActive)
 	{
@@ -97,7 +97,7 @@ void ABossCharacter::EndEncounter(bool bDefeated)
 // Boss Phase System
 //~=============================================================================
 
-void ABossCharacter::SetPhase(int32 NewPhase)
+void AHarmoniaBossCharacter::SetPhase(int32 NewPhase)
 {
 	if (NewPhase == CurrentPhase || NewPhase < 0 || NewPhase >= GetMaxPhases())
 	{
@@ -128,7 +128,7 @@ void ABossCharacter::SetPhase(int32 NewPhase)
 	OnBossPhaseChanged.Broadcast(OldPhase, NewPhase);
 }
 
-bool ABossCharacter::CanTransitionPhase() const
+bool AHarmoniaBossCharacter::CanTransitionPhase() const
 {
 	if (!bEncounterActive)
 	{
@@ -143,7 +143,7 @@ bool ABossCharacter::CanTransitionPhase() const
 	return CurrentPhase < GetMaxPhases() - 1;
 }
 
-void ABossCharacter::OnPhaseEnter_Implementation(int32 NewPhase)
+void AHarmoniaBossCharacter::OnPhaseEnter_Implementation(int32 NewPhase)
 {
 	// Apply gameplay tags for this phase
 	if (const FGameplayTagContainer* PhaseTags = PhaseGameplayTags.Find(NewPhase))
@@ -161,7 +161,7 @@ void ABossCharacter::OnPhaseEnter_Implementation(int32 NewPhase)
 	}
 }
 
-void ABossCharacter::OnPhaseExit_Implementation(int32 OldPhase)
+void AHarmoniaBossCharacter::OnPhaseExit_Implementation(int32 OldPhase)
 {
 	// Remove gameplay tags from old phase
 	if (const FGameplayTagContainer* PhaseTags = PhaseGameplayTags.Find(OldPhase))
@@ -173,7 +173,7 @@ void ABossCharacter::OnPhaseExit_Implementation(int32 OldPhase)
 	}
 }
 
-void ABossCharacter::OnRep_CurrentPhase()
+void AHarmoniaBossCharacter::OnRep_CurrentPhase()
 {
 	// Handle phase replication on clients
 	if (BossPhaseComponent)
@@ -186,7 +186,7 @@ void ABossCharacter::OnRep_CurrentPhase()
 // Boss Pattern System
 //~=============================================================================
 
-void ABossCharacter::ExecutePattern(FName PatternName)
+void AHarmoniaBossCharacter::ExecutePattern(FName PatternName)
 {
 	if (!BossPatternComponent)
 	{
@@ -208,12 +208,12 @@ void ABossCharacter::ExecutePattern(FName PatternName)
 	BossPatternComponent->ExecutePattern(PatternName);
 }
 
-void ABossCharacter::OnPatternStart_Implementation(FName PatternName)
+void AHarmoniaBossCharacter::OnPatternStart_Implementation(FName PatternName)
 {
 	// Blueprint implementable event
 }
 
-void ABossCharacter::OnPatternEnd_Implementation(FName PatternName)
+void AHarmoniaBossCharacter::OnPatternEnd_Implementation(FName PatternName)
 {
 	bIsExecutingPattern = false;
 	CurrentPatternName = NAME_None;
@@ -223,7 +223,7 @@ void ABossCharacter::OnPatternEnd_Implementation(FName PatternName)
 // Health Monitoring
 //~=============================================================================
 
-void ABossCharacter::OnHealthChanged(ULyraHealthComponent* InHealthComponent, float OldValue, float NewValue, AActor* Instigator)
+void AHarmoniaBossCharacter::OnHealthChanged(ULyraHealthComponent* InHealthComponent, float OldValue, float NewValue, AActor* Instigator)
 {
 	if (!bEncounterActive)
 	{
@@ -240,7 +240,7 @@ void ABossCharacter::OnHealthChanged(ULyraHealthComponent* InHealthComponent, fl
 	}
 }
 
-void ABossCharacter::CheckPhaseTransition(float CurrentHealth, float MaxHealth)
+void AHarmoniaBossCharacter::CheckPhaseTransition(float CurrentHealth, float MaxHealth)
 {
 	if (MaxHealth <= 0.0f)
 	{
