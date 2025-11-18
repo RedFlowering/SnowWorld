@@ -6,6 +6,7 @@
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "Definitions/HarmoniaMonsterSystemDefinitions.h"
 #include "ActiveGameplayEffectHandle.h"
+#include "GameplayAbilitySpec.h"
 #include "HarmoniaBossMonster.generated.h"
 
 /**
