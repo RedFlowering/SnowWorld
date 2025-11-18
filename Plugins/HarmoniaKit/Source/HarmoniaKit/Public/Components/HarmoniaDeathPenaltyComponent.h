@@ -50,7 +50,7 @@ public:
 	//~ Configuration
 	/** Death penalty configuration asset */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty|Config")
-	TObjectPtr<UHarmoniaDeathPenaltyConfigAsset> DeathPenaltyConfig;
+	TObjectPtr<UHarmoniaDeathPenaltyConfigAsset> DeathPenaltyConfig = nullptr;
 
 	/** Currency data assets for lookup */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty|Config")
@@ -63,15 +63,15 @@ public:
 	//~ Current State
 	/** Current death state */
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentDeathState, BlueprintReadOnly, Category = "Death Penalty|State")
-	EHarmoniaPlayerDeathState CurrentDeathState;
+	EHarmoniaPlayerDeathState CurrentDeathState = EHarmoniaPlayerDeathState::Normal;
 
 	/** Current memory echo actor (where currencies are dropped) */
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentMemoryEcho, BlueprintReadOnly, Category = "Death Penalty|State")
-	TObjectPtr<AHarmoniaMemoryEchoActor> CurrentMemoryEcho;
+	TObjectPtr<AHarmoniaMemoryEchoActor> CurrentMemoryEcho = nullptr;
 
 	/** Number of consecutive deaths without recovery */
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Death Penalty|State")
-	int32 ConsecutiveDeaths;
+	int32 ConsecutiveDeaths = 0;
 
 	/** Active ethereal state penalty effect */
 	UPROPERTY(BlueprintReadOnly, Category = "Death Penalty|State")
@@ -173,5 +173,5 @@ protected:
 
 	//~ Cached References
 	UPROPERTY()
-	TObjectPtr<UAbilitySystemComponent> CachedAbilitySystemComponent;
+	TObjectPtr<UAbilitySystemComponent> CachedAbilitySystemComponent = nullptr;
 };
