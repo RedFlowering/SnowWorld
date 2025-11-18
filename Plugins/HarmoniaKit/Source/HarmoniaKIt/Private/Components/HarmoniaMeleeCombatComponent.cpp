@@ -462,7 +462,9 @@ void UHarmoniaMeleeCombatComponent::OnAttackBlocked(AActor* Attacker, float Dama
 void UHarmoniaMeleeCombatComponent::OnParrySuccess(AActor* Attacker)
 {
 	// Successful parry opens up attacker for riposte
-	// TODO: Apply parry effects to attacker
+	StartRiposteWindow(Attacker, DefaultRiposteConfig.RiposteWindowDuration);
+
+	// TODO: Apply stun effect to attacker via gameplay effect
 }
 
 // ============================================================================
@@ -574,4 +576,115 @@ UHarmoniaEquipmentComponent* UHarmoniaMeleeCombatComponent::GetEquipmentComponen
 		}
 	}
 	return CachedEquipmentComponent;
+}
+
+// ============================================================================
+// Riposte System
+// ============================================================================
+
+bool UHarmoniaMeleeCombatComponent::CanRiposte() const
+{
+	return DefenseState == EHarmoniaDefenseState::RiposteWindow;
+}
+
+float UHarmoniaMeleeCombatComponent::GetRiposteWindowDuration() const
+{
+	return DefaultRiposteConfig.RiposteWindowDuration;
+}
+
+float UHarmoniaMeleeCombatComponent::GetRiposteDamageMultiplier() const
+{
+	return DefaultRiposteConfig.RiposteDamageMultiplier;
+}
+
+void UHarmoniaMeleeCombatComponent::StartRiposteWindow(AActor* ParriedTargetActor, float Duration)
+{
+	if (!ParriedTargetActor)
+	{
+		return;
+	}
+
+	// Store parried target
+	ParriedTarget = ParriedTargetActor;
+
+	// Set defense state to riposte window
+	SetDefenseState(EHarmoniaDefenseState::RiposteWindow);
+
+	// Start riposte window timer
+	const float WindowDuration = (Duration > 0.0f) ? Duration : DefaultRiposteConfig.RiposteWindowDuration;
+	GetWorld()->GetTimerManager().SetTimer(
+		RiposteWindowTimerHandle,
+		this,
+		&UHarmoniaMeleeCombatComponent::OnRiposteWindowExpired,
+		WindowDuration,
+		false
+	);
+}
+
+void UHarmoniaMeleeCombatComponent::EndRiposteWindow()
+{
+	SetDefenseState(EHarmoniaDefenseState::None);
+	ParriedTarget.Reset();
+	GetWorld()->GetTimerManager().ClearTimer(RiposteWindowTimerHandle);
+}
+
+void UHarmoniaMeleeCombatComponent::OnRiposteWindowExpired()
+{
+	EndRiposteWindow();
+}
+
+AActor* UHarmoniaMeleeCombatComponent::GetParriedTarget() const
+{
+	return ParriedTarget.Get();
+}
+
+void UHarmoniaMeleeCombatComponent::ClearParriedTarget()
+{
+	ParriedTarget.Reset();
+}
+
+// ============================================================================
+// Backstab System
+// ============================================================================
+
+bool UHarmoniaMeleeCombatComponent::IsBackstabAttack(AActor* Target, FVector AttackOrigin) const
+{
+	if (!Target || !DefaultBackstabConfig.bEnableBackstab)
+	{
+		return false;
+	}
+
+	// Get target's forward vector
+	FVector TargetForward = Target->GetActorForwardVector();
+	TargetForward.Z = 0.0f; // Ignore vertical component
+	TargetForward.Normalize();
+
+	// Get direction from target to attacker
+	FVector ToAttacker = AttackOrigin - Target->GetActorLocation();
+	ToAttacker.Z = 0.0f; // Ignore vertical component
+
+	const float Distance = ToAttacker.Size();
+	if (Distance > DefaultBackstabConfig.BackstabMaxDistance)
+	{
+		return false; // Too far away
+	}
+
+	ToAttacker.Normalize();
+
+	// Calculate angle between target's forward and direction to attacker
+	// If attacker is behind target, the angle should be close to 180 degrees
+	const float DotProduct = FVector::DotProduct(TargetForward, ToAttacker);
+	const float AngleRadians = FMath::Acos(DotProduct);
+	const float AngleDegrees = FMath::RadiansToDegrees(AngleRadians);
+
+	// Check if within backstab angle tolerance
+	// 180 degrees means directly behind, lower tolerance = stricter backstab
+	const float RequiredAngle = 180.0f - DefaultBackstabConfig.BackstabAngleTolerance;
+
+	return AngleDegrees >= RequiredAngle;
+}
+
+float UHarmoniaMeleeCombatComponent::GetBackstabDamageMultiplier() const
+{
+	return DefaultBackstabConfig.BackstabDamageMultiplier;
 }

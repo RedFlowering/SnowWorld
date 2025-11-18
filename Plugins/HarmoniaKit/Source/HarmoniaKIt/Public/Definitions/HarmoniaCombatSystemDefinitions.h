@@ -118,7 +118,21 @@ enum class EHarmoniaDefenseState : uint8
 	Blocking UMETA(DisplayName = "Blocking"),				// Active block
 	Parrying UMETA(DisplayName = "Parrying"),				// Parry window
 	Dodging UMETA(DisplayName = "Dodging"),					// I-frames active
-	Stunned UMETA(DisplayName = "Stunned")					// Cannot defend
+	Stunned UMETA(DisplayName = "Stunned"),					// Cannot defend
+	RiposteWindow UMETA(DisplayName = "Riposte Window")		// Can perform riposte after successful parry
+};
+
+/**
+ * Critical Attack Type
+ * Defines special critical attack types
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaCriticalAttackType : uint8
+{
+	Normal UMETA(DisplayName = "Normal"),					// Normal attack
+	Backstab UMETA(DisplayName = "Backstab"),				// Attack from behind
+	Riposte UMETA(DisplayName = "Riposte"),					// Counter after parry
+	PlungingAttack UMETA(DisplayName = "Plunging Attack")	// Falling attack
 };
 
 // ============================================================================
@@ -331,6 +345,10 @@ struct HARMONIAKIT_API FHarmoniaAttackHitResult
 	// Whether the hit was a critical hit
 	UPROPERTY(BlueprintReadOnly, Category = "Hit Result")
 	bool bWasCriticalHit = false;
+
+	// Type of critical attack (if critical)
+	UPROPERTY(BlueprintReadOnly, Category = "Hit Result")
+	EHarmoniaCriticalAttackType CriticalType = EHarmoniaCriticalAttackType::Normal;
 
 	// Whether the hit was blocked
 	UPROPERTY(BlueprintReadOnly, Category = "Hit Result")
@@ -716,4 +734,85 @@ struct HARMONIAKIT_API FHarmoniaDodgeConfig
 	// Minimum time before can attack after dodge
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodge", meta = (EditCondition = "bCanAttackAfterDodge"))
 	float MinimumAttackDelay = 0.3f;
+};
+
+/**
+ * Riposte Configuration
+ * Defines riposte (counter attack after parry) properties
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaRiposteConfig
+{
+	GENERATED_BODY()
+
+	// Riposte window duration after successful parry (seconds)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Riposte")
+	float RiposteWindowDuration = 2.0f;
+
+	// Damage multiplier for riposte attacks
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Riposte")
+	float RiposteDamageMultiplier = 3.0f;
+
+	// Stamina cost for riposte
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Riposte")
+	float RiposteStaminaCost = 15.0f;
+
+	// Riposte animation montage
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Riposte|Animation")
+	TObjectPtr<UAnimMontage> RiposteMontage;
+
+	// Whether riposte is guaranteed critical
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Riposte")
+	bool bGuaranteedCritical = true;
+
+	// Whether to play special animation on target
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Riposte|Animation")
+	bool bPlayTargetStunAnimation = true;
+
+	// Target stun animation montage
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Riposte|Animation", meta = (EditCondition = "bPlayTargetStunAnimation"))
+	TObjectPtr<UAnimMontage> TargetStunMontage;
+};
+
+/**
+ * Backstab Configuration
+ * Defines backstab (critical attack from behind) properties
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaBackstabConfig
+{
+	GENERATED_BODY()
+
+	// Enable backstab system
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Backstab")
+	bool bEnableBackstab = true;
+
+	// Maximum angle from behind to trigger backstab (degrees)
+	// 0 = must be exactly behind, 180 = from any direction
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Backstab", meta = (EditCondition = "bEnableBackstab", ClampMin = "0.0", ClampMax = "180.0"))
+	float BackstabAngleTolerance = 45.0f;
+
+	// Maximum distance for backstab
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Backstab", meta = (EditCondition = "bEnableBackstab"))
+	float BackstabMaxDistance = 150.0f;
+
+	// Damage multiplier for backstab
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Backstab", meta = (EditCondition = "bEnableBackstab"))
+	float BackstabDamageMultiplier = 4.0f;
+
+	// Whether backstab is guaranteed critical
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Backstab", meta = (EditCondition = "bEnableBackstab"))
+	bool bGuaranteedCritical = true;
+
+	// Backstab animation montage
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Backstab|Animation", meta = (EditCondition = "bEnableBackstab"))
+	TObjectPtr<UAnimMontage> BackstabMontage;
+
+	// Whether to play special animation on target
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Backstab|Animation", meta = (EditCondition = "bEnableBackstab"))
+	bool bPlayTargetAnimation = true;
+
+	// Target backstab animation montage
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Backstab|Animation", meta = (EditCondition = "bEnableBackstab && bPlayTargetAnimation"))
+	TObjectPtr<UAnimMontage> TargetBackstabMontage;
 };
