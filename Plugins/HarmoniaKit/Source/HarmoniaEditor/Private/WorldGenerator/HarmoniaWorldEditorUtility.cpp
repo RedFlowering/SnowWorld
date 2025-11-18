@@ -380,8 +380,9 @@ void UHarmoniaWorldEditorUtility::GenerateWorld()
 	GenSubsystem->OnGenerationProgress.AddUniqueDynamic(this, &UHarmoniaWorldEditorUtility::OnGenerationProgressCallback);
 	GenSubsystem->OnGenerationComplete.AddUniqueDynamic(this, &UHarmoniaWorldEditorUtility::OnGenerationCompleteCallback);
 
-	// 월드 생성 시작
-	GenSubsystem->GenerateWorld(WorldConfig);
+	// 월드 생성 시작 (async)
+	TMap<EWorldObjectType, TSoftClassPtr<AActor>> ActorClassMap; // Empty map for now
+	GenSubsystem->GenerateWorldAsync(WorldConfig, ActorClassMap);
 
 	UE_LOG(LogTemp, Log, TEXT("World generation started with size %dx%d, seed %d"), WorldSizeX, WorldSizeY, Seed);
 }
@@ -416,12 +417,12 @@ void UHarmoniaWorldEditorUtility::GenerateTerrainOnly()
 	GenerationProgress = 0.0f;
 	StatusMessage = TEXT("Generating terrain...");
 
-	GenSubsystem->OnGenerationProgress.AddUniqueDynamic(this, &UHarmoniaWorldEditorUtility::OnGenerationProgressCallback);
-	GenSubsystem->OnGenerationComplete.AddUniqueDynamic(this, &UHarmoniaWorldEditorUtility::OnGenerationCompleteCallback);
+	TArray<int32> HeightData;
+	GenSubsystem->GenerateHeightmapOnly(WorldConfig, HeightData);
 
-	GenSubsystem->GenerateHeightmapOnly(WorldConfig);
-
-	UE_LOG(LogTemp, Log, TEXT("Terrain generation started"));
+	bIsGenerating = false;
+	StatusMessage = FString::Printf(TEXT("Terrain generated with %d height points"), HeightData.Num());
+	UE_LOG(LogTemp, Log, TEXT("Terrain generation completed with %d height points"), HeightData.Num());
 }
 
 void UHarmoniaWorldEditorUtility::GenerateBiomeMapOnly()
@@ -437,7 +438,12 @@ void UHarmoniaWorldEditorUtility::GenerateBiomeMapOnly()
 
 	StatusMessage = TEXT("Generating biome map...");
 
-	GeneratedBiomeData = GenSubsystem->GenerateBiomeMap(WorldConfig);
+	// Need height data for biome generation
+	TArray<int32> HeightData;
+	GenSubsystem->GenerateHeightmapOnly(WorldConfig, HeightData);
+
+	GeneratedBiomeData.Empty();
+	GenSubsystem->GenerateBiomeMap(WorldConfig, HeightData, GeneratedBiomeData);
 
 	StatusMessage = FString::Printf(TEXT("Biome map generated with %d biomes"), GeneratedBiomeData.Num());
 	UE_LOG(LogTemp, Log, TEXT("Biome map generated with %d entries"), GeneratedBiomeData.Num());
@@ -456,17 +462,18 @@ void UHarmoniaWorldEditorUtility::GenerateObjectsOnly()
 
 	StatusMessage = TEXT("Generating objects...");
 
-	// 오브젝트 생성은 비동기로 처리되므로 콜백 바인딩
-	bIsGenerating = true;
-	GenSubsystem->OnGenerationProgress.AddUniqueDynamic(this, &UHarmoniaWorldEditorUtility::OnGenerationProgressCallback);
-	GenSubsystem->OnGenerationComplete.AddUniqueDynamic(this, &UHarmoniaWorldEditorUtility::OnGenerationCompleteCallback);
+	// Generate height data first
+	TArray<int32> HeightData;
+	GenSubsystem->GenerateHeightmapOnly(WorldConfig, HeightData);
 
-	// 전체 월드에 오브젝트 생성
-	FVector WorldCenter = FVector(WorldSizeX * 50.0f, WorldSizeY * 50.0f, 0.0f);
-	float WorldRadius = FMath::Max(WorldSizeX, WorldSizeY) * 100.0f;
-	GenSubsystem->GenerateObjectsInRegion(WorldCenter, WorldRadius, WorldConfig);
+	// Generate objects for entire world
+	TMap<EWorldObjectType, TSoftClassPtr<AActor>> ActorClassMap; // Empty map for now
+	GeneratedObjectData.Empty();
+	GenSubsystem->GenerateObjectsInRegion(WorldConfig, HeightData, ActorClassMap,
+		0, 0, WorldSizeX, WorldSizeY, GeneratedObjectData);
 
-	UE_LOG(LogTemp, Log, TEXT("Object generation started"));
+	StatusMessage = FString::Printf(TEXT("Generated %d objects"), GeneratedObjectData.Num());
+	UE_LOG(LogTemp, Log, TEXT("Object generation completed with %d objects"), GeneratedObjectData.Num());
 }
 
 void UHarmoniaWorldEditorUtility::GenerateObjectsInRegion(FVector RegionCenter, float RegionRadius)
@@ -482,13 +489,24 @@ void UHarmoniaWorldEditorUtility::GenerateObjectsInRegion(FVector RegionCenter, 
 
 	StatusMessage = FString::Printf(TEXT("Generating objects in region (radius: %.0f)..."), RegionRadius);
 
-	bIsGenerating = true;
-	GenSubsystem->OnGenerationProgress.AddUniqueDynamic(this, &UHarmoniaWorldEditorUtility::OnGenerationProgressCallback);
-	GenSubsystem->OnGenerationComplete.AddUniqueDynamic(this, &UHarmoniaWorldEditorUtility::OnGenerationCompleteCallback);
+	// Generate height data first
+	TArray<int32> HeightData;
+	GenSubsystem->GenerateHeightmapOnly(WorldConfig, HeightData);
 
-	GenSubsystem->GenerateObjectsInRegion(RegionCenter, RegionRadius, WorldConfig);
+	// Calculate region bounds
+	int32 RegionMinX = FMath::Max(0, FMath::FloorToInt((RegionCenter.X - RegionRadius) / 100.0f));
+	int32 RegionMinY = FMath::Max(0, FMath::FloorToInt((RegionCenter.Y - RegionRadius) / 100.0f));
+	int32 RegionMaxX = FMath::Min(WorldSizeX, FMath::CeilToInt((RegionCenter.X + RegionRadius) / 100.0f));
+	int32 RegionMaxY = FMath::Min(WorldSizeY, FMath::CeilToInt((RegionCenter.Y + RegionRadius) / 100.0f));
 
-	UE_LOG(LogTemp, Log, TEXT("Regional object generation started at %s with radius %.0f"), *RegionCenter.ToString(), RegionRadius);
+	TMap<EWorldObjectType, TSoftClassPtr<AActor>> ActorClassMap; // Empty map for now
+	TArray<FWorldObjectData> RegionObjects;
+	GenSubsystem->GenerateObjectsInRegion(WorldConfig, HeightData, ActorClassMap,
+		RegionMinX, RegionMinY, RegionMaxX, RegionMaxY, RegionObjects);
+
+	GeneratedObjectData.Append(RegionObjects);
+	StatusMessage = FString::Printf(TEXT("Generated %d objects in region"), RegionObjects.Num());
+	UE_LOG(LogTemp, Log, TEXT("Regional object generation completed with %d objects"), RegionObjects.Num());
 }
 
 void UHarmoniaWorldEditorUtility::GenerateWorldAsync()
@@ -524,7 +542,8 @@ void UHarmoniaWorldEditorUtility::GenerateWorldAsync()
 	GenSubsystem->OnGenerationProgress.AddUniqueDynamic(this, &UHarmoniaWorldEditorUtility::OnGenerationProgressCallback);
 	GenSubsystem->OnGenerationComplete.AddUniqueDynamic(this, &UHarmoniaWorldEditorUtility::OnGenerationCompleteCallback);
 
-	GenSubsystem->GenerateWorldAsync(WorldConfig);
+	TMap<EWorldObjectType, TSoftClassPtr<AActor>> ActorClassMap; // Empty map for now
+	GenSubsystem->GenerateWorldAsync(WorldConfig, ActorClassMap);
 
 	UE_LOG(LogTemp, Log, TEXT("Async world generation started"));
 }
@@ -608,10 +627,16 @@ void UHarmoniaWorldEditorUtility::QuickPreview()
 
 	StatusMessage = TEXT("Generating quick preview...");
 
-	EditorSub->EditorQuickPreview(WorldConfig);
-
-	StatusMessage = TEXT("Quick preview generated");
-	UE_LOG(LogTemp, Log, TEXT("Quick preview generated"));
+	if (GEditor && GEditor->GetEditorWorldContext().World())
+	{
+		EditorSub->EditorQuickPreview(GEditor->GetEditorWorldContext().World(), WorldConfig);
+		StatusMessage = TEXT("Quick preview generated");
+		UE_LOG(LogTemp, Log, TEXT("Quick preview generated"));
+	}
+	else
+	{
+		StatusMessage = TEXT("Error: No editor world found");
+	}
 }
 
 void UHarmoniaWorldEditorUtility::ShowBiomeVisualization()
@@ -619,7 +644,8 @@ void UHarmoniaWorldEditorUtility::ShowBiomeVisualization()
 	UHarmoniaWorldGeneratorEditorSubsystem* EditorSub = GetEditorSubsystem();
 	if (EditorSub && GEditor && GEditor->GetEditorWorldContext().World())
 	{
-		EditorSub->DrawBiomeDebugVisualization(GEditor->GetEditorWorldContext().World(), GeneratedBiomeData);
+		UpdateWorldConfigFromProperties();
+		EditorSub->DrawBiomeDebugVisualization(GEditor->GetEditorWorldContext().World(), GeneratedBiomeData, WorldConfig);
 		StatusMessage = TEXT("Biome visualization shown");
 	}
 }
@@ -661,9 +687,17 @@ void UHarmoniaWorldEditorUtility::ShowCaveVisualization()
 	UHarmoniaWorldGeneratorEditorSubsystem* EditorSub = GetEditorSubsystem();
 	if (EditorSub && GEditor && GEditor->GetEditorWorldContext().World())
 	{
-		TArray<FVector> CaveEntrances; // 실제로는 생성된 동굴 데이터를 사용
+		// Filter object data for cave entrances
+		TArray<FWorldObjectData> CaveEntrances;
+		for (const FWorldObjectData& ObjData : GeneratedObjectData)
+		{
+			if (ObjData.ObjectType == EWorldObjectType::CaveEntrance)
+			{
+				CaveEntrances.Add(ObjData);
+			}
+		}
 		EditorSub->DrawCaveDebugVisualization(GEditor->GetEditorWorldContext().World(), CaveEntrances);
-		StatusMessage = TEXT("Cave visualization shown");
+		StatusMessage = FString::Printf(TEXT("Cave visualization shown (%d entrances)"), CaveEntrances.Num());
 	}
 }
 
@@ -672,9 +706,17 @@ void UHarmoniaWorldEditorUtility::ShowResourceVisualization()
 	UHarmoniaWorldGeneratorEditorSubsystem* EditorSub = GetEditorSubsystem();
 	if (EditorSub && GEditor && GEditor->GetEditorWorldContext().World())
 	{
-		TArray<FOreVeinData> OreVeins; // 실제로는 생성된 자원 데이터를 사용
-		EditorSub->DrawResourceDebugVisualization(GEditor->GetEditorWorldContext().World(), OreVeins);
-		StatusMessage = TEXT("Resource visualization shown");
+		TArray<FOreVeinData> OreVeins; // TODO: Store this from generation
+		TArray<FWorldObjectData> ResourceNodes;
+		for (const FWorldObjectData& ObjData : GeneratedObjectData)
+		{
+			if (ObjData.ObjectType == EWorldObjectType::ResourceNode)
+			{
+				ResourceNodes.Add(ObjData);
+			}
+		}
+		EditorSub->DrawResourceDebugVisualization(GEditor->GetEditorWorldContext().World(), OreVeins, ResourceNodes);
+		StatusMessage = FString::Printf(TEXT("Resource visualization shown (%d nodes)"), ResourceNodes.Num());
 	}
 }
 
@@ -705,60 +747,84 @@ void UHarmoniaWorldEditorUtility::ClearAllVisualizations()
 void UHarmoniaWorldEditorUtility::RaiseTerrain(FVector Location, float Radius, float Strength)
 {
 	UHarmoniaWorldGeneratorSubsystem* GenSubsystem = GetWorldGeneratorSubsystem();
-	if (GenSubsystem)
+	if (GenSubsystem && TargetLandscape)
 	{
-		GenSubsystem->RaiseTerrain(Location, Radius, Strength);
+		GenSubsystem->RaiseTerrain(TargetLandscape, Location, Radius, Strength);
 		StatusMessage = FString::Printf(TEXT("Raised terrain at %s"), *Location.ToString());
+	}
+	else
+	{
+		StatusMessage = TEXT("Error: No landscape available for terrain modification");
 	}
 }
 
 void UHarmoniaWorldEditorUtility::LowerTerrain(FVector Location, float Radius, float Strength)
 {
 	UHarmoniaWorldGeneratorSubsystem* GenSubsystem = GetWorldGeneratorSubsystem();
-	if (GenSubsystem)
+	if (GenSubsystem && TargetLandscape)
 	{
-		GenSubsystem->LowerTerrain(Location, Radius, Strength);
+		GenSubsystem->LowerTerrain(TargetLandscape, Location, Radius, Strength);
 		StatusMessage = FString::Printf(TEXT("Lowered terrain at %s"), *Location.ToString());
+	}
+	else
+	{
+		StatusMessage = TEXT("Error: No landscape available for terrain modification");
 	}
 }
 
 void UHarmoniaWorldEditorUtility::FlattenTerrain(FVector Location, float Radius, float TargetHeight)
 {
 	UHarmoniaWorldGeneratorSubsystem* GenSubsystem = GetWorldGeneratorSubsystem();
-	if (GenSubsystem)
+	if (GenSubsystem && TargetLandscape)
 	{
-		GenSubsystem->FlattenTerrain(Location, Radius, TargetHeight);
+		GenSubsystem->FlattenTerrain(TargetLandscape, Location, Radius, TargetHeight);
 		StatusMessage = FString::Printf(TEXT("Flattened terrain at %s"), *Location.ToString());
+	}
+	else
+	{
+		StatusMessage = TEXT("Error: No landscape available for terrain modification");
 	}
 }
 
 void UHarmoniaWorldEditorUtility::SmoothTerrain(FVector Location, float Radius, int32 Iterations)
 {
 	UHarmoniaWorldGeneratorSubsystem* GenSubsystem = GetWorldGeneratorSubsystem();
-	if (GenSubsystem)
+	if (GenSubsystem && TargetLandscape)
 	{
-		GenSubsystem->SmoothTerrain(Location, Radius, Iterations);
+		GenSubsystem->SmoothTerrain(TargetLandscape, Location, Radius, Iterations);
 		StatusMessage = FString::Printf(TEXT("Smoothed terrain at %s"), *Location.ToString());
+	}
+	else
+	{
+		StatusMessage = TEXT("Error: No landscape available for terrain modification");
 	}
 }
 
 void UHarmoniaWorldEditorUtility::CreateCrater(FVector Location, float Radius, float Depth)
 {
 	UHarmoniaWorldGeneratorSubsystem* GenSubsystem = GetWorldGeneratorSubsystem();
-	if (GenSubsystem)
+	if (GenSubsystem && TargetLandscape)
 	{
-		GenSubsystem->CreateCrater(Location, Radius, Depth);
+		GenSubsystem->CreateCrater(TargetLandscape, Location, Radius, Depth);
 		StatusMessage = FString::Printf(TEXT("Created crater at %s"), *Location.ToString());
+	}
+	else
+	{
+		StatusMessage = TEXT("Error: No landscape available for terrain modification");
 	}
 }
 
 void UHarmoniaWorldEditorUtility::CreateHill(FVector Location, float Radius, float Height)
 {
 	UHarmoniaWorldGeneratorSubsystem* GenSubsystem = GetWorldGeneratorSubsystem();
-	if (GenSubsystem)
+	if (GenSubsystem && TargetLandscape)
 	{
-		GenSubsystem->CreateHill(Location, Radius, Height);
+		GenSubsystem->CreateHill(TargetLandscape, Location, Radius, Height);
 		StatusMessage = FString::Printf(TEXT("Created hill at %s"), *Location.ToString());
+	}
+	else
+	{
+		StatusMessage = TEXT("Error: No landscape available for terrain modification");
 	}
 }
 
@@ -775,9 +841,16 @@ bool UHarmoniaWorldEditorUtility::ExportHeightmapToPNG(const FString& FilePath)
 		return false;
 	}
 
-	TArray<int32> HeightData; // 실제로는 생성된 하이트맵 데이터를 사용
+	// Generate height data
+	TArray<int32> HeightData;
+	UHarmoniaWorldGeneratorSubsystem* GenSubsystem = GetWorldGeneratorSubsystem();
+	if (GenSubsystem)
+	{
+		UpdateWorldConfigFromProperties();
+		GenSubsystem->GenerateHeightmapOnly(WorldConfig, HeightData);
+	}
 
-	if (EditorSub->ExportHeightmapToPNG(FilePath, HeightData, WorldSizeX, WorldSizeY))
+	if (EditorSub->ExportHeightmapToPNG(HeightData, WorldConfig, FilePath))
 	{
 		StatusMessage = FString::Printf(TEXT("Heightmap exported to: %s"), *FilePath);
 		return true;
@@ -796,7 +869,9 @@ bool UHarmoniaWorldEditorUtility::ExportBiomeMapToPNG(const FString& FilePath)
 		return false;
 	}
 
-	if (EditorSub->ExportBiomeMapToPNG(FilePath, GeneratedBiomeData, WorldSizeX, WorldSizeY))
+	UpdateWorldConfigFromProperties();
+
+	if (EditorSub->ExportBiomeMapToPNG(GeneratedBiomeData, WorldConfig, FilePath))
 	{
 		StatusMessage = FString::Printf(TEXT("Biome map exported to: %s"), *FilePath);
 		return true;
@@ -1043,7 +1118,7 @@ FValidationResult UHarmoniaWorldEditorUtility::ValidateConfiguration()
 	}
 
 	// 침식 검증
-	if (ErosionSettings.bEnableErosion && ErosionSettings.Iterations > 200)
+	if (ErosionSettings.bEnableErosion && ErosionSettings.ErosionIterations > 200)
 	{
 		Result.Warnings.Add(TEXT("High erosion iteration count may significantly increase generation time."));
 	}
@@ -1096,7 +1171,7 @@ float UHarmoniaWorldEditorUtility::GetEstimatedGenerationTimeSeconds() const
 	float ErosionTime = 0.0f;
 	if (ErosionSettings.bEnableErosion)
 	{
-		ErosionTime = ErosionSettings.Iterations * 0.1f;
+		ErosionTime = ErosionSettings.ErosionIterations * 0.1f;
 	}
 
 	// 오브젝트 배치 시간
@@ -1395,7 +1470,7 @@ FWorldGeneratorConfig UHarmoniaWorldEditorUtility::GetSuggestedConfig(EHarmoniaW
 
 	case EHarmoniaWorldType::Canyon:
 		SuggestedConfig.ErosionSettings.bEnableErosion = true;
-		SuggestedConfig.ErosionSettings.Iterations = 200;
+		SuggestedConfig.ErosionSettings.ErosionIterations = 200;
 		SuggestedConfig.SeaLevel = 0.3f;
 		break;
 
@@ -1449,7 +1524,7 @@ TArray<FString> UHarmoniaWorldEditorUtility::GetOptimizationSuggestions() const
 		Suggestions.Add(TEXT("Reduce noise octaves (currently > 8) to speed up generation"));
 	}
 
-	if (ErosionSettings.bEnableErosion && ErosionSettings.Iterations > 100)
+	if (ErosionSettings.bEnableErosion && ErosionSettings.ErosionIterations > 100)
 	{
 		Suggestions.Add(TEXT("Reduce erosion iterations to speed up generation"));
 	}
@@ -1491,9 +1566,9 @@ void UHarmoniaWorldEditorUtility::AutoOptimizeConfiguration()
 	}
 
 	// 침식 반복이 너무 많으면 감소
-	if (ErosionSettings.Iterations > 100)
+	if (ErosionSettings.ErosionIterations > 100)
 	{
-		ErosionSettings.Iterations = 100;
+		ErosionSettings.ErosionIterations = 100;
 		bWasOptimized = true;
 	}
 
