@@ -30,18 +30,11 @@ public class HarmoniaGameService: ModuleRules
         // Platform-specific online subsystems
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
+            // Steam and Epic Games Store support on Windows
             PrivateDependencyModuleNames.Add("OnlineSubsystemSteam");
             PrivateDependencyModuleNames.Add("OnlineSubsystemEOS");
         }
-        else if (Target.Platform == UnrealTargetPlatform.XboxOne ||
-                 Target.Platform == UnrealTargetPlatform.XSX)
-        {
-            PrivateDependencyModuleNames.Add("OnlineSubsystemGDK");
-        }
-        else if (Target.Platform == UnrealTargetPlatform.PS4 ||
-                 Target.Platform == UnrealTargetPlatform.PS5)
-        {
-            PrivateDependencyModuleNames.Add("OnlineSubsystemPS4");
-        }
+        // Note: Console platform subsystems (GDK, PS5, etc.) are added automatically
+        // by the respective platform SDKs when building for those platforms
     }
 }
