@@ -195,6 +195,50 @@ public:
 	void OnParrySuccess(AActor* Attacker);
 
 	// ============================================================================
+	// Riposte System
+	// ============================================================================
+
+	/** Can currently riposte? */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Riposte")
+	bool CanRiposte() const;
+
+	/** Get riposte window duration */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Riposte")
+	float GetRiposteWindowDuration() const;
+
+	/** Get riposte damage multiplier */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Riposte")
+	float GetRiposteDamageMultiplier() const;
+
+	/** Start riposte window */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Riposte")
+	void StartRiposteWindow(AActor* ParriedTarget, float Duration);
+
+	/** End riposte window */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Riposte")
+	void EndRiposteWindow();
+
+	/** Get parried target */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Riposte")
+	AActor* GetParriedTarget() const;
+
+	/** Clear parried target */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Riposte")
+	void ClearParriedTarget();
+
+	// ============================================================================
+	// Backstab System
+	// ============================================================================
+
+	/** Check if attack is a backstab */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Backstab")
+	bool IsBackstabAttack(AActor* Target, FVector AttackOrigin) const;
+
+	/** Get backstab damage multiplier */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Backstab")
+	float GetBackstabDamageMultiplier() const;
+
+	// ============================================================================
 	// Stamina Management
 	// ============================================================================
 
@@ -259,6 +303,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Combat|Dodge")
 	FHarmoniaDodgeConfig DefaultDodgeConfig;
 
+	/** Default riposte configuration */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Combat|Riposte")
+	FHarmoniaRiposteConfig DefaultRiposteConfig;
+
+	/** Default backstab configuration */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Combat|Backstab")
+	FHarmoniaBackstabConfig DefaultBackstabConfig;
+
 	// ============================================================================
 	// Gameplay Tags
 	// ============================================================================
@@ -315,6 +367,10 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|State")
 	bool bInIFrames = false;
 
+	/** Parried target (for riposte) */
+	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|State")
+	TWeakObjectPtr<AActor> ParriedTarget;
+
 	// ============================================================================
 	// Cached References
 	// ============================================================================
@@ -341,10 +397,16 @@ protected:
 	/** I-frame timer */
 	FTimerHandle IFrameTimerHandle;
 
+	/** Riposte window timer */
+	FTimerHandle RiposteWindowTimerHandle;
+
 private:
 	/** Clear i-frames */
 	void ClearInvulnerability();
 
 	/** Combo window expired */
 	void OnComboWindowExpired();
+
+	/** Riposte window expired */
+	void OnRiposteWindowExpired();
 };

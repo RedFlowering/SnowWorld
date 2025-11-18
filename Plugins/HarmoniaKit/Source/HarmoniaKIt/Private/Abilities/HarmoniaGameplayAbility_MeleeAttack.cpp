@@ -302,6 +302,23 @@ void UHarmoniaGameplayAbility_MeleeAttack::ApplyDamageToTarget(AActor* TargetAct
 		return;
 	}
 
+	// Check for backstab
+	bool bIsBackstab = false;
+	float DamageMultiplier = 1.0f;
+	EHarmoniaCriticalAttackType CriticalType = EHarmoniaCriticalAttackType::Normal;
+
+	if (MeleeCombatComponent)
+	{
+		const FVector AttackOrigin = GetAvatarActorFromActorInfo()->GetActorLocation();
+		bIsBackstab = MeleeCombatComponent->IsBackstabAttack(TargetActor, AttackOrigin);
+
+		if (bIsBackstab)
+		{
+			DamageMultiplier = MeleeCombatComponent->GetBackstabDamageMultiplier();
+			CriticalType = EHarmoniaCriticalAttackType::Backstab;
+		}
+	}
+
 	// Create effect context
 	FGameplayEffectContextHandle EffectContext = MakeEffectContext(CurrentSpecHandle, CurrentActorInfo);
 	EffectContext.AddHitResult(FHitResult()); // Could pass actual hit info here
@@ -310,8 +327,26 @@ void UHarmoniaGameplayAbility_MeleeAttack::ApplyDamageToTarget(AActor* TargetAct
 	FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass, GetAbilityLevel());
 	if (SpecHandle.IsValid())
 	{
-		// Set damage magnitude if needed
-		// SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag("Data.Damage"), HitResult.DamageDealt);
+		// Apply damage multiplier for backstab
+		if (bIsBackstab)
+		{
+			SpecHandle.Data->SetSetByCallerMagnitude(
+				FGameplayTag::RequestGameplayTag(FName("Data.DamageMultiplier")),
+				DamageMultiplier
+			);
+
+			// Set as critical hit
+			SpecHandle.Data->SetSetByCallerMagnitude(
+				FGameplayTag::RequestGameplayTag(FName("Data.Critical")),
+				1.0f
+			);
+
+			// Set critical type
+			SpecHandle.Data->SetSetByCallerMagnitude(
+				FGameplayTag::RequestGameplayTag(FName("Data.CriticalType")),
+				static_cast<float>(CriticalType)
+			);
+		}
 
 		ApplyGameplayEffectSpecToTarget(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, SpecHandle, MakeTargetData(TargetActor));
 	}
