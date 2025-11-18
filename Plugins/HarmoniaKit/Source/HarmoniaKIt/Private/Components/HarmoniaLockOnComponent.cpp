@@ -222,12 +222,12 @@ TArray<AActor*> UHarmoniaLockOnComponent::FindValidTargets() const
 		// Use Harmonia Sense System for target detection
 		if (UHarmoniaSenseInteractionComponent* SenseComp = OwnerCharacter->FindComponentByClass<UHarmoniaSenseInteractionComponent>())
 		{
-			TArray<AActor*> SensedActors = SenseComp->GetSensedActors();
-			for (AActor* Actor : SensedActors)
+			TArray<FInteractableTargetInfo> SensedTargets = SenseComp->GetAllInteractableTargets();
+			for (const FInteractableTargetInfo& TargetInfo : SensedTargets)
 			{
-				if (IsValidTarget(Actor))
+				if (TargetInfo.TargetActor && IsValidTarget(TargetInfo.TargetActor))
 				{
-					ValidTargets.Add(Actor);
+					ValidTargets.Add(TargetInfo.TargetActor);
 				}
 			}
 		}
