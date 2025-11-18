@@ -984,8 +984,7 @@ void UHarmoniaGameService::UploadStatistics()
 
 	// Create stats write object
 	TArray<FOnlineStatsUserUpdatedStats> StatsToWrite;
-	FOnlineStatsUserUpdatedStats& UserStats = StatsToWrite.AddDefaulted_GetRef();
-	UserStats.Account = UserId.ToSharedRef();
+	FOnlineStatsUserUpdatedStats& UserStats = StatsToWrite.Emplace_GetRef(UserId.ToSharedRef());
 
 	// Add all stats
 	UserStats.Stats.Add(TEXT("TotalPlaytime"), FOnlineStatUpdate(PlayerStats.TotalPlaytimeSeconds, FOnlineStatUpdate::EOnlineStatModificationType::Unknown));
