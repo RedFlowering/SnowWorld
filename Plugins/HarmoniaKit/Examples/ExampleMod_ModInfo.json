@@ -1,0 +1,92 @@
+{
+  "ModId": "ExampleMod",
+  "DisplayName": "Example Mod - Tutorial",
+  "Author": "HarmoniaKit Team",
+  "Version": "1.0.0",
+  "Description": "Example mod demonstrating all HarmoniaModSystem features. Use this as a template for your own mods!",
+  "LoadPriority": 2,
+  "Homepage": "https://github.com/yourrepo/harmoniakit",
+
+  "Dependencies": [],
+  "Incompatibilities": [],
+
+  "AssetOverrides": [
+    {
+      "OriginalAssetPath": "/Game/Characters/Player/Meshes/PlayerCharacter",
+      "OverrideAssetPath": "/ExampleMod/Characters/CustomPlayerCharacter",
+      "OverrideType": 1,
+      "OverrideTag": "Override.Player.Mesh"
+    },
+    {
+      "OriginalAssetPath": "/Game/Weapons/Sword/Textures/IronSword_Texture",
+      "OverrideAssetPath": "/ExampleMod/Weapons/GoldenSword_Texture",
+      "OverrideType": 2,
+      "OverrideTag": "Override.Weapon.Texture"
+    },
+    {
+      "OriginalAssetPath": "/Game/Audio/SFX/Hit_Metal",
+      "OverrideAssetPath": "/ExampleMod/Audio/Hit_Epic",
+      "OverrideType": 4,
+      "OverrideTag": "Override.Sound.Hit"
+    }
+  ],
+
+  "DataTablePatches": [
+    {
+      "TargetDataTable": "/Game/Data/ItemStats",
+      "RowName": "IronSword",
+      "PropertyName": "Damage",
+      "NewValue": "150",
+      "Operation": "Set"
+    },
+    {
+      "TargetDataTable": "/Game/Data/ItemStats",
+      "RowName": "HealthPotion",
+      "PropertyName": "HealAmount",
+      "NewValue": "1.5",
+      "Operation": "Multiply"
+    },
+    {
+      "TargetDataTable": "/Game/Data/MonsterStats",
+      "RowName": "Goblin",
+      "PropertyName": "Health",
+      "NewValue": "50",
+      "Operation": "Add"
+    }
+  ],
+
+  "CustomRulesets": [
+    {
+      "RulesetId": "ExampleHardMode",
+      "DisplayName": "Example Hard Mode",
+      "Description": "Increases difficulty by 50% and reduces player health regen",
+      "RuleTags": "Rule.Example.HardMode,Rule.Example.NoRegen",
+      "ConfigValues": {
+        "DifficultyMultiplier": "1.5",
+        "HealthRegenRate": "0.5",
+        "EnemySpawnMultiplier": "1.3"
+      },
+      "IsDifficultyModifier": true
+    },
+    {
+      "RulesetId": "ExampleNuzlocke",
+      "DisplayName": "Example Nuzlocke Mode",
+      "Description": "Permadeath and catch restrictions",
+      "RuleTags": "Rule.Nuzlocke.Permadeath,Rule.Nuzlocke.OneCatchPerArea",
+      "ConfigValues": {
+        "AllowRevive": "false",
+        "MaxCatchPerArea": "1",
+        "DifficultyMultiplier": "1.2"
+      },
+      "IsDifficultyModifier": true
+    }
+  ],
+
+  "BlueprintClasses": [],
+
+  "SandboxMode": false,
+  "HotReloadEnabled": true,
+  "WorkshopItemId": 0,
+
+  "ModTags": "Example,Tutorial,Documentation"
+}
