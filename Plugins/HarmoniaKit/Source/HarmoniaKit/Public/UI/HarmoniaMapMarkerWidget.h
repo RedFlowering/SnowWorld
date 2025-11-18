@@ -28,11 +28,11 @@ protected:
 public:
 	// Marker icon (bind in blueprint)
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
-	TObjectPtr<UImage> MarkerIcon;
+	TObjectPtr<UImage> MarkerIcon = nullptr;
 
 	// Marker label (bind in blueprint)
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> MarkerLabel;
+	TObjectPtr<UTextBlock> MarkerLabel = nullptr;
 
 	// Marker type
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Marker")

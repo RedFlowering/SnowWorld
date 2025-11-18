@@ -109,23 +109,23 @@ protected:
 
 	/** Main health bar progress widget */
 	UPROPERTY(BlueprintReadOnly, Category = "Boss|UI", meta = (BindWidget))
-	TObjectPtr<UProgressBar> HealthBar;
+	TObjectPtr<UProgressBar> HealthBar = nullptr;
 
 	/** Boss name text */
 	UPROPERTY(BlueprintReadOnly, Category = "Boss|UI", meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> BossNameText;
+	TObjectPtr<UTextBlock> BossNameText = nullptr;
 
 	/** Boss title/subtitle text */
 	UPROPERTY(BlueprintReadOnly, Category = "Boss|UI", meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> BossTitleText;
+	TObjectPtr<UTextBlock> BossTitleText = nullptr;
 
 	/** Current phase indicator text */
 	UPROPERTY(BlueprintReadOnly, Category = "Boss|UI", meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> PhaseText;
+	TObjectPtr<UTextBlock> PhaseText = nullptr;
 
 	/** Health percentage text */
 	UPROPERTY(BlueprintReadOnly, Category = "Boss|UI", meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> HealthPercentText;
+	TObjectPtr<UTextBlock> HealthPercentText = nullptr;
 
 	//~=============================================================================
 	// Display Settings
@@ -173,7 +173,7 @@ protected:
 
 	/** Currently bound boss character */
 	UPROPERTY(BlueprintReadOnly, Category = "Boss|UI")
-	TObjectPtr<AHarmoniaBossMonster> BossCharacter;
+	TObjectPtr<AHarmoniaBossMonster> BossCharacter = nullptr;
 
 	/** Whether the health bar is visible */
 	UPROPERTY(BlueprintReadOnly, Category = "Boss|UI")

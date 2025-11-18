@@ -262,20 +262,20 @@ protected:
 
 	/** Current dispute state */
 	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Territory Dispute", meta = (AllowPrivateAccess = "true"))
-	EHarmoniaTerritoryDisputeState DisputeState;
+	EHarmoniaTerritoryDisputeState DisputeState = EHarmoniaTerritoryDisputeState::None;
 
 	/** Current opponent in dispute */
 	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Territory Dispute", meta = (AllowPrivateAccess = "true"))
-	AActor* CurrentOpponent;
+	AActor* CurrentOpponent = nullptr;
 
 	/** Scan timer */
-	float ScanTimer;
+	float ScanTimer = 0.0f;
 
 	/** Player interrupt flee timer */
-	float FleeTimer;
+	float FleeTimer = 0.0f;
 
 	/** Initial dispute location */
-	FVector DisputeStartLocation;
+	FVector DisputeStartLocation = FVector::ZeroVector;
 
 	/** Cached owner monster */
 	UPROPERTY()

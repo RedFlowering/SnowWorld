@@ -285,15 +285,15 @@ protected:
 
 	/** Daily reset hour (0-23) */
 	UPROPERTY(EditDefaultsOnly, Category = "Quest|Config")
-	int32 DailyResetHour;
+	int32 DailyResetHour = 0;
 
 	/** Weekly reset day (0=Sunday, 6=Saturday) */
 	UPROPERTY(EditDefaultsOnly, Category = "Quest|Config")
-	int32 WeeklyResetDay;
+	int32 WeeklyResetDay = 1;
 
 	/** Weekly reset hour (0-23) */
 	UPROPERTY(EditDefaultsOnly, Category = "Quest|Config")
-	int32 WeeklyResetHour;
+	int32 WeeklyResetHour = 0;
 
 	//~==============================================
 	//~ Internal Functions
