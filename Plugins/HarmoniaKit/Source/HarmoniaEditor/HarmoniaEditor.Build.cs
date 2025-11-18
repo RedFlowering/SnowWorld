@@ -33,7 +33,9 @@ public class HarmoniaEditor : ModuleRules
                 "PropertyEditor",
                 "GameplayTags",
                 "Landscape", // Landscape editing
-                "LandscapeEditor" // Landscape editor tools
+                "LandscapeEditor", // Landscape editor tools
+                "Json", // JSON serialization for config save/load
+                "JsonUtilities" // JSON utilities
             });
 
         PrivateDependencyModuleNames.AddRange(
