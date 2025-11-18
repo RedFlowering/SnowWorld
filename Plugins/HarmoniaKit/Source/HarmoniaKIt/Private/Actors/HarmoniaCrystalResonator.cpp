@@ -252,10 +252,20 @@ void AHarmoniaCrystalResonator::OnInteract_Implementation(const FHarmoniaInterac
 {
 	OutResult.bSuccess = false;
 
-	APlayerController* PlayerController = Cast<APlayerController>(Context.Instigator);
+	// Context.Interactor에서 PlayerController 가져오기
+	APlayerController* PlayerController = nullptr;
+	if (APawn* InteractorPawn = Cast<APawn>(Context.Interactor))
+	{
+		PlayerController = Cast<APlayerController>(InteractorPawn->GetController());
+	}
+	else
+	{
+		PlayerController = Cast<APlayerController>(Context.Interactor);
+	}
+
 	if (!PlayerController)
 	{
-		OutResult.Message = FText::FromString(TEXT("Invalid player"));
+		OutResult.Message = TEXT("Invalid player");
 		return;
 	}
 
@@ -278,10 +288,7 @@ void AHarmoniaCrystalResonator::OnInteract_Implementation(const FHarmoniaInterac
 		if (bActivated)
 		{
 			OutResult.bSuccess = true;
-			OutResult.Message = FText::Format(
-				FText::FromString(TEXT("Activated {0}")),
-				CheckpointName
-			);
+			OutResult.Message = FString::Printf(TEXT("Activated %s"), *CheckpointName.ToString());
 		}
 		return;
 	}
@@ -291,10 +298,7 @@ void AHarmoniaCrystalResonator::OnInteract_Implementation(const FHarmoniaInterac
 	if (bResonanceStarted)
 	{
 		OutResult.bSuccess = true;
-		OutResult.Message = FText::Format(
-			FText::FromString(TEXT("Resonating with {0}...")),
-			CheckpointName
-		);
+		OutResult.Message = FString::Printf(TEXT("Resonating with %s..."), *CheckpointName.ToString());
 	}
 }
 
