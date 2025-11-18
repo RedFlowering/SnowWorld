@@ -19,15 +19,15 @@ class FOnlineAchievementsWrite;
 class FOnlineLeaderboardWrite;
 
 // Delegates for async operations
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAchievementUnlocked, FName, AchievementId, bool, bSuccess);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAchievementsQueried, const TArray<FHarmoniaAchievementData>&, Achievements, bool, bSuccess);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCloudSaveSynced, const FString&, SlotName, bool, bSuccess);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnLeaderboardScoreUploaded, FName, LeaderboardId, int64, Score, bool, bSuccess);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnLeaderboardQueried, const TArray<FHarmoniaLeaderboardEntry>&, Entries, bool, bSuccess);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStatisticsUpdated, const FHarmoniaPlayerStatistics&, Stats, bool, bSuccess);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDLCOwnershipChecked, FName, DLCId, EHarmoniaDLCOwnershipStatus, Status);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSessionJoined, const FString&, SessionId, bool, bSuccess);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSessionCreated, const FString&, SessionId, bool, bSuccess);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHarmoniaAchievementUnlocked, FName, AchievementId, bool, bSuccess);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHarmoniaAchievementsQueried, const TArray<FHarmoniaAchievementData>&, Achievements, bool, bSuccess);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHarmoniaCloudSaveSynced, const FString&, SlotName, bool, bSuccess);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnHarmoniaLeaderboardScoreUploaded, FName, LeaderboardId, int64, Score, bool, bSuccess);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHarmoniaLeaderboardQueried, const TArray<FHarmoniaLeaderboardEntry>&, Entries, bool, bSuccess);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHarmoniaStatisticsUpdated, const FHarmoniaPlayerStatistics&, Stats, bool, bSuccess);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHarmoniaDLCOwnershipChecked, FName, DLCId, EHarmoniaDLCOwnershipStatus, Status);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHarmoniaSessionJoined, const FString&, SessionId, bool, bSuccess);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHarmoniaSessionCreated, const FString&, SessionId, bool, bSuccess);
 
 /**
  * HarmoniaGameService - Game Service Platform Integration Layer
@@ -105,10 +105,10 @@ public:
 
 	// Achievement events
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|GameService|Events")
-	FOnAchievementUnlocked OnAchievementUnlocked;
+	FOnHarmoniaAchievementUnlocked OnAchievementUnlocked;
 
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|GameService|Events")
-	FOnAchievementsQueried OnAchievementsQueried;
+	FOnHarmoniaAchievementsQueried OnAchievementsQueried;
 
 	// ==================== CLOUD SAVE ====================
 
@@ -151,7 +151,7 @@ public:
 
 	// Cloud save events
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|GameService|Events")
-	FOnCloudSaveSynced OnCloudSaveSynced;
+	FOnHarmoniaCloudSaveSynced OnCloudSaveSynced;
 
 	// ==================== LEADERBOARDS ====================
 
@@ -193,10 +193,10 @@ public:
 
 	// Leaderboard events
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|GameService|Events")
-	FOnLeaderboardScoreUploaded OnLeaderboardScoreUploaded;
+	FOnHarmoniaLeaderboardScoreUploaded OnLeaderboardScoreUploaded;
 
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|GameService|Events")
-	FOnLeaderboardQueried OnLeaderboardQueried;
+	FOnHarmoniaLeaderboardQueried OnLeaderboardQueried;
 
 	// ==================== STATISTICS ====================
 
@@ -245,7 +245,7 @@ public:
 
 	// Statistics events
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|GameService|Events")
-	FOnStatisticsUpdated OnStatisticsUpdated;
+	FOnHarmoniaStatisticsUpdated OnStatisticsUpdated;
 
 	// ==================== DLC / CONTENT OWNERSHIP ====================
 
@@ -281,7 +281,7 @@ public:
 
 	// DLC events
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|GameService|Events")
-	FOnDLCOwnershipChecked OnDLCOwnershipChecked;
+	FOnHarmoniaDLCOwnershipChecked OnDLCOwnershipChecked;
 
 	// ==================== CROSS-PLAY SESSIONS ====================
 
@@ -324,10 +324,10 @@ public:
 
 	// Session events
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|GameService|Events")
-	FOnSessionCreated OnSessionCreated;
+	FOnHarmoniaSessionCreated OnSessionCreated;
 
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|GameService|Events")
-	FOnSessionJoined OnSessionJoined;
+	FOnHarmoniaSessionJoined OnSessionJoined;
 
 protected:
 	// Internal platform detection
