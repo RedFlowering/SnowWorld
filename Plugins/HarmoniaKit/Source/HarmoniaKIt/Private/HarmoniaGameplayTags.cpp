@@ -105,6 +105,30 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_State_Attacking, "Character.State.Attacking", "Character state attacking");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_State_Blocking, "Character.State.Blocking", "Character state blocking");
 
+	// ============================================================
+	// Difficulty System Tags
+	// ============================================================
+
+	// Difficulty Pact Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Difficulty_Pact_GlassCannon, "Difficulty.Pact.GlassCannon", "Glass Cannon difficulty pact active");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Difficulty_Pact_IronWill, "Difficulty.Pact.IronWill", "Iron Will difficulty pact active");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Difficulty_Pact_SwiftFoes, "Difficulty.Pact.SwiftFoes", "Swift Foes difficulty pact active");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Difficulty_Pact_EliteUprising, "Difficulty.Pact.EliteUprising", "Elite Uprising difficulty pact active");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Difficulty_Pact_Permadeath, "Difficulty.Pact.Permadeath", "Permadeath difficulty pact active");
+
+	// New Game Plus Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Difficulty_NewGamePlus, "Difficulty.NewGamePlus", "New Game Plus unlocked");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Difficulty_NewGamePlus_Active, "Difficulty.NewGamePlus.Active", "Currently in New Game Plus");
+
+	// Dynamic Difficulty Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Difficulty_Dynamic_Enabled, "Difficulty.Dynamic.Enabled", "Dynamic difficulty is enabled");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Difficulty_Dynamic_Adjusting, "Difficulty.Dynamic.Adjusting", "Dynamic difficulty is adjusting");
+
+	// Event Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Difficulty_PactActivated, "GameplayEvent.Difficulty.PactActivated", "Difficulty pact was activated");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Difficulty_PactDeactivated, "GameplayEvent.Difficulty.PactDeactivated", "Difficulty pact was deactivated");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Difficulty_DynamicAdjusted, "GameplayEvent.Difficulty.DynamicAdjusted", "Dynamic difficulty was adjusted");
+
 	FGameplayTag FindTagByString(const FString& TagString, bool bMatchPartialString)
 	{
 		const UGameplayTagsManager& Manager = UGameplayTagsManager::Get();
