@@ -2046,9 +2046,9 @@ EResourceType UHarmoniaWorldGeneratorSubsystem::PickResourceType(
         if (Config.ResourceSettings.BiomeResourceMultipliers.Contains(BiomeType))
         {
             const auto& BiomeMultipliers = Config.ResourceSettings.BiomeResourceMultipliers[BiomeType];
-            if (BiomeMultipliers.Contains(Pair.Key))
+            if (BiomeMultipliers.ResourceMultipliers.Contains(Pair.Key))
             {
-                Probability *= BiomeMultipliers[Pair.Key];
+                Probability *= BiomeMultipliers.ResourceMultipliers[Pair.Key];
             }
         }
 
@@ -2301,7 +2301,8 @@ void UHarmoniaWorldGeneratorSubsystem::InitializeEnvironmentSystem(const FEnviro
     PreviousWeather = EWeatherType::Clear;
     WeatherTransitionProgress = 1.0f;
     TimeSinceLastWeatherChange = 0.0f;
-    CurrentGameTime = Settings.DayNightSettings.StartingTimeOfDay;
+    CurrentGameTime = Settings.DayNightSettings.StartingHour;
+    CurrentDay = 0;
     TimeSpeedMultiplier = 1.0f;
 
     // Initialize random stream with seed
@@ -2389,18 +2390,32 @@ void UHarmoniaWorldGeneratorSubsystem::ChangeWeather(EWeatherType NewWeather, fl
 
 ETimeOfDay UHarmoniaWorldGeneratorSubsystem::GetCurrentTimeOfDay() const
 {
-    if (CurrentGameTime >= EnvironmentSettings.DayNightSettings.SunriseTime &&
-        CurrentGameTime < EnvironmentSettings.DayNightSettings.DayStartTime)
+    const float SunriseHour = EnvironmentSettings.DayNightSettings.SunriseHour;
+    const float SunsetHour = EnvironmentSettings.DayNightSettings.SunsetHour;
+
+    // Define time ranges based on sunrise and sunset
+    const float DawnEnd = SunriseHour + 2.0f;
+    const float MorningEnd = 12.0f;
+    const float NoonEnd = 14.0f;
+    const float DuskEnd = SunsetHour + 2.0f;
+
+    if (CurrentGameTime >= SunriseHour && CurrentGameTime < DawnEnd)
     {
         return ETimeOfDay::Dawn;
     }
-    else if (CurrentGameTime >= EnvironmentSettings.DayNightSettings.DayStartTime &&
-             CurrentGameTime < EnvironmentSettings.DayNightSettings.SunsetTime)
+    else if (CurrentGameTime >= DawnEnd && CurrentGameTime < MorningEnd)
     {
-        return ETimeOfDay::Day;
+        return ETimeOfDay::Morning;
     }
-    else if (CurrentGameTime >= EnvironmentSettings.DayNightSettings.SunsetTime &&
-             CurrentGameTime < EnvironmentSettings.DayNightSettings.NightStartTime)
+    else if (CurrentGameTime >= MorningEnd && CurrentGameTime < NoonEnd)
+    {
+        return ETimeOfDay::Noon;
+    }
+    else if (CurrentGameTime >= NoonEnd && CurrentGameTime < SunsetHour)
+    {
+        return ETimeOfDay::Afternoon;
+    }
+    else if (CurrentGameTime >= SunsetHour && CurrentGameTime < DuskEnd)
     {
         return ETimeOfDay::Dusk;
     }
@@ -2493,13 +2508,16 @@ void UHarmoniaWorldGeneratorSubsystem::UpdateDayNightCycle(float DeltaTime)
     ETimeOfDay PreviousTimeOfDay = GetCurrentTimeOfDay();
 
     // Convert real-time seconds to game-time hours
-    float GameHoursPerRealSecond = 24.0f / EnvironmentSettings.DayNightSettings.DayLengthInMinutes / 60.0f;
-    CurrentGameTime += DeltaTime * GameHoursPerRealSecond;
+    // MinutesPerGameHour is how many real minutes = 1 game hour
+    // So GameHoursPerRealSecond = 1 / (MinutesPerGameHour * 60)
+    float GameHoursPerRealSecond = 1.0f / (EnvironmentSettings.DayNightSettings.MinutesPerGameHour * 60.0f);
+    CurrentGameTime += DeltaTime * GameHoursPerRealSecond * TimeSpeedMultiplier;
 
-    // Wrap around 24 hours
+    // Wrap around 24 hours and increment day counter
     if (CurrentGameTime >= 24.0f)
     {
         CurrentGameTime = FMath::Fmod(CurrentGameTime, 24.0f);
+        CurrentDay++;
     }
 
     // Check for time of day change
@@ -2516,7 +2534,7 @@ void UHarmoniaWorldGeneratorSubsystem::UpdateDayNightCycle(float DeltaTime)
     if (OnDayNightCycleTick.IsBound())
     {
         float SunAngle = GetSunAngle();
-        OnDayNightCycleTick.Broadcast(CurrentGameTime, SunAngle);
+        OnDayNightCycleTick.Broadcast(CurrentGameTime, CurrentDay, SunAngle);
     }
 }
 
@@ -2529,8 +2547,9 @@ void UHarmoniaWorldGeneratorSubsystem::UpdateSeasonProgression(float DeltaTime)
     }
 
     // Calculate season duration in real seconds
-    float SeasonDurationSeconds = CurrentSettings->DurationInGameDays *
-                                   EnvironmentSettings.DayNightSettings.DayLengthInMinutes * 60.0f;
+    // DurationDays * hours per day * MinutesPerGameHour * 60 seconds per minute
+    float DayLengthInMinutes = EnvironmentSettings.DayNightSettings.MinutesPerGameHour * 24.0f;
+    float SeasonDurationSeconds = CurrentSettings->DurationDays * DayLengthInMinutes * 60.0f;
 
     TotalSeasonTime += DeltaTime;
     SeasonProgress = TotalSeasonTime / SeasonDurationSeconds;
@@ -2584,20 +2603,21 @@ EWeatherType UHarmoniaWorldGeneratorSubsystem::SelectRandomWeather(ESeasonType S
         return EWeatherType::Clear;
     }
 
-    // Build probability map
-    TMap<EWeatherType, float> ProbabilityMap = SeasonSettings->DefaultWeatherProbabilities;
+    // Build probability map from array
+    TMap<EWeatherType, float> ProbabilityMap;
+    for (const FWeatherProbability& WeatherProb : SeasonSettings->WeatherProbabilities)
+    {
+        ProbabilityMap.Add(WeatherProb.WeatherType, WeatherProb.Probability);
+    }
 
     // Check for biome-specific overrides
-    for (const FWeatherProbability& Override : SeasonSettings->BiomeWeatherOverrides)
+    if (SeasonSettings->BiomeWeatherProbabilities.Contains(Biome))
     {
-        if (Override.Biome == Biome)
+        const FBiomeWeatherProbabilities& BiomeOverrides = SeasonSettings->BiomeWeatherProbabilities[Biome];
+        // Apply biome override
+        for (const FWeatherProbability& WeatherProb : BiomeOverrides.WeatherProbabilities)
         {
-            // Apply biome override
-            for (const auto& Pair : Override.WeatherProbabilities)
-            {
-                ProbabilityMap.Add(Pair.Key, Pair.Value);
-            }
-            break;
+            ProbabilityMap.Add(WeatherProb.WeatherType, WeatherProb.Probability);
         }
     }
 

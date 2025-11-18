@@ -246,11 +246,12 @@ void UHarmoniaWorldGeneratorEditorSubsystem::DrawResourceDebugVisualization(
 		FString ResourceName;
 		switch (Vein.ResourceType)
 		{
-			case EResourceType::Iron: ResourceName = TEXT("Iron Vein"); break;
-			case EResourceType::Gold: ResourceName = TEXT("Gold Vein"); break;
+			case EResourceType::IronOre: ResourceName = TEXT("Iron Vein"); break;
+			case EResourceType::GoldOre: ResourceName = TEXT("Gold Vein"); break;
 			case EResourceType::Coal: ResourceName = TEXT("Coal Vein"); break;
-			case EResourceType::Copper: ResourceName = TEXT("Copper Vein"); break;
-			case EResourceType::Crystal: ResourceName = TEXT("Crystal Vein"); break;
+			case EResourceType::CopperOre: ResourceName = TEXT("Copper Vein"); break;
+			case EResourceType::CrystalOre: ResourceName = TEXT("Crystal Vein"); break;
+			case EResourceType::Gems: ResourceName = TEXT("Gem Vein"); break;
 			default: ResourceName = TEXT("Ore Vein"); break;
 		}
 		DrawDebugString(World, Vein.Location + FVector(0, 0, 100), ResourceName, nullptr, VeinColor, Duration);
@@ -289,10 +290,12 @@ void UHarmoniaWorldGeneratorEditorSubsystem::DrawPOIDebugVisualization(
 		FString POIName;
 		switch (POI.POIType)
 		{
-			case EPOIType::Landmark: POIName = TEXT("Landmark"); break;
-			case EPOIType::Shrine: POIName = TEXT("Shrine"); break;
 			case EPOIType::Dungeon: POIName = TEXT("Dungeon"); break;
-			case EPOIType::Settlement: POIName = TEXT("Settlement"); break;
+			case EPOIType::Treasure: POIName = TEXT("Treasure"); break;
+			case EPOIType::QuestLocation: POIName = TEXT("Quest Location"); break;
+			case EPOIType::Boss: POIName = TEXT("Boss Arena"); break;
+			case EPOIType::Camp: POIName = TEXT("Camp"); break;
+			case EPOIType::Ruins: POIName = TEXT("Ruins"); break;
 			default: POIName = TEXT("POI"); break;
 		}
 		DrawDebugString(World, POI.Location + FVector(0, 0, 700), POIName, nullptr, POIColor, Duration);
@@ -488,7 +491,7 @@ bool UHarmoniaWorldGeneratorEditorSubsystem::ExportHeightmapToPNG(
 		return false;
 	}
 
-	const int32 MapSize = Config.Width;
+	const int32 MapSize = Config.SizeX;
 	TArray<FColor> ImageData;
 	ImageData.SetNum(MapSize * MapSize);
 
@@ -548,7 +551,7 @@ bool UHarmoniaWorldGeneratorEditorSubsystem::ExportBiomeMapToPNG(
 		return false;
 	}
 
-	const int32 MapSize = Config.Width;
+	const int32 MapSize = Config.SizeX;
 	TArray<FColor> ImageData;
 	ImageData.SetNum(MapSize * MapSize);
 
@@ -601,7 +604,7 @@ FColor UHarmoniaWorldGeneratorEditorSubsystem::GetBiomeDebugColor(EBiomeType Bio
 		case EBiomeType::Rainforest:     return FColor(0, 128, 0);        // Green
 		case EBiomeType::Savanna:        return FColor(189, 183, 107);    // Dark Khaki
 		case EBiomeType::Mountain:       return FColor(139, 137, 137);    // Gray
-		case EBiomeType::SnowyMountain:  return FColor(255, 250, 250);    // Snow White
+		case EBiomeType::Snow:           return FColor(255, 250, 250);    // Snow White
 		case EBiomeType::Swamp:          return FColor(85, 107, 47);      // Dark Olive Green
 		default:                         return FColor::Magenta;           // Unknown
 	}
@@ -611,12 +614,13 @@ FColor UHarmoniaWorldGeneratorEditorSubsystem::GetResourceDebugColor(EResourceTy
 {
 	switch (ResourceType)
 	{
-		case EResourceType::Iron:    return FColor(192, 192, 192);   // Silver
-		case EResourceType::Gold:    return FColor(255, 215, 0);     // Gold
-		case EResourceType::Coal:    return FColor(0, 0, 0);         // Black
-		case EResourceType::Copper:  return FColor(184, 115, 51);    // Copper
-		case EResourceType::Crystal: return FColor(230, 230, 250);   // Lavender
-		default:                     return FColor::White;            // Default
+		case EResourceType::IronOre:    return FColor(192, 192, 192);   // Silver
+		case EResourceType::GoldOre:    return FColor(255, 215, 0);     // Gold
+		case EResourceType::Coal:       return FColor(0, 0, 0);         // Black
+		case EResourceType::CopperOre:  return FColor(184, 115, 51);    // Copper
+		case EResourceType::CrystalOre: return FColor(230, 230, 250);   // Lavender
+		case EResourceType::Gems:       return FColor(255, 0, 255);     // Magenta
+		default:                        return FColor::White;            // Default
 	}
 }
 
@@ -624,10 +628,12 @@ FColor UHarmoniaWorldGeneratorEditorSubsystem::GetPOIDebugColor(EPOIType POIType
 {
 	switch (POIType)
 	{
-		case EPOIType::Landmark:     return FColor::Purple;
-		case EPOIType::Shrine:       return FColor::Cyan;
 		case EPOIType::Dungeon:      return FColor::Red;
-		case EPOIType::Settlement:   return FColor::Yellow;
+		case EPOIType::Treasure:     return FColor(255, 215, 0);  // Gold
+		case EPOIType::QuestLocation: return FColor::Cyan;
+		case EPOIType::Boss:         return FColor(128, 0, 128);  // Purple
+		case EPOIType::Camp:         return FColor::Yellow;
+		case EPOIType::Ruins:        return FColor(139, 137, 137); // Gray
 		default:                     return FColor::Magenta;
 	}
 }

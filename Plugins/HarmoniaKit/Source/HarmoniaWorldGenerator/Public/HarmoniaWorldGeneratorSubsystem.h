@@ -32,10 +32,10 @@ public:
     FOnSeasonChanged OnSeasonChanged;
 
     UPROPERTY(BlueprintAssignable, Category = "WorldGenerator|Environment")
-    FOnWeatherChanged OnWeatherChanged;
+    FOnWorldGenWeatherChanged OnWeatherChanged;
 
     UPROPERTY(BlueprintAssignable, Category = "WorldGenerator|Environment")
-    FOnTimeOfDayChanged OnTimeOfDayChanged;
+    FOnWorldGenTimeOfDayChanged OnTimeOfDayChanged;
 
     UPROPERTY(BlueprintAssignable, Category = "WorldGenerator|Environment")
     FOnDayNightCycleTick OnDayNightCycleTick;
@@ -882,6 +882,7 @@ private:
     float TimeSinceLastWeatherChange = 0.0f;
 
     float CurrentGameTime = 12.0f; // 0-24 hours
+    int32 CurrentDay = 0; // Day counter
     float TimeSpeedMultiplier = 1.0f;
 
     FRandomStream WeatherRandom;

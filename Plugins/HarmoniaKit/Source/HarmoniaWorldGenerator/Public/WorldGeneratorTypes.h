@@ -1352,17 +1352,17 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSeasonChanged,
 	float, SeasonProgress);
 
 /**
- * Delegate for weather change
+ * Delegate for weather change (World Generator)
  */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnWeatherChanged,
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnWorldGenWeatherChanged,
 	EWeatherType, NewWeather,
 	EWeatherType, PreviousWeather,
 	float, TransitionDuration);
 
 /**
- * Delegate for time of day change
+ * Delegate for time of day change (World Generator)
  */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnTimeOfDayChanged,
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWorldGenTimeOfDayChanged,
 	ETimeOfDay, NewTimeOfDay,
 	float, CurrentHour);
 
