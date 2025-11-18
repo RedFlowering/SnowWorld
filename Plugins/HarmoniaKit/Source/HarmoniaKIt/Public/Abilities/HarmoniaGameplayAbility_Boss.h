@@ -5,7 +5,7 @@
 #include "AbilitySystem/Abilities/LyraGameplayAbility.h"
 #include "HarmoniaBossGameplayAbility.generated.h"
 
-class AHarmoniaBossCharacter;
+class AHarmoniaBossMonster;
 
 /**
  * UBossGameplayAbility

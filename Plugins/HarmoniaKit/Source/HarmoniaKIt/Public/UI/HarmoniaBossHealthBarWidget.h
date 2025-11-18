@@ -5,7 +5,7 @@
 #include "Blueprint/UserWidget.h"
 #include "HarmoniaBossHealthBarWidget.generated.h"
 
-class AHarmoniaBossCharacter;
+class AHarmoniaBossMonster;
 class ULyraHealthComponent;
 class UProgressBar;
 class UTextBlock;
@@ -16,12 +16,12 @@ class UTextBlock;
  * Widget for displaying boss health, name, and phase information.
  */
 UCLASS(Abstract, Blueprintable)
-class HARMONIAKIT_API UBossHealthBarWidget : public UUserWidget
+class HARMONIAKIT_API UHarmoniaBossHealthBarWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
 public:
-	UBossHealthBarWidget(const FObjectInitializer& ObjectInitializer);
+	UHarmoniaBossHealthBarWidget(const FObjectInitializer& ObjectInitializer);
 
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
@@ -33,11 +33,11 @@ public:
 
 	/** Set the boss character to monitor */
 	UFUNCTION(BlueprintCallable, Category = "Boss|UI")
-	void SetBossCharacter(AHarmoniaBossCharacter* InBossCharacter);
+	void SetBossCharacter(AHarmoniaBossMonster* InBossCharacter);
 
 	/** Get the currently bound boss character */
 	UFUNCTION(BlueprintPure, Category = "Boss|UI")
-	AHarmoniaBossCharacter* GetBossCharacter() const { return BossCharacter; }
+	AHarmoniaBossMonster* GetBossCharacter() const { return BossCharacter; }
 
 	//~=============================================================================
 	// Display Control
@@ -87,15 +87,13 @@ protected:
 
 	/** Called when boss phase changes */
 	UFUNCTION()
-	virtual void OnBossPhaseChanged(int32 OldPhase, int32 NewPhase);
+	virtual void OnBossPhaseChanged(int32 OldPhase, int32 NewPhase, const struct FHarmoniaBossPhase& PhaseData);
 
 	/** Called when boss encounter starts */
 	UFUNCTION()
-	virtual void OnBossEncounterStart(AHarmoniaBossCharacter* Boss);
 
 	/** Called when boss encounter ends */
 	UFUNCTION()
-	virtual void OnBossEncounterEnd(AHarmoniaBossCharacter* Boss, bool bDefeated);
 
 	//~=============================================================================
 	// Animation Events

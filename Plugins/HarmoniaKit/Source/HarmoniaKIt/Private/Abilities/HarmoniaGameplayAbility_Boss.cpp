@@ -1,7 +1,7 @@
 // Copyright 2024 Snow Game Studio.
 
 #include "Abilities/HarmoniaGameplayAbility_Boss.h"
-#include "Monsters/HarmoniaBossCharacter.h"
+#include "Monsters/HarmoniaBossMonster.h"
 #include "LyraHealthComponent.h"
 #include "AbilitySystemComponent.h"
 
@@ -12,14 +12,14 @@ UHarmoniaBossGameplayAbility::UBossGameplayAbility(const FObjectInitializer& Obj
 	MaxHealthPercent = 0.0f;
 }
 
-AHarmoniaBossCharacter* UHarmoniaBossGameplayAbility::GetBossCharacter() const
+AHarmoniaBossMonster* UHarmoniaBossGameplayAbility::GetBossCharacter() const
 {
 	return Cast<ABossCharacter>(GetAvatarActorFromActorInfo());
 }
 
 int32 UHarmoniaBossGameplayAbility::GetBossPhase() const
 {
-	AHarmoniaBossCharacter* Boss = GetBossCharacter();
+	AHarmoniaBossMonster* Boss = GetBossCharacter();
 	return Boss ? Boss->GetCurrentPhase() : 0;
 }
 
@@ -30,7 +30,7 @@ bool UHarmoniaBossGameplayAbility::CanActivateAbility(const FGameplayAbilitySpec
 		return false;
 	}
 
-	AHarmoniaBossCharacter* Boss = Cast<ABossCharacter>(ActorInfo->AvatarActor.Get());
+	AHarmoniaBossMonster* Boss = Cast<ABossCharacter>(ActorInfo->AvatarActor.Get());
 	if (!Boss)
 	{
 		return true; // Allow if not a boss

@@ -6,7 +6,7 @@
 #include "GameplayTagContainer.h"
 #include "HarmoniaBossPatternComponent.generated.h"
 
-class AHarmoniaBossCharacter;
+class AHarmoniaBossMonster;
 class ULyraGameplayAbility;
 
 /**

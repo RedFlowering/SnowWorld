@@ -1,7 +1,7 @@
 // Copyright 2024 Snow Game Studio.
 
 #include "Components/HarmoniaBossPatternComponent.h"
-#include "Monsters/HarmoniaBossCharacter.h"
+#include "Monsters/HarmoniaBossMonster.h"
 #include "AbilitySystem/LyraAbilitySystemComponent.h"
 #include "AbilitySystem/Abilities/LyraGameplayAbility.h"
 #include "TimerManager.h"

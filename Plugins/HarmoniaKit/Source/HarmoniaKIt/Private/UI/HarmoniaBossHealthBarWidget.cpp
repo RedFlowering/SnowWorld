@@ -1,13 +1,13 @@
 // Copyright 2024 Snow Game Studio.
 
 #include "UI/HarmoniaBossHealthBarWidget.h"
-#include "Monsters/HarmoniaBossCharacter.h"
+#include "Monsters/HarmoniaBossMonster.h"
 #include "Character/LyraHealthComponent.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "Kismet/KismetMathLibrary.h"
 
-UHarmoniaBossHealthBarWidget::UBossHealthBarWidget(const FObjectInitializer& ObjectInitializer)
+UHarmoniaBossHealthBarWidget::UHarmoniaBossHealthBarWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	bIsVisible = false;
@@ -78,7 +78,7 @@ void UHarmoniaBossHealthBarWidget::NativeTick(const FGeometry& MyGeometry, float
 // Boss Binding
 //~=============================================================================
 
-void UHarmoniaBossHealthBarWidget::SetBossCharacter(AHarmoniaBossCharacter* InBossCharacter)
+void UHarmoniaBossHealthBarWidget::SetBossCharacter(AHarmoniaBossMonster* InBossCharacter)
 {
 	if (BossCharacter == InBossCharacter)
 	{
@@ -115,8 +115,8 @@ void UHarmoniaBossHealthBarWidget::ShowBossHealthBar_Implementation()
 			UpdateHealthBar(HealthPercent);
 		}
 
-		UpdateBossName(BossCharacter->BossName, BossCharacter->BossTitle);
-		UpdatePhaseDisplay(BossCharacter->GetCurrentPhase(), BossCharacter->GetMaxPhases());
+		UpdateBossName(BossCharacter->MonsterData ? BossCharacter->MonsterData->MonsterName : FText(), BossCharacter->BossTitle);
+		UpdatePhaseDisplay(BossCharacter->GetCurrentPhase(), BossCharacter->GetTotalPhases());
 	}
 }
 
@@ -202,23 +202,21 @@ void UHarmoniaBossHealthBarWidget::OnBossHealthChanged(ULyraHealthComponent* Hea
 	}
 }
 
-void UHarmoniaBossHealthBarWidget::OnBossPhaseChanged(int32 OldPhase, int32 NewPhase)
+void UHarmoniaBossHealthBarWidget::OnBossPhaseChanged(int32 OldPhase, int32 NewPhase, const FHarmoniaBossPhase& PhaseData)
 {
 	if (!BossCharacter)
 	{
 		return;
 	}
 
-	UpdatePhaseDisplay(NewPhase, BossCharacter->GetMaxPhases());
+	UpdatePhaseDisplay(NewPhase, BossCharacter->());
 	PlayPhaseTransitionAnimation(NewPhase);
 }
 
-void UHarmoniaBossHealthBarWidget::OnBossEncounterStart(AHarmoniaBossCharacter* Boss)
 {
 	ShowBossHealthBar();
 }
 
-void UHarmoniaBossHealthBarWidget::OnBossEncounterEnd(AHarmoniaBossCharacter* Boss, bool bDefeated)
 {
 	if (bDefeated)
 	{
@@ -260,8 +258,6 @@ void UHarmoniaBossHealthBarWidget::UnbindFromBoss()
 
 	// Unbind from boss events
 	BossCharacter->OnBossPhaseChanged.RemoveDynamic(this, &UHarmoniaBossHealthBarWidget::OnBossPhaseChanged);
-	BossCharacter->OnBossEncounterStart.RemoveDynamic(this, &UHarmoniaBossHealthBarWidget::OnBossEncounterStart);
-	BossCharacter->OnBossEncounterEnd.RemoveDynamic(this, &UHarmoniaBossHealthBarWidget::OnBossEncounterEnd);
 }
 
 void UHarmoniaBossHealthBarWidget::BindToBoss()
@@ -284,12 +280,10 @@ void UHarmoniaBossHealthBarWidget::BindToBoss()
 
 	// Bind to boss events
 	BossCharacter->OnBossPhaseChanged.AddDynamic(this, &UHarmoniaBossHealthBarWidget::OnBossPhaseChanged);
-	BossCharacter->OnBossEncounterStart.AddDynamic(this, &UHarmoniaBossHealthBarWidget::OnBossEncounterStart);
-	BossCharacter->OnBossEncounterEnd.AddDynamic(this, &UHarmoniaBossHealthBarWidget::OnBossEncounterEnd);
 
 	// Update name and phase
-	UpdateBossName(BossCharacter->BossName, BossCharacter->BossTitle);
-	UpdatePhaseDisplay(BossCharacter->GetCurrentPhase(), BossCharacter->GetMaxPhases());
+	UpdateBossName(BossCharacter->MonsterData ? BossCharacter->MonsterData->MonsterName : FText(), BossCharacter->BossTitle);
+	UpdatePhaseDisplay(BossCharacter->GetCurrentPhase(), BossCharacter->GetTotalPhases());
 }
 
 FLinearColor UHarmoniaBossHealthBarWidget::GetHealthBarColor(float HealthPercent) const
