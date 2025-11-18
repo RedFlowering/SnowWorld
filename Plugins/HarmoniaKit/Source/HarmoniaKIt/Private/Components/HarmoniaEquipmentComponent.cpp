@@ -64,6 +64,14 @@ bool UHarmoniaEquipmentComponent::EquipItem(const FHarmoniaID& EquipmentId, EEqu
 		return false;
 	}
 
+	// Check stat requirements
+	FText FailureReason;
+	if (!CanEquipItem(EquipmentId, FailureReason))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("EquipItem: Cannot equip item - %s"), *FailureReason.ToString());
+		return false;
+	}
+
 	// Determine slot
 	EEquipmentSlot TargetSlot = (Slot == EEquipmentSlot::None) ? EquipmentData.EquipmentSlot : Slot;
 	if (TargetSlot == EEquipmentSlot::None)
@@ -102,6 +110,9 @@ bool UHarmoniaEquipmentComponent::EquipItem(const FHarmoniaID& EquipmentId, EEqu
 
 	// Store equipped item
 	EquippedItems.Add(NewEquippedItem);
+
+	// Update equipment load
+	UpdateEquipLoad();
 
 	// Broadcast event
 	OnEquipmentChanged.Broadcast(TargetSlot, OldEquipmentId, EquipmentId);
@@ -148,6 +159,9 @@ bool UHarmoniaEquipmentComponent::UnequipItem(EEquipmentSlot Slot)
 
 	// Remove from equipped items
 	EquippedItems.RemoveAt(ItemIndex);
+
+	// Update equipment load
+	UpdateEquipLoad();
 
 	// Broadcast event
 	OnEquipmentChanged.Broadcast(Slot, OldEquipmentId, FHarmoniaID());
@@ -428,9 +442,201 @@ void UHarmoniaEquipmentComponent::SetEquipmentDataTable(UDataTable* InDataTable)
 	EquipmentDataTable = InDataTable;
 }
 
+bool UHarmoniaEquipmentComponent::CanEquipItem(const FHarmoniaID& EquipmentId, FText& OutFailureReason) const
+{
+	// Get equipment data
+	FEquipmentData EquipmentData;
+	if (!GetEquipmentData(EquipmentId, EquipmentData))
+	{
+		OutFailureReason = FText::FromString(TEXT("Equipment data not found"));
+		return false;
+	}
+
+	// Get attribute set
+	UHarmoniaAttributeSet* AttributeSet = GetAttributeSet();
+	if (!AttributeSet)
+	{
+		OutFailureReason = FText::FromString(TEXT("Attribute set not found"));
+		return false;
+	}
+
+	// Check stat requirements
+	if (EquipmentData.RequiredStrength > 0 && AttributeSet->GetStrength() < EquipmentData.RequiredStrength)
+	{
+		OutFailureReason = FText::Format(
+			FText::FromString(TEXT("Requires {0} Strength (you have {1})")),
+			FText::AsNumber(EquipmentData.RequiredStrength),
+			FText::AsNumber(static_cast<int32>(AttributeSet->GetStrength()))
+		);
+		return false;
+	}
+
+	if (EquipmentData.RequiredDexterity > 0 && AttributeSet->GetDexterity() < EquipmentData.RequiredDexterity)
+	{
+		OutFailureReason = FText::Format(
+			FText::FromString(TEXT("Requires {0} Dexterity (you have {1})")),
+			FText::AsNumber(EquipmentData.RequiredDexterity),
+			FText::AsNumber(static_cast<int32>(AttributeSet->GetDexterity()))
+		);
+		return false;
+	}
+
+	if (EquipmentData.RequiredIntelligence > 0 && AttributeSet->GetIntelligence() < EquipmentData.RequiredIntelligence)
+	{
+		OutFailureReason = FText::Format(
+			FText::FromString(TEXT("Requires {0} Intelligence (you have {1})")),
+			FText::AsNumber(EquipmentData.RequiredIntelligence),
+			FText::AsNumber(static_cast<int32>(AttributeSet->GetIntelligence()))
+		);
+		return false;
+	}
+
+	if (EquipmentData.RequiredFaith > 0 && AttributeSet->GetFaith() < EquipmentData.RequiredFaith)
+	{
+		OutFailureReason = FText::Format(
+			FText::FromString(TEXT("Requires {0} Faith (you have {1})")),
+			FText::AsNumber(EquipmentData.RequiredFaith),
+			FText::AsNumber(static_cast<int32>(AttributeSet->GetFaith()))
+		);
+		return false;
+	}
+
+	return true;
+}
+
+float UHarmoniaEquipmentComponent::GetTotalEquipmentLoad() const
+{
+	float TotalWeight = 0.f;
+
+	for (const FEquippedItem& Item : EquippedItems)
+	{
+		FEquipmentData EquipmentData;
+		if (GetEquipmentData(Item.EquipmentId, EquipmentData))
+		{
+			TotalWeight += EquipmentData.Weight;
+		}
+	}
+
+	return TotalWeight;
+}
+
 // ============================================================================
 // Internal Functions
 // ============================================================================
+
+void UHarmoniaEquipmentComponent::UpdateEquipLoad()
+{
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	UHarmoniaAttributeSet* AttributeSet = GetAttributeSet();
+
+	if (!ASC || !AttributeSet)
+	{
+		return;
+	}
+
+	// Calculate total equipment weight
+	float TotalWeight = GetTotalEquipmentLoad();
+
+	// Update EquipLoad attribute
+	ASC->SetNumericAttributeBase(UHarmoniaAttributeSet::GetEquipLoadAttribute(), TotalWeight);
+
+	// Apply movement speed penalty based on equipment load ratio
+	ApplyEquipLoadPenalty();
+
+	UE_LOG(LogTemp, Verbose, TEXT("UpdateEquipLoad: Total weight = %.2f / %.2f (%.1f%%)"),
+		TotalWeight, AttributeSet->GetMaxEquipLoad(),
+		(TotalWeight / FMath::Max(1.f, AttributeSet->GetMaxEquipLoad())) * 100.f);
+}
+
+void UHarmoniaEquipmentComponent::ApplyEquipLoadPenalty()
+{
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	UHarmoniaAttributeSet* AttributeSet = GetAttributeSet();
+
+	if (!ASC || !AttributeSet)
+	{
+		return;
+	}
+
+	float EquipLoad = AttributeSet->GetEquipLoad();
+	float MaxEquipLoad = AttributeSet->GetMaxEquipLoad();
+
+	if (MaxEquipLoad <= 0.f)
+	{
+		return;
+	}
+
+	// Calculate equipment load ratio (0.0 - 1.0+)
+	float LoadRatio = EquipLoad / MaxEquipLoad;
+
+	// Calculate movement speed penalty based on load ratio
+	// Light Load (0-30%): No penalty
+	// Medium Load (30-70%): -10% speed
+	// Heavy Load (70-100%): -20% speed
+	// Overload (100%+): -40% speed
+	float SpeedPenalty = 0.f;
+
+	if (LoadRatio <= 0.3f)
+	{
+		// Light load - no penalty
+		SpeedPenalty = 0.f;
+	}
+	else if (LoadRatio <= 0.7f)
+	{
+		// Medium load - 10% penalty
+		SpeedPenalty = -0.1f;
+	}
+	else if (LoadRatio <= 1.0f)
+	{
+		// Heavy load - 20% penalty
+		SpeedPenalty = -0.2f;
+	}
+	else
+	{
+		// Overload - 40% penalty
+		SpeedPenalty = -0.4f;
+	}
+
+	// Apply penalty as a gameplay effect
+	// Note: This creates a simple additive modifier
+	// In a production system, you might want to use a proper GameplayEffect class
+	if (FMath::Abs(SpeedPenalty) > KINDA_SMALL_NUMBER)
+	{
+		// Create a dynamic GameplayEffect for movement speed penalty
+		UGameplayEffect* GameplayEffect = NewObject<UGameplayEffect>(GetTransientPackage(), FName(TEXT("EquipLoadPenaltyEffect")));
+		GameplayEffect->DurationPolicy = EGameplayEffectDurationType::Infinite;
+
+		// Add modifier for MovementSpeed
+		int32 Idx = GameplayEffect->Modifiers.Num();
+		GameplayEffect->Modifiers.SetNum(Idx + 1);
+		FGameplayModifierInfo& ModifierInfo = GameplayEffect->Modifiers[Idx];
+		ModifierInfo.ModifierMagnitude = FScalableFloat(SpeedPenalty);
+		ModifierInfo.ModifierOp = EGameplayModOp::Additive;
+		ModifierInfo.Attribute = UHarmoniaAttributeSet::GetMovementSpeedAttribute();
+
+		// Remove previous penalty effect if it exists
+		// Tag the effect so we can remove it later
+		FGameplayTag EquipLoadPenaltyTag = FGameplayTag::RequestGameplayTag(FName("Effect.EquipLoadPenalty"));
+		FInheritedTagContainer TagContainer;
+		TagContainer.Added.AddTag(EquipLoadPenaltyTag);
+		GameplayEffect->InheritableOwnedTagsContainer = TagContainer;
+
+		// Remove previous penalty
+		ASC->RemoveActiveGameplayEffectBySourceEffect(GameplayEffect->GetClass(), ASC);
+
+		// Apply new penalty
+		FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+		EffectContext.AddSourceObject(this);
+
+		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(GameplayEffect->GetClass(), 1.0f, EffectContext);
+		if (SpecHandle.IsValid())
+		{
+			ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+			UE_LOG(LogTemp, Verbose, TEXT("ApplyEquipLoadPenalty: Applied %.1f%% movement speed penalty (Load: %.1f%%)"),
+				SpeedPenalty * 100.f, LoadRatio * 100.f);
+		}
+	}
+}
 
 FGameplayAttribute UHarmoniaEquipmentComponent::GetAttributeFromName(const FString& AttributeName) const
 {

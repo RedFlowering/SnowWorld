@@ -105,6 +105,19 @@ struct FEquipmentData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment")
 	int32 RequiredLevel = 1;
 
+	// Required stats to equip
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Requirements")
+	int32 RequiredStrength = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Requirements")
+	int32 RequiredDexterity = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Requirements")
+	int32 RequiredIntelligence = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Requirements")
+	int32 RequiredFaith = 0;
+
 	// Stat modifiers
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Stats")
 	TArray<FEquipmentStatModifier> StatModifiers;

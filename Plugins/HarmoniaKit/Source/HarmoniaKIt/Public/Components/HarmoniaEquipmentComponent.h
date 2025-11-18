@@ -168,6 +168,18 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Harmonia|Equipment")
 	UDataTable* GetEquipmentDataTable() const { return EquipmentDataTable; }
 
+	/**
+	 * Check if character can equip item (stat requirements)
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Harmonia|Equipment")
+	bool CanEquipItem(const FHarmoniaID& EquipmentId, FText& OutFailureReason) const;
+
+	/**
+	 * Get total equipment load (weight)
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Harmonia|Equipment")
+	float GetTotalEquipmentLoad() const;
+
 	// ============================================================================
 	// Delegates
 	// ============================================================================
@@ -244,6 +256,16 @@ protected:
 	 * Map attribute name to FGameplayAttribute
 	 */
 	FGameplayAttribute GetAttributeFromName(const FString& AttributeName) const;
+
+	/**
+	 * Update EquipLoad attribute based on total equipment weight
+	 */
+	void UpdateEquipLoad();
+
+	/**
+	 * Apply movement speed penalty based on EquipLoad ratio
+	 */
+	void ApplyEquipLoadPenalty();
 
 	/**
 	 * Replication callback

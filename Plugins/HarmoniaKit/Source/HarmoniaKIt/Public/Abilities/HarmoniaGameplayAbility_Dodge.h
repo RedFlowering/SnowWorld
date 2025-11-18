@@ -9,6 +9,17 @@
 class UHarmoniaMeleeCombatComponent;
 
 /**
+ * Dodge roll type based on equipment load
+ */
+UENUM(BlueprintType)
+enum class EDodgeRollType : uint8
+{
+	Light		UMETA(DisplayName = "Light Roll"),		// 0-30% load
+	Medium		UMETA(DisplayName = "Medium Roll"),		// 30-70% load
+	Heavy		UMETA(DisplayName = "Heavy Roll")		// 70%+ load
+};
+
+/**
  * Dodge Gameplay Ability
  * Roll/dash to avoid attacks
  *
@@ -16,6 +27,7 @@ class UHarmoniaMeleeCombatComponent;
  * - Direction-based movement
  * - I-frames (invincibility frames)
  * - Stamina consumption
+ * - Equipment load affects roll type (Light/Medium/Heavy)
  * - Can attack after dodge
  */
 UCLASS(BlueprintType)
@@ -56,25 +68,77 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Animation")
 	TObjectPtr<UAnimMontage> DodgeMontage;
 
-	/** Dodge distance */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge")
-	float DodgeDistance = 400.0f;
+	// ============================================================================
+	// Light Roll (0-30% Equipment Load)
+	// ============================================================================
 
-	/** Dodge duration */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge")
-	float DodgeDuration = 0.6f;
+	/** Light roll distance */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Light Roll")
+	float LightRollDistance = 500.0f;
 
-	/** I-frame start time (seconds into dodge) */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge")
-	float IFrameStartTime = 0.1f;
+	/** Light roll duration */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Light Roll")
+	float LightRollDuration = 0.5f;
 
-	/** I-frame duration (seconds) */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge")
-	float IFrameDuration = 0.3f;
+	/** Light roll I-frame start time */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Light Roll")
+	float LightRollIFrameStartTime = 0.1f;
 
-	/** Stamina cost */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge")
-	float DodgeStaminaCost = 20.0f;
+	/** Light roll I-frame duration */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Light Roll")
+	float LightRollIFrameDuration = 0.4f;
+
+	/** Light roll stamina cost */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Light Roll")
+	float LightRollStaminaCost = 15.0f;
+
+	// ============================================================================
+	// Medium Roll (30-70% Equipment Load)
+	// ============================================================================
+
+	/** Medium roll distance */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Medium Roll")
+	float MediumRollDistance = 400.0f;
+
+	/** Medium roll duration */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Medium Roll")
+	float MediumRollDuration = 0.6f;
+
+	/** Medium roll I-frame start time */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Medium Roll")
+	float MediumRollIFrameStartTime = 0.1f;
+
+	/** Medium roll I-frame duration */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Medium Roll")
+	float MediumRollIFrameDuration = 0.3f;
+
+	/** Medium roll stamina cost */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Medium Roll")
+	float MediumRollStaminaCost = 20.0f;
+
+	// ============================================================================
+	// Heavy Roll (70%+ Equipment Load)
+	// ============================================================================
+
+	/** Heavy roll distance */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Heavy Roll")
+	float HeavyRollDistance = 300.0f;
+
+	/** Heavy roll duration */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Heavy Roll")
+	float HeavyRollDuration = 0.8f;
+
+	/** Heavy roll I-frame start time */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Heavy Roll")
+	float HeavyRollIFrameStartTime = 0.15f;
+
+	/** Heavy roll I-frame duration */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Heavy Roll")
+	float HeavyRollIFrameDuration = 0.2f;
+
+	/** Heavy roll stamina cost */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Heavy Roll")
+	float HeavyRollStaminaCost = 30.0f;
 
 	/** Cached melee combat component */
 	UPROPERTY()
@@ -82,6 +146,12 @@ protected:
 
 private:
 	UHarmoniaMeleeCombatComponent* GetMeleeCombatComponent() const;
+
+	/** Determine dodge roll type based on equipment load */
+	EDodgeRollType DetermineRollType() const;
+
+	/** Get dodge parameters for current roll type */
+	void GetDodgeParameters(float& OutDistance, float& OutDuration, float& OutIFrameStart, float& OutIFrameDuration, float& OutStaminaCost) const;
 
 	/** Start i-frames */
 	void StartIFrames();
@@ -91,4 +161,11 @@ private:
 
 	FTimerHandle IFrameStartTimerHandle;
 	FTimerHandle IFrameEndTimerHandle;
+
+	/** Current dodge parameters (set during activation) */
+	float CurrentDodgeDistance;
+	float CurrentDodgeDuration;
+	float CurrentIFrameStartTime;
+	float CurrentIFrameDuration;
+	float CurrentStaminaCost;
 };
