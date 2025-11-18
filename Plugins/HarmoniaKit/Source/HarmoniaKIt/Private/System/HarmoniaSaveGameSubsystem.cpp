@@ -2,6 +2,7 @@
 
 #include "System/HarmoniaSaveGameSubsystem.h"
 #include "System/HarmoniaSaveGame.h"
+#include "System/HarmoniaCheckpointSubsystem.h"
 #include "Player/LyraPlayerController.h"
 #include "Player/LyraPlayerState.h"
 #include "Character/LyraCharacter.h"
@@ -366,6 +367,16 @@ void UHarmoniaSaveGameSubsystem::SavePlayerData(APlayerController* PlayerControl
 	// Note: StatTags are saved in the SaveGame structure directly
 	// PlayerData.StatTags is populated during the save process
 
+	// 마지막 체크포인트 저장
+	UGameInstance* GameInstance = GetGameInstance();
+	if (GameInstance)
+	{
+		if (UHarmoniaCheckpointSubsystem* CheckpointSubsystem = GameInstance->GetSubsystem<UHarmoniaCheckpointSubsystem>())
+		{
+			PlayerData.LastCheckpointID = CheckpointSubsystem->GetPlayerLastCheckpoint(PlayerController);
+		}
+	}
+
 	// 저장 시간
 	PlayerData.LastSaveTime = FDateTime::Now();
 
@@ -416,6 +427,16 @@ void UHarmoniaSaveGameSubsystem::LoadPlayerData(APlayerController* PlayerControl
 	for (const FGameplayTag& Tag : PlayerData.StatTags)
 	{
 		LyraPS->AddStatTagStack(Tag, 1);
+	}
+
+	// 마지막 체크포인트 로드
+	UGameInstance* GameInstance = GetGameInstance();
+	if (GameInstance && !PlayerData.LastCheckpointID.IsNone())
+	{
+		if (UHarmoniaCheckpointSubsystem* CheckpointSubsystem = GameInstance->GetSubsystem<UHarmoniaCheckpointSubsystem>())
+		{
+			CheckpointSubsystem->SetPlayerLastCheckpoint(PlayerController, PlayerData.LastCheckpointID);
+		}
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("LoadPlayerData: Successfully loaded data for %s"), *PlayerData.PlayerName);
@@ -514,6 +535,17 @@ void UHarmoniaSaveGameSubsystem::SaveWorldData(UHarmoniaSaveGame* SaveGameObject
 	//     // Save all manually placed world objects (trees, rocks, etc.)
 	//     // WorldGenSubsystem->SaveManualWorldObjects(WorldData.ManualObjectLocations, ...);
 	// }
+
+	// ===== 체크포인트 데이터 저장 =====
+	UGameInstance* GameInstance = GetGameInstance();
+	if (GameInstance)
+	{
+		if (UHarmoniaCheckpointSubsystem* CheckpointSubsystem = GameInstance->GetSubsystem<UHarmoniaCheckpointSubsystem>())
+		{
+			WorldData.CheckpointStates = CheckpointSubsystem->GetCheckpointDataForSave();
+			UE_LOG(LogTemp, Log, TEXT("SaveWorldData: Saved %d checkpoint states"), WorldData.CheckpointStates.Num());
+		}
+	}
 
 	UE_LOG(LogTemp, Log, TEXT("SaveWorldData: World data saved (Seed: %d, Season: %d, Weather: %d, Hour: %.1f, Day: %d)"),
 		WorldData.WorldSeed,
@@ -617,6 +649,17 @@ void UHarmoniaSaveGameSubsystem::LoadWorldData(const UHarmoniaSaveGame* SaveGame
 	//     // Apply biome modifications
 	//     WorldGenSubsystem->ApplyBiomeModifications(WorldData.ModifiedBiomeIndices, WorldData.ModifiedBiomeTypes);
 	// }
+
+	// ===== 체크포인트 데이터 로드 =====
+	UGameInstance* GameInstance = GetGameInstance();
+	if (GameInstance)
+	{
+		if (UHarmoniaCheckpointSubsystem* CheckpointSubsystem = GameInstance->GetSubsystem<UHarmoniaCheckpointSubsystem>())
+		{
+			CheckpointSubsystem->ApplyCheckpointDataFromLoad(WorldData.CheckpointStates);
+			UE_LOG(LogTemp, Log, TEXT("LoadWorldData: Loaded %d checkpoint states"), WorldData.CheckpointStates.Num());
+		}
+	}
 
 	UE_LOG(LogTemp, Log, TEXT("LoadWorldData: World data loaded (Seed: %d, Season: %d, Weather: %d, Hour: %.1f, Day: %d, Buildings: %d)"),
 		WorldData.WorldSeed,

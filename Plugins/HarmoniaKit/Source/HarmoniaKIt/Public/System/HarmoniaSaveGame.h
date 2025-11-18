@@ -6,6 +6,7 @@
 #include "GameFramework/SaveGame.h"
 #include "GameplayTagContainer.h"
 #include "Definitions/HarmoniaEquipmentSystemDefinitions.h"
+#include "Definitions/HarmoniaCheckpointSystemDefinitions.h"
 #include "HarmoniaSaveGame.generated.h"
 
 class ULyraInventoryItemInstance;
@@ -142,6 +143,10 @@ struct FHarmoniaPlayerSaveData
 	/** 마지막 저장 시간 */
 	UPROPERTY(SaveGame)
 	FDateTime LastSaveTime;
+
+	/** 마지막으로 공명한 체크포인트 ID */
+	UPROPERTY(SaveGame)
+	FName LastCheckpointID;
 };
 
 /** 리소스 노드 상태 저장 데이터 */
@@ -331,6 +336,12 @@ struct FHarmoniaWorldSaveData
 	/** [DEPRECATED] 날씨 상태 (CurrentWeatherType으로 대체됨) */
 	UPROPERTY(SaveGame)
 	FString WeatherState;
+
+	// ===== 체크포인트 시스템 =====
+
+	/** 체크포인트 데이터 목록 */
+	UPROPERTY(SaveGame)
+	TArray<FHarmoniaCheckpointData> CheckpointStates;
 };
 
 /**
