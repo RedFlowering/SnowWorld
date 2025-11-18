@@ -94,7 +94,17 @@ enum class EHarmoniaMeleeWeaponType : uint8
 	Shield UMETA(DisplayName = "Shield"),					// Defensive
 	Fist UMETA(DisplayName = "Fist"),						// Unarmed
 	Whip UMETA(DisplayName = "Whip"),						// Unique range
-	Scythe UMETA(DisplayName = "Scythe")					// Wide sweeping
+	Scythe UMETA(DisplayName = "Scythe"),					// Wide sweeping
+	// Extended weapon types
+	Halberd UMETA(DisplayName = "Halberd"),					// Spear + Axe hybrid
+	Rapier UMETA(DisplayName = "Rapier"),					// Thrust-focused
+	Mace UMETA(DisplayName = "Mace"),						// Blunt weapon
+	DualBlades UMETA(DisplayName = "Dual Blades"),			// Twin weapons
+	GreatAxe UMETA(DisplayName = "Great Axe"),				// Two-handed axe
+	Flail UMETA(DisplayName = "Flail"),						// Chained weapon
+	Crossbow UMETA(DisplayName = "Crossbow"),				// Ranged/Melee hybrid
+	Staff UMETA(DisplayName = "Staff"),						// Magic weapon
+	Custom UMETA(DisplayName = "Custom")					// User-defined
 };
 
 /**
