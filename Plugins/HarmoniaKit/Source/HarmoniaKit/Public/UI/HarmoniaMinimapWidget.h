@@ -31,15 +31,15 @@ protected:
 public:
     // Minimap image widget (bind in blueprint)
     UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
-    TObjectPtr<UImage> MinimapImage;
+    TObjectPtr<UImage> MinimapImage = nullptr;
 
     // Fog of war overlay (bind in blueprint)
     UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
-    TObjectPtr<UImage> FogOverlay;
+    TObjectPtr<UImage> FogOverlay = nullptr;
 
     // Canvas for markers (bind in blueprint)
     UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
-    TObjectPtr<UCanvasPanel> MarkerCanvas;
+    TObjectPtr<UCanvasPanel> MarkerCanvas = nullptr;
 
     // Player marker widget class
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Minimap|Markers")
@@ -88,19 +88,19 @@ public:
 protected:
     // Map component reference
     UPROPERTY(BlueprintReadOnly, Category = "Minimap")
-    TObjectPtr<UHarmoniaMapComponent> MapComponent;
+    TObjectPtr<UHarmoniaMapComponent> MapComponent = nullptr;
 
     // Dynamic material instance for minimap
     UPROPERTY()
-    TObjectPtr<UMaterialInstanceDynamic> MinimapMaterialInstance;
+    TObjectPtr<UMaterialInstanceDynamic> MinimapMaterialInstance = nullptr;
 
     // Dynamic material instance for fog of war
     UPROPERTY()
-    TObjectPtr<UMaterialInstanceDynamic> FogMaterialInstance;
+    TObjectPtr<UMaterialInstanceDynamic> FogMaterialInstance = nullptr;
 
     // Player marker widget
     UPROPERTY()
-    TObjectPtr<UHarmoniaMapMarkerWidget> PlayerMarker;
+    TObjectPtr<UHarmoniaMapMarkerWidget> PlayerMarker = nullptr;
 
     // Active markers
     UPROPERTY()

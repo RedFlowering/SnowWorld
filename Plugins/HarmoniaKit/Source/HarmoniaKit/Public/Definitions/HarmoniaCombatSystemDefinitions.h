@@ -430,16 +430,16 @@ struct HARMONIAKIT_API FHitReactionData : public FTableRowBase
 
 	// Animation montages for different hit directions
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> HitMontage_Front;
+	TObjectPtr<UAnimMontage> HitMontage_Front = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> HitMontage_Back;
+	TObjectPtr<UAnimMontage> HitMontage_Back = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> HitMontage_Left;
+	TObjectPtr<UAnimMontage> HitMontage_Left = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> HitMontage_Right;
+	TObjectPtr<UAnimMontage> HitMontage_Right = nullptr;
 
 	// Duration of hit stun (player cannot act)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Reaction")
@@ -567,7 +567,7 @@ struct HARMONIAKIT_API FHarmoniaComboAttackStep
 
 	// Animation montage for this step
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TObjectPtr<UAnimMontage> AttackMontage;
+	TObjectPtr<UAnimMontage> AttackMontage = nullptr;
 
 	// Montage section name to play
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
@@ -667,27 +667,27 @@ struct HARMONIAKIT_API FHarmoniaDefenseConfig
 
 	// Parry success animation
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TObjectPtr<UAnimMontage> ParrySuccessMontage;
+	TObjectPtr<UAnimMontage> ParrySuccessMontage = nullptr;
 
 	// Parry fail animation
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TObjectPtr<UAnimMontage> ParryFailMontage;
+	TObjectPtr<UAnimMontage> ParryFailMontage = nullptr;
 
 	// Block start animation
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TObjectPtr<UAnimMontage> BlockStartMontage;
+	TObjectPtr<UAnimMontage> BlockStartMontage = nullptr;
 
 	// Block loop animation
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TObjectPtr<UAnimMontage> BlockLoopMontage;
+	TObjectPtr<UAnimMontage> BlockLoopMontage = nullptr;
 
 	// Block end animation
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TObjectPtr<UAnimMontage> BlockEndMontage;
+	TObjectPtr<UAnimMontage> BlockEndMontage = nullptr;
 
 	// Block hit reaction animation
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TObjectPtr<UAnimMontage> BlockHitMontage;
+	TObjectPtr<UAnimMontage> BlockHitMontage = nullptr;
 };
 
 /**
@@ -725,7 +725,7 @@ struct HARMONIAKIT_API FHarmoniaDodgeConfig
 
 	// Dodge animation montage
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TObjectPtr<UAnimMontage> DodgeMontage;
+	TObjectPtr<UAnimMontage> DodgeMontage = nullptr;
 
 	// Can attack immediately after dodge?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodge")
@@ -759,7 +759,7 @@ struct HARMONIAKIT_API FHarmoniaRiposteConfig
 
 	// Riposte animation montage
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Riposte|Animation")
-	TObjectPtr<UAnimMontage> RiposteMontage;
+	TObjectPtr<UAnimMontage> RiposteMontage = nullptr;
 
 	// Whether riposte is guaranteed critical
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Riposte")
@@ -771,7 +771,7 @@ struct HARMONIAKIT_API FHarmoniaRiposteConfig
 
 	// Target stun animation montage
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Riposte|Animation", meta = (EditCondition = "bPlayTargetStunAnimation"))
-	TObjectPtr<UAnimMontage> TargetStunMontage;
+	TObjectPtr<UAnimMontage> TargetStunMontage = nullptr;
 };
 
 /**
@@ -806,7 +806,7 @@ struct HARMONIAKIT_API FHarmoniaBackstabConfig
 
 	// Backstab animation montage
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Backstab|Animation", meta = (EditCondition = "bEnableBackstab"))
-	TObjectPtr<UAnimMontage> BackstabMontage;
+	TObjectPtr<UAnimMontage> BackstabMontage = nullptr;
 
 	// Whether to play special animation on target
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Backstab|Animation", meta = (EditCondition = "bEnableBackstab"))
@@ -814,5 +814,5 @@ struct HARMONIAKIT_API FHarmoniaBackstabConfig
 
 	// Target backstab animation montage
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Backstab|Animation", meta = (EditCondition = "bEnableBackstab && bPlayTargetAnimation"))
-	TObjectPtr<UAnimMontage> TargetBackstabMontage;
+	TObjectPtr<UAnimMontage> TargetBackstabMontage = nullptr;
 };
