@@ -312,7 +312,8 @@ void AHarmoniaBossMonster::ApplyPhaseEffects(const FHarmoniaBossPhase& PhaseData
 	{
 		if (AbilityClass)
 		{
-			FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(AbilityClass);
+			TSubclassOf<UGameplayAbility> GameplayAbilityClass = AbilityClass;
+			FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(GameplayAbilityClass);
 			if (Spec)
 			{
 				AbilitySystemComponent->ClearAbility(Spec->Handle);
@@ -325,7 +326,8 @@ void AHarmoniaBossMonster::ApplyPhaseEffects(const FHarmoniaBossPhase& PhaseData
 	{
 		if (AbilityClass)
 		{
-			FGameplayAbilitySpec AbilitySpec(AbilityClass, MonsterLevel, INDEX_NONE, this);
+			TSubclassOf<UGameplayAbility> GameplayAbilityClass = AbilityClass;
+			FGameplayAbilitySpec AbilitySpec(GameplayAbilityClass, MonsterLevel, INDEX_NONE, this);
 			FGameplayAbilitySpecHandle Handle = AbilitySystemComponent->GiveAbility(AbilitySpec);
 			GrantedAbilityHandles.Add(Handle);
 		}

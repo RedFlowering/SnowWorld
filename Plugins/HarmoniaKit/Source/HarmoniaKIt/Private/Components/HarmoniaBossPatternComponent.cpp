@@ -322,12 +322,6 @@ void UHarmoniaBossPatternComponent::CompletePatternExecution()
 	CurrentAbilityIndex = 0;
 	CurrentRepeatCount = 0;
 
-	// Notify boss owner
-	if (BossOwner)
-	{
-		BossOwner->OnPatternEnd(CompletedPattern);
-	}
-
 	// Broadcast pattern end
 	OnPatternExecutionEnd.Broadcast(CompletedPattern);
 }
