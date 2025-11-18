@@ -3,6 +3,7 @@
 #include "Components/HarmoniaBuildingComponent.h"
 #include "Actors/HarmoniaBuildingPreviewActor.h"
 #include "Managers/HarmoniaBuildingInstanceManager.h"
+#include "Managers/HarmoniaTerrainOwnershipManager.h"
 #include "Components/HarmoniaInventoryComponent.h"
 #include "HarmoniaLoadManager.h"
 #include "GameFramework/PlayerController.h"
@@ -653,22 +654,33 @@ bool UHarmoniaBuildingComponent::ServerPlacePart_Validate(const FVector& Locatio
 		return false;
 	}
 
-	// [SECURITY ENHANCEMENT] TODO: Implement terrain ownership and building permission system
-	// Currently, players can build anywhere without restrictions. This should be validated.
-	// Implementation options:
-	// 1. Implement terrain ownership zones (e.g., grid-based or radius-based)
-	// 2. Check if player owns or has permission to build at Location
-	// 3. Implement clan/guild territory system with building permissions
-	// 4. Add protected zones (cities, dungeons) where building is restricted
-	// Example:
-	// if (UTerrainOwnershipManager* Manager = GetWorld()->GetSubsystem<UTerrainOwnershipManager>())
-	// {
-	//     if (!Manager->HasBuildingPermission(GetOwner(), Location))
-	//     {
-	//         UE_LOG(LogBuildingSystem, Warning, TEXT("[ANTI-CHEAT] No building permission at location"));
-	//         return false;
-	//     }
-	// }
+	// [SECURITY] Validate terrain ownership and building permissions
+	// Check if player has permission to build at this location
+	if (UWorld* World = GetWorld())
+	{
+		if (UHarmoniaTerrainOwnershipManager* OwnershipManager = World->GetSubsystem<UHarmoniaTerrainOwnershipManager>())
+		{
+			if (!OwnershipManager->HasBuildingPermission(GetOwner(), Location))
+			{
+				UE_LOG(LogBuildingSystem, Warning, TEXT("[ANTI-CHEAT] ServerPlacePart: No building permission at location %s"),
+					*Location.ToString());
+				return false;
+			}
+
+			// Log if in protected zone (for debugging)
+			if (OwnershipManager->IsProtectedZone(Location))
+			{
+				UE_LOG(LogBuildingSystem, Warning, TEXT("[ANTI-CHEAT] ServerPlacePart: Attempted to build in protected zone"));
+				return false;
+			}
+		}
+		else
+		{
+			// TerrainOwnershipManager not found - allow building by default for backwards compatibility
+			// In production, you might want to disallow building if the manager is not initialized
+			UE_LOG(LogBuildingSystem, Warning, TEXT("[ANTI-CHEAT] ServerPlacePart: TerrainOwnershipManager not found, allowing build for compatibility"));
+		}
+	}
 
 	return true;
 }
