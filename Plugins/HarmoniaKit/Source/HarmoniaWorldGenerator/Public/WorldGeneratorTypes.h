@@ -6,49 +6,6 @@
 #include "UObject/NoExportTypes.h"
 #include "WorldGeneratorTypes.generated.h"
 
-/**
- * Delegate for async world generation progress
- */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWorldGenerationProgress, float, Progress);
-
-/**
- * Delegate for async world generation completion
- */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnWorldGenerationComplete,
-	const TArray<int32>&, HeightData,
-	const TArray<FWorldObjectData>&, Objects,
-	bool, bSuccess);
-
-/**
- * Delegate for season change
- */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSeasonChanged,
-	ESeasonType, NewSeason,
-	float, SeasonProgress);
-
-/**
- * Delegate for weather change
- */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnWeatherChanged,
-	EWeatherType, NewWeather,
-	EWeatherType, PreviousWeather,
-	float, TransitionDuration);
-
-/**
- * Delegate for time of day change
- */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnTimeOfDayChanged,
-	ETimeOfDay, NewTimeOfDay,
-	float, CurrentHour);
-
-/**
- * Delegate for day/night cycle tick
- */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnDayNightCycleTick,
-	float, CurrentHour,
-	int32, CurrentDay,
-	float, SunAngle);
-
 UENUM(BlueprintType)
 enum class EWorldObjectType : uint8
 {
@@ -1369,3 +1326,50 @@ struct FChunkCacheSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cache", meta = (ClampMin = "0", ClampMax = "9"))
 	int32 CompressionLevel = 5;
 };
+
+// ========================================
+// Delegates
+// ========================================
+
+/**
+ * Delegate for async world generation progress
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWorldGenerationProgress, float, Progress);
+
+/**
+ * Delegate for async world generation completion
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnWorldGenerationComplete,
+	const TArray<int32>&, HeightData,
+	const TArray<FWorldObjectData>&, Objects,
+	bool, bSuccess);
+
+/**
+ * Delegate for season change
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSeasonChanged,
+	ESeasonType, NewSeason,
+	float, SeasonProgress);
+
+/**
+ * Delegate for weather change
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnWeatherChanged,
+	EWeatherType, NewWeather,
+	EWeatherType, PreviousWeather,
+	float, TransitionDuration);
+
+/**
+ * Delegate for time of day change
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnTimeOfDayChanged,
+	ETimeOfDay, NewTimeOfDay,
+	float, CurrentHour);
+
+/**
+ * Delegate for day/night cycle tick
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnDayNightCycleTick,
+	float, CurrentHour,
+	int32, CurrentDay,
+	float, SunAngle);
