@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Tickable.h"
 #include "WorldGeneratorTypes.h"
 #include "HarmoniaWorldGeneratorSubsystem.generated.h"
 
@@ -14,7 +15,7 @@
  * - Async generation support for large worlds
  */
 UCLASS()
-class HARMONIAWORLDGENERATOR_API UHarmoniaWorldGeneratorSubsystem : public UGameInstanceSubsystem
+class HARMONIAWORLDGENERATOR_API UHarmoniaWorldGeneratorSubsystem : public UGameInstanceSubsystem, public FTickableGameObject
 {
     GENERATED_BODY()
 
@@ -746,10 +747,11 @@ private:
     // ========================================
 
     /**
-     * Tick environment system (called by USubsystem::Tick)
+     * Tick environment system (FTickableGameObject interface)
      */
     virtual void Tick(float DeltaTime) override;
     virtual TStatId GetStatId() const override;
+    virtual bool IsTickable() const override { return !IsTemplate(); }
 
     /**
      * Update day/night cycle

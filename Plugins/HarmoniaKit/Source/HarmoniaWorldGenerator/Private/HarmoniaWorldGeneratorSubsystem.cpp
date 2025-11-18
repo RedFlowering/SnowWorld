@@ -513,8 +513,7 @@ float UHarmoniaWorldGeneratorSubsystem::CalculateTemperature(
     const float TempNoise = PerlinNoiseHelper::GetSimpleNoise(
         X * Config.TemperatureNoiseSettings.Frequency * 0.01f,
         Y * Config.TemperatureNoiseSettings.Frequency * 0.01f,
-        Config.Seed + 1000,
-        Config.TemperatureNoiseSettings
+        Config.Seed + 1000
     );
 
     // Convert from [-1, 1] to [0, 1]
@@ -538,8 +537,7 @@ float UHarmoniaWorldGeneratorSubsystem::CalculateMoisture(
     const float MoistureNoise = PerlinNoiseHelper::GetSimpleNoise(
         X * Config.MoistureNoiseSettings.Frequency * 0.01f,
         Y * Config.MoistureNoiseSettings.Frequency * 0.01f,
-        Config.Seed + 2000,
-        Config.MoistureNoiseSettings
+        Config.Seed + 2000
     );
 
     // Convert from [-1, 1] to [0, 1]
@@ -878,7 +876,7 @@ void UHarmoniaWorldGeneratorSubsystem::GenerateLakes(
                 }
 
                 // Check if within circular radius
-                const float Distance = FMath::Sqrt(dx * dx + dy * dy);
+                const float Distance = FMath::Sqrt(static_cast<float>(dx * dx + dy * dy));
                 if (Distance > Radius)
                 {
                     continue;
@@ -1101,8 +1099,8 @@ void UHarmoniaWorldGeneratorSubsystem::SimulateDroplet(
         }
 
         // Calculate new height
-        const FVector2D NewGradient;
-        const float NewHeight = CalculateHeightAndGradient(HeightMap, NewPosX, NewPosY, MapSize, const_cast<FVector2D&>(NewGradient));
+        FVector2D NewGradient;
+        const float NewHeight = CalculateHeightAndGradient(HeightMap, NewPosX, NewPosY, MapSize, NewGradient);
         const float DeltaHeight = NewHeight - Height;
 
         // Calculate sediment capacity
@@ -1740,22 +1738,19 @@ float UHarmoniaWorldGeneratorSubsystem::Calculate3DCaveNoise(
         const float Noise1 = PerlinNoiseHelper::GetSimpleNoise(
             X * Frequency,
             Y * Frequency,
-            Config.Seed + Octave * 1000,
-            NoiseSettings
+            Config.Seed + Octave * 1000
         );
 
         const float Noise2 = PerlinNoiseHelper::GetSimpleNoise(
             Y * Frequency,
             Z * Frequency * 0.1f, // Scale Z differently
-            Config.Seed + Octave * 1000 + 500,
-            NoiseSettings
+            Config.Seed + Octave * 1000 + 500
         );
 
         const float Noise3 = PerlinNoiseHelper::GetSimpleNoise(
             X * Frequency,
             Z * Frequency * 0.1f,
-            Config.Seed + Octave * 1000 + 250,
-            NoiseSettings
+            Config.Seed + Octave * 1000 + 250
         );
 
         // Combine noises for 3D effect
@@ -1850,7 +1845,7 @@ void UHarmoniaWorldGeneratorSubsystem::GeneratePOIs(
         {
             const float DistanceFromCenter = FVector::Dist(POILocation, WorldCenter);
             const float MaxDistance = FMath::Sqrt(
-                Config.SizeX * Config.SizeX + Config.SizeY * Config.SizeY
+                static_cast<float>(Config.SizeX * Config.SizeX + Config.SizeY * Config.SizeY)
             ) * 50.f;
             Difficulty = FMath::CeilToInt((DistanceFromCenter / MaxDistance) * 10.0f);
             Difficulty = FMath::Clamp(Difficulty, 1, 10);
