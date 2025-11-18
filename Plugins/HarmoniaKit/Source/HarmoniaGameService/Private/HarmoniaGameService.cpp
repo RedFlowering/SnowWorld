@@ -1004,7 +1004,7 @@ void UHarmoniaGameService::UploadStatistics()
 	}
 
 	// Write stats (UE 5.7 Stats API doesn't use completion delegates the same way)
-	Stats->UpdateStats(UserId.ToSharedRef(), StatsToWrite);
+	Stats->UpdateStats(UserId.ToSharedRef(), StatsToWrite, FOnlineStatsUpdateStatsComplete());
 
 	UE_LOG(LogTemp, Log, TEXT("[HarmoniaGameService] Uploading statistics..."));
 
@@ -1063,10 +1063,9 @@ void UHarmoniaGameService::QueryStatistics()
 			FName StatName(*StatPair.Key);
 			int64 IntValue = 0;
 
-			if (StatPair.Value.GetValue(IntValue))
-			{
-				SetStat(StatName, IntValue);
-			}
+			// GetValue returns void in UE 5.7, so just call it directly
+			StatPair.Value.GetValue(IntValue);
+			SetStat(StatName, IntValue);
 		}
 
 		UE_LOG(LogTemp, Log, TEXT("[HarmoniaGameService] Statistics queried successfully"));
