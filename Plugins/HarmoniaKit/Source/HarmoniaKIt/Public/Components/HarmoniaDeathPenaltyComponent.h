@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Definitions/HarmoniaDeathPenaltyDefinitions.h"
+#include "GameplayEffectTypes.h"
 #include "HarmoniaDeathPenaltyComponent.generated.h"
 
 class AHarmoniaMemoryEchoActor;
