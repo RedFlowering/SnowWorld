@@ -7,33 +7,70 @@
 
 UHarmoniaAttributeSet::UHarmoniaAttributeSet()
 {
-	// Set default values
+	// Set default values for core attributes
 	Health = 100.0f;
 	MaxHealth = 100.0f;
 	Stamina = 100.0f;
 	MaxStamina = 100.0f;
+	StaminaRegenRate = 10.0f; // 10 stamina per second
+
+	// Primary stats (Soul-like RPG system) - start at 10 each
+	Vitality = 10.0f;
+	Endurance = 10.0f;
+	Strength = 10.0f;
+	Dexterity = 10.0f;
+	Intelligence = 10.0f;
+	Faith = 10.0f;
+	Luck = 10.0f;
+
+	// Combat stats
 	AttackPower = 10.0f;
 	Defense = 5.0f;
-	CriticalChance = 0.1f;
-	CriticalDamage = 2.0f;
+	CriticalChance = 0.1f;  // 10% base crit chance
+	CriticalDamage = 2.0f;  // 2x damage on crit
+	Poise = 50.0f;
+	MaxPoise = 50.0f;
+
+	// Movement & equipment
 	MovementSpeed = 1.0f;
 	AttackSpeed = 1.0f;
+	EquipLoad = 0.0f;
+	MaxEquipLoad = 100.0f;
 }
 
 void UHarmoniaAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	// Core attributes
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Stamina, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, MaxStamina, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, StaminaRegenRate, COND_None, REPNOTIFY_Always);
+
+	// Primary stats
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Vitality, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Endurance, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Strength, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Dexterity, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Intelligence, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Faith, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Luck, COND_None, REPNOTIFY_Always);
+
+	// Combat stats
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, AttackPower, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Defense, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, CriticalChance, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, CriticalDamage, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Poise, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, MaxPoise, COND_None, REPNOTIFY_Always);
+
+	// Movement & equipment
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, MovementSpeed, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, AttackSpeed, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, EquipLoad, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, MaxEquipLoad, COND_None, REPNOTIFY_Always);
 }
 
 bool UHarmoniaAttributeSet::PreGameplayEffectExecute(FGameplayEffectModCallbackData& Data)
@@ -43,11 +80,13 @@ bool UHarmoniaAttributeSet::PreGameplayEffectExecute(FGameplayEffectModCallbackD
 		return false;
 	}
 
-	// Store pre-change values for damage/healing calculation
+	// Store pre-change values for damage/healing/stamina calculation
 	HealthBeforeAttributeChange = GetHealth();
 	MaxHealthBeforeAttributeChange = GetMaxHealth();
 	StaminaBeforeAttributeChange = GetStamina();
 	MaxStaminaBeforeAttributeChange = GetMaxStamina();
+	PoiseBeforeAttributeChange = GetPoise();
+	MaxPoiseBeforeAttributeChange = GetMaxPoise();
 
 	return true;
 }
@@ -198,6 +237,40 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 
 		OnMaxStaminaChanged.Broadcast(Instigator, Causer, &Data.EffectSpec, 0.0f, MaxStaminaBeforeAttributeChange, NewMaxStamina);
 	}
+
+	// ============================================================================
+	// Handle Poise Changes
+	// ============================================================================
+	else if (Data.EvaluatedData.Attribute == GetPoiseAttribute())
+	{
+		const float NewPoise = FMath::Clamp(GetPoise(), 0.0f, GetMaxPoise());
+		SetPoise(NewPoise);
+
+		if (NewPoise <= 0.0f && PoiseBeforeAttributeChange > 0.0f)
+		{
+			bPoiseBroken = true;
+			OnPoiseBroken.Broadcast(Instigator, Causer, &Data.EffectSpec, 0.0f, PoiseBeforeAttributeChange, NewPoise);
+		}
+		else if (NewPoise > 0.0f)
+		{
+			bPoiseBroken = false;
+		}
+	}
+
+	// ============================================================================
+	// Handle Max Poise Changes
+	// ============================================================================
+	else if (Data.EvaluatedData.Attribute == GetMaxPoiseAttribute())
+	{
+		const float NewMaxPoise = FMath::Max(GetMaxPoise(), 1.0f);
+		SetMaxPoise(NewMaxPoise);
+
+		// Adjust current poise if it exceeds new max
+		if (GetPoise() > NewMaxPoise)
+		{
+			SetPoise(NewMaxPoise);
+		}
+	}
 }
 
 void UHarmoniaAttributeSet::PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue) const
@@ -228,6 +301,11 @@ void UHarmoniaAttributeSet::PostAttributeChange(const FGameplayAttribute& Attrib
 	{
 		SetStamina(FMath::Clamp(GetStamina(), 0.0f, GetMaxStamina()));
 	}
+	// Clamp poise to max poise
+	else if (Attribute == GetPoiseAttribute())
+	{
+		SetPoise(FMath::Clamp(GetPoise(), 0.0f, GetMaxPoise()));
+	}
 	// Ensure max health is always at least 1
 	else if (Attribute == GetMaxHealthAttribute())
 	{
@@ -238,10 +316,16 @@ void UHarmoniaAttributeSet::PostAttributeChange(const FGameplayAttribute& Attrib
 	{
 		SetMaxStamina(FMath::Max(GetMaxStamina(), 1.0f));
 	}
+	// Ensure max poise is always at least 1
+	else if (Attribute == GetMaxPoiseAttribute())
+	{
+		SetMaxPoise(FMath::Max(GetMaxPoise(), 1.0f));
+	}
 }
 
 void UHarmoniaAttributeSet::ClampAttribute(const FGameplayAttribute& Attribute, float& NewValue) const
 {
+	// Core attributes
 	if (Attribute == GetHealthAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxHealth());
@@ -258,6 +342,21 @@ void UHarmoniaAttributeSet::ClampAttribute(const FGameplayAttribute& Attribute, 
 	{
 		NewValue = FMath::Max(NewValue, 1.0f);
 	}
+	else if (Attribute == GetStaminaRegenRateAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 0.0f);
+	}
+
+	// Primary stats - minimum 1, maximum 99 (typical soul-like cap)
+	else if (Attribute == GetVitalityAttribute() || Attribute == GetEnduranceAttribute() ||
+	         Attribute == GetStrengthAttribute() || Attribute == GetDexterityAttribute() ||
+	         Attribute == GetIntelligenceAttribute() || Attribute == GetFaithAttribute() ||
+	         Attribute == GetLuckAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 1.0f, 99.0f);
+	}
+
+	// Combat stats
 	else if (Attribute == GetCriticalChanceAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.0f, 1.0f);
@@ -274,6 +373,16 @@ void UHarmoniaAttributeSet::ClampAttribute(const FGameplayAttribute& Attribute, 
 	{
 		NewValue = FMath::Max(NewValue, 0.0f);
 	}
+	else if (Attribute == GetPoiseAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxPoise());
+	}
+	else if (Attribute == GetMaxPoiseAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 1.0f);
+	}
+
+	// Movement & equipment
 	else if (Attribute == GetMovementSpeedAttribute())
 	{
 		NewValue = FMath::Max(NewValue, 0.1f);
@@ -281,6 +390,14 @@ void UHarmoniaAttributeSet::ClampAttribute(const FGameplayAttribute& Attribute, 
 	else if (Attribute == GetAttackSpeedAttribute())
 	{
 		NewValue = FMath::Max(NewValue, 0.1f);
+	}
+	else if (Attribute == GetEquipLoadAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxEquipLoad());
+	}
+	else if (Attribute == GetMaxEquipLoadAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 1.0f);
 	}
 }
 
@@ -341,4 +458,64 @@ void UHarmoniaAttributeSet::OnRep_MovementSpeed(const FGameplayAttributeData& Ol
 void UHarmoniaAttributeSet::OnRep_AttackSpeed(const FGameplayAttributeData& OldValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, AttackSpeed, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_StaminaRegenRate(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, StaminaRegenRate, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_Vitality(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Vitality, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_Endurance(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Endurance, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_Strength(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Strength, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_Dexterity(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Dexterity, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_Intelligence(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Intelligence, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_Faith(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Faith, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_Luck(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Luck, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_Poise(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Poise, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_MaxPoise(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxPoise, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_EquipLoad(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, EquipLoad, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_MaxEquipLoad(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxEquipLoad, OldValue);
 }
