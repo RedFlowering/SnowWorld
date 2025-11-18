@@ -74,6 +74,37 @@ namespace HarmoniaGameplayTags
 	// Event Tags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_HitReaction, "GameplayEvent.HitReaction", "Trigger hit reaction");
 
+	// ============================================================
+	// Lock-On System Tags
+	// ============================================================
+
+	// Input Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_LockOn, "InputTag.LockOn", "Lock-on toggle input");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_SwitchTargetLeft, "InputTag.SwitchTargetLeft", "Switch lock-on target left");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_SwitchTargetRight, "InputTag.SwitchTargetRight", "Switch lock-on target right");
+
+	// State Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_LockOn_Active, "State.LockOn.Active", "Lock-on is currently active");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_LockOn_HasTarget, "State.LockOn.HasTarget", "Lock-on has a valid target");
+
+	// Character Type Tags (for target filtering)
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_Type_Enemy, "Character.Type.Enemy", "Character is an enemy");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_Type_Ally, "Character.Type.Ally", "Character is an ally");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_Type_Neutral, "Character.Type.Neutral", "Character is neutral");
+
+	// ============================================================
+	// Dodge System Tags (Already implemented)
+	// ============================================================
+
+	// Input Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Dodge, "InputTag.Dodge", "Dodge input");
+
+	// State Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Dodging, "State.Dodging", "Character is dodging");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_State_Dodging, "Character.State.Dodging", "Character state dodging");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_State_Attacking, "Character.State.Attacking", "Character state attacking");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_State_Blocking, "Character.State.Blocking", "Character state blocking");
+
 	FGameplayTag FindTagByString(const FString& TagString, bool bMatchPartialString)
 	{
 		const UGameplayTagsManager& Manager = UGameplayTagsManager::Get();
