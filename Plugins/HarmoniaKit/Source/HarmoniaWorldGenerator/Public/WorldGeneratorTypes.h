@@ -19,6 +19,36 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnWorldGenerationComplete,
 	const TArray<FWorldObjectData>&, Objects,
 	bool, bSuccess);
 
+/**
+ * Delegate for season change
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSeasonChanged,
+	ESeasonType, NewSeason,
+	float, SeasonProgress);
+
+/**
+ * Delegate for weather change
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnWeatherChanged,
+	EWeatherType, NewWeather,
+	EWeatherType, PreviousWeather,
+	float, TransitionDuration);
+
+/**
+ * Delegate for time of day change
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnTimeOfDayChanged,
+	ETimeOfDay, NewTimeOfDay,
+	float, CurrentHour);
+
+/**
+ * Delegate for day/night cycle tick
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnDayNightCycleTick,
+	float, CurrentHour,
+	int32, CurrentDay,
+	float, SunAngle);
+
 UENUM(BlueprintType)
 enum class EWorldObjectType : uint8
 {
@@ -60,6 +90,50 @@ enum class EResourceType : uint8
 	Coal         UMETA(DisplayName = "Coal"),
 	Gems         UMETA(DisplayName = "Gems"),
 	CrystalOre   UMETA(DisplayName = "Crystal Ore"),
+};
+
+/**
+ * Season Types
+ */
+UENUM(BlueprintType)
+enum class ESeasonType : uint8
+{
+	Spring       UMETA(DisplayName = "Spring"),
+	Summer       UMETA(DisplayName = "Summer"),
+	Fall         UMETA(DisplayName = "Fall (Autumn)"),
+	Winter       UMETA(DisplayName = "Winter"),
+};
+
+/**
+ * Weather Types
+ */
+UENUM(BlueprintType)
+enum class EWeatherType : uint8
+{
+	Clear        UMETA(DisplayName = "Clear Sky"),
+	Cloudy       UMETA(DisplayName = "Cloudy"),
+	Rain         UMETA(DisplayName = "Rain"),
+	HeavyRain    UMETA(DisplayName = "Heavy Rain"),
+	Snow         UMETA(DisplayName = "Snow"),
+	HeavySnow    UMETA(DisplayName = "Heavy Snow"),
+	Sandstorm    UMETA(DisplayName = "Sandstorm"),
+	Fog          UMETA(DisplayName = "Fog"),
+	Thunderstorm UMETA(DisplayName = "Thunderstorm"),
+	Blizzard     UMETA(DisplayName = "Blizzard"),
+};
+
+/**
+ * Time of Day
+ */
+UENUM(BlueprintType)
+enum class ETimeOfDay : uint8
+{
+	Night        UMETA(DisplayName = "Night"),
+	Dawn         UMETA(DisplayName = "Dawn"),
+	Morning      UMETA(DisplayName = "Morning"),
+	Noon         UMETA(DisplayName = "Noon"),
+	Afternoon    UMETA(DisplayName = "Afternoon"),
+	Dusk         UMETA(DisplayName = "Dusk"),
 };
 
 /**
@@ -768,6 +842,167 @@ struct FCaveVolumeData
 };
 
 /**
+ * Weather Probability by Season and Biome
+ */
+USTRUCT(BlueprintType)
+struct FWeatherProbability
+{
+	GENERATED_BODY()
+
+	// Weather type
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EWeatherType WeatherType = EWeatherType::Clear;
+
+	// Probability (0.0-1.0)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Probability = 0.0f;
+
+	// Minimum duration (in game hours)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float MinDuration = 1.0f;
+
+	// Maximum duration (in game hours)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float MaxDuration = 6.0f;
+};
+
+/**
+ * Season Visual Settings
+ */
+USTRUCT(BlueprintType)
+struct FSeasonVisuals
+{
+	GENERATED_BODY()
+
+	// Foliage color tint
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FLinearColor FoliageTint = FLinearColor::White;
+
+	// Grass color tint
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FLinearColor GrassTint = FLinearColor::White;
+
+	// Snow coverage (0.0-1.0)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float SnowCoverage = 0.0f;
+
+	// Ambient temperature (Celsius)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Temperature = 20.0f;
+};
+
+/**
+ * Season Settings
+ */
+USTRUCT(BlueprintType)
+struct FSeasonSettings
+{
+	GENERATED_BODY()
+
+	// Season type
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Season")
+	ESeasonType Season = ESeasonType::Spring;
+
+	// Duration in game days
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Season", meta = (ClampMin = "1", ClampMax = "365"))
+	int32 DurationDays = 91;
+
+	// Visual settings for this season
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Season|Visuals")
+	FSeasonVisuals Visuals;
+
+	// Weather probabilities for this season
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Season|Weather")
+	TArray<FWeatherProbability> WeatherProbabilities;
+
+	// Biome-specific weather probabilities (overrides default)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Season|Weather")
+	TMap<EBiomeType, TArray<FWeatherProbability>> BiomeWeatherProbabilities;
+};
+
+/**
+ * Day/Night Cycle Settings
+ */
+USTRUCT(BlueprintType)
+struct FDayNightCycleSettings
+{
+	GENERATED_BODY()
+
+	// Enable day/night cycle
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DayNight")
+	bool bEnableDayNightCycle = true;
+
+	// Real-time minutes per game hour
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DayNight", meta = (ClampMin = "0.1", ClampMax = "60.0"))
+	float MinutesPerGameHour = 2.0f;
+
+	// Starting hour (0-24)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DayNight", meta = (ClampMin = "0.0", ClampMax = "24.0"))
+	float StartingHour = 8.0f;
+
+	// Sunrise hour
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DayNight", meta = (ClampMin = "0.0", ClampMax = "24.0"))
+	float SunriseHour = 6.0f;
+
+	// Sunset hour
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DayNight", meta = (ClampMin = "0.0", ClampMax = "24.0"))
+	float SunsetHour = 18.0f;
+
+	// Enable dynamic sun movement
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DayNight")
+	bool bDynamicSunMovement = true;
+
+	// Moon brightness multiplier
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DayNight", meta = (ClampMin = "0.0", ClampMax = "2.0"))
+	float MoonBrightness = 0.3f;
+};
+
+/**
+ * Environment System Settings
+ */
+USTRUCT(BlueprintType)
+struct FEnvironmentSystemSettings
+{
+	GENERATED_BODY()
+
+	// Enable environment system
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Environment")
+	bool bEnableEnvironmentSystem = true;
+
+	// Enable seasons
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Environment")
+	bool bEnableSeasons = true;
+
+	// Enable dynamic weather
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Environment")
+	bool bEnableDynamicWeather = true;
+
+	// Starting season
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Environment")
+	ESeasonType StartingSeason = ESeasonType::Spring;
+
+	// Season configurations
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Environment|Seasons")
+	TArray<FSeasonSettings> SeasonConfigs;
+
+	// Day/Night cycle settings
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Environment|DayNight")
+	FDayNightCycleSettings DayNightSettings;
+
+	// Weather transition duration (seconds)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Environment|Weather", meta = (ClampMin = "1.0", ClampMax = "600.0"))
+	float WeatherTransitionDuration = 30.0f;
+
+	// Minimum time between weather changes (game hours)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Environment|Weather", meta = (ClampMin = "0.5", ClampMax = "48.0"))
+	float MinTimeBetweenWeatherChanges = 2.0f;
+
+	// Current biome for weather selection (if needed)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Environment|Weather")
+	EBiomeType CurrentBiome = EBiomeType::Grassland;
+};
+
+/**
  * World Generation Configuration
  * Seed-based generation ensures same world in multiplayer
  */
@@ -888,6 +1123,12 @@ struct FWorldGeneratorConfig
 	// Splatmap generation settings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen|Splatmap")
 	FSplatmapSettings SplatmapSettings;
+
+	// ===== Environment System =====
+
+	// Environment system settings (seasons, weather, day/night)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WorldGen|Environment")
+	FEnvironmentSystemSettings EnvironmentSettings;
 
 	// ===== Performance Settings =====
 

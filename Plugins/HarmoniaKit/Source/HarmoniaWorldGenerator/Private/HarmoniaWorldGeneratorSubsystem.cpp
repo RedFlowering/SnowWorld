@@ -2288,3 +2288,382 @@ float UHarmoniaWorldGeneratorSubsystem::CalculateSlope(
     // Convert to degrees
     return FMath::RadiansToDegrees(FMath::Atan(Slope));
 }
+
+// ========================================
+// Environment System Implementation
+// ========================================
+
+DEFINE_STAT(STAT_HarmoniaWorldGeneratorSubsystem);
+
+void UHarmoniaWorldGeneratorSubsystem::InitializeEnvironmentSystem(const FEnvironmentSystemSettings& Settings)
+{
+    EnvironmentSettings = Settings;
+    CurrentSeason = Settings.StartingSeason;
+    SeasonProgress = 0.0f;
+    TotalSeasonTime = 0.0f;
+    CurrentWeather = EWeatherType::Clear;
+    PreviousWeather = EWeatherType::Clear;
+    WeatherTransitionProgress = 1.0f;
+    TimeSinceLastWeatherChange = 0.0f;
+    CurrentGameTime = Settings.DayNightSettings.StartingTimeOfDay;
+    TimeSpeedMultiplier = 1.0f;
+
+    // Initialize random stream with seed
+    WeatherRandom.Initialize(FMath::Rand());
+
+    UE_LOG(LogTemp, Log, TEXT("Environment System initialized - Season: %d, Time: %.2f"),
+        (int32)CurrentSeason, CurrentGameTime);
+}
+
+void UHarmoniaWorldGeneratorSubsystem::StartEnvironmentSystem()
+{
+    if (!EnvironmentSettings.bEnableEnvironmentSystem)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Environment System is disabled in settings"));
+        return;
+    }
+
+    bEnvironmentSystemActive = true;
+    UE_LOG(LogTemp, Log, TEXT("Environment System started"));
+
+    // Broadcast initial state
+    if (OnSeasonChanged.IsBound())
+    {
+        OnSeasonChanged.Broadcast(CurrentSeason, SeasonProgress);
+    }
+
+    if (OnWeatherChanged.IsBound())
+    {
+        OnWeatherChanged.Broadcast(CurrentWeather, PreviousWeather, 0.0f);
+    }
+
+    ETimeOfDay TimeOfDay = GetCurrentTimeOfDay();
+    if (OnTimeOfDayChanged.IsBound())
+    {
+        OnTimeOfDayChanged.Broadcast(TimeOfDay, CurrentGameTime);
+    }
+}
+
+void UHarmoniaWorldGeneratorSubsystem::StopEnvironmentSystem()
+{
+    bEnvironmentSystemActive = false;
+    UE_LOG(LogTemp, Log, TEXT("Environment System stopped"));
+}
+
+void UHarmoniaWorldGeneratorSubsystem::SetCurrentSeason(ESeasonType NewSeason, bool bBroadcast)
+{
+    if (CurrentSeason != NewSeason)
+    {
+        CurrentSeason = NewSeason;
+        SeasonProgress = 0.0f;
+        TotalSeasonTime = 0.0f;
+
+        if (bBroadcast && OnSeasonChanged.IsBound())
+        {
+            OnSeasonChanged.Broadcast(CurrentSeason, SeasonProgress);
+        }
+
+        // Trigger weather change based on new season
+        if (EnvironmentSettings.bEnableDynamicWeather)
+        {
+            EWeatherType NewWeather = SelectRandomWeather(CurrentSeason, EnvironmentSettings.CurrentBiome);
+            ChangeWeather(NewWeather, EnvironmentSettings.WeatherTransitionDuration);
+        }
+    }
+}
+
+void UHarmoniaWorldGeneratorSubsystem::ChangeWeather(EWeatherType NewWeather, float TransitionDuration)
+{
+    if (CurrentWeather != NewWeather)
+    {
+        PreviousWeather = CurrentWeather;
+        CurrentWeather = NewWeather;
+        WeatherTransitionProgress = 0.0f;
+        TimeSinceLastWeatherChange = 0.0f;
+
+        if (OnWeatherChanged.IsBound())
+        {
+            OnWeatherChanged.Broadcast(CurrentWeather, PreviousWeather, TransitionDuration);
+        }
+
+        UE_LOG(LogTemp, Log, TEXT("Weather changed: %d -> %d (Transition: %.1fs)"),
+            (int32)PreviousWeather, (int32)CurrentWeather, TransitionDuration);
+    }
+}
+
+ETimeOfDay UHarmoniaWorldGeneratorSubsystem::GetCurrentTimeOfDay() const
+{
+    if (CurrentGameTime >= EnvironmentSettings.DayNightSettings.SunriseTime &&
+        CurrentGameTime < EnvironmentSettings.DayNightSettings.DayStartTime)
+    {
+        return ETimeOfDay::Dawn;
+    }
+    else if (CurrentGameTime >= EnvironmentSettings.DayNightSettings.DayStartTime &&
+             CurrentGameTime < EnvironmentSettings.DayNightSettings.SunsetTime)
+    {
+        return ETimeOfDay::Day;
+    }
+    else if (CurrentGameTime >= EnvironmentSettings.DayNightSettings.SunsetTime &&
+             CurrentGameTime < EnvironmentSettings.DayNightSettings.NightStartTime)
+    {
+        return ETimeOfDay::Dusk;
+    }
+    else
+    {
+        return ETimeOfDay::Night;
+    }
+}
+
+void UHarmoniaWorldGeneratorSubsystem::SetCurrentGameTime(float Hours)
+{
+    CurrentGameTime = FMath::Fmod(Hours, 24.0f);
+    if (CurrentGameTime < 0.0f)
+    {
+        CurrentGameTime += 24.0f;
+    }
+}
+
+float UHarmoniaWorldGeneratorSubsystem::GetSunAngle() const
+{
+    return CalculateSunAngleFromTime(CurrentGameTime);
+}
+
+FSeasonVisuals UHarmoniaWorldGeneratorSubsystem::GetCurrentSeasonVisuals() const
+{
+    const FSeasonSettings* CurrentSettings = GetSeasonSettings(CurrentSeason);
+    if (!CurrentSettings)
+    {
+        return FSeasonVisuals();
+    }
+
+    // If transitioning between seasons, interpolate visuals
+    if (EnvironmentSettings.bEnableSeasons && SeasonProgress > 0.95f)
+    {
+        // Get next season
+        ESeasonType NextSeason = static_cast<ESeasonType>((static_cast<int32>(CurrentSeason) + 1) % 4);
+        const FSeasonSettings* NextSettings = GetSeasonSettings(NextSeason);
+
+        if (NextSettings)
+        {
+            // Interpolate for smooth transition (last 5% of season duration)
+            float TransitionAlpha = (SeasonProgress - 0.95f) / 0.05f;
+            return InterpolateSeasonVisuals(
+                CurrentSettings->Visuals,
+                NextSettings->Visuals,
+                TransitionAlpha
+            );
+        }
+    }
+
+    return CurrentSettings->Visuals;
+}
+
+void UHarmoniaWorldGeneratorSubsystem::SetTimeSpeed(float SpeedMultiplier)
+{
+    TimeSpeedMultiplier = FMath::Max(0.0f, SpeedMultiplier);
+}
+
+void UHarmoniaWorldGeneratorSubsystem::Tick(float DeltaTime)
+{
+    if (!bEnvironmentSystemActive)
+    {
+        return;
+    }
+
+    // Apply time speed multiplier
+    float ScaledDeltaTime = DeltaTime * TimeSpeedMultiplier;
+
+    // Update systems
+    UpdateDayNightCycle(ScaledDeltaTime);
+
+    if (EnvironmentSettings.bEnableSeasons)
+    {
+        UpdateSeasonProgression(ScaledDeltaTime);
+    }
+
+    if (EnvironmentSettings.bEnableDynamicWeather)
+    {
+        UpdateWeather(ScaledDeltaTime);
+    }
+}
+
+TStatId UHarmoniaWorldGeneratorSubsystem::GetStatId() const
+{
+    RETURN_QUICK_DECLARE_CYCLE_STAT(UHarmoniaWorldGeneratorSubsystem, STATGROUP_Tickables);
+}
+
+void UHarmoniaWorldGeneratorSubsystem::UpdateDayNightCycle(float DeltaTime)
+{
+    ETimeOfDay PreviousTimeOfDay = GetCurrentTimeOfDay();
+
+    // Convert real-time seconds to game-time hours
+    float GameHoursPerRealSecond = 24.0f / EnvironmentSettings.DayNightSettings.DayLengthInMinutes / 60.0f;
+    CurrentGameTime += DeltaTime * GameHoursPerRealSecond;
+
+    // Wrap around 24 hours
+    if (CurrentGameTime >= 24.0f)
+    {
+        CurrentGameTime = FMath::Fmod(CurrentGameTime, 24.0f);
+    }
+
+    // Check for time of day change
+    ETimeOfDay NewTimeOfDay = GetCurrentTimeOfDay();
+    if (NewTimeOfDay != PreviousTimeOfDay)
+    {
+        if (OnTimeOfDayChanged.IsBound())
+        {
+            OnTimeOfDayChanged.Broadcast(NewTimeOfDay, CurrentGameTime);
+        }
+    }
+
+    // Broadcast tick event
+    if (OnDayNightCycleTick.IsBound())
+    {
+        float SunAngle = GetSunAngle();
+        OnDayNightCycleTick.Broadcast(CurrentGameTime, SunAngle);
+    }
+}
+
+void UHarmoniaWorldGeneratorSubsystem::UpdateSeasonProgression(float DeltaTime)
+{
+    const FSeasonSettings* CurrentSettings = GetSeasonSettings(CurrentSeason);
+    if (!CurrentSettings)
+    {
+        return;
+    }
+
+    // Calculate season duration in real seconds
+    float SeasonDurationSeconds = CurrentSettings->DurationInGameDays *
+                                   EnvironmentSettings.DayNightSettings.DayLengthInMinutes * 60.0f;
+
+    TotalSeasonTime += DeltaTime;
+    SeasonProgress = TotalSeasonTime / SeasonDurationSeconds;
+
+    // Check for season change
+    if (SeasonProgress >= 1.0f)
+    {
+        ESeasonType NextSeason = static_cast<ESeasonType>((static_cast<int32>(CurrentSeason) + 1) % 4);
+        SetCurrentSeason(NextSeason, true);
+    }
+    else if (FMath::Fmod(TotalSeasonTime, 60.0f) < DeltaTime) // Broadcast every minute
+    {
+        if (OnSeasonChanged.IsBound())
+        {
+            OnSeasonChanged.Broadcast(CurrentSeason, SeasonProgress);
+        }
+    }
+}
+
+void UHarmoniaWorldGeneratorSubsystem::UpdateWeather(float DeltaTime)
+{
+    TimeSinceLastWeatherChange += DeltaTime;
+
+    // Update weather transition
+    if (WeatherTransitionProgress < 1.0f)
+    {
+        WeatherTransitionProgress += DeltaTime / EnvironmentSettings.WeatherTransitionDuration;
+        WeatherTransitionProgress = FMath::Clamp(WeatherTransitionProgress, 0.0f, 1.0f);
+    }
+
+    // Check if it's time to change weather
+    if (TimeSinceLastWeatherChange >= EnvironmentSettings.MinTimeBetweenWeatherChanges * 60.0f)
+    {
+        // Random chance to change weather (20% chance per check)
+        if (WeatherRandom.FRand() < 0.2f)
+        {
+            EWeatherType NewWeather = SelectRandomWeather(CurrentSeason, EnvironmentSettings.CurrentBiome);
+            if (NewWeather != CurrentWeather)
+            {
+                ChangeWeather(NewWeather, EnvironmentSettings.WeatherTransitionDuration);
+            }
+        }
+    }
+}
+
+EWeatherType UHarmoniaWorldGeneratorSubsystem::SelectRandomWeather(ESeasonType Season, EBiomeType Biome)
+{
+    const FSeasonSettings* SeasonSettings = GetSeasonSettings(Season);
+    if (!SeasonSettings)
+    {
+        return EWeatherType::Clear;
+    }
+
+    // Build probability map
+    TMap<EWeatherType, float> ProbabilityMap = SeasonSettings->DefaultWeatherProbabilities;
+
+    // Check for biome-specific overrides
+    for (const FWeatherProbability& Override : SeasonSettings->BiomeWeatherOverrides)
+    {
+        if (Override.Biome == Biome)
+        {
+            // Apply biome override
+            for (const auto& Pair : Override.WeatherProbabilities)
+            {
+                ProbabilityMap.Add(Pair.Key, Pair.Value);
+            }
+            break;
+        }
+    }
+
+    // Calculate total probability
+    float TotalProbability = 0.0f;
+    for (const auto& Pair : ProbabilityMap)
+    {
+        TotalProbability += Pair.Value;
+    }
+
+    if (TotalProbability <= 0.0f)
+    {
+        return EWeatherType::Clear;
+    }
+
+    // Select random weather based on probability
+    float RandomValue = WeatherRandom.FRand() * TotalProbability;
+    float CumulativeProbability = 0.0f;
+
+    for (const auto& Pair : ProbabilityMap)
+    {
+        CumulativeProbability += Pair.Value;
+        if (RandomValue <= CumulativeProbability)
+        {
+            return Pair.Key;
+        }
+    }
+
+    return EWeatherType::Clear;
+}
+
+float UHarmoniaWorldGeneratorSubsystem::CalculateSunAngleFromTime(float GameTime) const
+{
+    // 0 hours = 0 degrees (midnight)
+    // 6 hours = 90 degrees (sunrise)
+    // 12 hours = 180 degrees (noon)
+    // 18 hours = 270 degrees (sunset)
+    // 24 hours = 360 degrees (midnight)
+    return (GameTime / 24.0f) * 360.0f;
+}
+
+const FSeasonSettings* UHarmoniaWorldGeneratorSubsystem::GetSeasonSettings(ESeasonType Season) const
+{
+    for (const FSeasonSettings& Settings : EnvironmentSettings.SeasonConfigs)
+    {
+        if (Settings.Season == Season)
+        {
+            return &Settings;
+        }
+    }
+    return nullptr;
+}
+
+FSeasonVisuals UHarmoniaWorldGeneratorSubsystem::InterpolateSeasonVisuals(
+    const FSeasonVisuals& From,
+    const FSeasonVisuals& To,
+    float Alpha) const
+{
+    FSeasonVisuals Result;
+    Result.FoliageTint = FLinearColor::LerpUsingHSV(From.FoliageTint, To.FoliageTint, Alpha);
+    Result.GrassTint = FLinearColor::LerpUsingHSV(From.GrassTint, To.GrassTint, Alpha);
+    Result.SnowCoverage = FMath::Lerp(From.SnowCoverage, To.SnowCoverage, Alpha);
+    Result.Temperature = FMath::Lerp(From.Temperature, To.Temperature, Alpha);
+    return Result;
+}

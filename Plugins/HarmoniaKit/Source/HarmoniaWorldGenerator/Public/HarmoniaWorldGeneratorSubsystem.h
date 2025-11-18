@@ -25,6 +25,19 @@ public:
 
     UPROPERTY(BlueprintAssignable, Category = "WorldGenerator|Async")
     FOnWorldGenerationComplete OnGenerationComplete;
+
+    // Environment system delegates
+    UPROPERTY(BlueprintAssignable, Category = "WorldGenerator|Environment")
+    FOnSeasonChanged OnSeasonChanged;
+
+    UPROPERTY(BlueprintAssignable, Category = "WorldGenerator|Environment")
+    FOnWeatherChanged OnWeatherChanged;
+
+    UPROPERTY(BlueprintAssignable, Category = "WorldGenerator|Environment")
+    FOnTimeOfDayChanged OnTimeOfDayChanged;
+
+    UPROPERTY(BlueprintAssignable, Category = "WorldGenerator|Environment")
+    FOnDayNightCycleTick OnDayNightCycleTick;
     /**
      * Generate complete world (heightmap + objects)
      * @param Config         - World generation parameters
@@ -234,6 +247,107 @@ public:
         const TArray<FBiomeData>& BiomeData,
         TArray<FSplatmapLayerData>& OutSplatmapLayers
     );
+
+    // ========================================
+    // Environment System (Seasons, Weather, Day/Night)
+    // ========================================
+
+    /**
+     * Initialize environment system with settings
+     * Call this before starting the environment system
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Environment")
+    void InitializeEnvironmentSystem(const FEnvironmentSystemSettings& Settings);
+
+    /**
+     * Start environment system (seasons, weather, day/night cycle)
+     * Requires InitializeEnvironmentSystem() to be called first
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Environment")
+    void StartEnvironmentSystem();
+
+    /**
+     * Stop environment system
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Environment")
+    void StopEnvironmentSystem();
+
+    /**
+     * Check if environment system is running
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Environment")
+    bool IsEnvironmentSystemRunning() const { return bEnvironmentSystemActive; }
+
+    /**
+     * Manually set current season
+     * @param NewSeason - Season to set
+     * @param bBroadcast - Whether to broadcast OnSeasonChanged delegate
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Environment")
+    void SetCurrentSeason(ESeasonType NewSeason, bool bBroadcast = true);
+
+    /**
+     * Get current season
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Environment")
+    ESeasonType GetCurrentSeason() const { return CurrentSeason; }
+
+    /**
+     * Get current season progress (0-1)
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Environment")
+    float GetSeasonProgress() const { return SeasonProgress; }
+
+    /**
+     * Manually change weather
+     * @param NewWeather - Weather type to change to
+     * @param TransitionDuration - Duration of weather transition in seconds
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Environment")
+    void ChangeWeather(EWeatherType NewWeather, float TransitionDuration = 30.0f);
+
+    /**
+     * Get current weather
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Environment")
+    EWeatherType GetCurrentWeather() const { return CurrentWeather; }
+
+    /**
+     * Get current time of day
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Environment")
+    ETimeOfDay GetCurrentTimeOfDay() const;
+
+    /**
+     * Get current game time in hours (0-24)
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Environment")
+    float GetCurrentGameTime() const { return CurrentGameTime; }
+
+    /**
+     * Set current game time in hours (0-24)
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Environment")
+    void SetCurrentGameTime(float Hours);
+
+    /**
+     * Get sun angle in degrees (0-360)
+     * 0 = midnight, 90 = sunrise, 180 = noon, 270 = sunset
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Environment")
+    float GetSunAngle() const;
+
+    /**
+     * Get current season visual settings
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Environment")
+    FSeasonVisuals GetCurrentSeasonVisuals() const;
+
+    /**
+     * Set time progression speed multiplier
+     */
+    UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Environment")
+    void SetTimeSpeed(float SpeedMultiplier);
 
 private:
     /**
@@ -455,8 +569,75 @@ private:
         const FWorldGeneratorConfig& Config
     );
 
+    // ========================================
+    // Environment System Private Methods
+    // ========================================
+
+    /**
+     * Tick environment system (called by USubsystem::Tick)
+     */
+    virtual void Tick(float DeltaTime) override;
+    virtual TStatId GetStatId() const override;
+
+    /**
+     * Update day/night cycle
+     */
+    void UpdateDayNightCycle(float DeltaTime);
+
+    /**
+     * Update season progression
+     */
+    void UpdateSeasonProgression(float DeltaTime);
+
+    /**
+     * Update weather system
+     */
+    void UpdateWeather(float DeltaTime);
+
+    /**
+     * Select random weather based on season and biome
+     */
+    EWeatherType SelectRandomWeather(ESeasonType Season, EBiomeType Biome);
+
+    /**
+     * Calculate sun angle from game time
+     */
+    float CalculateSunAngleFromTime(float GameTime) const;
+
+    /**
+     * Get season settings for a specific season
+     */
+    const FSeasonSettings* GetSeasonSettings(ESeasonType Season) const;
+
+    /**
+     * Interpolate season visuals between two seasons
+     */
+    FSeasonVisuals InterpolateSeasonVisuals(
+        const FSeasonVisuals& From,
+        const FSeasonVisuals& To,
+        float Alpha
+    ) const;
+
     // Async generation state
     std::atomic<bool> bIsGenerating{false};
     std::atomic<bool> bCancelRequested{false};
     std::atomic<float> CurrentProgress{0.0f};
+
+    // Environment system state
+    bool bEnvironmentSystemActive = false;
+    FEnvironmentSystemSettings EnvironmentSettings;
+
+    ESeasonType CurrentSeason = ESeasonType::Spring;
+    float SeasonProgress = 0.0f; // 0-1 within current season
+    float TotalSeasonTime = 0.0f; // Total time elapsed in current season
+
+    EWeatherType CurrentWeather = EWeatherType::Clear;
+    EWeatherType PreviousWeather = EWeatherType::Clear;
+    float WeatherTransitionProgress = 1.0f; // 1.0 = fully transitioned
+    float TimeSinceLastWeatherChange = 0.0f;
+
+    float CurrentGameTime = 12.0f; // 0-24 hours
+    float TimeSpeedMultiplier = 1.0f;
+
+    FRandomStream WeatherRandom;
 };
