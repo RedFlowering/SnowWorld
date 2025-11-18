@@ -226,7 +226,7 @@ void UHarmoniaGameplayAbility_MeleeAttack::OnMontageInterrupted()
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 }
 
-void UHarmoniaGameplayAbility_MeleeAttack::OnMontageBlendOut(UAnimMontage* Montage, bool bInterrupted)
+void UHarmoniaGameplayAbility_MeleeAttack::OnMontageBlendOut()
 {
 	// Optional: Handle blend out
 }

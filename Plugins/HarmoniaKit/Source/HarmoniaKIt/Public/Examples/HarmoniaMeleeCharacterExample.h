@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Character/LyraCharacter.h"
+#include "GameplayAbilitySpec.h"
 #include "HarmoniaMeleeCharacterExample.generated.h"
 
 class UHarmoniaMeleeCombatComponent;

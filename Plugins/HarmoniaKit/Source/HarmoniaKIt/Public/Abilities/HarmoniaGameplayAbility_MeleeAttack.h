@@ -83,7 +83,7 @@ protected:
 
 	/** Called when montage is blended out */
 	UFUNCTION()
-	void OnMontageBlendOut(UAnimMontage* Montage, bool bInterrupted);
+	void OnMontageBlendOut();
 
 	// ============================================================================
 	// Hit Detection
@@ -154,4 +154,7 @@ private:
 
 	/** Trigger visual effects for hit */
 	void TriggerHitEffects(const FHarmoniaAttackHitResult& HitResult);
+
+	/** Create target data handle from actor */
+	FGameplayAbilityTargetDataHandle MakeTargetData(AActor* TargetActor) const;
 };

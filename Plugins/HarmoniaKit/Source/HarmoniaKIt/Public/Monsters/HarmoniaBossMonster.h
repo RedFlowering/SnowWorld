@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "Definitions/HarmoniaMonsterSystemDefinitions.h"
+#include "ActiveGameplayEffectHandle.h"
 #include "HarmoniaBossMonster.generated.h"
 
 /**
