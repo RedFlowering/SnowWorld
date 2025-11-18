@@ -87,10 +87,11 @@ public:
 	/**
 	 * Get zone at location
 	 * @param Location - World location to check
-	 * @return Zone at location, or nullptr if no zone found
+	 * @param OutZone - Zone data at location
+	 * @return True if zone found, false otherwise
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Terrain|Ownership")
-	const FTerrainOwnershipZone* GetZoneAtLocation(const FVector& Location) const;
+	bool GetZoneAtLocation(const FVector& Location, FTerrainOwnershipZone& OutZone) const;
 
 	/**
 	 * Get all zones owned by a player

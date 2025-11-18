@@ -43,7 +43,7 @@ void UHarmoniaTerrainOwnershipManager::UnregisterOwnershipZone(int32 ZoneIndex)
 	}
 }
 
-const FTerrainOwnershipZone* UHarmoniaTerrainOwnershipManager::GetZoneAtLocation(const FVector& Location) const
+bool UHarmoniaTerrainOwnershipManager::GetZoneAtLocation(const FVector& Location, FTerrainOwnershipZone& OutZone) const
 {
 	// Return the smallest zone that contains the location (most specific)
 	const FTerrainOwnershipZone* BestZone = nullptr;
@@ -59,7 +59,13 @@ const FTerrainOwnershipZone* UHarmoniaTerrainOwnershipManager::GetZoneAtLocation
 		}
 	}
 
-	return BestZone;
+	if (BestZone)
+	{
+		OutZone = *BestZone;
+		return true;
+	}
+
+	return false;
 }
 
 TArray<int32> UHarmoniaTerrainOwnershipManager::GetZonesOwnedByPlayer(const FString& PlayerID) const
@@ -116,34 +122,35 @@ bool UHarmoniaTerrainOwnershipManager::HasBuildingPermission(AActor* Actor, cons
 
 bool UHarmoniaTerrainOwnershipManager::HasBuildingPermissionByID(const FString& PlayerID, int32 TeamID, const FVector& Location) const
 {
-	const FTerrainOwnershipZone* Zone = GetZoneAtLocation(Location);
+	FTerrainOwnershipZone Zone;
+	bool bFoundZone = GetZoneAtLocation(Location, Zone);
 
 	// No zone found - check if building is allowed in unclaimed areas
-	if (!Zone)
+	if (!bFoundZone)
 	{
 		return bAllowBuildingInUnclaimedAreas;
 	}
 
 	// Protected zone - no building allowed
-	if (Zone->bProtectedZone)
+	if (Zone.bProtectedZone)
 	{
 		return false;
 	}
 
 	// Public building zone - anyone can build
-	if (Zone->bAllowPublicBuilding)
+	if (Zone.bAllowPublicBuilding)
 	{
 		return true;
 	}
 
 	// Check player ownership
-	if (!Zone->OwnerPlayerID.IsEmpty() && Zone->OwnerPlayerID == PlayerID)
+	if (!Zone.OwnerPlayerID.IsEmpty() && Zone.OwnerPlayerID == PlayerID)
 	{
 		return true;
 	}
 
 	// Check team ownership
-	if (Zone->OwnerTeamID != INDEX_NONE && Zone->OwnerTeamID == TeamID)
+	if (Zone.OwnerTeamID != INDEX_NONE && Zone.OwnerTeamID == TeamID)
 	{
 		return true;
 	}
@@ -154,14 +161,14 @@ bool UHarmoniaTerrainOwnershipManager::HasBuildingPermissionByID(const FString& 
 
 bool UHarmoniaTerrainOwnershipManager::IsProtectedZone(const FVector& Location) const
 {
-	const FTerrainOwnershipZone* Zone = GetZoneAtLocation(Location);
-	return Zone && Zone->bProtectedZone;
+	FTerrainOwnershipZone Zone;
+	return GetZoneAtLocation(Location, Zone) && Zone.bProtectedZone;
 }
 
 bool UHarmoniaTerrainOwnershipManager::IsPublicBuildingArea(const FVector& Location) const
 {
-	const FTerrainOwnershipZone* Zone = GetZoneAtLocation(Location);
-	return Zone && Zone->bAllowPublicBuilding;
+	FTerrainOwnershipZone Zone;
+	return GetZoneAtLocation(Location, Zone) && Zone.bAllowPublicBuilding;
 }
 
 // ============================================================================

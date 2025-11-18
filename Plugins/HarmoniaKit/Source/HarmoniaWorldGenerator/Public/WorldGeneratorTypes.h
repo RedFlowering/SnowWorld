@@ -715,6 +715,19 @@ struct FOreVeinData
 };
 
 /**
+ * Biome-specific resource multipliers wrapper
+ */
+USTRUCT(BlueprintType)
+struct FBiomeResourceMultipliers
+{
+	GENERATED_BODY()
+
+	// Resource type multipliers for this biome
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TMap<EResourceType, float> ResourceMultipliers;
+};
+
+/**
  * Resource Distribution Settings
  */
 USTRUCT(BlueprintType)
@@ -744,7 +757,7 @@ struct FResourceDistributionSettings
 
 	// Biome-specific resource multipliers
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resources")
-	TMap<EBiomeType, TMap<EResourceType, float>> BiomeResourceMultipliers;
+	TMap<EBiomeType, FBiomeResourceMultipliers> BiomeResourceMultipliers;
 
 	// Height-based resource distribution
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resources")
@@ -892,6 +905,19 @@ struct FSeasonVisuals
 };
 
 /**
+ * Biome-specific weather probabilities wrapper
+ */
+USTRUCT(BlueprintType)
+struct FBiomeWeatherProbabilities
+{
+	GENERATED_BODY()
+
+	// Weather probabilities for this biome
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FWeatherProbability> WeatherProbabilities;
+};
+
+/**
  * Season Settings
  */
 USTRUCT(BlueprintType)
@@ -917,7 +943,7 @@ struct FSeasonSettings
 
 	// Biome-specific weather probabilities (overrides default)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Season|Weather")
-	TMap<EBiomeType, TArray<FWeatherProbability>> BiomeWeatherProbabilities;
+	TMap<EBiomeType, FBiomeWeatherProbabilities> BiomeWeatherProbabilities;
 };
 
 /**
