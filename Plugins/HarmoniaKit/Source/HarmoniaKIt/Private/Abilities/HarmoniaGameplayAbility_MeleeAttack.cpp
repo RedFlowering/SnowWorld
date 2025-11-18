@@ -146,8 +146,6 @@ void UHarmoniaGameplayAbility_MeleeAttack::PerformMeleeAttack()
 
 	if (MontageTask)
 	{
-		CurrentMontage = Montage;
-
 		MontageTask->OnCompleted.AddDynamic(this, &UHarmoniaGameplayAbility_MeleeAttack::OnMontageCompleted);
 		MontageTask->OnCancelled.AddDynamic(this, &UHarmoniaGameplayAbility_MeleeAttack::OnMontageCancelled);
 		MontageTask->OnInterrupted.AddDynamic(this, &UHarmoniaGameplayAbility_MeleeAttack::OnMontageInterrupted);

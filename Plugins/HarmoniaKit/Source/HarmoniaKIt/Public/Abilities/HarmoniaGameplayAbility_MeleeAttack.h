@@ -142,10 +142,6 @@ protected:
 	UPROPERTY()
 	FHarmoniaComboAttackSequence CurrentComboSequence;
 
-	/** Currently playing montage */
-	UPROPERTY()
-	TObjectPtr<UAnimMontage> CurrentMontage;
-
 private:
 	/** Get melee combat component from owner */
 	UHarmoniaMeleeCombatComponent* GetMeleeCombatComponent() const;
