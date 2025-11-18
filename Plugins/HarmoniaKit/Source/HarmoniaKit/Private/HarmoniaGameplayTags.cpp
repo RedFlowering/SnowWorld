@@ -129,6 +129,49 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Difficulty_PactDeactivated, "GameplayEvent.Difficulty.PactDeactivated", "Difficulty pact was deactivated");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Difficulty_DynamicAdjusted, "GameplayEvent.Difficulty.DynamicAdjusted", "Dynamic difficulty was adjusted");
 
+	// ============================================================
+	// Animation Effect System Tags
+	// ============================================================
+
+	// Effect Root Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect, "Effect", "Root tag for all animation effects");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Hit, "Effect.Hit", "Hit effects category");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Trail, "Effect.Trail", "Weapon trail effects category");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Impact, "Effect.Impact", "Impact effects category");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Projectile, "Effect.Projectile", "Projectile effects category");
+
+	// Hit Effect Examples (Slash)
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Hit_Slash, "Effect.Hit.Slash", "Slash hit effects");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Hit_Slash_Light, "Effect.Hit.Slash.Light", "Light slash hit effect");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Hit_Slash_Medium, "Effect.Hit.Slash.Medium", "Medium slash hit effect");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Hit_Slash_Heavy, "Effect.Hit.Slash.Heavy", "Heavy slash hit effect");
+
+	// Hit Effect Examples (Blunt)
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Hit_Blunt, "Effect.Hit.Blunt", "Blunt hit effects");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Hit_Blunt_Light, "Effect.Hit.Blunt.Light", "Light blunt hit effect");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Hit_Blunt_Heavy, "Effect.Hit.Blunt.Heavy", "Heavy blunt hit effect");
+
+	// Hit Effect Examples (Pierce)
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Hit_Pierce, "Effect.Hit.Pierce", "Pierce hit effects");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Hit_Pierce_Light, "Effect.Hit.Pierce.Light", "Light pierce hit effect");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Hit_Pierce_Heavy, "Effect.Hit.Pierce.Heavy", "Heavy pierce hit effect");
+
+	// Weapon Trail Examples
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Trail_Sword, "Effect.Trail.Sword", "Sword trail effects");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Trail_Sword_Normal, "Effect.Trail.Sword.Normal", "Normal sword trail effect");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Trail_Sword_Fire, "Effect.Trail.Sword.Fire", "Fire sword trail effect");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Trail_Sword_Ice, "Effect.Trail.Sword.Ice", "Ice sword trail effect");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Trail_Axe, "Effect.Trail.Axe", "Axe trail effects");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Trail_Axe_Heavy, "Effect.Trail.Axe.Heavy", "Heavy axe trail effect");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Trail_Dagger, "Effect.Trail.Dagger", "Dagger trail effects");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Trail_Dagger_Fast, "Effect.Trail.Dagger.Fast", "Fast dagger trail effect");
+
+	// Impact Effect Examples
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Impact_Metal, "Effect.Impact.Metal", "Metal impact effect");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Impact_Wood, "Effect.Impact.Wood", "Wood impact effect");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Impact_Stone, "Effect.Impact.Stone", "Stone impact effect");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Impact_Flesh, "Effect.Impact.Flesh", "Flesh impact effect");
+
 	FGameplayTag FindTagByString(const FString& TagString, bool bMatchPartialString)
 	{
 		const UGameplayTagsManager& Manager = UGameplayTagsManager::Get();
