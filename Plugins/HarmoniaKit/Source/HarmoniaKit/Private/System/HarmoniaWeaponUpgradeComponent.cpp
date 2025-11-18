@@ -66,7 +66,7 @@ bool UHarmoniaWeaponUpgradeComponent::UpgradeWeapon()
 			for (const FName& MaterialID : RequiredMaterials)
 			{
 				FHarmoniaID ItemID;
-				ItemID.ID = MaterialID;
+				ItemID.Id = MaterialID;
 
 				// Remove 1 of each material with full durability
 				if (!InventoryComponent->RemoveItem(ItemID, 1, 100.0f))
@@ -164,7 +164,7 @@ bool UHarmoniaWeaponUpgradeComponent::InfuseWeapon(EHarmoniaElementType ElementT
 
 			// Try to consume infusion material (simplified - assuming full durability)
 			FHarmoniaID ItemID;
-			ItemID.ID = InfusionMaterial;
+			ItemID.Id = InfusionMaterial;
 
 			if (!InventoryComponent->RemoveItem(ItemID, 1, 100.0f))
 			{
