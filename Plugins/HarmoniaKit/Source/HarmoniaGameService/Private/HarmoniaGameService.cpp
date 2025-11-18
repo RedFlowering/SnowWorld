@@ -481,10 +481,11 @@ void UHarmoniaGameService::UploadCloudSave(const FString& SlotName, const TArray
 	FOnWriteUserFileCompleteDelegate WriteDelegate = FOnWriteUserFileCompleteDelegate::CreateUObject(
 		this, &UHarmoniaGameService::OnCloudSaveWriteComplete
 	);
-	CloudSaveWriteDelegateHandle = UserCloud->AddOnWriteUserFileCompleteDelegate_Handle(0, WriteDelegate);
+	CloudSaveWriteDelegateHandle = UserCloud->AddOnWriteUserFileCompleteDelegate_Handle(WriteDelegate);
 
-	// Write file to cloud
-	bool bStarted = UserCloud->WriteUserFile(*UserId, SlotName, SaveData);
+	// Write file to cloud (need mutable copy for API)
+	TArray<uint8> SaveDataCopy = SaveData;
+	bool bStarted = UserCloud->WriteUserFile(*UserId, SlotName, SaveDataCopy);
 
 	if (bStarted)
 	{
@@ -501,7 +502,7 @@ void UHarmoniaGameService::UploadCloudSave(const FString& SlotName, const TArray
 	}
 	else
 	{
-		UserCloud->ClearOnWriteUserFileCompleteDelegate_Handle(0, CloudSaveWriteDelegateHandle);
+		UserCloud->ClearOnWriteUserFileCompleteDelegate_Handle(CloudSaveWriteDelegateHandle);
 		OnCloudSaveSynced.Broadcast(SlotName, false);
 	}
 }
@@ -546,7 +547,7 @@ void UHarmoniaGameService::DownloadCloudSave(const FString& SlotName)
 	FOnReadUserFileCompleteDelegate ReadDelegate = FOnReadUserFileCompleteDelegate::CreateUObject(
 		this, &UHarmoniaGameService::OnCloudSaveReadComplete
 	);
-	CloudSaveReadDelegateHandle = UserCloud->AddOnReadUserFileCompleteDelegate_Handle(0, ReadDelegate);
+	CloudSaveReadDelegateHandle = UserCloud->AddOnReadUserFileCompleteDelegate_Handle(ReadDelegate);
 
 	// Read file from cloud
 	bool bStarted = UserCloud->ReadUserFile(*UserId, SlotName);
@@ -563,7 +564,7 @@ void UHarmoniaGameService::DownloadCloudSave(const FString& SlotName)
 	}
 	else
 	{
-		UserCloud->ClearOnReadUserFileCompleteDelegate_Handle(0, CloudSaveReadDelegateHandle);
+		UserCloud->ClearOnReadUserFileCompleteDelegate_Handle(CloudSaveReadDelegateHandle);
 		OnCloudSaveSynced.Broadcast(SlotName, false);
 	}
 }
@@ -609,7 +610,7 @@ void UHarmoniaGameService::DeleteCloudSave(const FString& SlotName)
 	FOnDeleteUserFileCompleteDelegate DeleteDelegate = FOnDeleteUserFileCompleteDelegate::CreateUObject(
 		this, &UHarmoniaGameService::OnCloudSaveDeleteComplete
 	);
-	CloudSaveDeleteDelegateHandle = UserCloud->AddOnDeleteUserFileCompleteDelegate_Handle(0, DeleteDelegate);
+	CloudSaveDeleteDelegateHandle = UserCloud->AddOnDeleteUserFileCompleteDelegate_Handle(DeleteDelegate);
 
 	// Delete file from cloud
 	UserCloud->DeleteUserFile(*UserId, SlotName, true, true);
@@ -654,7 +655,7 @@ void UHarmoniaGameService::OnCloudSaveWriteComplete(bool bWasSuccessful, const F
 		IOnlineUserCloudPtr UserCloud = OSS->GetUserCloudInterface();
 		if (UserCloud.IsValid())
 		{
-			UserCloud->ClearOnWriteUserFileCompleteDelegate_Handle(0, CloudSaveWriteDelegateHandle);
+			UserCloud->ClearOnWriteUserFileCompleteDelegate_Handle(CloudSaveWriteDelegateHandle);
 		}
 	}
 }
@@ -706,7 +707,7 @@ void UHarmoniaGameService::OnCloudSaveReadComplete(bool bWasSuccessful, const FU
 		IOnlineUserCloudPtr UserCloud = OSS->GetUserCloudInterface();
 		if (UserCloud.IsValid())
 		{
-			UserCloud->ClearOnReadUserFileCompleteDelegate_Handle(0, CloudSaveReadDelegateHandle);
+			UserCloud->ClearOnReadUserFileCompleteDelegate_Handle(CloudSaveReadDelegateHandle);
 		}
 	}
 }
@@ -723,7 +724,7 @@ void UHarmoniaGameService::OnCloudSaveDeleteComplete(bool bWasSuccessful, const 
 		IOnlineUserCloudPtr UserCloud = OSS->GetUserCloudInterface();
 		if (UserCloud.IsValid())
 		{
-			UserCloud->ClearOnDeleteUserFileCompleteDelegate_Handle(0, CloudSaveDeleteDelegateHandle);
+			UserCloud->ClearOnDeleteUserFileCompleteDelegate_Handle(CloudSaveDeleteDelegateHandle);
 		}
 	}
 }
