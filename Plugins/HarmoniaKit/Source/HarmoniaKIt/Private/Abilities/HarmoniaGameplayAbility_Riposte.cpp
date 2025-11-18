@@ -4,6 +4,7 @@
 #include "Components/HarmoniaMeleeCombatComponent.h"
 #include "Components/HarmoniaSenseAttackComponent.h"
 #include "AbilitySystemComponent.h"
+#include "AbilitySystemGlobals.h"
 #include "GameFramework/Character.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
@@ -172,7 +173,7 @@ void UHarmoniaGameplayAbility_Riposte::ApplyRiposteDamage(AActor* Target)
 	}
 
 	UAbilitySystemComponent* SourceASC = GetAbilitySystemComponentFromActorInfo();
-	UAbilitySystemComponent* TargetASC = UAbilitySystemComponent::GetAbilitySystemComponent(Target);
+	UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Target);
 
 	if (!SourceASC || !TargetASC)
 	{
