@@ -310,10 +310,9 @@ void AHarmoniaBossMonster::ApplyPhaseEffects(const FHarmoniaBossPhase& PhaseData
 	// Remove specified abilities
 	for (TSubclassOf<class ULyraGameplayAbility> AbilityClass : PhaseData.AbilitiesToRemove)
 	{
-		if (AbilityClass)
+		if (UClass* AbilityClassPtr = AbilityClass.Get())
 		{
-			TSubclassOf<UGameplayAbility> GameplayAbilityClass = AbilityClass;
-			FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(GameplayAbilityClass);
+			FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(AbilityClassPtr);
 			if (Spec)
 			{
 				AbilitySystemComponent->ClearAbility(Spec->Handle);
@@ -324,10 +323,9 @@ void AHarmoniaBossMonster::ApplyPhaseEffects(const FHarmoniaBossPhase& PhaseData
 	// Grant phase abilities
 	for (TSubclassOf<class ULyraGameplayAbility> AbilityClass : PhaseData.PhaseAbilities)
 	{
-		if (AbilityClass)
+		if (UClass* AbilityClassPtr = AbilityClass.Get())
 		{
-			TSubclassOf<UGameplayAbility> GameplayAbilityClass = AbilityClass;
-			FGameplayAbilitySpec AbilitySpec(GameplayAbilityClass, MonsterLevel, INDEX_NONE, this);
+			FGameplayAbilitySpec AbilitySpec(AbilityClassPtr, MonsterLevel, INDEX_NONE, this);
 			FGameplayAbilitySpecHandle Handle = AbilitySystemComponent->GiveAbility(AbilitySpec);
 			GrantedAbilityHandles.Add(Handle);
 		}
