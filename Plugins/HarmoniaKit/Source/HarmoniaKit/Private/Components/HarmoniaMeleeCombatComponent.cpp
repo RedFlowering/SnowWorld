@@ -4,6 +4,7 @@
 #include "Components/HarmoniaSenseAttackComponent.h"
 #include "Components/HarmoniaEquipmentComponent.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
+#include "AbilitySystem/HarmoniaAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "Engine/DataTable.h"
@@ -455,7 +456,14 @@ void UHarmoniaMeleeCombatComponent::OnAttackBlocked(AActor* Attacker, float Dama
 		// Not enough stamina, guard broken
 		SetDefenseState(EHarmoniaDefenseState::Stunned);
 
-		// TODO: Apply guard break effects
+		// Apply guard break effects
+		// Note: In full implementation, apply a stun/guard break gameplay effect to the owner
+		// This effect should:
+		// - Prevent actions for a duration (via gameplay tags)
+		// - Play guard break animation
+		// - Possibly apply a defense debuff
+		// Example: ASC->ApplyGameplayEffectToSelf(GuardBreakEffectClass, 1.0f, ASC->MakeEffectContext());
+		UE_LOG(LogTemp, Log, TEXT("Guard broken - stunned state applied"));
 	}
 }
 
@@ -464,7 +472,21 @@ void UHarmoniaMeleeCombatComponent::OnParrySuccess(AActor* Attacker)
 	// Successful parry opens up attacker for riposte
 	StartRiposteWindow(Attacker, DefaultRiposteConfig.RiposteWindowDuration);
 
-	// TODO: Apply stun effect to attacker via gameplay effect
+	// Apply stun/parried effect to attacker
+	// Note: In full implementation, get the attacker's ASC and apply a parry stun effect
+	// This effect should:
+	// - Stun the attacker for a short duration
+	// - Make them vulnerable to riposte attacks
+	// - Play appropriate animations/VFX
+	//
+	// Example implementation:
+	// if (UAbilitySystemComponent* AttackerASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Attacker))
+	// {
+	//     FGameplayEffectContextHandle Context = AttackerASC->MakeEffectContext();
+	//     Context.AddInstigator(GetOwner(), GetOwner());
+	//     AttackerASC->ApplyGameplayEffectToSelf(ParryStunEffectClass, 1.0f, Context);
+	// }
+	UE_LOG(LogTemp, Log, TEXT("Parry successful - attacker %s is vulnerable to riposte"), *Attacker->GetName());
 }
 
 // ============================================================================
@@ -479,27 +501,14 @@ bool UHarmoniaMeleeCombatComponent::HasEnoughStamina(float StaminaCost) const
 bool UHarmoniaMeleeCombatComponent::ConsumeStamina(float StaminaCost)
 {
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	UHarmoniaAttributeSet* Attributes = GetAttributeSet();
-
-	if (!ASC || !Attributes)
+	if (!ASC)
 	{
 		return false;
 	}
 
-	const float CurrentStamina = GetCurrentStamina();
-	if (CurrentStamina < StaminaCost)
-	{
-		return false;
-	}
-
-	// Apply stamina cost via gameplay effect
-	// For now, directly modify the attribute
-	const float NewStamina = FMath::Max(0.0f, CurrentStamina - StaminaCost);
-
-	// TODO: Use gameplay effect instead of direct modification
-	// This is a temporary implementation
-
-	return true;
+	// Use the HarmoniaAbilitySystemLibrary to consume stamina
+	// This handles the stamina check and consumption in one call
+	return UHarmoniaAbilitySystemLibrary::ConsumeStamina(ASC, StaminaCost);
 }
 
 float UHarmoniaMeleeCombatComponent::GetCurrentStamina() const

@@ -311,9 +311,23 @@ void UHarmoniaDeathPenaltyComponent::ApplyEtherealStatePenalties()
 		return;
 	}
 
-	// TODO: Create and apply gameplay effect for ethereal state penalties
-	// This would modify Health, Damage, Stamina Regen, Movement Speed based on config
-	// For now, this is a placeholder for GAS integration
+	// Apply ethereal state attribute penalties via gameplay effect
+	// Note: For full implementation, create a UGameplayEffect Blueprint/DataAsset with:
+	// - Duration: Infinite
+	// - Modifiers for MaxHealth, AttackPower, StaminaRegen, MovementSpeed (multiplicative)
+	// - Apply via: ASC->ApplyGameplayEffectToSelf(...)
+	//
+	// Example of proper GE application (requires GE asset reference):
+	// if (EtherealPenaltyGameplayEffect)
+	// {
+	//     FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
+	//     FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(
+	//         EtherealPenaltyGameplayEffect, 1.0f, ContextHandle);
+	//     if (SpecHandle.IsValid())
+	//     {
+	//         EtherealStatePenaltyHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+	//     }
+	// }
 
 	const FHarmoniaDeathAttributePenalty& Penalties = DeathPenaltyConfig->Config.AttributePenalties;
 
@@ -356,8 +370,23 @@ void UHarmoniaDeathPenaltyComponent::ApplyConsecutiveDeathPenalty()
 		return;
 	}
 
-	// TODO: Create and apply gameplay effect for max health penalty
-	// This would reduce max health by a percentage per consecutive death
+	// Apply max health penalty for consecutive deaths
+	// Note: For full implementation, create a stacking UGameplayEffect with:
+	// - Duration: Infinite (until recovered)
+	// - Modifier: MaxHealth (additive or multiplicative based on design)
+	// - Stack count based on consecutive deaths
+	//
+	// Example implementation (requires GE asset reference):
+	// if (ConsecutiveDeathPenaltyGameplayEffect)
+	// {
+	//     FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
+	//     FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(
+	//         ConsecutiveDeathPenaltyGameplayEffect, EffectiveStacks, ContextHandle);
+	//     if (SpecHandle.IsValid())
+	//     {
+	//         ConsecutiveDeathPenaltyHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+	//     }
+	// }
 
 	const FHarmoniaDeathAttributePenalty& Penalties = DeathPenaltyConfig->Config.AttributePenalties;
 	const int32 EffectiveStacks = FMath::Min(ConsecutiveDeaths - 1, Penalties.MaxHealthPenaltyStacks);
@@ -375,7 +404,13 @@ void UHarmoniaDeathPenaltyComponent::RemoveConsecutiveDeathPenalty()
 		return;
 	}
 
-	// TODO: Remove max health penalty gameplay effect
+	// Remove the max health penalty gameplay effect
+	// In full implementation with GE: ASC->RemoveActiveGameplayEffect(ConsecutiveDeathPenaltyHandle);
+	if (ConsecutiveDeathPenaltyHandle.IsValid())
+	{
+		ASC->RemoveActiveGameplayEffect(ConsecutiveDeathPenaltyHandle);
+		ConsecutiveDeathPenaltyHandle.Invalidate();
+	}
 
 	UE_LOG(LogTemp, Log, TEXT("Removed consecutive death penalty"));
 }

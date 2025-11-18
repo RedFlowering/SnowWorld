@@ -102,6 +102,14 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Harmonia|Health")
 	static float GetHealthPercent(UAbilitySystemComponent* AbilitySystemComponent);
 
+	/**
+	 * Restore health
+	 * @param AbilitySystemComponent The ability system component
+	 * @param Amount The amount to restore
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Health")
+	static void RestoreHealth(UAbilitySystemComponent* AbilitySystemComponent, float Amount);
+
 	// ============================================================================
 	// Poise Functions
 	// ============================================================================
