@@ -172,6 +172,81 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Impact_Stone, "Effect.Impact.Stone", "Stone impact effect");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Effect_Impact_Flesh, "Effect.Impact.Flesh", "Flesh impact effect");
 
+	// ============================================================
+	// Animation System Tags
+	// ============================================================
+
+	// Animation Root Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim, "Anim", "Root tag for all animations");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Player, "Anim.Player", "Player animations");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Monster, "Anim.Monster", "Monster animations");
+
+	// Player Animation Examples (Attack)
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Player_Attack, "Anim.Player.Attack", "Player attack animations");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Player_Attack_Sword, "Anim.Player.Attack.Sword", "Player sword attack animations");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Player_Attack_Sword_Light, "Anim.Player.Attack.Sword.Light", "Player light sword attack");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Player_Attack_Sword_Heavy, "Anim.Player.Attack.Sword.Heavy", "Player heavy sword attack");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Player_Attack_Sword_Combo1, "Anim.Player.Attack.Sword.Combo1", "Player sword combo 1");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Player_Attack_Sword_Combo2, "Anim.Player.Attack.Sword.Combo2", "Player sword combo 2");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Player_Attack_Sword_Combo3, "Anim.Player.Attack.Sword.Combo3", "Player sword combo 3");
+
+	// Player Animation Examples (Dodge)
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Player_Dodge, "Anim.Player.Dodge", "Player dodge animations");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Player_Dodge_Forward, "Anim.Player.Dodge.Forward", "Player forward dodge");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Player_Dodge_Backward, "Anim.Player.Dodge.Backward", "Player backward dodge");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Player_Dodge_Left, "Anim.Player.Dodge.Left", "Player left dodge");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Player_Dodge_Right, "Anim.Player.Dodge.Right", "Player right dodge");
+
+	// Player Animation Examples (HitReaction)
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Player_HitReaction, "Anim.Player.HitReaction", "Player hit reaction animations");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Player_HitReaction_Light, "Anim.Player.HitReaction.Light", "Player light hit reaction");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Player_HitReaction_Heavy, "Anim.Player.HitReaction.Heavy", "Player heavy hit reaction");
+
+	// Monster Animation Examples
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Monster_Goblin, "Anim.Monster.Goblin", "Goblin animations");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Monster_Goblin_Attack, "Anim.Monster.Goblin.Attack", "Goblin attack animation");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Anim_Monster_Goblin_Death, "Anim.Monster.Goblin.Death", "Goblin death animation");
+
+	// ============================================================
+	// Sound System Tags
+	// ============================================================
+
+	// Sound Root Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound, "Sound", "Root tag for all sounds");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX, "Sound.SFX", "Sound effects");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_Music, "Sound.Music", "Music");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_Voice, "Sound.Voice", "Voice/dialogue");
+
+	// SFX Examples (Hit)
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Hit, "Sound.SFX.Hit", "Hit sound effects");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Hit_Metal, "Sound.SFX.Hit.Metal", "Metal hit sound");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Hit_Wood, "Sound.SFX.Hit.Wood", "Wood hit sound");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Hit_Stone, "Sound.SFX.Hit.Stone", "Stone hit sound");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Hit_Flesh, "Sound.SFX.Hit.Flesh", "Flesh hit sound");
+
+	// SFX Examples (Weapon)
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Weapon, "Sound.SFX.Weapon", "Weapon sound effects");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Weapon_Sword, "Sound.SFX.Weapon.Sword", "Sword sound effects");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Weapon_Sword_Swing, "Sound.SFX.Weapon.Sword.Swing", "Sword swing sound");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Weapon_Sword_Hit, "Sound.SFX.Weapon.Sword.Hit", "Sword hit sound");
+
+	// SFX Examples (Footstep)
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Footstep, "Sound.SFX.Footstep", "Footstep sound effects");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Footstep_Stone, "Sound.SFX.Footstep.Stone", "Stone footstep sound");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Footstep_Wood, "Sound.SFX.Footstep.Wood", "Wood footstep sound");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Footstep_Grass, "Sound.SFX.Footstep.Grass", "Grass footstep sound");
+
+	// Music Examples
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_Music_Combat, "Sound.Music.Combat", "Combat music");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_Music_Combat_Intense, "Sound.Music.Combat.Intense", "Intense combat music");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_Music_Ambient, "Sound.Music.Ambient", "Ambient music");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_Music_Ambient_Peaceful, "Sound.Music.Ambient.Peaceful", "Peaceful ambient music");
+
+	// Voice Examples
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_Voice_Player, "Sound.Voice.Player", "Player voice");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_Voice_Player_Grunt, "Sound.Voice.Player.Grunt", "Player grunt sound");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_Voice_Player_Death, "Sound.Voice.Player.Death", "Player death sound");
+
 	FGameplayTag FindTagByString(const FString& TagString, bool bMatchPartialString)
 	{
 		const UGameplayTagsManager& Manager = UGameplayTagsManager::Get();
