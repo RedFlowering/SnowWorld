@@ -735,19 +735,19 @@ protected:
 
 	/** 생성 진행 콜백 / Generation progress callback */
 	UFUNCTION()
-	void OnGenerationProgressCallback(float Progress, const FString& Message);
+	void OnGenerationProgressCallback(float Progress);
 
 	/** 생성 완료 콜백 / Generation complete callback */
 	UFUNCTION()
-	void OnGenerationCompleteCallback(bool bSuccess);
+	void OnGenerationCompleteCallback(const TArray<int32>& HeightData, const TArray<FWorldObjectData>& Objects, bool bSuccess);
 
 private:
 	/** 서브시스템 캐시 / Cached subsystems */
 	UPROPERTY(Transient)
-	UHarmoniaWorldGeneratorSubsystem* CachedWorldGenSubsystem;
+	mutable UHarmoniaWorldGeneratorSubsystem* CachedWorldGenSubsystem;
 
 	UPROPERTY(Transient)
-	UHarmoniaWorldGeneratorEditorSubsystem* CachedEditorSubsystem;
+	mutable UHarmoniaWorldGeneratorEditorSubsystem* CachedEditorSubsystem;
 
 	/** 생성된 바이옴 데이터 / Generated biome data */
 	TArray<FBiomeData> GeneratedBiomeData;

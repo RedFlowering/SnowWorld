@@ -32,15 +32,14 @@ UHarmoniaWorldEditorUtility::UHarmoniaWorldEditorUtility()
 
 	// 기본 침식 설정
 	ErosionSettings.bEnableErosion = true;
-	ErosionSettings.Iterations = 50;
-	ErosionSettings.ErosionStrength = 0.5f;
-	ErosionSettings.DepositionStrength = 0.5f;
-	ErosionSettings.EvaporationRate = 0.01f;
+	ErosionSettings.ErosionIterations = 50;
+	ErosionSettings.ErodeSpeed = 0.5f;
+	ErosionSettings.DepositSpeed = 0.5f;
+	ErosionSettings.EvaporateSpeed = 0.01f;
 
 	// 기본 강 설정
 	RiverSettings.RiverCount = 5;
-	RiverSettings.MinRiverWidth = 500.0f;
-	RiverSettings.MaxRiverWidth = 2000.0f;
+	RiverSettings.RiverWidth = 500.0f;
 
 	// 기본 호수 설정
 	LakeSettings.LakeCount = 10;
@@ -50,8 +49,8 @@ UHarmoniaWorldEditorUtility::UHarmoniaWorldEditorUtility()
 	// 기본 동굴 설정
 	CaveSettings.bEnableCaves = true;
 	CaveSettings.CaveDensity = 0.3f;
-	CaveSettings.CaveDepthMin = -5000.0f;
-	CaveSettings.CaveDepthMax = -500.0f;
+	CaveSettings.MinCaveDepth = 200.0f;
+	CaveSettings.MaxCaveDepth = 1000.0f;
 
 	// 기본 POI 설정
 	POISettings.POICount = 20;
@@ -273,7 +272,7 @@ void UHarmoniaWorldEditorUtility::ApplyPreset(const FString& PresetName)
 	else if (PresetName == TEXT("Canyon"))
 	{
 		ErosionSettings.bEnableErosion = true;
-		ErosionSettings.Iterations = 200;
+		ErosionSettings.ErosionIterations = 200;
 		SeaLevel = 0.3f;
 		NoiseSettings.Amplitude = 1.2f;
 		StatusMessage = TEXT("Applied Canyon preset");
@@ -543,17 +542,17 @@ void UHarmoniaWorldEditorUtility::CancelGeneration()
 // Callbacks
 //=============================================================================
 
-void UHarmoniaWorldEditorUtility::OnGenerationProgressCallback(float Progress, const FString& Message)
+void UHarmoniaWorldEditorUtility::OnGenerationProgressCallback(float Progress)
 {
 	GenerationProgress = Progress;
-	StatusMessage = Message;
+	StatusMessage = FString::Printf(TEXT("Generating world: %.1f%%"), Progress * 100.0f);
 
-	OnProgressUpdateEvent.Broadcast(Progress, Message);
+	OnProgressUpdateEvent.Broadcast(Progress, StatusMessage);
 
-	UE_LOG(LogTemp, Verbose, TEXT("Generation progress: %.1f%% - %s"), Progress * 100.0f, *Message);
+	UE_LOG(LogTemp, Verbose, TEXT("Generation progress: %.1f%%"), Progress * 100.0f);
 }
 
-void UHarmoniaWorldEditorUtility::OnGenerationCompleteCallback(bool bSuccess)
+void UHarmoniaWorldEditorUtility::OnGenerationCompleteCallback(const TArray<int32>& HeightData, const TArray<FWorldObjectData>& Objects, bool bSuccess)
 {
 	bIsGenerating = false;
 	GenerationProgress = 1.0f;
@@ -567,7 +566,11 @@ void UHarmoniaWorldEditorUtility::OnGenerationCompleteCallback(bool bSuccess)
 	if (bSuccess)
 	{
 		StatusMessage = FString::Printf(TEXT("World generation completed successfully in %.1f seconds!"), LastGenerationTimeSeconds);
-		UE_LOG(LogTemp, Log, TEXT("World generation completed successfully in %.1f seconds"), LastGenerationTimeSeconds);
+		UE_LOG(LogTemp, Log, TEXT("World generation completed successfully in %.1f seconds (HeightData: %d, Objects: %d)"),
+			LastGenerationTimeSeconds, HeightData.Num(), Objects.Num());
+
+		// Store generated data
+		GeneratedObjectData = Objects;
 
 		// 통계 새로고침
 		RefreshStatistics();
