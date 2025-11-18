@@ -3,6 +3,7 @@
 #include "Components/HarmoniaMapComponent.h"
 #include "System/HarmoniaMapSubsystem.h"
 #include "System/HarmoniaFogOfWarRenderer.h"
+#include "System/HarmoniaSaveGameSubsystem.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
@@ -355,16 +356,62 @@ FVector UHarmoniaMapComponent::MapUVToWorld(const FVector2D& UV, float WorldZ) c
 
 void UHarmoniaMapComponent::SaveExplorationData()
 {
-	// TODO: Implement save system integration
-	// This would integrate with your game's save system
-	UE_LOG(LogTemp, Log, TEXT("SaveExplorationData called - implement save system integration"));
+	// Save exploration data via save game subsystem
+	if (UWorld* World = GetWorld())
+	{
+		if (UHarmoniaSaveGameSubsystem* SaveSubsystem = World->GetSubsystem<UHarmoniaSaveGameSubsystem>())
+		{
+			// Get the player pawn/controller to identify the save slot
+			APawn* OwnerPawn = Cast<APawn>(GetOwner());
+			if (OwnerPawn)
+			{
+				// Create save data structure
+				FHarmoniaMapExplorationSaveData SaveData;
+				SaveData.ExploredRegions = ExploredRegions;
+				SaveData.DiscoveredLocations = DiscoveredLocations;
+
+				// Save to subsystem (would be persisted with next save operation)
+				SaveSubsystem->SaveMapExplorationData(SaveData);
+
+				UE_LOG(LogTemp, Log, TEXT("Map exploration data saved (%d regions, %d locations)"),
+					ExploredRegions.Num(), DiscoveredLocations.Num());
+			}
+		}
+	}
 }
 
 void UHarmoniaMapComponent::LoadExplorationData()
 {
-	// TODO: Implement save system integration
-	// This would load from your game's save system
-	UE_LOG(LogTemp, Log, TEXT("LoadExplorationData called - implement save system integration"));
+	// Load exploration data from save game subsystem
+	if (UWorld* World = GetWorld())
+	{
+		if (UHarmoniaSaveGameSubsystem* SaveSubsystem = World->GetSubsystem<UHarmoniaSaveGameSubsystem>())
+		{
+			// Get the player pawn/controller to identify the save slot
+			APawn* OwnerPawn = Cast<APawn>(GetOwner());
+			if (OwnerPawn)
+			{
+				// Load from subsystem
+				FHarmoniaMapExplorationSaveData SaveData;
+				if (SaveSubsystem->LoadMapExplorationData(SaveData))
+				{
+					ExploredRegions = SaveData.ExploredRegions;
+					DiscoveredLocations = SaveData.DiscoveredLocations;
+
+					UE_LOG(LogTemp, Log, TEXT("Map exploration data loaded (%d regions, %d locations)"),
+						ExploredRegions.Num(), DiscoveredLocations.Num());
+
+					// Notify replication
+					OnRep_ExploredRegions();
+					OnRep_DiscoveredLocations();
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("No saved map exploration data found"));
+				}
+			}
+		}
+	}
 }
 
 void UHarmoniaMapComponent::UpdateExploration()
@@ -439,7 +486,34 @@ bool UHarmoniaMapComponent::ServerCreatePing_Validate(const FVector& WorldLocati
 		return false;
 	}
 
-	// TODO: Add rate limiting to prevent ping spam
+	// Rate limiting to prevent ping spam
+	const float MinTimeBetweenPings = 0.5f; // Minimum 0.5 seconds between pings
+	const int32 MaxPingsPerMinute = 30; // Maximum 30 pings per minute
+
+	float CurrentTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
+
+	// Check time since last ping
+	if (CurrentTime - LastPingTime < MinTimeBetweenPings)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerCreatePing: Ping spam detected (too frequent)"));
+		return false;
+	}
+
+	// Check ping count in the last minute
+	PingTimestamps.RemoveAll([CurrentTime](float Timestamp) {
+		return (CurrentTime - Timestamp) > 60.0f; // Remove timestamps older than 1 minute
+	});
+
+	if (PingTimestamps.Num() >= MaxPingsPerMinute)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerCreatePing: Ping spam detected (too many pings)"));
+		return false;
+	}
+
+	// Update rate limiting trackers
+	LastPingTime = CurrentTime;
+	PingTimestamps.Add(CurrentTime);
+
 	return true;
 }
 

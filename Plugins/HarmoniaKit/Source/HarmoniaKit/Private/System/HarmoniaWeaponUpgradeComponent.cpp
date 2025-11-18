@@ -3,6 +3,8 @@
 #include "System/HarmoniaWeaponUpgradeComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "System/HarmoniaCombatPowerCalculator.h"
+#include "Components/HarmoniaInventoryComponent.h"
+#include "Components/HarmoniaCurrencyManagerComponent.h"
 
 UHarmoniaWeaponUpgradeComponent::UHarmoniaWeaponUpgradeComponent()
 {
@@ -34,13 +36,58 @@ bool UHarmoniaWeaponUpgradeComponent::UpgradeWeapon()
 		return false;
 	}
 
-	// TODO: Check for materials and currency
+	// Check for required currency
+	int32 RequiredCurrency = GetRequiredCurrency(UpgradeLevel + 1);
+	AActor* Owner = GetOwner();
+	if (Owner)
+	{
+		// Check if owner has currency component
+		UHarmoniaCurrencyManagerComponent* CurrencyComponent = Owner->FindComponentByClass<UHarmoniaCurrencyManagerComponent>();
+		if (CurrencyComponent)
+		{
+			if (!CurrencyComponent->HasCurrency(EHarmoniaCurrencyType::Gold, RequiredCurrency))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("UpgradeWeapon: Insufficient currency. Required: %d"), RequiredCurrency);
+				return false;
+			}
+		}
+
+		// Check if owner has inventory component for materials
+		UHarmoniaInventoryComponent* InventoryComponent = Owner->FindComponentByClass<UHarmoniaInventoryComponent>();
+		if (InventoryComponent)
+		{
+			TArray<FName> RequiredMaterials = GetRequiredMaterials(UpgradeLevel + 1);
+			for (const FName& MaterialID : RequiredMaterials)
+			{
+				// Check if player has at least 1 of each required material
+				// This is a simplified check - you might want to specify quantities
+				if (!InventoryComponent->HasItem(MaterialID, 1))
+				{
+					UE_LOG(LogTemp, Warning, TEXT("UpgradeWeapon: Missing required material: %s"), *MaterialID.ToString());
+					return false;
+				}
+			}
+
+			// Consume materials
+			for (const FName& MaterialID : RequiredMaterials)
+			{
+				InventoryComponent->RemoveItem(MaterialID, 1);
+			}
+		}
+
+		// Consume currency
+		if (CurrencyComponent)
+		{
+			CurrencyComponent->RemoveCurrency(EHarmoniaCurrencyType::Gold, RequiredCurrency);
+		}
+	}
 
 	UpgradeLevel++;
 	RecalculateStatModifiers();
 
 	OnRep_UpgradeLevel();
 
+	UE_LOG(LogTemp, Log, TEXT("Weapon upgraded to level %d"), UpgradeLevel);
 	return true;
 }
 
@@ -71,13 +118,75 @@ bool UHarmoniaWeaponUpgradeComponent::InfuseWeapon(EHarmoniaElementType ElementT
 		return false;
 	}
 
-	// TODO: Check for materials and currency
+	// Check for required currency (infusion is more expensive)
+	int32 RequiredCurrency = BaseInfusionCost;
+	AActor* Owner = GetOwner();
+	if (Owner)
+	{
+		// Check if owner has currency component
+		UHarmoniaCurrencyManagerComponent* CurrencyComponent = Owner->FindComponentByClass<UHarmoniaCurrencyManagerComponent>();
+		if (CurrencyComponent)
+		{
+			if (!CurrencyComponent->HasCurrency(EHarmoniaCurrencyType::Gold, RequiredCurrency))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("InfuseWeapon: Insufficient currency. Required: %d"), RequiredCurrency);
+				return false;
+			}
+		}
+
+		// Check for element-specific infusion material
+		UHarmoniaInventoryComponent* InventoryComponent = Owner->FindComponentByClass<UHarmoniaInventoryComponent>();
+		if (InventoryComponent)
+		{
+			FName InfusionMaterial;
+
+			// Determine required material based on element type
+			switch (ElementType)
+			{
+			case EHarmoniaElementType::Fire:
+				InfusionMaterial = FName("FireEssence");
+				break;
+			case EHarmoniaElementType::Ice:
+				InfusionMaterial = FName("IceEssence");
+				break;
+			case EHarmoniaElementType::Lightning:
+				InfusionMaterial = FName("LightningEssence");
+				break;
+			case EHarmoniaElementType::Dark:
+				InfusionMaterial = FName("DarkEssence");
+				break;
+			case EHarmoniaElementType::Light:
+				InfusionMaterial = FName("LightEssence");
+				break;
+			default:
+				InfusionMaterial = FName("ElementalEssence");
+				break;
+			}
+
+			// Check if player has infusion material
+			if (!InventoryComponent->HasItem(InfusionMaterial, 1))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("InfuseWeapon: Missing required infusion material: %s"), *InfusionMaterial.ToString());
+				return false;
+			}
+
+			// Consume infusion material
+			InventoryComponent->RemoveItem(InfusionMaterial, 1);
+		}
+
+		// Consume currency
+		if (CurrencyComponent)
+		{
+			CurrencyComponent->RemoveCurrency(EHarmoniaCurrencyType::Gold, RequiredCurrency);
+		}
+	}
 
 	InfusionType = ElementType;
 	RecalculateStatModifiers();
 
 	OnRep_InfusionType();
 
+	UE_LOG(LogTemp, Log, TEXT("Weapon infused with %s element"), *UEnum::GetValueAsString(ElementType));
 	return true;
 }
 
