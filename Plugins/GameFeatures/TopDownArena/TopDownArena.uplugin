@@ -26,6 +26,10 @@
 	],
 	"Plugins": [
 		{
+			"Name": "ALS",
+			"Enabled": true
+		},
+		{
 			"Name": "GameplayAbilities",
 			"Enabled": true
 		},

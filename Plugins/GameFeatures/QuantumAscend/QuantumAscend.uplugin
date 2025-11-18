@@ -26,11 +26,15 @@
 	"BuiltInInitialFeatureState": "Active",
 	"Plugins": [
 		{
-			"Name": "ShooterCore",
+			"Name": "ALS",
 			"Enabled": true
 		},
 		{
-			"Name": "ALS",
+			"Name": "CableComponent",
+			"Enabled": true
+		},
+		{
+			"Name": "ShooterCore",
 			"Enabled": true
 		}
 	]
