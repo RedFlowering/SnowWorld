@@ -25,6 +25,7 @@ public class HarmoniaKit : ModuleRules
                 "GameplayTags",
                 "GameplayTasks",
                 "LyraGame", // For LyraGameplayAbility base class
+                "ALS", // Advanced Locomotion System (required by LyraCharacter)
                 "OnlineSubsystem",
                 "OnlineSubsystemUtils",
                 "CommonUI", // For UCommonActivatableWidget
