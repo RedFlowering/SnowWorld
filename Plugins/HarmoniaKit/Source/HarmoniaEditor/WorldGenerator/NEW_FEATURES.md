@@ -289,7 +289,7 @@ C:/Exports/Worlds/
 ### 사용법
 ```cpp
 // 월드 타입별 추천 설정
-FWorldGeneratorConfig Config = GetSuggestedConfig(EWorldType::Volcanic);
+FWorldGeneratorConfig Config = GetSuggestedConfig(EHarmoniaWorldType::Volcanic);
 
 // 최적화 제안 받기
 TArray<FString> Suggestions = GetOptimizationSuggestions();

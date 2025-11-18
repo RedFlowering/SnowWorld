@@ -21,7 +21,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnGenerationProgress, float, Progr
 
 /** 월드 타입 (제안 시스템용) / World type for suggestion system */
 UENUM(BlueprintType)
-enum class EWorldType : uint8
+enum class EHarmoniaWorldType : uint8
 {
 	Realistic		UMETA(DisplayName = "Realistic"),
 	Fantasy			UMETA(DisplayName = "Fantasy"),
@@ -664,7 +664,7 @@ public:
 
 	/** 원하는 월드 타입에 대한 설정 제안 / Get suggested config for desired world type */
 	UFUNCTION(BlueprintCallable, Category = "World Generation|Suggestions")
-	FWorldGeneratorConfig GetSuggestedConfig(EWorldType WorldType) const;
+	FWorldGeneratorConfig GetSuggestedConfig(EHarmoniaWorldType WorldType) const;
 
 	/** 현재 설정에 대한 최적화 제안 / Get optimization suggestions for current config */
 	UFUNCTION(BlueprintCallable, Category = "World Generation|Suggestions")
