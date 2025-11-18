@@ -770,21 +770,19 @@ void UHarmoniaGameService::UploadLeaderboardScore(FName LeaderboardId, int64 Sco
 
 	// Create leaderboard write object
 	FOnlineLeaderboardWrite WriteObject;
-	WriteObject.LeaderboardNames.Add(LeaderboardId);
+	WriteObject.LeaderboardNames.Add(LeaderboardId.ToString());
 
 	FVariantData ScoreData;
 	ScoreData.SetValue(Score);
-	WriteObject.SetIntStat(LeaderboardId, Score);
+	WriteObject.SetIntStat(LeaderboardId.ToString(), Score);
 
 	// Use KeepBest by default (most leaderboard systems)
-	WriteObject.RatedStat = LeaderboardId;
+	WriteObject.RatedStat = LeaderboardId.ToString();
 	WriteObject.DisplayFormat = (UpdateMethod == EHarmoniaLeaderboardUpdateMethod::KeepBest) ?
 		ELeaderboardFormat::Number : ELeaderboardFormat::Number;
 
-	// Setup completion delegate
-	FOnLeaderboardFlushCompleteDelegate FlushDelegate = FOnLeaderboardFlushCompleteDelegate::CreateUObject(
-		this, &UHarmoniaGameService::OnLeaderboardWriteComplete
-	);
+	// Note: Leaderboard flush delegates work differently, just call FlushLeaderboards directly
+	// The completion is handled through the leaderboard interface, not through a delegate callback
 
 	// Write score
 	bool bResult = Leaderboards->FlushLeaderboards(FName(TEXT("GameSession")));
