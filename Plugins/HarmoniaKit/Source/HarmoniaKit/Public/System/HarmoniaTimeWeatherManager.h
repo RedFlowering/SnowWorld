@@ -244,23 +244,23 @@ protected:
 
 	/** Current time of day */
 	UPROPERTY(BlueprintReadOnly, Category = "Time & Weather")
-	EHarmoniaTimeOfDay CurrentTimeOfDay;
+	EHarmoniaTimeOfDay CurrentTimeOfDay = EHarmoniaTimeOfDay::Morning;
 
 	/** Current weather */
 	UPROPERTY(BlueprintReadOnly, Category = "Time & Weather")
-	EHarmoniaWeatherType CurrentWeather;
+	EHarmoniaWeatherType CurrentWeather = EHarmoniaWeatherType::Clear;
 
 	/** Current weather intensity */
 	UPROPERTY(BlueprintReadOnly, Category = "Time & Weather")
-	float CurrentWeatherIntensity;
+	float CurrentWeatherIntensity = 0.0f;
 
 	/** Current hour (0-23) */
 	UPROPERTY(BlueprintReadOnly, Category = "Time & Weather")
-	int32 CurrentHour;
+	int32 CurrentHour = 12;
 
 	/** Current minute (0-59) */
 	UPROPERTY(BlueprintReadOnly, Category = "Time & Weather")
-	int32 CurrentMinute;
+	int32 CurrentMinute = 0;
 
 	// ==================== Spam Prevention ====================
 
