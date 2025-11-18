@@ -40,8 +40,8 @@ void UHarmoniaWorldGeneratorEditorSubsystem::DrawBiomeDebugVisualization(
 		return;
 	}
 
-	const int32 MapSize = Config.Width;
-	const float TileSize = Config.TileSize;
+	const int32 MapSize = Config.SizeX;
+	const float TileSize = 100.0f; // Default landscape quad size
 
 	// Draw biome grid
 	for (int32 Y = 0; Y < MapSize; Y += 10) // Sample every 10 tiles for performance
@@ -77,7 +77,7 @@ void UHarmoniaWorldGeneratorEditorSubsystem::DrawBiomeDebugVisualization(
 					case EBiomeType::Rainforest: BiomeName = TEXT("Rainforest"); break;
 					case EBiomeType::Savanna: BiomeName = TEXT("Savanna"); break;
 					case EBiomeType::Mountain: BiomeName = TEXT("Mountain"); break;
-					case EBiomeType::SnowyMountain: BiomeName = TEXT("Snowy Mountain"); break;
+					case EBiomeType::Snow: BiomeName = TEXT("Snow"); break;
 					case EBiomeType::Swamp: BiomeName = TEXT("Swamp"); break;
 					default: BiomeName = TEXT("Unknown"); break;
 				}
@@ -104,9 +104,18 @@ void UHarmoniaWorldGeneratorEditorSubsystem::DrawRoadDebugVisualization(
 
 	for (const FRoadSegmentData& Segment : RoadSegments)
 	{
-		DrawDebugLine(World, Segment.StartPoint, Segment.EndPoint, RoadColor, false, Duration, 0, RoadThickness);
-		DrawDebugSphere(World, Segment.StartPoint, 50.0f, 8, RoadColor, false, Duration);
-		DrawDebugSphere(World, Segment.EndPoint, 50.0f, 8, RoadColor, false, Duration);
+		// Draw spline points
+		for (int32 i = 0; i < Segment.SplinePoints.Num() - 1; ++i)
+		{
+			DrawDebugLine(World, Segment.SplinePoints[i], Segment.SplinePoints[i + 1], RoadColor, false, Duration, 0, RoadThickness);
+		}
+
+		// Draw endpoint markers
+		if (Segment.SplinePoints.Num() > 0)
+		{
+			DrawDebugSphere(World, Segment.SplinePoints[0], 50.0f, 8, RoadColor, false, Duration);
+			DrawDebugSphere(World, Segment.SplinePoints.Last(), 50.0f, 8, RoadColor, false, Duration);
+		}
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("Drew road debug visualization (%d segments)"), RoadSegments.Num());
@@ -127,12 +136,16 @@ void UHarmoniaWorldGeneratorEditorSubsystem::DrawRiverDebugVisualization(
 
 	for (const FRoadSegmentData& Segment : RiverSegments)
 	{
-		DrawDebugLine(World, Segment.StartPoint, Segment.EndPoint, RiverColor, false, Duration, 0, RiverThickness);
+		// Draw spline points
+		for (int32 i = 0; i < Segment.SplinePoints.Num() - 1; ++i)
+		{
+			DrawDebugLine(World, Segment.SplinePoints[i], Segment.SplinePoints[i + 1], RiverColor, false, Duration, 0, RiverThickness);
 
-		// Draw flow direction arrows
-		const FVector Direction = (Segment.EndPoint - Segment.StartPoint).GetSafeNormal();
-		const FVector MidPoint = (Segment.StartPoint + Segment.EndPoint) * 0.5f;
-		DrawDebugDirectionalArrow(World, MidPoint, MidPoint + Direction * 100.0f, 50.0f, RiverColor, false, Duration);
+			// Draw flow direction arrows
+			const FVector Direction = (Segment.SplinePoints[i + 1] - Segment.SplinePoints[i]).GetSafeNormal();
+			const FVector MidPoint = (Segment.SplinePoints[i] + Segment.SplinePoints[i + 1]) * 0.5f;
+			DrawDebugDirectionalArrow(World, MidPoint, MidPoint + Direction * 100.0f, 50.0f, RiverColor, false, Duration);
+		}
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("Drew river debug visualization (%d segments)"), RiverSegments.Num());
@@ -155,19 +168,11 @@ void UHarmoniaWorldGeneratorEditorSubsystem::DrawStructureDebugVisualization(
 
 		switch (Object.ObjectType)
 		{
-			case EWorldObjectType::House:
+			case EWorldObjectType::Structure:
 				ObjectColor = FColor::White;
 				BoxSize = 200.0f;
 				break;
-			case EWorldObjectType::Ruins:
-				ObjectColor = FColor(128, 128, 128);
-				BoxSize = 300.0f;
-				break;
-			case EWorldObjectType::Tower:
-				ObjectColor = FColor::Red;
-				BoxSize = 150.0f;
-				break;
-			case EWorldObjectType::Camp:
+			case EWorldObjectType::POI:
 				ObjectColor = FColor::Yellow;
 				BoxSize = 250.0f;
 				break;
@@ -184,11 +189,9 @@ void UHarmoniaWorldGeneratorEditorSubsystem::DrawStructureDebugVisualization(
 		FString ObjectName;
 		switch (Object.ObjectType)
 		{
-			case EWorldObjectType::House: ObjectName = TEXT("House"); break;
-			case EWorldObjectType::Ruins: ObjectName = TEXT("Ruins"); break;
-			case EWorldObjectType::Tower: ObjectName = TEXT("Tower"); break;
-			case EWorldObjectType::Camp: ObjectName = TEXT("Camp"); break;
-			default: ObjectName = TEXT("Structure"); break;
+			case EWorldObjectType::Structure: ObjectName = TEXT("Structure"); break;
+			case EWorldObjectType::POI: ObjectName = TEXT("POI"); break;
+			default: ObjectName = TEXT("Object"); break;
 		}
 		DrawDebugString(World, Object.Location + FVector(0, 0, 200), ObjectName, nullptr, ObjectColor, Duration);
 	}
@@ -309,8 +312,8 @@ void UHarmoniaWorldGeneratorEditorSubsystem::DrawHeightmapDebugVisualization(
 		return;
 	}
 
-	const int32 MapSize = Config.Width;
-	const float TileSize = Config.TileSize;
+	const int32 MapSize = Config.SizeX;
+	const float TileSize = 100.0f; // Default landscape quad size
 
 	// Draw heightmap grid (sample every 20 tiles for performance)
 	for (int32 Y = 0; Y < MapSize; Y += 20)
