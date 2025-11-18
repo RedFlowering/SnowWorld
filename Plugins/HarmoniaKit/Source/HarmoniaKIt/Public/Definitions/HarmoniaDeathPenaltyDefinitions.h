@@ -14,13 +14,11 @@ enum class EHarmoniaCurrencyType : uint8
 {
 	None UMETA(DisplayName = "None"),
 
-	// Core currencies
-	MemoryEssence UMETA(DisplayName = "Memory Essence", ToolTip = "Used for leveling up and experience"),
-	SoulCrystals UMETA(DisplayName = "Soul Crystals", ToolTip = "Used for equipment enhancement"),
-	ForgottenKnowledge UMETA(DisplayName = "Forgotten Knowledge", ToolTip = "Used for skill points"),
-	TimeFragments UMETA(DisplayName = "Time Fragments", ToolTip = "Used for special items"),
+	MemoryEssence UMETA(DisplayName = "Memory Essence"),
+	SoulCrystals UMETA(DisplayName = "Soul Crystals"),
+	ForgottenKnowledge UMETA(DisplayName = "Forgotten Knowledge"),
+	TimeFragments UMETA(DisplayName = "Time Fragments"),
 
-	// Legacy support
 	Gold UMETA(DisplayName = "Gold"),
 
 	Custom UMETA(DisplayName = "Custom")
@@ -33,10 +31,10 @@ UENUM(BlueprintType)
 enum class EHarmoniaDeathPenaltySeverity : uint8
 {
 	None UMETA(DisplayName = "None"),
-	Light UMETA(DisplayName = "Light", ToolTip = "10% penalty"),
-	Medium UMETA(DisplayName = "Medium", ToolTip = "30% penalty"),
-	Heavy UMETA(DisplayName = "Heavy", ToolTip = "50% penalty"),
-	Severe UMETA(DisplayName = "Severe", ToolTip = "75% penalty"),
+	Light UMETA(DisplayName = "Light"),
+	Medium UMETA(DisplayName = "Medium"),
+	Heavy UMETA(DisplayName = "Heavy"),
+	Severe UMETA(DisplayName = "Severe"),
 	Custom UMETA(DisplayName = "Custom")
 };
 
@@ -46,9 +44,9 @@ enum class EHarmoniaDeathPenaltySeverity : uint8
 UENUM(BlueprintType)
 enum class EHarmoniaPlayerDeathState : uint8
 {
-	Normal UMETA(DisplayName = "Normal", ToolTip = "No death penalty active"),
-	Ethereal UMETA(DisplayName = "Ethereal", ToolTip = "Weakened state after first death"),
-	Corrupted UMETA(DisplayName = "Corrupted", ToolTip = "Severely weakened after multiple deaths")
+	Normal UMETA(DisplayName = "Normal"),
+	Ethereal UMETA(DisplayName = "Ethereal"),
+	Corrupted UMETA(DisplayName = "Corrupted")
 };
 
 /**
