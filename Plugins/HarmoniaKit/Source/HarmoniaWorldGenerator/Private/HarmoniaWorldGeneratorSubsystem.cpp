@@ -68,7 +68,7 @@ void UHarmoniaWorldGeneratorSubsystem::GenerateObjectsInRegion(
         for (int32 X = RegionMinX; X <= RegionMaxX; ++X)
         {
             // Use location-based seed for deterministic placement
-            int32 LocationSeed = Config.Seed + X * 73856093 + Y * 19349663;
+            int32 LocationSeed = Config.Seed + X * SEED_PRIME_X + Y * SEED_PRIME_Y;
             Random.Initialize(LocationSeed);
 
             if (!IsValidObjectLocation(X, Y, HeightData, Config))
@@ -148,9 +148,9 @@ void UHarmoniaWorldGeneratorSubsystem::GenerateHeightmap(
 
                     // Clamp and convert to 16-bit heightmap value
                     const int32 HeightVal = FMath::Clamp(
-                        FMath::RoundToInt(Height * 65535.f),
+                        FMath::RoundToInt(Height * MAX_HEIGHT_VALUE),
                         0,
-                        65535
+                        (int32)MAX_HEIGHT_VALUE
                     );
 
                     OutHeightData[Y * Config.SizeX + X] = HeightVal;
@@ -222,40 +222,7 @@ void UHarmoniaWorldGeneratorSubsystem::GenerateObjects(
             {
                 for (int32 X = StartX; X < EndX; ++X)
                 {
-                    // Use location-based seed for deterministic placement
-                    int32 LocationSeed = Config.Seed + X * 73856093 + Y * 19349663;
-                    FRandomStream Random(LocationSeed);
-
-                    if (!IsValidObjectLocation(X, Y, HeightData, Config))
-                    {
-                        continue;
-                    }
-
-                    // Check spawn probability
-                    if (Random.FRand() >= Config.ObjectDensity)
-                    {
-                        continue;
-                    }
-
-                    // Pick object type
-                    EWorldObjectType ObjType = PickObjectType(Config.ObjectTypeProbabilities, Random);
-                    if (ObjType == EWorldObjectType::None)
-                    {
-                        continue;
-                    }
-
-                    // Create object data
-                    float HeightNorm = (float)HeightData[Y * Config.SizeX + X] / 65535.f;
-                    FVector Location(X * 100.f, Y * 100.f, HeightNorm * Config.MaxHeight);
-
-                    FWorldObjectData ObjData;
-                    ObjData.ObjectType = ObjType;
-                    ObjData.ActorClass = ActorClassMap.Contains(ObjType) ? ActorClassMap[ObjType] : nullptr;
-                    ObjData.Location = Location;
-                    ObjData.Rotation = FRotator(0.f, Random.FRandRange(0.f, 360.f), 0.f);
-                    ObjData.Scale = FVector(Random.FRandRange(0.8f, 1.2f));
-
-                    OutObjects.Add(ObjData);
+                    ProcessObjectTile(X, Y, Config, HeightData, ActorClassMap, OutObjects);
                 }
             }
 
@@ -359,7 +326,7 @@ bool UHarmoniaWorldGeneratorSubsystem::IsValidObjectLocation(
     const float HeightNorm = (float)HeightData[Y * Config.SizeX + X] / 65535.f;
 
     // Must be above sea level with some margin
-    const float MinHeight = Config.SeaLevel + 0.02f;
+    const float MinHeight = Config.SeaLevel + SEA_LEVEL_MARGIN;
     if (HeightNorm <= MinHeight)
     {
         return false;
@@ -369,14 +336,14 @@ bool UHarmoniaWorldGeneratorSubsystem::IsValidObjectLocation(
     if (X > 0 && X < Config.SizeX - 1 && Y > 0 && Y < Config.SizeY - 1)
     {
         // Get neighboring heights
-        const float HeightLeft = (float)HeightData[Y * Config.SizeX + (X - 1)] / 65535.f;
-        const float HeightRight = (float)HeightData[Y * Config.SizeX + (X + 1)] / 65535.f;
-        const float HeightUp = (float)HeightData[(Y - 1) * Config.SizeX + X] / 65535.f;
-        const float HeightDown = (float)HeightData[(Y + 1) * Config.SizeX + X] / 65535.f;
+        const float HeightLeft = (float)HeightData[Y * Config.SizeX + (X - 1)] / MAX_HEIGHT_VALUE;
+        const float HeightRight = (float)HeightData[Y * Config.SizeX + (X + 1)] / MAX_HEIGHT_VALUE;
+        const float HeightUp = (float)HeightData[(Y - 1) * Config.SizeX + X] / MAX_HEIGHT_VALUE;
+        const float HeightDown = (float)HeightData[(Y + 1) * Config.SizeX + X] / MAX_HEIGHT_VALUE;
 
         // Calculate slope
-        const float SlopeX = FMath::Abs(HeightRight - HeightLeft) * Config.MaxHeight / 200.f; // 200 = 2 tiles * 100 UE units
-        const float SlopeY = FMath::Abs(HeightDown - HeightUp) * Config.MaxHeight / 200.f;
+        const float SlopeX = FMath::Abs(HeightRight - HeightLeft) * Config.MaxHeight / SLOPE_CALC_DISTANCE; // 200 = 2 tiles * 100 UE units
+        const float SlopeY = FMath::Abs(HeightDown - HeightUp) * Config.MaxHeight / SLOPE_CALC_DISTANCE;
         const float Slope = FMath::Sqrt(SlopeX * SlopeX + SlopeY * SlopeY);
 
         // Convert to degrees
@@ -431,7 +398,7 @@ float UHarmoniaWorldGeneratorSubsystem::CalculateFlatness(
 
     // Normalize to 0-1 (0 = very steep, 1 = perfectly flat)
     // Max expected variance for "not flat" is about 5000 (out of 65535)
-    const float Flatness = 1.f - FMath::Clamp(AvgVariance / 5000.f, 0.f, 1.f);
+    const float Flatness = 1.f - FMath::Clamp(AvgVariance / FLATNESS_VARIANCE_THRESHOLD, 0.f, 1.f);
 
     return Flatness;
 }
@@ -473,7 +440,7 @@ void UHarmoniaWorldGeneratorSubsystem::GenerateBiomeMap(
             const int32 Index = Y * Config.SizeX + X;
 
             // Get height
-            const float Height = (float)HeightData[Index] / 65535.f;
+            const float Height = (float)HeightData[Index] / MAX_HEIGHT_VALUE;
 
             // Calculate temperature and moisture
             const float Temperature = CalculateTemperature(X, Y, Height, Config);
@@ -672,7 +639,7 @@ void UHarmoniaWorldGeneratorSubsystem::GenerateRivers(
         for (int32 X = 0; X < Config.SizeX; ++X)
         {
             const int32 Index = Y * Config.SizeX + X;
-            const float Height = (float)HeightData[Index] / 65535.f;
+            const float Height = (float)HeightData[Index] / MAX_HEIGHT_VALUE;
 
             // Check if this is a good river source
             if (Height >= Config.RiverSettings.MinSourceHeight && Height < 0.9f)
@@ -745,12 +712,12 @@ void UHarmoniaWorldGeneratorSubsystem::TraceRiver(
         VisitedTiles.Add(CurrentIndex);
 
         // Get current height
-        const float CurrentHeight = (float)HeightData[CurrentIndex] / 65535.f;
+        const float CurrentHeight = (float)HeightData[CurrentIndex] / MAX_HEIGHT_VALUE;
 
         // Add point to river path
         const FVector RiverPoint(
-            CurrentX * 100.f,
-            CurrentY * 100.f,
+            CurrentX * TILE_SIZE,
+            CurrentY * TILE_SIZE,
             CurrentHeight * Config.MaxHeight
         );
         OutRiverPath.Add(RiverPoint);
@@ -784,7 +751,7 @@ void UHarmoniaWorldGeneratorSubsystem::TraceRiver(
                 }
 
                 const int32 NeighborIndex = NeighborY * Config.SizeX + NeighborX;
-                const float NeighborHeight = (float)HeightData[NeighborIndex] / 65535.f;
+                const float NeighborHeight = (float)HeightData[NeighborIndex] / MAX_HEIGHT_VALUE;
 
                 if (NeighborHeight < LowestHeight)
                 {
@@ -803,10 +770,54 @@ void UHarmoniaWorldGeneratorSubsystem::TraceRiver(
         }
         else
         {
-            // No lower neighbor found (we're in a depression)
+            // Local minimum (lake/puddle), stop tracing
             break;
         }
     }
+}
+
+void UHarmoniaWorldGeneratorSubsystem::ProcessObjectTile(
+    int32 X,
+    int32 Y,
+    const FWorldGeneratorConfig& Config,
+    const TArray<int32>& HeightData,
+    const TMap<EWorldObjectType, TSoftClassPtr<AActor>>& ActorClassMap,
+    TArray<FWorldObjectData>& OutObjects)
+{
+    // Use location-based seed for deterministic placement
+    int32 LocationSeed = Config.Seed + X * SEED_PRIME_X + Y * SEED_PRIME_Y;
+    FRandomStream Random(LocationSeed);
+
+    if (!IsValidObjectLocation(X, Y, HeightData, Config))
+    {
+        return;
+    }
+
+    // Check spawn probability
+    if (Random.FRand() >= Config.ObjectDensity)
+    {
+        return;
+    }
+
+    // Pick object type
+    EWorldObjectType ObjType = PickObjectType(Config.ObjectTypeProbabilities, Random);
+    if (ObjType == EWorldObjectType::None)
+    {
+        return;
+    }
+
+    // Create object data
+    float HeightNorm = (float)HeightData[Y * Config.SizeX + X] / MAX_HEIGHT_VALUE;
+    FVector Location(X * TILE_SIZE, Y * TILE_SIZE, HeightNorm * Config.MaxHeight);
+
+    FWorldObjectData ObjData;
+    ObjData.ObjectType = ObjType;
+    ObjData.ActorClass = ActorClassMap.Contains(ObjType) ? ActorClassMap[ObjType] : nullptr;
+    ObjData.Location = Location;
+    ObjData.Rotation = FRotator(0.f, Random.FRandRange(0.f, 360.f), 0.f);
+    ObjData.Scale = FVector(Random.FRandRange(0.8f, 1.2f));
+
+    OutObjects.Add(ObjData);
 }
 
 void UHarmoniaWorldGeneratorSubsystem::GenerateLakes(

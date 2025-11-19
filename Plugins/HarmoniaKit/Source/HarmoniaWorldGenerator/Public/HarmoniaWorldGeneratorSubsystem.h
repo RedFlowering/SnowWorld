@@ -799,11 +799,31 @@ private:
     /**
      * Calculate falloff weight based on distance and falloff type
      */
-    float CalculateFalloff(
-        float Distance,
-        float Radius,
-        ETerrainFalloffType FalloffType
-    ) const;
+    float CalculateFalloff(float Distance, float Radius, ETerrainFalloffType FalloffType) const;
+
+    // ========================================
+    // Constants
+    // ========================================
+    static constexpr float MAX_HEIGHT_VALUE = 65535.f;
+    static constexpr int32 SEED_PRIME_X = 73856093;
+    static constexpr int32 SEED_PRIME_Y = 19349663;
+    static constexpr float TILE_SIZE = 100.f;
+    static constexpr float SEA_LEVEL_MARGIN = 0.02f;
+    static constexpr float SLOPE_CALC_DISTANCE = 200.f;
+    static constexpr float FLATNESS_VARIANCE_THRESHOLD = 5000.f;
+
+    /**
+     * Process a single tile for object generation
+     */
+    void ProcessObjectTile(
+        int32 X,
+        int32 Y,
+        const FWorldGeneratorConfig& Config,
+        const TArray<int32>& HeightData,
+        const TMap<EWorldObjectType, TSoftClassPtr<AActor>>& ActorClassMap,
+        TArray<FWorldObjectData>& OutObjects
+    );
+
 
     /**
      * Get landscape heightmap data in region

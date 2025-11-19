@@ -172,6 +172,7 @@ void UHarmoniaOnlineSubsystem::SearchUsers(const FString& SearchQuery, int32 Max
 
 	// TODO: 백엔드 서버가 있다면 HTTP 요청으로 전체 사용자 검색 구현 가능
 	// 예: GET /api/users/search?query={SearchQuery}&limit={MaxResults}
+    UE_LOG(LogTemp, Warning, TEXT("HarmoniaOnlineSubsystem: Full user search requires backend integration. Returning local friend matches only."));
 }
 
 void UHarmoniaOnlineSubsystem::SendFriendRequest(const FString& UserId, const FString& Message)
@@ -460,7 +461,7 @@ void UHarmoniaOnlineSubsystem::AcceptInvite(const FString& InviteId)
 			// 실제로는 세션 검색 후 참가하는 로직이 필요합니다
 			// SessionInterface->JoinSession(0, SessionName, SearchResult);
 
-			UE_LOG(LogTemp, Warning, TEXT("HarmoniaOnlineSubsystem: Session join requires search result - implement session search first"));
+			UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Session join requires search result - implement session search first. SessionId: %s"), *Invite.SessionId);
 		}
 		break;
 
