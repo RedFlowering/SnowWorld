@@ -18,6 +18,10 @@ UHarmoniaOnlineSubsystem::UHarmoniaOnlineSubsystem()
 	, bIsConnected(false)
 	, bIsMicrophoneMuted(false)
 	, VoiceChatStatus(EHarmoniaVoiceChatStatus::Disconnected)
+	, ListenerEnvironment(EHarmoniaEnvironmentPreset::Default)
+	, ListenerLocation(FVector::ZeroVector)
+	, ListenerRotation(FRotator::ZeroRotator)
+	, bSpatialVoiceEnabled(false)
 {
 }
 
@@ -1228,4 +1232,317 @@ void UHarmoniaOnlineSubsystem::OnVoiceChatChannelJoinComplete(const FString& Cha
 void UHarmoniaOnlineSubsystem::OnVoiceChatChannelLeaveComplete(const FString& ChannelName, const FVoiceChatResult& Result)
 {
 	// 이 핸들러는 LeaveVoiceChannel에서 람다로 직접 처리됨
+}
+
+//~=============================================================================
+// 공간 음성 채팅 (Spatial Voice Chat)
+//~=============================================================================
+
+void UHarmoniaOnlineSubsystem::SetSpatialVoiceSettings(const FHarmoniaSpatialVoiceSettings& Settings)
+{
+	SpatialVoiceSettings = Settings;
+
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Spatial voice settings updated (MaxRange: %.1f, Auto: %d)"),
+		Settings.MaxVoiceRange, Settings.bAutoApplyListenerEnvironmentEffects);
+
+	// 타이머 업데이트
+	if (bSpatialVoiceEnabled && GetWorld())
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			SpatialVoiceUpdateTimerHandle,
+			this,
+			&UHarmoniaOnlineSubsystem::UpdateAllPlayerVoiceStates,
+			Settings.UpdateInterval,
+			true
+		);
+	}
+}
+
+void UHarmoniaOnlineSubsystem::UpdatePlayerVoiceTransform(const FString& PlayerId, FVector Location, FRotator Rotation, EHarmoniaEnvironmentPreset Environment)
+{
+	if (PlayerId.IsEmpty())
+	{
+		return;
+	}
+
+	// 플레이어 상태 찾기 또는 생성
+	FHarmoniaPlayerVoiceState* State = PlayerVoiceStates.Find(PlayerId);
+	if (!State)
+	{
+		FHarmoniaPlayerVoiceState NewState;
+		NewState.PlayerId = PlayerId;
+
+		// 친구 목록에서 이름 찾기
+		FHarmoniaFriendInfo FriendInfo;
+		if (GetFriendInfo(PlayerId, FriendInfo))
+		{
+			NewState.PlayerName = FriendInfo.DisplayName;
+		}
+
+		State = &PlayerVoiceStates.Add(PlayerId, NewState);
+	}
+
+	// 위치 및 환경 업데이트
+	State->Location = Location;
+	State->Rotation = Rotation;
+	State->CurrentEnvironment = Environment;
+	State->LastUpdateTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
+
+	// 청자까지의 거리 계산
+	State->DistanceToListener = FVector::Dist(Location, ListenerLocation);
+
+	// 거리 체크
+	State->bIsOutOfRange = State->DistanceToListener > SpatialVoiceSettings.MaxVoiceRange;
+
+	// 공간 음성이 활성화되어 있으면 즉시 효과 업데이트
+	if (bSpatialVoiceEnabled && SpatialVoiceSettings.bAutoApplyListenerEnvironmentEffects)
+	{
+		UpdatePlayerVoiceEffect(PlayerId);
+	}
+}
+
+void UHarmoniaOnlineSubsystem::SetListenerEnvironment(EHarmoniaEnvironmentPreset Environment)
+{
+	if (ListenerEnvironment != Environment)
+	{
+		ListenerEnvironment = Environment;
+
+		UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Listener environment changed to %d"), static_cast<int32>(Environment));
+
+		// 모든 플레이어 음성 효과 재계산
+		if (bSpatialVoiceEnabled && SpatialVoiceSettings.bAutoApplyListenerEnvironmentEffects)
+		{
+			for (const auto& Pair : PlayerVoiceStates)
+			{
+				UpdatePlayerVoiceEffect(Pair.Key);
+			}
+		}
+	}
+}
+
+bool UHarmoniaOnlineSubsystem::GetPlayerVoiceState(const FString& PlayerId, FHarmoniaPlayerVoiceState& OutState) const
+{
+	const FHarmoniaPlayerVoiceState* State = PlayerVoiceStates.Find(PlayerId);
+	if (State)
+	{
+		OutState = *State;
+		return true;
+	}
+	return false;
+}
+
+TArray<FHarmoniaPlayerVoiceState> UHarmoniaOnlineSubsystem::GetAllPlayerVoiceStates() const
+{
+	TArray<FHarmoniaPlayerVoiceState> States;
+	PlayerVoiceStates.GenerateValueArray(States);
+	return States;
+}
+
+void UHarmoniaOnlineSubsystem::SetSpatialVoiceEnabled(bool bEnabled)
+{
+	if (bSpatialVoiceEnabled == bEnabled)
+	{
+		return;
+	}
+
+	bSpatialVoiceEnabled = bEnabled;
+
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Spatial voice %s"), bEnabled ? TEXT("enabled") : TEXT("disabled"));
+
+	if (bEnabled)
+	{
+		// 타이머 시작
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().SetTimer(
+				SpatialVoiceUpdateTimerHandle,
+				this,
+				&UHarmoniaOnlineSubsystem::UpdateAllPlayerVoiceStates,
+				SpatialVoiceSettings.UpdateInterval,
+				true
+			);
+		}
+	}
+	else
+	{
+		// 타이머 정지
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(SpatialVoiceUpdateTimerHandle);
+		}
+
+		// 모든 음성 효과 제거
+		for (const auto& Pair : PlayerVoiceStates)
+		{
+			ClearVoiceEffectFromUser(Pair.Key);
+		}
+	}
+}
+
+void UHarmoniaOnlineSubsystem::UpdateAllPlayerVoiceStates()
+{
+	if (!bSpatialVoiceEnabled)
+	{
+		return;
+	}
+
+	// 모든 플레이어의 음성 상태 업데이트
+	for (auto& Pair : PlayerVoiceStates)
+	{
+		FHarmoniaPlayerVoiceState& State = Pair.Value;
+
+		// 거리 재계산
+		State.DistanceToListener = FVector::Dist(State.Location, ListenerLocation);
+
+		// 거리 체크
+		bool bWasOutOfRange = State.bIsOutOfRange;
+		State.bIsOutOfRange = State.DistanceToListener > SpatialVoiceSettings.MaxVoiceRange;
+
+		// 범위 상태가 바뀌었으면 뮤트 처리
+		if (bWasOutOfRange != State.bIsOutOfRange)
+		{
+			if (State.bIsOutOfRange)
+			{
+				// 범위 밖으로 나감: 뮤트
+				SetUserMuted(Pair.Key, true);
+				UE_LOG(LogTemp, Verbose, TEXT("HarmoniaOnlineSubsystem: Player %s out of voice range (%.1fm)"),
+					*State.PlayerName, State.DistanceToListener / 100.0f);
+			}
+			else
+			{
+				// 범위 안으로 들어옴: 뮤트 해제
+				SetUserMuted(Pair.Key, false);
+				UE_LOG(LogTemp, Verbose, TEXT("HarmoniaOnlineSubsystem: Player %s in voice range (%.1fm)"),
+					*State.PlayerName, State.DistanceToListener / 100.0f);
+			}
+		}
+
+		// 범위 내에 있고 자동 효과가 활성화되어 있으면 효과 업데이트
+		if (!State.bIsOutOfRange && SpatialVoiceSettings.bAutoApplyListenerEnvironmentEffects)
+		{
+			UpdatePlayerVoiceEffect(Pair.Key);
+		}
+	}
+}
+
+void UHarmoniaOnlineSubsystem::UpdatePlayerVoiceEffect(const FString& PlayerId)
+{
+	const FHarmoniaPlayerVoiceState* State = PlayerVoiceStates.Find(PlayerId);
+	if (!State || State->bIsOutOfRange)
+	{
+		return;
+	}
+
+	// 청자 기준 환경 효과 계산
+	FHarmoniaVoiceEffectSettings EffectSettings = CalculateListenerBasedEffect(
+		State->CurrentEnvironment,
+		ListenerEnvironment,
+		State->DistanceToListener
+	);
+
+	// 장애물 감쇠 추가
+	if (SpatialVoiceSettings.bEnableOcclusion)
+	{
+		float OcclusionAttenuation = CalculateOcclusionAttenuation(State->Location, ListenerLocation);
+		EffectSettings.DryWetMix *= OcclusionAttenuation;
+	}
+
+	// 플레이어에게 효과 적용
+	ApplyVoiceEffectToUser(PlayerId, EffectSettings);
+
+	UE_LOG(LogTemp, VeryVerbose, TEXT("HarmoniaOnlineSubsystem: Updated voice effect for %s (Env: %d, Distance: %.1fm)"),
+		*State->PlayerName, static_cast<int32>(State->CurrentEnvironment), State->DistanceToListener / 100.0f);
+}
+
+FHarmoniaVoiceEffectSettings UHarmoniaOnlineSubsystem::CalculateListenerBasedEffect(
+	EHarmoniaEnvironmentPreset SpeakerEnvironment,
+	EHarmoniaEnvironmentPreset InListenerEnvironment,
+	float Distance) const
+{
+	// 기본 효과는 청자 환경 기준
+	FHarmoniaVoiceEffectSettings ListenerEffect = FHarmoniaVoiceEffectSettings::FromPreset(InListenerEnvironment);
+
+	// 블렌딩이 활성화되어 있으면 화자 환경과 블렌딩
+	if (SpatialVoiceSettings.bBlendSpeakerAndListenerEnvironments)
+	{
+		FHarmoniaVoiceEffectSettings SpeakerEffect = FHarmoniaVoiceEffectSettings::FromPreset(SpeakerEnvironment);
+
+		float BlendRatio = SpatialVoiceSettings.EnvironmentBlendRatio;
+
+		// 선형 블렌딩
+		ListenerEffect.Intensity = FMath::Lerp(ListenerEffect.Intensity, SpeakerEffect.Intensity, BlendRatio);
+		ListenerEffect.DecayTime = FMath::Lerp(ListenerEffect.DecayTime, SpeakerEffect.DecayTime, BlendRatio);
+		ListenerEffect.DelayTime = FMath::Lerp(ListenerEffect.DelayTime, SpeakerEffect.DelayTime, BlendRatio);
+		ListenerEffect.Density = FMath::Lerp(ListenerEffect.Density, SpeakerEffect.Density, BlendRatio);
+		ListenerEffect.Diffusion = FMath::Lerp(ListenerEffect.Diffusion, SpeakerEffect.Diffusion, BlendRatio);
+		ListenerEffect.LowPassCutoff = FMath::Lerp(ListenerEffect.LowPassCutoff, SpeakerEffect.LowPassCutoff, BlendRatio);
+		ListenerEffect.DryWetMix = FMath::Lerp(ListenerEffect.DryWetMix, SpeakerEffect.DryWetMix, BlendRatio);
+	}
+
+	// 거리 감쇠 적용
+	float DistanceAttenuation = CalculateDistanceAttenuation(Distance);
+	ListenerEffect.Intensity *= DistanceAttenuation;
+
+	return ListenerEffect;
+}
+
+float UHarmoniaOnlineSubsystem::CalculateDistanceAttenuation(float Distance) const
+{
+	if (Distance <= SpatialVoiceSettings.AttenuationStartDistance)
+	{
+		// 감쇠 시작 거리 이내: 감쇠 없음
+		return 1.0f;
+	}
+
+	if (Distance >= SpatialVoiceSettings.MaxVoiceRange)
+	{
+		// 최대 거리 이상: 완전 감쇠
+		return 0.0f;
+	}
+
+	// 감쇠 곡선 계산
+	float NormalizedDistance = (Distance - SpatialVoiceSettings.AttenuationStartDistance) /
+		(SpatialVoiceSettings.MaxVoiceRange - SpatialVoiceSettings.AttenuationStartDistance);
+
+	// 지수 곡선 적용
+	float Attenuation = 1.0f - FMath::Pow(NormalizedDistance, SpatialVoiceSettings.DistanceAttenuationExponent);
+
+	return FMath::Clamp(Attenuation, 0.0f, 1.0f);
+}
+
+float UHarmoniaOnlineSubsystem::CalculateOcclusionAttenuation(const FVector& From, const FVector& To) const
+{
+	if (!SpatialVoiceSettings.bEnableOcclusion)
+	{
+		return 1.0f;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return 1.0f;
+	}
+
+	// 라인 트레이스로 장애물 체크
+	FHitResult HitResult;
+	FCollisionQueryParams QueryParams;
+	QueryParams.bTraceComplex = false;
+	QueryParams.AddIgnoredActor(nullptr); // TODO: 플레이어 액터 무시 추가 필요
+
+	bool bHit = World->LineTraceSingleByChannel(
+		HitResult,
+		From,
+		To,
+		ECC_Visibility,
+		QueryParams
+	);
+
+	if (bHit)
+	{
+		// 장애물이 있음: 감쇠 적용
+		return 1.0f - SpatialVoiceSettings.OcclusionMultiplier;
+	}
+
+	// 장애물 없음: 감쇠 없음
+	return 1.0f;
 }

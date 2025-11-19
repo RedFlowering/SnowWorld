@@ -308,6 +308,78 @@ public:
 	void SetVoiceEffectIntensity(float Intensity);
 
 	//~=============================================================================
+	// 공간 음성 채팅 (Spatial Voice Chat)
+	//~=============================================================================
+
+	/**
+	 * 공간 음성 채팅 설정
+	 * @param Settings 공간 음성 설정
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Online|Voice|Spatial")
+	void SetSpatialVoiceSettings(const FHarmoniaSpatialVoiceSettings& Settings);
+
+	/**
+	 * 현재 공간 음성 설정 가져오기
+	 * @return 현재 공간 음성 설정
+	 */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|Online|Voice|Spatial")
+	FHarmoniaSpatialVoiceSettings GetSpatialVoiceSettings() const { return SpatialVoiceSettings; }
+
+	/**
+	 * 플레이어의 위치 및 환경 업데이트 (프레임마다 호출)
+	 * @param PlayerId 플레이어 ID
+	 * @param Location 플레이어 위치
+	 * @param Rotation 플레이어 회전
+	 * @param Environment 현재 환경 프리셋
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Online|Voice|Spatial")
+	void UpdatePlayerVoiceTransform(const FString& PlayerId, FVector Location, FRotator Rotation, EHarmoniaEnvironmentPreset Environment);
+
+	/**
+	 * 청자(나)의 현재 환경 설정
+	 * @param Environment 내가 있는 환경 프리셋
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Online|Voice|Spatial")
+	void SetListenerEnvironment(EHarmoniaEnvironmentPreset Environment);
+
+	/**
+	 * 청자(나)의 현재 환경 가져오기
+	 * @return 현재 환경 프리셋
+	 */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|Online|Voice|Spatial")
+	EHarmoniaEnvironmentPreset GetListenerEnvironment() const { return ListenerEnvironment; }
+
+	/**
+	 * 특정 플레이어의 음성 상태 가져오기
+	 * @param PlayerId 플레이어 ID
+	 * @param OutState 출력: 플레이어 음성 상태
+	 * @return 찾았는지 여부
+	 */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|Online|Voice|Spatial")
+	bool GetPlayerVoiceState(const FString& PlayerId, FHarmoniaPlayerVoiceState& OutState) const;
+
+	/**
+	 * 모든 플레이어의 음성 상태 가져오기
+	 * @return 모든 플레이어의 음성 상태 배열
+	 */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|Online|Voice|Spatial")
+	TArray<FHarmoniaPlayerVoiceState> GetAllPlayerVoiceStates() const;
+
+	/**
+	 * 공간 음성 시스템 활성화/비활성화
+	 * @param bEnabled 활성화 여부
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Online|Voice|Spatial")
+	void SetSpatialVoiceEnabled(bool bEnabled);
+
+	/**
+	 * 공간 음성 시스템이 활성화되어 있는지 확인
+	 * @return 활성화 여부
+	 */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|Online|Voice|Spatial")
+	bool IsSpatialVoiceEnabled() const { return bSpatialVoiceEnabled; }
+
+	//~=============================================================================
 	// 연결 및 상태 관리
 	//~=============================================================================
 
@@ -392,6 +464,24 @@ private:
 
 	/** 음성 채널 상태 업데이트 */
 	void UpdateVoiceChannelStatus(const FString& ChannelId, EHarmoniaVoiceChatStatus NewStatus);
+
+	/** 공간 음성: 모든 플레이어 음성 상태 업데이트 (타이머) */
+	void UpdateAllPlayerVoiceStates();
+
+	/** 공간 음성: 특정 플레이어 음성 효과 계산 및 적용 */
+	void UpdatePlayerVoiceEffect(const FString& PlayerId);
+
+	/** 공간 음성: 청자 기준으로 환경 효과 블렌딩 */
+	FHarmoniaVoiceEffectSettings CalculateListenerBasedEffect(
+		EHarmoniaEnvironmentPreset SpeakerEnvironment,
+		EHarmoniaEnvironmentPreset InListenerEnvironment,
+		float Distance) const;
+
+	/** 공간 음성: 거리에 따른 감쇠 계산 */
+	float CalculateDistanceAttenuation(float Distance) const;
+
+	/** 공간 음성: 장애물 감쇠 체크 (레이캐스트) */
+	float CalculateOcclusionAttenuation(const FVector& From, const FVector& To) const;
 
 	//~=============================================================================
 	// OnlineSubsystem 델리게이트 핸들러
@@ -512,6 +602,37 @@ private:
 	UPROPERTY()
 	TMap<FString, FHarmoniaVoiceEffectSettings> UserVoiceEffects;
 
+	//~=============================================================================
+	// 공간 음성 채팅 변수
+	//~=============================================================================
+
+	/** 공간 음성 설정 */
+	UPROPERTY()
+	FHarmoniaSpatialVoiceSettings SpatialVoiceSettings;
+
+	/** 플레이어별 음성 상태 맵 (PlayerId -> State) */
+	UPROPERTY()
+	TMap<FString, FHarmoniaPlayerVoiceState> PlayerVoiceStates;
+
+	/** 청자(나)의 현재 환경 */
+	UPROPERTY()
+	EHarmoniaEnvironmentPreset ListenerEnvironment;
+
+	/** 청자(나)의 현재 위치 */
+	UPROPERTY()
+	FVector ListenerLocation;
+
+	/** 청자(나)의 현재 회전 */
+	UPROPERTY()
+	FRotator ListenerRotation;
+
+	/** 공간 음성 시스템 활성화 여부 */
+	UPROPERTY()
+	bool bSpatialVoiceEnabled;
+
 	/** 타이머 핸들 (주기적 업데이트용) */
 	FTimerHandle FriendListUpdateTimerHandle;
+
+	/** 공간 음성 업데이트 타이머 핸들 */
+	FTimerHandle SpatialVoiceUpdateTimerHandle;
 };
