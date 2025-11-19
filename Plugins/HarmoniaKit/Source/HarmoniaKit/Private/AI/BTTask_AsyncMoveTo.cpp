@@ -57,7 +57,7 @@ EBTNodeResult::Type UBTTask_AsyncMoveTo::ExecuteTask(UBehaviorTreeComponent& Own
 		float AdaptedRadius = GetLODAdaptedRadius(ControlledPawn);
 		if (AdaptedRadius > 0.0f)
 		{
-			AcceptanceRadius = AdaptedRadius;
+			AcceptableRadius = AdaptedRadius;
 		}
 	}
 
@@ -117,13 +117,13 @@ float UBTTask_AsyncMoveTo::GetLODAdaptedRadius(AActor* Owner) const
 {
 	if (!Owner || !bAdaptRadiusToLOD)
 	{
-		return AcceptanceRadius;
+		return AcceptableRadius;
 	}
 
 	UHarmoniaAILODComponent* LODComponent = Owner->FindComponentByClass<UHarmoniaAILODComponent>();
 	if (!LODComponent)
 	{
-		return AcceptanceRadius;
+		return AcceptableRadius;
 	}
 
 	EHarmoniaAILODLevel LODLevel = LODComponent->GetCurrentLODLevel();
@@ -151,7 +151,7 @@ float UBTTask_AsyncMoveTo::GetLODAdaptedRadius(AActor* Owner) const
 		break;
 	}
 
-	return AcceptanceRadius * Multiplier;
+	return AcceptableRadius * Multiplier;
 }
 
 bool UBTTask_AsyncMoveTo::ShouldUpdatePath(float TimeSinceLastUpdate) const
