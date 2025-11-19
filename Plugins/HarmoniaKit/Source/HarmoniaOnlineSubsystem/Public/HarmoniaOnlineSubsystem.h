@@ -483,6 +483,12 @@ private:
 	/** 공간 음성: 장애물 감쇠 체크 (레이캐스트) */
 	float CalculateOcclusionAttenuation(const FVector& From, const FVector& To) const;
 
+	/** 공간 음성: 거리에 따른 음량 계산 */
+	float CalculateDistanceBasedVolume(float Distance) const;
+
+	/** 공간 음성: 특정 플레이어의 음량 설정 */
+	void SetPlayerVolume(const FString& PlayerId, float Volume);
+
 	//~=============================================================================
 	// OnlineSubsystem 델리게이트 핸들러
 	//~=============================================================================

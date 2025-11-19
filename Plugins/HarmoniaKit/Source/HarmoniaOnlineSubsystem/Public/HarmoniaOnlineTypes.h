@@ -408,6 +408,22 @@ struct HARMONIAONLINESUBSYSTEM_API FHarmoniaSpatialVoiceSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Spatial Voice", meta = (ClampMin = "0.01", ClampMax = "1.0"))
 	float UpdateInterval;
 
+	/** 거리 기반 음량 조절 활성화 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Spatial Voice|Volume")
+	bool bEnableDistanceBasedVolume;
+
+	/** 최소 음량 (가장 먼 거리에서의 볼륨, 0.0 = 무음, 1.0 = 원음) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Spatial Voice|Volume", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float MinVolume;
+
+	/** 최대 음량 (가장 가까운 거리에서의 볼륨, 0.0 = 무음, 1.0 = 원음) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Spatial Voice|Volume", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float MaxVolume;
+
+	/** 음량 감쇠 곡선 지수 (1.0 = 선형, 2.0 = 제곱, 더 높을수록 급격한 감쇠) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Spatial Voice|Volume", meta = (ClampMin = "0.1", ClampMax = "5.0"))
+	float VolumeAttenuationExponent;
+
 	FHarmoniaSpatialVoiceSettings()
 		: MaxVoiceRange(5000.0f)  // 50미터
 		, AttenuationStartDistance(1000.0f)  // 10미터
@@ -419,6 +435,10 @@ struct HARMONIAONLINESUBSYSTEM_API FHarmoniaSpatialVoiceSettings
 		, EnvironmentBlendRatio(0.0f)  // 청자 100%
 		, bEnable3DSpatialAudio(true)
 		, UpdateInterval(0.1f)  // 100ms마다 업데이트
+		, bEnableDistanceBasedVolume(true)  // 거리 기반 음량 조절 활성화
+		, MinVolume(0.1f)  // 먼 거리에서 10% 음량
+		, MaxVolume(1.0f)  // 가까운 거리에서 100% 음량
+		, VolumeAttenuationExponent(2.0f)  // 제곱 감쇠
 	{
 	}
 };
