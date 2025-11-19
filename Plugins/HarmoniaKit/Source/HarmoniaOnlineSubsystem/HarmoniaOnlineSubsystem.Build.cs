@@ -12,12 +12,29 @@ public class HarmoniaOnlineSubsystem: ModuleRules
         {
             "Core",
             "CoreUObject",
-            "Engine"
+            "Engine",
+            "OnlineSubsystem",
+            "OnlineSubsystemUtils"
         });
 
         PrivateDependencyModuleNames.AddRange(new string[]
         {
-            // UMG와 Slate는 향후 UI 통합 시 필요할 수 있음
+            "Sockets",
+            "Json",
+            "JsonUtilities",
+            "HTTP",
+            "EOSVoiceChat"
         });
+
+        // Platform-specific Online Subsystems
+        if (Target.Platform == UnrealTargetPlatform.Win64 ||
+            Target.Platform == UnrealTargetPlatform.Linux ||
+            Target.Platform == UnrealTargetPlatform.Mac)
+        {
+            PrivateDependencyModuleNames.Add("OnlineSubsystemSteam");
+        }
+
+        // EOS is cross-platform
+        PrivateDependencyModuleNames.Add("OnlineSubsystemEOS");
     }
 }
