@@ -48,28 +48,13 @@ void UHarmoniaOnlineSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		UserInterface = OnlineSubsystem->GetUserInterface();
 		PresenceInterface = OnlineSubsystem->GetPresenceInterface();
 
-		// 델리게이트 바인딩
-		if (FriendsInterface.IsValid())
-		{
-			OnReadFriendsListCompleteHandle = FriendsInterface->AddOnReadFriendsListCompleteDelegate_Handle(
-				0, FOnReadFriendsListCompleteDelegate::CreateUObject(this, &UHarmoniaOnlineSubsystem::OnReadFriendsListComplete));
-
-			OnSendInviteCompleteHandle = FriendsInterface->AddOnSendInviteCompleteDelegate_Handle(
-				0, FOnSendInviteCompleteDelegate::CreateUObject(this, &UHarmoniaOnlineSubsystem::OnSendInviteComplete));
-
-			OnAcceptInviteCompleteHandle = FriendsInterface->AddOnAcceptInviteCompleteDelegate_Handle(
-				0, FOnAcceptInviteCompleteDelegate::CreateUObject(this, &UHarmoniaOnlineSubsystem::OnAcceptInviteComplete));
-
-			OnDeleteFriendCompleteHandle = FriendsInterface->AddOnDeleteFriendCompleteDelegate_Handle(
-				0, FOnDeleteFriendCompleteDelegate::CreateUObject(this, &UHarmoniaOnlineSubsystem::OnDeleteFriendComplete));
-		}
-
+		// Session 델리게이트 바인딩 (Session은 여전히 델리게이트 핸들 패턴 사용)
 		if (SessionInterface.IsValid())
 		{
-			OnCreateSessionCompleteHandle = SessionInterface->AddOnCreateSessionCompleteDelegate_Handle(
+			SessionInterface->AddOnCreateSessionCompleteDelegate_Handle(
 				FOnCreateSessionCompleteDelegate::CreateUObject(this, &UHarmoniaOnlineSubsystem::OnCreateSessionComplete));
 
-			OnJoinSessionCompleteHandle = SessionInterface->AddOnJoinSessionCompleteDelegate_Handle(
+			SessionInterface->AddOnJoinSessionCompleteDelegate_Handle(
 				FOnJoinSessionCompleteDelegate::CreateUObject(this, &UHarmoniaOnlineSubsystem::OnJoinSessionComplete));
 		}
 
@@ -77,7 +62,7 @@ void UHarmoniaOnlineSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		FName SubsystemName = OnlineSubsystem->GetSubsystemName();
 		if (SubsystemName == FName(TEXT("EOS")) || SubsystemName == FName(TEXT("EOSPlus")))
 		{
-			VoiceChat = OnlineSubsystem->GetVoiceChatUserInterface();
+			VoiceChat = Online::GetVoiceChat();
 			if (VoiceChat.IsValid())
 			{
 				UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: EOS Voice Chat initialized"));
@@ -99,21 +84,6 @@ void UHarmoniaOnlineSubsystem::Deinitialize()
 		{
 			World->GetTimerManager().ClearTimer(FriendListUpdateTimerHandle);
 		}
-	}
-
-	// 델리게이트 정리
-	if (FriendsInterface.IsValid())
-	{
-		FriendsInterface->ClearOnReadFriendsListCompleteDelegate_Handle(0, OnReadFriendsListCompleteHandle);
-		FriendsInterface->ClearOnSendInviteCompleteDelegate_Handle(0, OnSendInviteCompleteHandle);
-		FriendsInterface->ClearOnAcceptInviteCompleteDelegate_Handle(0, OnAcceptInviteCompleteHandle);
-		FriendsInterface->ClearOnDeleteFriendCompleteDelegate_Handle(0, OnDeleteFriendCompleteHandle);
-	}
-
-	if (SessionInterface.IsValid())
-	{
-		SessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(OnCreateSessionCompleteHandle);
-		SessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(OnJoinSessionCompleteHandle);
 	}
 
 	// 음성 채널 정리
@@ -228,7 +198,8 @@ void UHarmoniaOnlineSubsystem::SendFriendRequest(const FString& UserId, const FS
 	}
 
 	// Steam/EOS API를 통해 친구 요청 전송
-	bool bResult = FriendsInterface->SendInvite(0, *FriendId, EFriendsLists::ToString(EFriendsLists::Default), FOnSendInviteComplete());
+	bool bResult = FriendsInterface->SendInvite(0, *FriendId, EFriendsLists::ToString(EFriendsLists::Default),
+		FOnSendInviteComplete::CreateUObject(this, &UHarmoniaOnlineSubsystem::OnSendInviteComplete));
 
 	if (!bResult)
 	{
@@ -258,7 +229,8 @@ void UHarmoniaOnlineSubsystem::AcceptFriendRequest(const FString& UserId)
 	}
 
 	// Steam/EOS API를 통해 친구 요청 수락
-	bool bResult = FriendsInterface->AcceptInvite(0, *FriendId, EFriendsLists::ToString(EFriendsLists::Default), FOnAcceptInviteComplete());
+	bool bResult = FriendsInterface->AcceptInvite(0, *FriendId, EFriendsLists::ToString(EFriendsLists::Default),
+		FOnAcceptInviteComplete::CreateUObject(this, &UHarmoniaOnlineSubsystem::OnAcceptInviteComplete));
 
 	if (bResult)
 	{
@@ -379,7 +351,8 @@ void UHarmoniaOnlineSubsystem::RefreshFriendList()
 
 	// Steam/EOS API를 통해 친구 목록 읽기
 	// 결과는 OnReadFriendsListComplete 델리게이트에서 처리됨
-	bool bResult = FriendsInterface->ReadFriendsList(0, EFriendsLists::ToString(EFriendsLists::Default), FOnReadFriendsListComplete());
+	bool bResult = FriendsInterface->ReadFriendsList(0, EFriendsLists::ToString(EFriendsLists::Default),
+		FOnReadFriendsListComplete::CreateUObject(this, &UHarmoniaOnlineSubsystem::OnReadFriendsListComplete));
 
 	if (!bResult)
 	{

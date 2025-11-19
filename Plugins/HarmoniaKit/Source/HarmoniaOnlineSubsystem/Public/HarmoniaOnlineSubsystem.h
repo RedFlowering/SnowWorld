@@ -449,15 +449,6 @@ private:
 	/** Presence 인터페이스 */
 	IOnlinePresencePtr PresenceInterface;
 
-	/** 델리게이트 핸들 */
-	FDelegateHandle OnReadFriendsListCompleteHandle;
-	FDelegateHandle OnSendInviteCompleteHandle;
-	FDelegateHandle OnAcceptInviteCompleteHandle;
-	FDelegateHandle OnDeleteFriendCompleteHandle;
-	FDelegateHandle OnCreateSessionCompleteHandle;
-	FDelegateHandle OnJoinSessionCompleteHandle;
-	FDelegateHandle OnLoginCompleteHandle;
-
 	//~=============================================================================
 	// 캐싱된 데이터
 	//~=============================================================================
