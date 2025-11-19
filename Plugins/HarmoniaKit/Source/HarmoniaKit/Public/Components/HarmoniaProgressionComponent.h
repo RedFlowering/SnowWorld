@@ -98,11 +98,11 @@ public:
 
 	/** Unlocked skill nodes and their investment levels */
 	UPROPERTY(ReplicatedUsing = OnRep_UnlockedSkillNodes, BlueprintReadOnly, Category = "Skills")
-	TMap<FName, int32> UnlockedSkillNodes;
+	TArray<FSkillNodeInvestment> UnlockedSkillNodes;
 
 	/** Allocated primary stats (Vitality, Strength, etc) */
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Stats")
-	TMap<FGameplayTag, int32> AllocatedStats;
+	TArray<FStatAllocation> AllocatedStats;
 
 	//~ Delegates
 	UPROPERTY(BlueprintAssignable, Category = "Progression|Events")

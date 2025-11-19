@@ -29,18 +29,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Prestige")
 	TArray<FHarmoniaPrestigeDefinition> PrestigeDefinitions;
 
-	//~ Queries
+	//~ Queries (C++ only - use through ProgressionComponent for Blueprint)
 
 	/** Get class definition by type */
-	UFUNCTION(BlueprintCallable, Category = "Classes")
 	const FHarmoniaClassDefinition* GetClassDefinition(EHarmoniaCharacterClass ClassType) const;
 
 	/** Get awakening definition by tier */
-	UFUNCTION(BlueprintCallable, Category = "Awakening")
 	const FHarmoniaAwakeningDefinition* GetAwakeningDefinition(EHarmoniaAwakeningTier Tier) const;
 
 	/** Get prestige definition by level */
-	UFUNCTION(BlueprintCallable, Category = "Prestige")
 	const FHarmoniaPrestigeDefinition* GetPrestigeDefinition(int32 PrestigeLevel) const;
 
 	/** Get all Tier 1 (starter) classes */

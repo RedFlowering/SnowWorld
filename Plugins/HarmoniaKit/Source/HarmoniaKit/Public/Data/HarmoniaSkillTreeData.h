@@ -45,10 +45,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Requirements")
 	int32 MinimumLevel = 1;
 
-	//~ Queries
+	//~ Queries (C++ only - use through ProgressionComponent for Blueprint)
 
 	/** Find a skill node by ID */
-	UFUNCTION(BlueprintCallable, Category = "Skill Tree")
 	FHarmoniaSkillNode* FindSkillNode(FName NodeID);
 
 	/** Get all skill nodes of a specific type */

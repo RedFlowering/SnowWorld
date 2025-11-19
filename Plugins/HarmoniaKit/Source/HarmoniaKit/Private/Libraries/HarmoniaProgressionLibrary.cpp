@@ -369,11 +369,16 @@ TMap<FGameplayTag, int32> UHarmoniaProgressionLibrary::GetRecommendedStatsForCla
 
 //~ Progression Validation
 
-bool UHarmoniaProgressionLibrary::ValidateSkillNodePrerequisites(const FHarmoniaSkillNode& Node, const TMap<FName, int32>& UnlockedNodes)
+bool UHarmoniaProgressionLibrary::ValidateSkillNodePrerequisites(const FHarmoniaSkillNode& Node, const TArray<FSkillNodeInvestment>& UnlockedNodes)
 {
 	for (const FName& PrereqID : Node.PrerequisiteNodeIDs)
 	{
-		if (!UnlockedNodes.Contains(PrereqID))
+		bool bFound = UnlockedNodes.ContainsByPredicate([PrereqID](const FSkillNodeInvestment& Investment)
+		{
+			return Investment.NodeID == PrereqID;
+		});
+
+		if (!bFound)
 		{
 			return false;
 		}

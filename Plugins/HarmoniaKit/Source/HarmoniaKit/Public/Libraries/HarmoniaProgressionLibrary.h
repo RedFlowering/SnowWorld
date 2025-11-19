@@ -131,7 +131,7 @@ public:
 
 	/** Validate skill tree prerequisites */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Progression|Validation")
-	static bool ValidateSkillNodePrerequisites(const FHarmoniaSkillNode& Node, const TMap<FName, int32>& UnlockedNodes);
+	static bool ValidateSkillNodePrerequisites(const FHarmoniaSkillNode& Node, const TArray<FSkillNodeInvestment>& UnlockedNodes);
 
 	/** Check if player meets class requirements */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Progression|Validation")

@@ -180,7 +180,6 @@ void UHarmoniaProgressionComponent::ProcessLevelUp()
 void UHarmoniaProgressionComponent::InitializeExperienceCurve()
 {
 	// Generate default exponential experience curve
-	// Formula: BaseExp * (Level^Exponent) * Multiplier
 	const float BaseExp = 100.0f;
 	const float Exponent = 1.5f;
 	const float Multiplier = 1.1f;
@@ -229,7 +228,7 @@ void UHarmoniaProgressionComponent::Server_UnlockSkillNode_Implementation(FName 
 	}
 
 	// Get current investment
-	const int32 CurrentInvestment = UnlockedSkillNodes.FindRef(NodeID);
+	const int32 CurrentInvestment = GetSkillNodeInvestment(NodeID);
 	const int32 NewInvestment = CurrentInvestment + InvestmentPoints;
 
 	// Check max investment
@@ -249,7 +248,19 @@ void UHarmoniaProgressionComponent::Server_UnlockSkillNode_Implementation(FName 
 	AvailableSkillPoints -= RequiredPoints;
 
 	// Update investment
-	UnlockedSkillNodes.Add(NodeID, NewInvestment);
+	FSkillNodeInvestment* ExistingEntry = UnlockedSkillNodes.FindByPredicate([NodeID](const FSkillNodeInvestment& Entry)
+	{
+		return Entry.NodeID == NodeID;
+	});
+
+	if (ExistingEntry)
+	{
+		ExistingEntry->InvestedPoints = NewInvestment;
+	}
+	else
+	{
+		UnlockedSkillNodes.Add(FSkillNodeInvestment(NodeID, NewInvestment));
+	}
 
 	// Apply skill effects
 	ApplySkillNodeEffects(*SkillNode);
@@ -287,7 +298,7 @@ bool UHarmoniaProgressionComponent::CanUnlockSkillNode(FName NodeID) const
 	}
 
 	// Check max investment
-	const int32 CurrentInvestment = UnlockedSkillNodes.FindRef(NodeID);
+	const int32 CurrentInvestment = GetSkillNodeInvestment(NodeID);
 	if (CurrentInvestment >= SkillNode->MaxInvestmentPoints)
 	{
 		return false;
@@ -304,18 +315,29 @@ bool UHarmoniaProgressionComponent::CanUnlockSkillNode(FName NodeID) const
 
 int32 UHarmoniaProgressionComponent::GetSkillNodeInvestment(FName NodeID) const
 {
-	return UnlockedSkillNodes.FindRef(NodeID);
+	const FSkillNodeInvestment* Entry = UnlockedSkillNodes.FindByPredicate([NodeID](const FSkillNodeInvestment& Node)
+	{
+		return Node.NodeID == NodeID;
+	});
+
+	return Entry ? Entry->InvestedPoints : 0;
 }
 
 bool UHarmoniaProgressionComponent::IsSkillNodeUnlocked(FName NodeID) const
 {
-	return UnlockedSkillNodes.Contains(NodeID);
+	return UnlockedSkillNodes.ContainsByPredicate([NodeID](const FSkillNodeInvestment& Node)
+	{
+		return Node.NodeID == NodeID;
+	});
 }
 
 TArray<FName> UHarmoniaProgressionComponent::GetUnlockedSkillNodes() const
 {
 	TArray<FName> Result;
-	UnlockedSkillNodes.GetKeys(Result);
+	for (const FSkillNodeInvestment& Entry : UnlockedSkillNodes)
+	{
+		Result.Add(Entry.NodeID);
+	}
 	return Result;
 }
 
@@ -333,12 +355,12 @@ void UHarmoniaProgressionComponent::Server_ResetSkillTree_Implementation(bool bR
 	{
 		// Calculate total invested points
 		int32 TotalInvestedPoints = 0;
-		for (const auto& Entry : UnlockedSkillNodes)
+		for (const FSkillNodeInvestment& Entry : UnlockedSkillNodes)
 		{
-			FHarmoniaSkillNode* SkillNode = FindSkillNode(Entry.Key);
+			FHarmoniaSkillNode* SkillNode = FindSkillNode(Entry.NodeID);
 			if (SkillNode)
 			{
-				TotalInvestedPoints += SkillNode->RequiredSkillPoints * Entry.Value;
+				TotalInvestedPoints += SkillNode->RequiredSkillPoints * Entry.InvestedPoints;
 			}
 		}
 
@@ -348,9 +370,9 @@ void UHarmoniaProgressionComponent::Server_ResetSkillTree_Implementation(bool bR
 	}
 
 	// Remove all skill effects
-	for (const auto& Entry : UnlockedSkillNodes)
+	for (const FSkillNodeInvestment& Entry : UnlockedSkillNodes)
 	{
-		FHarmoniaSkillNode* SkillNode = FindSkillNode(Entry.Key);
+		FHarmoniaSkillNode* SkillNode = FindSkillNode(Entry.NodeID);
 		if (SkillNode)
 		{
 			RemoveSkillNodeEffects(*SkillNode);
@@ -384,8 +406,19 @@ void UHarmoniaProgressionComponent::Server_AllocateStatPoints_Implementation(FGa
 	AvailableStatPoints -= Points;
 
 	// Add to allocated stats
-	int32& AllocatedValue = AllocatedStats.FindOrAdd(StatTag);
-	AllocatedValue += Points;
+	FStatAllocation* ExistingEntry = AllocatedStats.FindByPredicate([StatTag](const FStatAllocation& Entry)
+	{
+		return Entry.StatTag == StatTag;
+	});
+
+	if (ExistingEntry)
+	{
+		ExistingEntry->AllocatedPoints += Points;
+	}
+	else
+	{
+		AllocatedStats.Add(FStatAllocation(StatTag, Points));
+	}
 
 	// Apply stat to attribute set
 	ApplyStatAllocation(StatTag, Points);
@@ -396,7 +429,12 @@ void UHarmoniaProgressionComponent::Server_AllocateStatPoints_Implementation(FGa
 
 int32 UHarmoniaProgressionComponent::GetAllocatedStatPoints(FGameplayTag StatTag) const
 {
-	return AllocatedStats.FindRef(StatTag);
+	const FStatAllocation* Entry = AllocatedStats.FindByPredicate([StatTag](const FStatAllocation& Stat)
+	{
+		return Stat.StatTag == StatTag;
+	});
+
+	return Entry ? Entry->AllocatedPoints : 0;
 }
 
 void UHarmoniaProgressionComponent::ResetStatAllocations(bool bRefundPoints)
@@ -413,9 +451,9 @@ void UHarmoniaProgressionComponent::Server_ResetStatAllocations_Implementation(b
 	{
 		// Calculate total invested points
 		int32 TotalInvestedPoints = 0;
-		for (const auto& Entry : AllocatedStats)
+		for (const FStatAllocation& Entry : AllocatedStats)
 		{
-			TotalInvestedPoints += Entry.Value;
+			TotalInvestedPoints += Entry.AllocatedPoints;
 		}
 
 		// Refund points
@@ -423,7 +461,7 @@ void UHarmoniaProgressionComponent::Server_ResetStatAllocations_Implementation(b
 		OnStatPointsChanged.Broadcast(AvailableStatPoints, TotalInvestedPoints);
 	}
 
-	// Clear allocations (stats would need to be recalculated from base)
+	// Clear allocations
 	AllocatedStats.Empty();
 }
 
@@ -550,8 +588,8 @@ void UHarmoniaProgressionComponent::Server_TriggerAwakening_Implementation(EHarm
 	// Apply awakening effects
 	ApplyAwakeningEffects(NewTier);
 
-	// Award bonus skill points (from awakening definition)
-	const int32 BonusPoints = 5; // This should come from awakening data
+	// Award bonus skill points
+	const int32 BonusPoints = 5;
 	AvailableSkillPoints += BonusPoints;
 
 	// Broadcast
@@ -567,7 +605,7 @@ bool UHarmoniaProgressionComponent::CanAwaken(EHarmoniaAwakeningTier TargetTier)
 		return false;
 	}
 
-	// Check level requirement (should come from awakening data)
+	// Check level requirement
 	const int32 RequiredLevel = 50 * static_cast<int32>(TargetTier);
 	if (CurrentLevel < RequiredLevel)
 	{
@@ -657,7 +695,7 @@ FHarmoniaProgressionSaveData UHarmoniaProgressionComponent::ExportProgressionDat
 	SaveData.PrestigeLevel = PrestigeLevel;
 	SaveData.UnlockedSkillNodes = UnlockedSkillNodes;
 	SaveData.AllocatedStats = AllocatedStats;
-	SaveData.TotalExperienceEarned = CurrentExperience; // Simplified
+	SaveData.TotalExperienceEarned = CurrentExperience;
 	SaveData.TotalLevelsGained = CurrentLevel - 1;
 
 	return SaveData;
@@ -681,9 +719,9 @@ void UHarmoniaProgressionComponent::ImportProgressionData(const FHarmoniaProgres
 		ApplyClassEffects(CurrentClass);
 	}
 
-	for (const auto& Entry : UnlockedSkillNodes)
+	for (const FSkillNodeInvestment& Entry : UnlockedSkillNodes)
 	{
-		FHarmoniaSkillNode* SkillNode = FindSkillNode(Entry.Key);
+		FHarmoniaSkillNode* SkillNode = FindSkillNode(Entry.NodeID);
 		if (SkillNode)
 		{
 			ApplySkillNodeEffects(*SkillNode);
@@ -784,27 +822,12 @@ void UHarmoniaProgressionComponent::ApplySkillNodeEffects(const FHarmoniaSkillNo
 
 void UHarmoniaProgressionComponent::RemoveSkillNodeEffects(const FHarmoniaSkillNode& Node)
 {
-	ULyraAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	if (!ASC)
-	{
-		return;
-	}
-
-	// Note: Removing specific effects is complex - would need to track which handles belong to which node
-	// This is a simplified version
+	// Simplified - would need to track which handles belong to which node
 }
 
 void UHarmoniaProgressionComponent::ApplyStatAllocation(FGameplayTag StatTag, int32 Points)
 {
-	ULyraAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	if (!ASC)
-	{
-		return;
-	}
-
-	// Apply stat increase via GameplayEffect
-	// This would require a GameplayEffect that modifies the attribute based on the StatTag
-	// Implementation depends on your attribute system setup
+	// Apply stat increase via GameplayEffect or direct attribute modification
 }
 
 void UHarmoniaProgressionComponent::ApplyClassEffects(EHarmoniaCharacterClass Class)
@@ -856,59 +879,49 @@ void UHarmoniaProgressionComponent::ApplyClassEffects(EHarmoniaCharacterClass Cl
 
 void UHarmoniaProgressionComponent::RemoveClassEffects(EHarmoniaCharacterClass Class)
 {
-	// Simplified - would need to track which effects belong to which class
+	// Simplified
 }
 
 void UHarmoniaProgressionComponent::ApplyAwakeningEffects(EHarmoniaAwakeningTier Tier)
 {
 	// Apply awakening bonuses
-	// Implementation would apply awakening-specific GameplayEffects
 }
 
 void UHarmoniaProgressionComponent::ApplyPrestigeEffects()
 {
 	// Apply prestige bonuses
-	// Implementation would apply prestige-specific GameplayEffects
 }
 
 //~ Replication
 
 void UHarmoniaProgressionComponent::OnRep_CurrentExperience()
 {
-	// Update UI
 }
 
 void UHarmoniaProgressionComponent::OnRep_CurrentLevel()
 {
-	// Update UI
 }
 
 void UHarmoniaProgressionComponent::OnRep_AvailableSkillPoints()
 {
-	// Update UI
 }
 
 void UHarmoniaProgressionComponent::OnRep_AvailableStatPoints()
 {
-	// Update UI
 }
 
 void UHarmoniaProgressionComponent::OnRep_UnlockedSkillNodes()
 {
-	// Update UI
 }
 
 void UHarmoniaProgressionComponent::OnRep_CurrentClass()
 {
-	// Update UI
 }
 
 void UHarmoniaProgressionComponent::OnRep_CurrentAwakeningTier()
 {
-	// Update UI
 }
 
 void UHarmoniaProgressionComponent::OnRep_PrestigeLevel()
 {
-	// Update UI
 }

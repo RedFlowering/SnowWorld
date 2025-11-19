@@ -333,6 +333,59 @@ struct FHarmoniaPrestigeDefinition
 };
 
 /**
+ * 스킬 노드 투자 정보 (네트워크 복제용)
+ */
+USTRUCT(BlueprintType)
+struct FSkillNodeInvestment
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, Category = "Skill")
+	FName NodeID;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Skill")
+	int32 InvestedPoints = 0;
+
+	FSkillNodeInvestment()
+		: NodeID(NAME_None)
+		, InvestedPoints(0)
+	{
+	}
+
+	FSkillNodeInvestment(FName InNodeID, int32 InPoints)
+		: NodeID(InNodeID)
+		, InvestedPoints(InPoints)
+	{
+	}
+};
+
+/**
+ * 스탯 배분 정보 (네트워크 복제용)
+ */
+USTRUCT(BlueprintType)
+struct FStatAllocation
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, Category = "Stat")
+	FGameplayTag StatTag;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Stat")
+	int32 AllocatedPoints = 0;
+
+	FStatAllocation()
+		: AllocatedPoints(0)
+	{
+	}
+
+	FStatAllocation(FGameplayTag InStatTag, int32 InPoints)
+		: StatTag(InStatTag)
+		, AllocatedPoints(InPoints)
+	{
+	}
+};
+
+/**
  * 플레이어 진행 상황 저장 데이터
  */
 USTRUCT(BlueprintType)
@@ -370,11 +423,11 @@ struct FHarmoniaProgressionSaveData
 
 	/** 해금된 스킬 노드 ID들과 투자 포인트 */
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Skills")
-	TMap<FName, int32> UnlockedSkillNodes;
+	TArray<FSkillNodeInvestment> UnlockedSkillNodes;
 
 	/** 배분된 주요 스탯 (Vitality, Strength, etc) */
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Stats")
-	TMap<FGameplayTag, int32> AllocatedStats;
+	TArray<FStatAllocation> AllocatedStats;
 
 	/** 총 획득 경험치 (lifetime) */
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Statistics")
