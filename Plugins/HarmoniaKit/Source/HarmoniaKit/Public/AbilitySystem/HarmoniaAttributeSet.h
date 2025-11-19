@@ -75,6 +75,9 @@ public:
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, Stamina);
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, MaxStamina);
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, StaminaRegenRate);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, Mana);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, MaxMana);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, ManaRegenRate);
 
 	// Primary Stats (Soul-like RPG system)
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, Vitality);
@@ -125,6 +128,15 @@ public:
 	// Called when stamina reaches zero
 	mutable FHarmoniaAttributeEvent OnOutOfStamina;
 
+	// Called when mana changes
+	mutable FHarmoniaAttributeEvent OnManaChanged;
+
+	// Called when max mana changes
+	mutable FHarmoniaAttributeEvent OnMaxManaChanged;
+
+	// Called when mana reaches zero
+	mutable FHarmoniaAttributeEvent OnOutOfMana;
+
 	// Called when poise is broken
 	mutable FHarmoniaAttributeEvent OnPoiseBroken;
 
@@ -152,6 +164,15 @@ protected:
 
 	UFUNCTION()
 	void OnRep_StaminaRegenRate(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_Mana(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_MaxMana(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_ManaRegenRate(const FGameplayAttributeData& OldValue);
 
 	UFUNCTION()
 	void OnRep_Vitality(const FGameplayAttributeData& OldValue);
@@ -254,6 +275,28 @@ private:
 	 */
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_StaminaRegenRate, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData StaminaRegenRate;
+
+	/**
+	 * Current mana
+	 * Used for magic spells and abilities
+	 * Clamped by MaxMana
+	 */
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Mana, Category = "Harmonia|Attributes", Meta = (HideFromModifiers, AllowPrivateAccess = true))
+	FGameplayAttributeData Mana;
+
+	/**
+	 * Maximum mana
+	 * Modified by Intelligence stat
+	 */
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxMana, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData MaxMana;
+
+	/**
+	 * Mana regeneration rate (per second)
+	 * Modified by Intelligence stat
+	 */
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_ManaRegenRate, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData ManaRegenRate;
 
 	// ============================================================================
 	// Primary Stats (Soul-like RPG System)
@@ -411,6 +454,9 @@ private:
 	// Whether stamina reached zero
 	bool bOutOfStamina = false;
 
+	// Whether mana reached zero
+	bool bOutOfMana = false;
+
 	// Whether poise is broken
 	bool bPoiseBroken = false;
 
@@ -419,6 +465,8 @@ private:
 	float HealthBeforeAttributeChange = 0.0f;
 	float MaxStaminaBeforeAttributeChange = 0.0f;
 	float StaminaBeforeAttributeChange = 0.0f;
+	float MaxManaBeforeAttributeChange = 0.0f;
+	float ManaBeforeAttributeChange = 0.0f;
 	float MaxPoiseBeforeAttributeChange = 0.0f;
 	float PoiseBeforeAttributeChange = 0.0f;
 };
