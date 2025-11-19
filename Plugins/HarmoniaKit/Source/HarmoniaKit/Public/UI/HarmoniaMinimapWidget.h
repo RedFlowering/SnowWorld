@@ -21,10 +21,19 @@ struct FMinimapPingMarker
     GENERATED_BODY()
 
     UPROPERTY()
-    int32 PingID = -1;
+    FVector WorldPosition = FVector::ZeroVector;
+
+    UPROPERTY()
+    float CreationTime = 0.0f;
 
     UPROPERTY()
     TObjectPtr<UHarmoniaMapMarkerWidget> MarkerWidget = nullptr;
+
+    // Helper function to check if this marker matches a ping
+    bool Matches(const FVector& InPosition, float InCreationTime) const
+    {
+        return WorldPosition.Equals(InPosition, 1.0f) && FMath::IsNearlyEqual(CreationTime, InCreationTime, 0.001f);
+    }
 };
 
 /**

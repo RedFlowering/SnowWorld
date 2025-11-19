@@ -152,7 +152,7 @@ void UHarmoniaMinimapWidget::UpdatePingMarkers()
         bool bStillActive = false;
         for (const FMapPingData& Ping : ActivePings)
         {
-            if (PingMarkers[i].PingID == Ping.PingID)
+            if (PingMarkers[i].Matches(Ping.WorldPosition, Ping.CreationTime))
             {
                 bStillActive = true;
                 break;
@@ -185,7 +185,10 @@ void UHarmoniaMinimapWidget::UpdatePingMarkers()
 
         // Find existing marker or create new one
         FMinimapPingMarker* ExistingMarker = PingMarkers.FindByPredicate(
-            [&Ping](const FMinimapPingMarker& Marker) { return Marker.PingID == Ping.PingID; }
+            [&Ping](const FMinimapPingMarker& Marker)
+            {
+                return Marker.Matches(Ping.WorldPosition, Ping.CreationTime);
+            }
         );
 
         UHarmoniaMapMarkerWidget* MarkerWidget = nullptr;
@@ -201,7 +204,8 @@ void UHarmoniaMinimapWidget::UpdatePingMarkers()
             if (MarkerWidget)
             {
                 FMinimapPingMarker NewMarker;
-                NewMarker.PingID = Ping.PingID;
+                NewMarker.WorldPosition = Ping.WorldPosition;
+                NewMarker.CreationTime = Ping.CreationTime;
                 NewMarker.MarkerWidget = MarkerWidget;
                 PingMarkers.Add(NewMarker);
             }
