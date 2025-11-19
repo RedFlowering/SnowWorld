@@ -44,8 +44,8 @@ void UHarmoniaGameplayAbility_Interact::ActivateAbility(const FGameplayAbilitySp
 		return;
 	}
 
-	// Safely cast to Actor
-	AActor* InteractableActor = Cast<AActor>(TriggerEventData->Target);
+	// Safely cast to Actor (Target is const UObject*)
+	AActor* InteractableActor = const_cast<AActor*>(Cast<const AActor>(TriggerEventData->Target));
 	if (!InteractableActor)
 	{
 		UE_LOG(LogHarmoniaInteraction, Error,

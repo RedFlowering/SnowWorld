@@ -74,37 +74,6 @@ bool UHarmoniaInteractionManager::SendInteractionEvent(const FHarmoniaInteractio
     // Define the interaction event tag
     static const FGameplayTag InteractionEventTag = FGameplayTag::RequestGameplayTag(FName("Event.Interaction.TryInteract"));
 
-    // Validate that ASC has an ability that can handle this event
-    bool bHasHandler = false;
-    const TArray<FGameplayAbilitySpec>& Specs = ASC->GetActivatableAbilities();
-    for (const FGameplayAbilitySpec& Spec : Specs)
-    {
-        if (Spec.Ability)
-        {
-            for (const FAbilityTriggerData& Trigger : Spec.Ability->AbilityTriggers)
-            {
-                if (Trigger.TriggerTag == InteractionEventTag)
-                {
-                    bHasHandler = true;
-                    break;
-                }
-            }
-            if (bHasHandler)
-            {
-                break;
-            }
-        }
-    }
-
-    if (!bHasHandler)
-    {
-        UE_LOG(LogHarmoniaInteraction, Verbose,
-            TEXT("No ability registered for interaction event '%s' on actor '%s'. Falling back to direct interaction."),
-            *InteractionEventTag.ToString(),
-            *Context.Interactor->GetName());
-        return false;
-    }
-
     // Create payload
     FGameplayEventData Payload;
     Payload.Instigator = Context.Interactor;
@@ -112,8 +81,9 @@ bool UHarmoniaInteractionManager::SendInteractionEvent(const FHarmoniaInteractio
     Payload.OptionalObject = Context.Interactable;
     Payload.EventTag = InteractionEventTag;
 
-    // Send event
+    // Send event to GAS
     // Note: In UE 5.7, SendGameplayEventToActor returns void.
+    // If no ability is registered for this event, it will be silently ignored and fallback will be used.
     UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Context.Interactor, InteractionEventTag, Payload);
 
     UE_LOG(LogHarmoniaInteraction, Log,

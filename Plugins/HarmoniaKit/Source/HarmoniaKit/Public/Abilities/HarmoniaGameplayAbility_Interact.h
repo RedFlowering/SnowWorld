@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
+#include "Definitions/HarmoniaInteractionSystemDefinitions.h"
 #include "HarmoniaGameplayAbility_Interact.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogHarmoniaInteraction, Log, All);
