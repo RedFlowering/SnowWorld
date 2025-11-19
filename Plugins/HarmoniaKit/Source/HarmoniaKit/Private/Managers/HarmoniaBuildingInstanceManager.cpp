@@ -25,7 +25,9 @@ void UHarmoniaBuildingInstanceManager::Initialize(FSubsystemCollectionBase& Coll
 
 		if (ISMManagerActor)
 		{
+#if WITH_EDITOR
 			ISMManagerActor->SetActorLabel(TEXT("BuildingISMManager"));
+#endif
 		}
 	}
 

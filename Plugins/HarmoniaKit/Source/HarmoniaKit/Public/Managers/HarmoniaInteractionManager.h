@@ -4,6 +4,8 @@
 
 #include "UObject/Object.h"
 #include "Delegates/DelegateCombinations.h"
+#include "AbilitySystemInterface.h"
+#include "Abilities/GameplayAbilityTypes.h"
 #include "../Definitions/HarmoniaInteractionSystemDefinitions.h"
 #include "HarmoniaInteractionManager.generated.h"
 
@@ -15,15 +17,18 @@ class HARMONIAKIT_API UHarmoniaInteractionManager : public UGameInstanceSubsyste
     GENERATED_BODY()
 
 public:
-    /** »óÈ£ÀÛ¿ë ½Ãµµ: Context Á¤º¸¸¦ ¹Ş¾Æ »óÈ£ÀÛ¿ëÀ» Ã³¸® */
+    /** ìƒí˜¸ì‘ìš© ì‹œë„: Context ì •ë³´ë¥¼ ë°›ì•„ ìƒí˜¸ì‘ìš©ì„ ì²˜ë¦¬ */
     UFUNCTION(BlueprintCallable, Category="Interaction")
     void TryInteract(const FHarmoniaInteractionContext& Context);
 
-    /** »óÈ£ÀÛ¿ë ¿Ï·á ½Ã ¹ß»ı (ºí·çÇÁ¸°Æ® µî¿¡¼­ ±¸µ¶ °¡´É) */
+    /** ìƒí˜¸ì‘ìš© ì™„ë£Œ ì‹œ ë°œìƒ (ë¸”ë£¨í”„ë¦°íŠ¸ ë“±ì—ì„œ êµ¬ë… ê°€ëŠ¥) */
     UPROPERTY(BlueprintAssignable, Category="Interaction")
     FOnInteractionCompleted OnInteractionCompleted;
 
 protected:
-    /** ½ÇÁ¦ »óÈ£ÀÛ¿ë Ã³¸® (ÀÎÅÍÆäÀÌ½º È£Ãâ µî) */
+    /** Handle interaction logic */
     void HandleInteraction(const FHarmoniaInteractionContext& Context);
+
+    /** Send Gameplay Event to Interactor if they have ASC */
+    bool SendInteractionEvent(const FHarmoniaInteractionContext& Context);
 };

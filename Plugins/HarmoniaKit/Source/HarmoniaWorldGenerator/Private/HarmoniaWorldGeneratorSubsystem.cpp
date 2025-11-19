@@ -5,6 +5,8 @@
 #include "PerlinNoiseHelper.h"
 #include "Landscape.h"
 #include "LandscapeProxy.h"
+#include "LandscapeEdit.h"
+#include "Serialization/BufferArchive.h"
 #include "Async/Async.h"
 #include "Async/AsyncWork.h"
 
@@ -793,12 +795,6 @@ void UHarmoniaWorldGeneratorSubsystem::ProcessObjectTile(
         return;
     }
 
-    // Check spawn probability
-    if (Random.FRand() >= Config.ObjectDensity)
-    {
-        return;
-    }
-
     // Pick object type
     EWorldObjectType ObjType = PickObjectType(Config.ObjectTypeProbabilities, Random);
     if (ObjType == EWorldObjectType::None)
@@ -807,8 +803,8 @@ void UHarmoniaWorldGeneratorSubsystem::ProcessObjectTile(
     }
 
     // Create object data
-    float HeightNorm = (float)HeightData[Y * Config.SizeX + X] / MAX_HEIGHT_VALUE;
-    FVector Location(X * TILE_SIZE, Y * TILE_SIZE, HeightNorm * Config.MaxHeight);
+    float HeightNorm = (float)HeightData[Y * Config.SizeX + X] / 65535.f;
+    FVector Location(X * 100.f, Y * 100.f, HeightNorm * Config.MaxHeight);
 
     FWorldObjectData ObjData;
     ObjData.ObjectType = ObjType;
@@ -819,6 +815,42 @@ void UHarmoniaWorldGeneratorSubsystem::ProcessObjectTile(
 
     OutObjects.Add(ObjData);
 }
+
+TArray<uint8> UHarmoniaWorldGeneratorSubsystem::GetSaveData_Implementation()
+{
+    // Serialize relevant data
+    // For now, we just save the seed as a proof of concept
+    // In a real implementation, we would save modified chunks
+    
+    // Note: We need to access the current config. 
+    // Assuming we store the last used config somewhere or can reconstruct it.
+    // For this example, we'll create a dummy buffer.
+    
+    FBufferArchive Archive;
+    int32 Version = 1;
+    Archive << Version;
+    
+    // TODO: Serialize modified chunks
+    
+    return Archive;
+}
+
+void UHarmoniaWorldGeneratorSubsystem::LoadSaveData_Implementation(const TArray<uint8>& Data)
+{
+    if (Data.Num() == 0) return;
+
+    FMemoryReader Reader(Data);
+    int32 Version;
+    Reader << Version;
+
+    if (Version == 1)
+    {
+        // TODO: Deserialize modified chunks and apply them
+        UE_LOG(LogTemp, Log, TEXT("HarmoniaWorldGenerator: Loaded save data version %d"), Version);
+    }
+}
+
+
 
 void UHarmoniaWorldGeneratorSubsystem::GenerateLakes(
     const FWorldGeneratorConfig& Config,
@@ -3140,7 +3172,7 @@ bool UHarmoniaWorldGeneratorSubsystem::GetLandscapeHeightData(
     OutHeightData.SetNum(SizeX * SizeY);
 
     // Get landscape data using edit interface
-    FLandscapeEditDataInterface LandscapeEdit(Landscape->GetLandscapeInfo());
+    FLandscapeEditDataInterface LandscapeEdit(Landscape->GetLandscapeInfo(), false);
 
     // Use GetHeightData to retrieve the height data for the region
     LandscapeEdit.GetHeightData(OutMinX, OutMinY, OutMaxX, OutMaxY, OutHeightData.GetData(), 0);
@@ -3169,8 +3201,8 @@ bool UHarmoniaWorldGeneratorSubsystem::SetLandscapeHeightData(
         return false;
     }
 
-    // Set landscape data using edit interface
-    FLandscapeEditDataInterface LandscapeEdit(Landscape->GetLandscapeInfo());
+     // Set landscape data using edit interface
+    FLandscapeEditDataInterface LandscapeEdit(Landscape->GetLandscapeInfo(), false);
 
     // Use SetHeightData to set the height data for the region
     LandscapeEdit.SetHeightData(MinX, MinY, MaxX, MaxY, HeightData.GetData(), 0, true);

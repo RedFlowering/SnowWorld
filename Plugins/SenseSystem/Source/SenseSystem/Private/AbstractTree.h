@@ -1223,7 +1223,7 @@ private:
 				{
 					IndexQtType& QtID_Ref = GetElementTreeID(ObjID);
 					QtID_Ref = TreeID;
-					TreeRef.Nodes.RemoveAtSwap(i, 1, false);
+					TreeRef.Nodes.RemoveAtSwap(i);
 				}
 			}
 		}
@@ -1332,8 +1332,7 @@ private:
 			const int32 ElementIdx = SelfNode.Nodes.IndexOfByKey(ObjID);
 			if (ElementIdx != INDEX_NONE)
 			{
-				const bool bShrink = SelfNode.Nodes.Num() > InlineAllocatorSize;
-				SelfNode.Nodes.RemoveAtSwap(ElementIdx, 1, bShrink);
+				SelfNode.Nodes.RemoveAtSwap(ElementIdx);
 				return true;
 			}
 		}

@@ -231,7 +231,7 @@ private:
 	/**
 	 * Get sound base from sound data (handles Cue, Wave, Base priority)
 	 */
-	USoundBase* GetSoundBaseFromData(const FHarmoniaSoundData* SoundData) const;
+	USoundBase* GetSoundBaseFromData(const FHarmoniaSoundData* SoundData);
 
 	/**
 	 * Apply randomization to volume and pitch

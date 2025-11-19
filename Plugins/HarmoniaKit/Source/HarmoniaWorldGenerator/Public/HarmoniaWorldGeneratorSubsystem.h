@@ -5,6 +5,7 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Tickable.h"
 #include "WorldGeneratorTypes.h"
+#include "Save/HarmoniaSaveInterface.h"
 #include "HarmoniaWorldGeneratorSubsystem.generated.h"
 
 /**
@@ -15,7 +16,7 @@
  * - Async generation support for large worlds
  */
 UCLASS()
-class HARMONIAWORLDGENERATOR_API UHarmoniaWorldGeneratorSubsystem : public UGameInstanceSubsystem, public FTickableGameObject
+class HARMONIAWORLDGENERATOR_API UHarmoniaWorldGeneratorSubsystem : public UGameInstanceSubsystem, public FTickableGameObject, public IHarmoniaSaveInterface
 {
     GENERATED_BODY()
 
@@ -521,6 +522,14 @@ public:
      */
     UFUNCTION(BlueprintCallable, Category = "WorldGenerator|Cache")
     void PreloadChunksInRegion(FIntPoint MinChunk, FIntPoint MaxChunk);
+
+    // ========================================
+    // Save/Load Interface
+    // ========================================
+
+    virtual TArray<uint8> GetSaveData_Implementation() override;
+    virtual void LoadSaveData_Implementation(const TArray<uint8>& Data) override;
+    virtual FString GetUniqueSaveId_Implementation() override { return TEXT("HarmoniaWorldGenerator"); }
 
 private:
     /**

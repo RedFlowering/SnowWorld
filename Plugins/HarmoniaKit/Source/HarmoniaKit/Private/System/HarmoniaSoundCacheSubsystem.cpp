@@ -600,7 +600,7 @@ bool UHarmoniaSoundCacheSubsystem::LoadSoundFromDataTables(FGameplayTag SoundTag
 	return false;
 }
 
-USoundBase* UHarmoniaSoundCacheSubsystem::GetSoundBaseFromData(const FHarmoniaSoundData* SoundData) const
+USoundBase* UHarmoniaSoundCacheSubsystem::GetSoundBaseFromData(const FHarmoniaSoundData* SoundData)
 {
 	if (!SoundData)
 	{

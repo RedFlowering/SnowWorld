@@ -14,6 +14,7 @@ public class HarmoniaWorldGenerator: ModuleRules
                 "Engine",
                 "Landscape",
                 "Foliage",
+                "HarmoniaLoadManager",
             });
     }
 }
