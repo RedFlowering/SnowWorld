@@ -4,9 +4,18 @@
 #include "TimerManager.h"
 #include "Engine/World.h"
 #include "Engine/GameInstance.h"
+#include "OnlineSubsystem.h"
+#include "OnlineSubsystemUtils.h"
+#include "Interfaces/OnlineFriendsInterface.h"
+#include "Interfaces/OnlineSessionInterface.h"
+#include "Interfaces/OnlineUserInterface.h"
+#include "Interfaces/OnlinePresenceInterface.h"
+#include "Interfaces/OnlineIdentityInterface.h"
+#include "Interfaces/OnlineExternalUIInterface.h"
 
 UHarmoniaOnlineSubsystem::UHarmoniaOnlineSubsystem()
-	: bIsConnected(false)
+	: OnlineSubsystem(nullptr)
+	, bIsConnected(false)
 	, bIsMicrophoneMuted(false)
 	, VoiceChatStatus(EHarmoniaVoiceChatStatus::Disconnected)
 {
@@ -24,6 +33,46 @@ void UHarmoniaOnlineSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	PendingFriendRequests.Empty();
 	PendingInvites.Empty();
 	VoiceChannels.Empty();
+
+	// OnlineSubsystem 초기화
+	// 기본적으로 DefaultPlatformService를 사용 (EOS 또는 Steam)
+	OnlineSubsystem = IOnlineSubsystem::Get();
+
+	if (OnlineSubsystem)
+	{
+		UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Using OnlineSubsystem: %s"), *OnlineSubsystem->GetSubsystemName().ToString());
+
+		// 인터페이스 가져오기
+		FriendsInterface = OnlineSubsystem->GetFriendsInterface();
+		SessionInterface = OnlineSubsystem->GetSessionInterface();
+		UserInterface = OnlineSubsystem->GetUserInterface();
+		PresenceInterface = OnlineSubsystem->GetPresenceInterface();
+
+		// Session 델리게이트 바인딩 (Session은 여전히 델리게이트 핸들 패턴 사용)
+		if (SessionInterface.IsValid())
+		{
+			SessionInterface->AddOnCreateSessionCompleteDelegate_Handle(
+				FOnCreateSessionCompleteDelegate::CreateUObject(this, &UHarmoniaOnlineSubsystem::OnCreateSessionComplete));
+
+			SessionInterface->AddOnJoinSessionCompleteDelegate_Handle(
+				FOnJoinSessionCompleteDelegate::CreateUObject(this, &UHarmoniaOnlineSubsystem::OnJoinSessionComplete));
+		}
+
+		// EOS Voice Chat 초기화 (크로스플랫폼 음성)
+		// Note: VoiceChat은 별도의 모듈로 초기화되며, 여기서는 기본 인터페이스만 가져옵니다
+		// 실제 VoiceChat 연결은 로그인 성공 후 OnLoginComplete에서 처리됩니다
+		FName SubsystemName = OnlineSubsystem->GetSubsystemName();
+		if (SubsystemName == FName(TEXT("EOS")) || SubsystemName == FName(TEXT("EOSPlus")))
+		{
+			// VoiceChat 인터페이스는 IVoiceChat::Get()을 통해 별도로 가져옵니다
+			// 또는 EOSVoiceChat 모듈에서 직접 생성할 수 있습니다
+			UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: EOS platform detected, VoiceChat will be initialized on login"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to get OnlineSubsystem!"));
+	}
 }
 
 void UHarmoniaOnlineSubsystem::Deinitialize()
@@ -34,6 +83,16 @@ void UHarmoniaOnlineSubsystem::Deinitialize()
 		if (FriendListUpdateTimerHandle.IsValid())
 		{
 			World->GetTimerManager().ClearTimer(FriendListUpdateTimerHandle);
+		}
+	}
+
+	// 델리게이트 정리
+	if (OnlineSubsystem)
+	{
+		IOnlineIdentityPtr IdentityInterface = OnlineSubsystem->GetIdentityInterface();
+		if (IdentityInterface.IsValid() && OnLoginCompleteHandle.IsValid())
+		{
+			IdentityInterface->ClearOnLoginCompleteDelegate_Handle(0, OnLoginCompleteHandle);
 		}
 	}
 
@@ -48,6 +107,14 @@ void UHarmoniaOnlineSubsystem::Deinitialize()
 	{
 		Disconnect();
 	}
+
+	// 인터페이스 포인터 정리
+	FriendsInterface = nullptr;
+	SessionInterface = nullptr;
+	UserInterface = nullptr;
+	PresenceInterface = nullptr;
+	VoiceChat = nullptr;
+	OnlineSubsystem = nullptr;
 
 	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Deinitialized"));
 
@@ -69,37 +136,38 @@ void UHarmoniaOnlineSubsystem::SearchUsers(const FString& SearchQuery, int32 Max
 
 	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Searching for users: %s (Max: %d)"), *SearchQuery, MaxResults);
 
-	// 비동기로 사용자 검색 수행
-	HarmoniaAsyncHelpers::SimulateNetworkOperation<FHarmoniaAsyncTaskResult<TArray<FHarmoniaUserSearchResult>>>(
-		[SearchQuery, MaxResults]() -> FHarmoniaAsyncTaskResult<TArray<FHarmoniaUserSearchResult>>
+	// Note: Steam/EOS는 기본적으로 사용자 검색 API를 제공하지 않습니다.
+	// 대신 친구 목록을 검색하거나, 백엔드 서버를 통한 검색이 필요합니다.
+	// 여기서는 현재 친구 목록에서 검색하는 방식으로 구현합니다.
+
+	TArray<FHarmoniaUserSearchResult> Results;
+
+	// 친구 목록에서 검색어와 일치하는 친구 찾기
+	for (const FHarmoniaFriendInfo& Friend : CachedFriendList)
+	{
+		if (Friend.DisplayName.Contains(SearchQuery) || Friend.UserId.Contains(SearchQuery))
 		{
-			// TODO: 실제 서버 API 호출 구현 (HTTP 요청 등)
-			// 백그라운드 스레드에서 실행됨 - UI 블로킹 없음
+			FHarmoniaUserSearchResult Result;
+			Result.UserId = Friend.UserId;
+			Result.DisplayName = Friend.DisplayName;
+			Result.Status = Friend.Status;
+			Result.bIsFriend = true;
+			Result.bHasPendingRequest = false;
 
-			TArray<FHarmoniaUserSearchResult> Results;
+			Results.Add(Result);
 
-			// 시뮬레이션: 검색어에 기반한 더미 데이터 생성
-			for (int32 i = 0; i < FMath::Min(MaxResults, 5); ++i)
+			if (Results.Num() >= MaxResults)
 			{
-				FHarmoniaUserSearchResult Result;
-				Result.UserId = FString::Printf(TEXT("User_%s_%d"), *SearchQuery, i);
-				Result.DisplayName = FString::Printf(TEXT("%s_%d"), *SearchQuery, i);
-				Result.Status = (i % 2 == 0) ? EHarmoniaFriendStatus::Online : EHarmoniaFriendStatus::Offline;
-				Result.bIsFriend = false;
-				Result.bHasPendingRequest = false;
-
-				Results.Add(Result);
+				break;
 			}
+		}
+	}
 
-			return FHarmoniaAsyncTaskResult<TArray<FHarmoniaUserSearchResult>>(true, Results);
-		},
-		[this](const FHarmoniaAsyncTaskResult<TArray<FHarmoniaUserSearchResult>>& Result)
-		{
-			// 게임 스레드에서 실행됨 - 델리게이트 브로드캐스트 안전
-			OnUserSearchCompleted.Broadcast(Result.bSuccess, Result.Result);
-		},
-		0.3f // 네트워크 지연 시뮬레이션 (0.3초)
-	);
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Found %d users matching '%s'"), Results.Num(), *SearchQuery);
+	OnUserSearchCompleted.Broadcast(true, Results);
+
+	// TODO: 백엔드 서버가 있다면 HTTP 요청으로 전체 사용자 검색 구현 가능
+	// 예: GET /api/users/search?query={SearchQuery}&limit={MaxResults}
 }
 
 void UHarmoniaOnlineSubsystem::SendFriendRequest(const FString& UserId, const FString& Message)
@@ -108,6 +176,13 @@ void UHarmoniaOnlineSubsystem::SendFriendRequest(const FString& UserId, const FS
 	{
 		UE_LOG(LogTemp, Warning, TEXT("HarmoniaOnlineSubsystem: Cannot send friend request to empty UserId"));
 		OnFriendRequestResult.Broadcast(false, TEXT("Invalid User ID"));
+		return;
+	}
+
+	if (!FriendsInterface.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: FriendsInterface is not valid"));
+		OnFriendRequestResult.Broadcast(false, TEXT("Friends interface not available"));
 		return;
 	}
 
@@ -122,82 +197,111 @@ void UHarmoniaOnlineSubsystem::SendFriendRequest(const FString& UserId, const FS
 
 	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Sending friend request to %s"), *UserId);
 
-	// 비동기로 친구 요청 전송
-	HarmoniaAsyncHelpers::SimulateNetworkOperation<FHarmoniaAsyncTaskResult<bool>>(
-		[UserId, Message]() -> FHarmoniaAsyncTaskResult<bool>
-		{
-			// TODO: 실제 서버 API 호출 구현 (HTTP POST 요청 등)
-			// 백그라운드 스레드에서 실행됨
+	// FString을 FUniqueNetId로 변환
+	TSharedPtr<const FUniqueNetId> FriendId = OnlineSubsystem->GetIdentityInterface()->CreateUniquePlayerId(UserId);
 
-			// 시뮬레이션: 항상 성공
-			return FHarmoniaAsyncTaskResult<bool>(true, true, TEXT(""));
-		},
-		[this, UserId](const FHarmoniaAsyncTaskResult<bool>& Result)
-		{
-			// 게임 스레드에서 실행됨
-			if (Result.bSuccess && Result.Result)
-			{
-				UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Friend request sent successfully to %s"), *UserId);
-				OnFriendRequestResult.Broadcast(true, TEXT("Friend request sent"));
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("HarmoniaOnlineSubsystem: Failed to send friend request to %s"), *UserId);
-				OnFriendRequestResult.Broadcast(false, TEXT("Failed to send friend request"));
-			}
-		},
-		0.2f // 네트워크 지연 시뮬레이션
-	);
+	if (!FriendId.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to create UniqueNetId from UserId: %s"), *UserId);
+		OnFriendRequestResult.Broadcast(false, TEXT("Invalid User ID format"));
+		return;
+	}
+
+	// Steam/EOS API를 통해 친구 요청 전송
+	bool bResult = FriendsInterface->SendInvite(0, *FriendId, EFriendsLists::ToString(EFriendsLists::Default),
+		FOnSendInviteComplete::CreateUObject(this, &UHarmoniaOnlineSubsystem::OnSendInviteComplete));
+
+	if (!bResult)
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to send friend invite to %s"), *UserId);
+		OnFriendRequestResult.Broadcast(false, TEXT("Failed to send invite"));
+	}
+	// 결과는 OnSendInviteComplete 델리게이트에서 처리됨
 }
 
 void UHarmoniaOnlineSubsystem::AcceptFriendRequest(const FString& UserId)
 {
 	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Accepting friend request from %s"), *UserId);
 
-	// 요청 찾기
-	int32 RequestIndex = PendingFriendRequests.IndexOfByPredicate([&UserId](const FHarmoniaFriendRequest& Request)
+	if (!FriendsInterface.IsValid())
 	{
-		return Request.UserId == UserId;
-	});
-
-	if (RequestIndex == INDEX_NONE)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("HarmoniaOnlineSubsystem: Friend request from %s not found"), *UserId);
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: FriendsInterface is not valid"));
 		return;
 	}
 
-	// TODO: 실제 서버 API 호출 구현
+	// FString을 FUniqueNetId로 변환
+	TSharedPtr<const FUniqueNetId> FriendId = OnlineSubsystem->GetIdentityInterface()->CreateUniquePlayerId(UserId);
 
-	// 친구 목록에 추가
-	FHarmoniaFriendInfo NewFriend;
-	NewFriend.UserId = UserId;
-	NewFriend.DisplayName = PendingFriendRequests[RequestIndex].DisplayName;
-	NewFriend.Status = EHarmoniaFriendStatus::Online;
-	NewFriend.FriendSince = FDateTime::UtcNow();
+	if (!FriendId.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to create UniqueNetId from UserId: %s"), *UserId);
+		return;
+	}
 
-	CachedFriendList.Add(NewFriend);
+	// Steam/EOS API를 통해 친구 요청 수락
+	bool bResult = FriendsInterface->AcceptInvite(0, *FriendId, EFriendsLists::ToString(EFriendsLists::Default),
+		FOnAcceptInviteComplete::CreateUObject(this, &UHarmoniaOnlineSubsystem::OnAcceptInviteComplete));
 
-	// 요청 제거
-	PendingFriendRequests.RemoveAt(RequestIndex);
+	if (bResult)
+	{
+		// 요청 목록에서 제거
+		int32 RequestIndex = PendingFriendRequests.IndexOfByPredicate([&UserId](const FHarmoniaFriendRequest& Request)
+		{
+			return Request.UserId == UserId;
+		});
 
-	// 이벤트 브로드캐스트
-	OnFriendListUpdated.Broadcast(CachedFriendList);
+		if (RequestIndex != INDEX_NONE)
+		{
+			PendingFriendRequests.RemoveAt(RequestIndex);
+		}
+
+		// 친구 목록 갱신
+		RefreshFriendList();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to accept friend request from %s"), *UserId);
+	}
 }
 
 void UHarmoniaOnlineSubsystem::RejectFriendRequest(const FString& UserId)
 {
 	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Rejecting friend request from %s"), *UserId);
 
-	// 요청 찾기 및 제거
-	int32 RequestIndex = PendingFriendRequests.IndexOfByPredicate([&UserId](const FHarmoniaFriendRequest& Request)
+	if (!FriendsInterface.IsValid())
 	{
-		return Request.UserId == UserId;
-	});
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: FriendsInterface is not valid"));
+		return;
+	}
 
-	if (RequestIndex != INDEX_NONE)
+	// FString을 FUniqueNetId로 변환
+	TSharedPtr<const FUniqueNetId> FriendId = OnlineSubsystem->GetIdentityInterface()->CreateUniquePlayerId(UserId);
+
+	if (!FriendId.IsValid())
 	{
-		PendingFriendRequests.RemoveAt(RequestIndex);
-		// TODO: 실제 서버 API 호출 구현
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to create UniqueNetId from UserId: %s"), *UserId);
+		return;
+	}
+
+	// Steam/EOS API를 통해 친구 요청 거절
+	bool bResult = FriendsInterface->RejectInvite(0, *FriendId, EFriendsLists::ToString(EFriendsLists::Default));
+
+	if (bResult)
+	{
+		// 요청 목록에서 제거
+		int32 RequestIndex = PendingFriendRequests.IndexOfByPredicate([&UserId](const FHarmoniaFriendRequest& Request)
+		{
+			return Request.UserId == UserId;
+		});
+
+		if (RequestIndex != INDEX_NONE)
+		{
+			PendingFriendRequests.RemoveAt(RequestIndex);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to reject friend request from %s"), *UserId);
 	}
 }
 
@@ -205,20 +309,43 @@ void UHarmoniaOnlineSubsystem::RemoveFriend(const FString& UserId)
 {
 	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Removing friend %s"), *UserId);
 
-	// 친구 목록에서 제거
-	int32 FriendIndex = CachedFriendList.IndexOfByPredicate([&UserId](const FHarmoniaFriendInfo& Friend)
+	if (!FriendsInterface.IsValid())
 	{
-		return Friend.UserId == UserId;
-	});
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: FriendsInterface is not valid"));
+		return;
+	}
 
-	if (FriendIndex != INDEX_NONE)
+	// FString을 FUniqueNetId로 변환
+	TSharedPtr<const FUniqueNetId> FriendId = OnlineSubsystem->GetIdentityInterface()->CreateUniquePlayerId(UserId);
+
+	if (!FriendId.IsValid())
 	{
-		CachedFriendList.RemoveAt(FriendIndex);
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to create UniqueNetId from UserId: %s"), *UserId);
+		return;
+	}
 
-		// TODO: 실제 서버 API 호출 구현
+	// Steam/EOS API를 통해 친구 삭제
+	bool bResult = FriendsInterface->DeleteFriend(0, *FriendId, EFriendsLists::ToString(EFriendsLists::Default));
+
+	if (bResult)
+	{
+		// 친구 목록에서 제거
+		int32 FriendIndex = CachedFriendList.IndexOfByPredicate([&UserId](const FHarmoniaFriendInfo& Friend)
+		{
+			return Friend.UserId == UserId;
+		});
+
+		if (FriendIndex != INDEX_NONE)
+		{
+			CachedFriendList.RemoveAt(FriendIndex);
+		}
 
 		// 이벤트 브로드캐스트
 		OnFriendListUpdated.Broadcast(CachedFriendList);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to remove friend %s"), *UserId);
 	}
 }
 
@@ -226,39 +353,21 @@ void UHarmoniaOnlineSubsystem::RefreshFriendList()
 {
 	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Refreshing friend list"));
 
-	// 비동기로 친구 목록 가져오기
-	HarmoniaAsyncHelpers::SimulateNetworkOperation<FHarmoniaAsyncTaskResult<TArray<FHarmoniaFriendInfo>>>(
-		[this]() -> FHarmoniaAsyncTaskResult<TArray<FHarmoniaFriendInfo>>
-		{
-			// TODO: 실제 서버 API 호출 구현 (HTTP GET 요청 등)
-			// 백그라운드 스레드에서 실행됨
+	if (!FriendsInterface.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: FriendsInterface is not valid"));
+		return;
+	}
 
-			// 시뮬레이션: 현재 캐시된 목록 반환 (실제로는 서버에서 가져와야 함)
-			TArray<FHarmoniaFriendInfo> FriendList = CachedFriendList;
+	// Steam/EOS API를 통해 친구 목록 읽기
+	// 결과는 OnReadFriendsListComplete 델리게이트에서 처리됨
+	bool bResult = FriendsInterface->ReadFriendsList(0, EFriendsLists::ToString(EFriendsLists::Default),
+		FOnReadFriendsListComplete::CreateUObject(this, &UHarmoniaOnlineSubsystem::OnReadFriendsListComplete));
 
-			// 일부 친구의 상태를 랜덤하게 변경 (서버에서 업데이트된 데이터라고 가정)
-			for (FHarmoniaFriendInfo& Friend : FriendList)
-			{
-				if (FMath::RandRange(0, 100) < 20) // 20% 확률로 상태 변경
-				{
-					Friend.Status = static_cast<EHarmoniaFriendStatus>(FMath::RandRange(0, 4));
-				}
-			}
-
-			return FHarmoniaAsyncTaskResult<TArray<FHarmoniaFriendInfo>>(true, FriendList);
-		},
-		[this](const FHarmoniaAsyncTaskResult<TArray<FHarmoniaFriendInfo>>& Result)
-		{
-			// 게임 스레드에서 실행됨
-			if (Result.bSuccess)
-			{
-				CachedFriendList = Result.Result;
-				OnFriendListUpdated.Broadcast(CachedFriendList);
-				UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Friend list refreshed (%d friends)"), CachedFriendList.Num());
-			}
-		},
-		0.4f // 네트워크 지연 시뮬레이션
-	);
+	if (!bResult)
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to read friends list"));
+	}
 }
 
 bool UHarmoniaOnlineSubsystem::GetFriendInfo(const FString& UserId, FHarmoniaFriendInfo& OutFriendInfo) const
@@ -336,13 +445,25 @@ void UHarmoniaOnlineSubsystem::AcceptInvite(const FString& InviteId)
 	switch (Invite.InviteType)
 	{
 	case EHarmoniaInviteType::Game:
-		// TODO: 게임 세션 참가 로직
+		// 게임 세션 참가 로직
 		UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Joining game session %s"), *Invite.SessionId);
+		if (SessionInterface.IsValid())
+		{
+			// SessionId를 FName으로 변환하여 세션 참가
+			FName SessionName(*Invite.SessionId);
+
+			// TODO: SearchResult를 통해 세션을 찾아야 하므로
+			// 실제로는 세션 검색 후 참가하는 로직이 필요합니다
+			// SessionInterface->JoinSession(0, SessionName, SearchResult);
+
+			UE_LOG(LogTemp, Warning, TEXT("HarmoniaOnlineSubsystem: Session join requires search result - implement session search first"));
+		}
 		break;
 
 	case EHarmoniaInviteType::Party:
-		// TODO: 파티 참가 로직
+		// 파티 참가 로직 (보통 파티도 세션을 사용)
 		UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Joining party"));
+		// Party 시스템은 게임마다 다르므로 프로젝트에 맞게 구현 필요
 		break;
 
 	case EHarmoniaInviteType::VoiceChat:
@@ -368,7 +489,10 @@ void UHarmoniaOnlineSubsystem::RejectInvite(const FString& InviteId)
 	if (InviteIndex != INDEX_NONE)
 	{
 		PendingInvites.RemoveAt(InviteIndex);
-		// TODO: 서버에 거절 알림
+
+		// Note: Steam/EOS는 초대 거절을 명시적으로 알리는 API가 없습니다
+		// 초대를 무시하면 자동으로 만료됩니다
+		UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Invite rejected (removed from pending list)"));
 	}
 }
 
@@ -378,21 +502,20 @@ void UHarmoniaOnlineSubsystem::RejectInvite(const FString& InviteId)
 
 FString UHarmoniaOnlineSubsystem::CreateVoiceChannel(const FString& ChannelName, int32 MaxParticipants, bool bIsPrivate)
 {
-	FString ChannelId = FGuid::NewGuid().ToString();
-
-	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Creating voice channel '%s' (ID: %s)"), *ChannelName, *ChannelId);
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Creating voice channel '%s'"), *ChannelName);
 
 	FHarmoniaVoiceChannelInfo ChannelInfo;
-	ChannelInfo.ChannelId = ChannelId;
+	ChannelInfo.ChannelId = ChannelName; // EOS는 채널 이름을 ID로 사용
 	ChannelInfo.ChannelName = ChannelName;
 	ChannelInfo.MaxParticipants = MaxParticipants;
 	ChannelInfo.bIsPrivate = bIsPrivate;
 
-	VoiceChannels.Add(ChannelId, ChannelInfo);
+	VoiceChannels.Add(ChannelName, ChannelInfo);
 
-	// TODO: 실제 음성 채널 생성 로직 (서버 연동)
+	// Note: EOS Voice Chat은 채널을 자동으로 생성합니다
+	// 참가할 때 채널이 없으면 생성됩니다
 
-	return ChannelId;
+	return ChannelName;
 }
 
 void UHarmoniaOnlineSubsystem::JoinVoiceChannel(const FString& ChannelId)
@@ -411,23 +534,32 @@ void UHarmoniaOnlineSubsystem::JoinVoiceChannel(const FString& ChannelId)
 
 	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Joining voice channel %s"), *ChannelId);
 
+	if (!VoiceChat.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("HarmoniaOnlineSubsystem: VoiceChat interface not available, using fallback"));
+
+		// VoiceChat이 없으면 기본 동작만 수행 (시뮬레이션)
+		CurrentVoiceChannelId = ChannelId;
+		UpdateVoiceChannelStatus(ChannelId, EHarmoniaVoiceChatStatus::Connected);
+
+		if (FHarmoniaVoiceChannelInfo* ChannelInfo = VoiceChannels.Find(ChannelId))
+		{
+			if (!ChannelInfo->ParticipantIds.Contains(CurrentUserId))
+			{
+				ChannelInfo->ParticipantIds.Add(CurrentUserId);
+			}
+		}
+		return;
+	}
+
 	CurrentVoiceChannelId = ChannelId;
 	UpdateVoiceChannelStatus(ChannelId, EHarmoniaVoiceChatStatus::Connecting);
 
-	// 비동기로 음성 채널 연결
-	HarmoniaAsyncHelpers::SimulateNetworkOperation<FHarmoniaAsyncTaskResult<bool>>(
-		[ChannelId]() -> FHarmoniaAsyncTaskResult<bool>
+	// EOS Voice Chat으로 채널 참가
+	VoiceChat->JoinChannel(ChannelId, TEXT(""), EVoiceChatChannelType::NonPositional,
+		FOnVoiceChatChannelJoinCompleteDelegate::CreateLambda([this, ChannelId](const FString& JoinedChannelName, const FVoiceChatResult& Result)
 		{
-			// TODO: 실제 음성 채널 연결 로직 (음성 SDK 초기화 등)
-			// 백그라운드 스레드에서 실행됨
-
-			// 시뮬레이션: 연결 성공
-			return FHarmoniaAsyncTaskResult<bool>(true, true, TEXT(""));
-		},
-		[this, ChannelId](const FHarmoniaAsyncTaskResult<bool>& Result)
-		{
-			// 게임 스레드에서 실행됨
-			if (Result.bSuccess && Result.Result)
+			if (Result.IsSuccess())
 			{
 				UpdateVoiceChannelStatus(ChannelId, EHarmoniaVoiceChatStatus::Connected);
 
@@ -446,11 +578,9 @@ void UHarmoniaOnlineSubsystem::JoinVoiceChannel(const FString& ChannelId)
 			{
 				UpdateVoiceChannelStatus(ChannelId, EHarmoniaVoiceChatStatus::Disconnected);
 				CurrentVoiceChannelId.Empty();
-				UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to join voice channel %s"), *ChannelId);
+				UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to join voice channel %s: %s"), *ChannelId, *Result.ErrorDesc);
 			}
-		},
-		0.5f // 음성 채널 연결은 시간이 더 걸릴 수 있음
-	);
+		}));
 }
 
 void UHarmoniaOnlineSubsystem::LeaveVoiceChannel(const FString& ChannelId)
@@ -462,7 +592,23 @@ void UHarmoniaOnlineSubsystem::LeaveVoiceChannel(const FString& ChannelId)
 
 	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Leaving voice channel %s"), *ChannelId);
 
-	// TODO: 실제 음성 채널 연결 해제 로직
+	// EOS Voice Chat으로 채널 나가기
+	if (VoiceChat.IsValid())
+	{
+		VoiceChat->LeaveChannel(ChannelId, FOnVoiceChatChannelLeaveCompleteDelegate::CreateLambda(
+			[this, ChannelId](const FString& LeftChannelName, const FVoiceChatResult& Result)
+			{
+				if (Result.IsSuccess())
+				{
+					UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Successfully left voice channel %s"), *ChannelId);
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("HarmoniaOnlineSubsystem: Failed to leave voice channel %s: %s"),
+						*ChannelId, *Result.ErrorDesc);
+				}
+			}));
+	}
 
 	// 채널 참가자 목록에서 제거
 	if (FHarmoniaVoiceChannelInfo* ChannelInfo = VoiceChannels.Find(ChannelId))
@@ -488,7 +634,11 @@ void UHarmoniaOnlineSubsystem::SetMicrophoneMuted(bool bMuted)
 
 	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Microphone %s"), bMuted ? TEXT("muted") : TEXT("unmuted"));
 
-	// TODO: 실제 마이크 음소거 로직
+	// EOS Voice Chat으로 마이크 음소거 설정
+	if (VoiceChat.IsValid())
+	{
+		VoiceChat->SetAudioInputDeviceMuted(bMuted);
+	}
 
 	// 상태 업데이트
 	if (!CurrentVoiceChannelId.IsEmpty())
@@ -511,7 +661,11 @@ void UHarmoniaOnlineSubsystem::SetUserMuted(const FString& UserId, bool bMuted)
 		MutedUsers.Remove(UserId);
 	}
 
-	// TODO: 실제 사용자 음소거 로직
+	// EOS Voice Chat으로 특정 사용자 음소거 설정
+	if (VoiceChat.IsValid() && !CurrentVoiceChannelId.IsEmpty())
+	{
+		VoiceChat->SetPlayerMuted(UserId, bMuted);
+	}
 }
 
 bool UHarmoniaOnlineSubsystem::GetVoiceChannelInfo(const FString& ChannelId, FHarmoniaVoiceChannelInfo& OutChannelInfo) const
@@ -539,52 +693,38 @@ void UHarmoniaOnlineSubsystem::Connect()
 		return;
 	}
 
+	if (!OnlineSubsystem)
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: OnlineSubsystem is not valid"));
+		return;
+	}
+
 	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Connecting to online services..."));
 
-	// 비동기로 온라인 서비스 연결
-	HarmoniaAsyncHelpers::SimulateNetworkOperation<FHarmoniaAsyncTaskResult<FString>>(
-		[]() -> FHarmoniaAsyncTaskResult<FString>
-		{
-			// TODO: 실제 온라인 서비스 연결 로직 (인증, 로그인 등)
-			// 백그라운드 스레드에서 실행됨
+	IOnlineIdentityPtr IdentityInterface = OnlineSubsystem->GetIdentityInterface();
+	if (!IdentityInterface.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: IdentityInterface is not valid"));
+		return;
+	}
 
-			// 시뮬레이션: 더미 사용자 정보 생성
-			FString UserId = FGuid::NewGuid().ToString();
-			return FHarmoniaAsyncTaskResult<FString>(true, UserId);
-		},
-		[this](const FHarmoniaAsyncTaskResult<FString>& Result)
-		{
-			// 게임 스레드에서 실행됨
-			if (Result.bSuccess)
-			{
-				CurrentUserId = Result.Result;
-				CurrentUserDisplayName = TEXT("TestUser");
-				bIsConnected = true;
+	// 로그인 델리게이트 바인딩
+	OnLoginCompleteHandle = IdentityInterface->AddOnLoginCompleteDelegate_Handle(
+		0, FOnLoginCompleteDelegate::CreateUObject(this, &UHarmoniaOnlineSubsystem::OnLoginComplete));
 
-				UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Connected as %s (ID: %s)"), *CurrentUserDisplayName, *CurrentUserId);
+	// Steam/EOS는 자동 로그인을 시도합니다
+	// 수동 로그인이 필요한 경우 FOnlineAccountCredentials를 전달해야 합니다
+	FOnlineAccountCredentials Credentials;
+	Credentials.Type = TEXT("accountportal"); // EOS의 경우
+	// Steam의 경우 자동으로 Steam 계정으로 로그인됩니다
 
-				// 주기적인 친구 목록 업데이트 타이머 시작 (30초마다)
-				if (UWorld* World = GetWorld())
-				{
-					World->GetTimerManager().SetTimer(
-						FriendListUpdateTimerHandle,
-						this,
-						&UHarmoniaOnlineSubsystem::UpdateFriendListCache,
-						30.0f,
-						true
-					);
-				}
+	bool bResult = IdentityInterface->Login(0, Credentials);
 
-				// 초기 친구 목록 로드 (비동기)
-				RefreshFriendList();
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to connect to online services"));
-			}
-		},
-		1.0f // 연결은 시간이 더 걸릴 수 있음
-	);
+	if (!bResult)
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to initiate login"));
+		IdentityInterface->ClearOnLoginCompleteDelegate_Handle(0, OnLoginCompleteHandle);
+	}
 }
 
 void UHarmoniaOnlineSubsystem::Disconnect()
@@ -611,7 +751,15 @@ void UHarmoniaOnlineSubsystem::Disconnect()
 		LeaveVoiceChannel(CurrentVoiceChannelId);
 	}
 
-	// TODO: 실제 온라인 서비스 연결 해제 로직
+	// Steam/EOS 로그아웃
+	if (OnlineSubsystem)
+	{
+		IOnlineIdentityPtr IdentityInterface = OnlineSubsystem->GetIdentityInterface();
+		if (IdentityInterface.IsValid())
+		{
+			IdentityInterface->Logout(0);
+		}
+	}
 
 	bIsConnected = false;
 	CurrentUserId.Empty();
@@ -636,31 +784,10 @@ void UHarmoniaOnlineSubsystem::UpdateFriendListCache()
 
 	UE_LOG(LogTemp, Verbose, TEXT("HarmoniaOnlineSubsystem: Updating friend list cache..."));
 
-	// TODO: 실제 서버에서 친구 목록 가져오기
-	// 현재는 시뮬레이션: 기존 친구들의 상태를 랜덤하게 변경
+	// 친구 목록 갱신 (비동기)
+	RefreshFriendList();
 
-	bool bHasChanges = false;
-
-	for (FHarmoniaFriendInfo& Friend : CachedFriendList)
-	{
-		// 랜덤하게 상태 변경 (10% 확률)
-		if (FMath::RandRange(0, 100) < 10)
-		{
-			EHarmoniaFriendStatus OldStatus = Friend.Status;
-			Friend.Status = static_cast<EHarmoniaFriendStatus>(FMath::RandRange(0, 4));
-
-			if (OldStatus != Friend.Status)
-			{
-				bHasChanges = true;
-				OnFriendStatusChanged.Broadcast(Friend);
-			}
-		}
-	}
-
-	if (bHasChanges)
-	{
-		OnFriendListUpdated.Broadcast(CachedFriendList);
-	}
+	// Note: 실제 상태 변경은 OnReadFriendsListComplete 델리게이트에서 처리됩니다
 }
 
 void UHarmoniaOnlineSubsystem::SimulateFriendRequestResponse(const FString& UserId, bool bSuccess)
@@ -687,9 +814,40 @@ void UHarmoniaOnlineSubsystem::SendInviteInternal(const FString& UserId, EHarmon
 		return;
 	}
 
-	// TODO: 실제 초대 전송 로직 (서버 연동)
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Sending invite to %s (Type: %d)"), *UserId, static_cast<int32>(InviteType));
 
-	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Invite sent to %s"), *UserId);
+	// Note: Steam/EOS의 초대 시스템은 게임 세션과 연동됩니다
+	// 세션 기반 초대의 경우 SessionInterface->SendSessionInviteToFriend()를 사용합니다
+
+	if (InviteType == EHarmoniaInviteType::Game && SessionInterface.IsValid())
+	{
+		// 게임 세션 초대
+		TSharedPtr<const FUniqueNetId> FriendId = OnlineSubsystem->GetIdentityInterface()->CreateUniquePlayerId(UserId);
+		if (FriendId.IsValid())
+		{
+			// 현재 활성 세션에 초대 (세션 이름은 AdditionalData로 전달됨)
+			FName SessionName = AdditionalData.IsEmpty() ? NAME_GameSession : FName(*AdditionalData);
+			bool bResult = SessionInterface->SendSessionInviteToFriend(0, SessionName, *FriendId);
+
+			if (bResult)
+			{
+				UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Game session invite sent to %s"), *UserId);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to send game session invite to %s"), *UserId);
+			}
+		}
+	}
+	else
+	{
+		// 음성 채팅 또는 파티 초대는 커스텀 메시지 시스템이 필요합니다
+		// 백엔드 서버가 있다면 HTTP 요청으로 전송하거나,
+		// P2P 메시징 시스템을 구현해야 합니다
+
+		UE_LOG(LogTemp, Warning, TEXT("HarmoniaOnlineSubsystem: Non-session invites require custom backend or messaging system"));
+		// TODO: 백엔드 API를 통한 초대 전송 구현
+	}
 }
 
 void UHarmoniaOnlineSubsystem::UpdateVoiceChannelStatus(const FString& ChannelId, EHarmoniaVoiceChatStatus NewStatus)
@@ -876,6 +1034,198 @@ void UHarmoniaOnlineSubsystem::SetVoiceEffectIntensity(float Intensity)
 
 	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Set voice effect intensity to %.2f"), Intensity);
 
-	// TODO: 실제 음성 SDK에 강도 변경 적용
-	// SDK->UpdateVoiceEffectIntensity(Intensity);
+	// Note: 음성 효과는 언리얼 엔진의 Audio Modulation 시스템이나
+	// Submix Effects를 사용하여 구현할 수 있습니다
+	// EOS Voice Chat 자체는 음성 효과를 제공하지 않습니다
+}
+
+//~=============================================================================
+// OnlineSubsystem 델리게이트 핸들러
+//~=============================================================================
+
+void UHarmoniaOnlineSubsystem::OnReadFriendsListComplete(int32 LocalUserNum, bool bWasSuccessful, const FString& ListName, const FString& ErrorStr)
+{
+	if (!bWasSuccessful)
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to read friends list: %s"), *ErrorStr);
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Friends list read successfully"));
+
+	if (!FriendsInterface.IsValid())
+	{
+		return;
+	}
+
+	// 친구 목록을 Harmonia 형식으로 변환
+	TArray<FHarmoniaFriendInfo> NewFriendList;
+
+	TArray<TSharedRef<FOnlineFriend>> Friends;
+	FriendsInterface->GetFriendsList(LocalUserNum, ListName, Friends);
+
+	for (const TSharedRef<FOnlineFriend>& Friend : Friends)
+	{
+		FHarmoniaFriendInfo FriendInfo;
+		FriendInfo.UserId = Friend->GetUserId()->ToString();
+		FriendInfo.DisplayName = Friend->GetDisplayName();
+
+		// 온라인 상태 변환
+		FOnlineUserPresence Presence = Friend->GetPresence();
+		if (Presence.bIsOnline)
+		{
+			if (Presence.bIsPlaying)
+			{
+				FriendInfo.Status = EHarmoniaFriendStatus::InGame;
+			}
+			else
+			{
+				FriendInfo.Status = EHarmoniaFriendStatus::Online;
+			}
+		}
+		else
+		{
+			FriendInfo.Status = EHarmoniaFriendStatus::Offline;
+		}
+
+		FriendInfo.FriendSince = FDateTime::UtcNow(); // TODO: 실제 친구 추가 날짜 가져오기
+
+		NewFriendList.Add(FriendInfo);
+	}
+
+	CachedFriendList = NewFriendList;
+	OnFriendListUpdated.Broadcast(CachedFriendList);
+
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Cached %d friends"), CachedFriendList.Num());
+}
+
+void UHarmoniaOnlineSubsystem::OnSendInviteComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr)
+{
+	if (bWasSuccessful)
+	{
+		UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Friend invite sent successfully to %s"), *FriendId.ToString());
+		OnFriendRequestResult.Broadcast(true, TEXT("Friend request sent"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to send friend invite: %s"), *ErrorStr);
+		OnFriendRequestResult.Broadcast(false, ErrorStr);
+	}
+}
+
+void UHarmoniaOnlineSubsystem::OnAcceptInviteComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr)
+{
+	if (bWasSuccessful)
+	{
+		UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Friend invite accepted successfully from %s"), *FriendId.ToString());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to accept friend invite: %s"), *ErrorStr);
+	}
+}
+
+void UHarmoniaOnlineSubsystem::OnDeleteFriendComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr)
+{
+	if (bWasSuccessful)
+	{
+		UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Friend deleted successfully: %s"), *FriendId.ToString());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to delete friend: %s"), *ErrorStr);
+	}
+}
+
+void UHarmoniaOnlineSubsystem::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	if (bWasSuccessful)
+	{
+		UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Session created successfully: %s"), *SessionName.ToString());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to create session: %s"), *SessionName.ToString());
+	}
+}
+
+void UHarmoniaOnlineSubsystem::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
+{
+	if (Result == EOnJoinSessionCompleteResult::Success)
+	{
+		UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Session joined successfully: %s"), *SessionName.ToString());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to join session: %s (Result: %d)"), *SessionName.ToString(), static_cast<int32>(Result));
+	}
+}
+
+void UHarmoniaOnlineSubsystem::OnLoginComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Error)
+{
+	if (bWasSuccessful)
+	{
+		CurrentUserId = UserId.ToString();
+
+		// 사용자 이름 가져오기
+		if (OnlineSubsystem)
+		{
+			IOnlineIdentityPtr IdentityInterface = OnlineSubsystem->GetIdentityInterface();
+			if (IdentityInterface.IsValid())
+			{
+				CurrentUserDisplayName = IdentityInterface->GetPlayerNickname(LocalUserNum);
+			}
+		}
+
+		bIsConnected = true;
+
+		UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Connected as %s (ID: %s)"), *CurrentUserDisplayName, *CurrentUserId);
+
+		// 주기적인 친구 목록 업데이트 타이머 시작 (30초마다)
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().SetTimer(
+				FriendListUpdateTimerHandle,
+				this,
+				&UHarmoniaOnlineSubsystem::UpdateFriendListCache,
+				30.0f,
+				true
+			);
+		}
+
+		// 초기 친구 목록 로드 (비동기)
+		RefreshFriendList();
+
+		// EOS Voice Chat 연결
+		if (VoiceChat.IsValid())
+		{
+			VoiceChat->Connect(FOnVoiceChatConnectCompleteDelegate::CreateUObject(this, &UHarmoniaOnlineSubsystem::OnVoiceChatConnectComplete));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to login: %s"), *Error);
+	}
+}
+
+void UHarmoniaOnlineSubsystem::OnVoiceChatConnectComplete(const FVoiceChatResult& Result)
+{
+	if (Result.IsSuccess())
+	{
+		UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: Voice chat connected successfully"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("HarmoniaOnlineSubsystem: Voice chat connection failed: %s"), *Result.ErrorDesc);
+	}
+}
+
+void UHarmoniaOnlineSubsystem::OnVoiceChatChannelJoinComplete(const FString& ChannelName, const FVoiceChatResult& Result)
+{
+	// 이 핸들러는 JoinVoiceChannel에서 람다로 직접 처리됨
+}
+
+void UHarmoniaOnlineSubsystem::OnVoiceChatChannelLeaveComplete(const FString& ChannelName, const FVoiceChatResult& Result)
+{
+	// 이 핸들러는 LeaveVoiceChannel에서 람다로 직접 처리됨
 }

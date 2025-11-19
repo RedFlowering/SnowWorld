@@ -6,14 +6,23 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "HarmoniaOnlineTypes.h"
 #include "HarmoniaOnlineAsyncTasks.h"
+#include "OnlineSubsystem.h"
+#include "OnlineSubsystemUtils.h"
+#include "Interfaces/OnlineFriendsInterface.h"
+#include "Interfaces/OnlineSessionInterface.h"
+#include "Interfaces/OnlineUserInterface.h"
+#include "Interfaces/OnlinePresenceInterface.h"
+#include "VoiceChat.h"
 #include "HarmoniaOnlineSubsystem.generated.h"
+
+class IVoiceChat;
 
 // 델리게이트 선언
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFriendListUpdated, const TArray<FHarmoniaFriendInfo>&, FriendList);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFriendStatusChanged, const FHarmoniaFriendInfo&, FriendInfo);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFriendRequestReceived, const FHarmoniaFriendRequest&, Request);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFriendRequestResult, bool, bSuccess, const FString&, Message);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInviteReceived, const FHarmoniaInviteInfo&, InviteInfo);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHarmoniaInviteReceived, const FHarmoniaInviteInfo&, InviteInfo);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnVoiceChatStatusChanged, const FString&, ChannelId, EHarmoniaVoiceChatStatus, Status);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnUserSearchCompleted, bool, bSuccess, const TArray<FHarmoniaUserSearchResult>&, Results);
 
@@ -357,7 +366,7 @@ public:
 
 	/** 초대를 받았을 때 */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Online|Events")
-	FOnInviteReceived OnInviteReceived;
+	FOnHarmoniaInviteReceived OnInviteReceived;
 
 	/** 음성 채팅 상태가 변경되었을 때 */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Online|Events")
@@ -383,6 +392,65 @@ private:
 
 	/** 음성 채널 상태 업데이트 */
 	void UpdateVoiceChannelStatus(const FString& ChannelId, EHarmoniaVoiceChatStatus NewStatus);
+
+	//~=============================================================================
+	// OnlineSubsystem 델리게이트 핸들러
+	//~=============================================================================
+
+	/** 친구 목록 읽기 완료 */
+	void OnReadFriendsListComplete(int32 LocalUserNum, bool bWasSuccessful, const FString& ListName, const FString& ErrorStr);
+
+	/** 친구 초대 완료 */
+	void OnSendInviteComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr);
+
+	/** 친구 요청 수락 완료 */
+	void OnAcceptInviteComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr);
+
+	/** 친구 삭제 완료 */
+	void OnDeleteFriendComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr);
+
+	/** 세션 생성 완료 */
+	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
+
+	/** 세션 참가 완료 */
+	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+
+	/** 로그인 완료 */
+	void OnLoginComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Error);
+
+	/** 음성 채팅 연결 상태 변경 */
+	void OnVoiceChatConnectComplete(const FVoiceChatResult& Result);
+
+	/** 음성 채널 참가 완료 */
+	void OnVoiceChatChannelJoinComplete(const FString& ChannelName, const FVoiceChatResult& Result);
+
+	/** 음성 채널 퇴장 완료 */
+	void OnVoiceChatChannelLeaveComplete(const FString& ChannelName, const FVoiceChatResult& Result);
+
+	//~=============================================================================
+	// OnlineSubsystem 인터페이스
+	//~=============================================================================
+
+	/** Primary Online Subsystem (EOS or Steam) */
+	IOnlineSubsystem* OnlineSubsystem;
+
+	/** Voice Chat 인터페이스 (EOS Voice) */
+	TSharedPtr<IVoiceChat> VoiceChat;
+
+	/** Friends 인터페이스 */
+	IOnlineFriendsPtr FriendsInterface;
+
+	/** Session 인터페이스 */
+	IOnlineSessionPtr SessionInterface;
+
+	/** User 인터페이스 */
+	IOnlineUserPtr UserInterface;
+
+	/** Presence 인터페이스 */
+	IOnlinePresencePtr PresenceInterface;
+
+	/** 로그인 델리게이트 핸들 (IOnlineIdentity는 여전히 핸들 패턴 사용) */
+	FDelegateHandle OnLoginCompleteHandle;
 
 	//~=============================================================================
 	// 캐싱된 데이터
