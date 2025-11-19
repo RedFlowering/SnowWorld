@@ -23,6 +23,7 @@
 #include "Serialization/MemoryReader.h"
 #include "Managers/HarmoniaBuildingInstanceManager.h"
 #include "EngineUtils.h"
+#include "Misc/CRC.h"
 
 // HarmoniaKit 컴포넌트
 #include "AbilitySystem/HarmoniaAttributeSet.h"
@@ -145,9 +146,23 @@ bool UHarmoniaSaveGameSubsystem::SaveGame(const FString& SaveSlotName, bool bUse
 			TArray<uint8> BinaryData;
 			BinaryData.Append(SaveData.GetData(), SaveData.Num());
 
-			if (SaveToSteamCloud(SaveSlotName, BinaryData))
+			// [SECURITY] Calculate checksum before encryption
+			uint32 Checksum = CalculateChecksum(BinaryData);
+
+			// [SECURITY] Encrypt save data
+			TArray<uint8> EncryptedData;
+			EncryptSaveData(BinaryData, EncryptedData);
+
+			// [SECURITY] Prepend checksum to encrypted data
+			// Format: [4 bytes checksum][encrypted save data]
+			TArray<uint8> FinalData;
+			FinalData.SetNum(4 + EncryptedData.Num());
+			FMemory::Memcpy(FinalData.GetData(), &Checksum, 4);
+			FMemory::Memcpy(FinalData.GetData() + 4, EncryptedData.GetData(), EncryptedData.Num());
+
+			if (SaveToSteamCloud(SaveSlotName, FinalData))
 			{
-				UE_LOG(LogTemp, Log, TEXT("SaveGame: Successfully saved to Steam Cloud"));
+				UE_LOG(LogTemp, Log, TEXT("SaveGame: Successfully saved to Steam Cloud (encrypted, %d bytes)"), FinalData.Num());
 			}
 			else
 			{
@@ -179,13 +194,44 @@ bool UHarmoniaSaveGameSubsystem::LoadGame(const FString& SaveSlotName, bool bUse
 		TArray<uint8> CloudData;
 		if (LoadFromSteamCloud(SaveSlotName, CloudData))
 		{
-			// 바이너리 데이터를 SaveGame 객체로 역직렬화
-			LoadedSaveGame = Cast<UHarmoniaSaveGame>(UGameplayStatics::CreateSaveGameObject(UHarmoniaSaveGame::StaticClass()));
-			if (LoadedSaveGame)
+			// [SECURITY] Verify data has checksum (minimum 4 bytes)
+			if (CloudData.Num() < 4)
 			{
-				FMemoryReader MemoryReader(CloudData, true);
-				LoadedSaveGame->Serialize(MemoryReader);
-				UE_LOG(LogTemp, Log, TEXT("LoadGame: Successfully loaded from Steam Cloud"));
+				UE_LOG(LogTemp, Error, TEXT("[SECURITY] LoadGame: Invalid save data from Steam Cloud (too small)"));
+			}
+			else
+			{
+				// [SECURITY] Extract checksum from encrypted data
+				// Format: [4 bytes checksum][encrypted save data]
+				uint32 StoredChecksum = 0;
+				FMemory::Memcpy(&StoredChecksum, CloudData.GetData(), 4);
+
+				// [SECURITY] Extract encrypted data
+				TArray<uint8> EncryptedData;
+				EncryptedData.SetNum(CloudData.Num() - 4);
+				FMemory::Memcpy(EncryptedData.GetData(), CloudData.GetData() + 4, EncryptedData.Num());
+
+				// [SECURITY] Decrypt save data
+				TArray<uint8> DecryptedData;
+				DecryptSaveData(EncryptedData, DecryptedData);
+
+				// [SECURITY] Verify checksum
+				if (!VerifyChecksum(DecryptedData, StoredChecksum))
+				{
+					UE_LOG(LogTemp, Error, TEXT("[ANTI-CHEAT] LoadGame: Save file integrity check failed! Data may be corrupted or tampered."));
+					UE_LOG(LogTemp, Error, TEXT("[SECURITY] Refusing to load potentially compromised save data."));
+				}
+				else
+				{
+					// Checksum verified - safe to deserialize
+					LoadedSaveGame = Cast<UHarmoniaSaveGame>(UGameplayStatics::CreateSaveGameObject(UHarmoniaSaveGame::StaticClass()));
+					if (LoadedSaveGame)
+					{
+						FMemoryReader MemoryReader(DecryptedData, true);
+						LoadedSaveGame->Serialize(MemoryReader);
+						UE_LOG(LogTemp, Log, TEXT("LoadGame: Successfully loaded from Steam Cloud (decrypted and verified)"));
+					}
+				}
 			}
 		}
 	}
@@ -1024,4 +1070,66 @@ void UHarmoniaSaveGameSubsystem::OnAutoSaveTimer()
 		UE_LOG(LogTemp, Log, TEXT("AutoSave: Saving game..."));
 		SaveGame(DefaultSaveSlotName, true);
 	}
+}
+
+// =============================================================================
+// [SECURITY] Save File Encryption and Integrity Validation
+// =============================================================================
+
+void UHarmoniaSaveGameSubsystem::EncryptSaveData(const TArray<uint8>& InData, TArray<uint8>& OutEncryptedData) const
+{
+	// [SECURITY] Simple XOR cipher for save file encryption
+	// NOTE: For production, consider using a stronger encryption algorithm (AES-256)
+	// This provides basic protection against casual save file editing
+
+	// Encryption key - In production, this should be obfuscated or stored securely
+	// For multiplayer games, server should validate save data independently
+	static const uint8 EncryptionKey[] = {
+		0x48, 0x61, 0x72, 0x6D, 0x6F, 0x6E, 0x69, 0x61,  // "Harmonia"
+		0x53, 0x61, 0x76, 0x65, 0x47, 0x61, 0x6D, 0x65   // "SaveGame"
+	};
+	static const int32 KeyLength = sizeof(EncryptionKey);
+
+	OutEncryptedData.SetNum(InData.Num());
+
+	for (int32 i = 0; i < InData.Num(); ++i)
+	{
+		OutEncryptedData[i] = InData[i] ^ EncryptionKey[i % KeyLength];
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[SECURITY] Save data encrypted: %d bytes"), OutEncryptedData.Num());
+}
+
+void UHarmoniaSaveGameSubsystem::DecryptSaveData(const TArray<uint8>& InEncryptedData, TArray<uint8>& OutData) const
+{
+	// XOR cipher is symmetric, so decryption is the same as encryption
+	EncryptSaveData(InEncryptedData, OutData);
+	UE_LOG(LogTemp, Log, TEXT("[SECURITY] Save data decrypted: %d bytes"), OutData.Num());
+}
+
+uint32 UHarmoniaSaveGameSubsystem::CalculateChecksum(const TArray<uint8>& Data) const
+{
+	// [SECURITY] Calculate CRC32 checksum for data integrity validation
+	uint32 Checksum = FCrc::MemCrc32(Data.GetData(), Data.Num());
+	UE_LOG(LogTemp, Verbose, TEXT("[SECURITY] Calculated checksum: 0x%08X for %d bytes"), Checksum, Data.Num());
+	return Checksum;
+}
+
+bool UHarmoniaSaveGameSubsystem::VerifyChecksum(const TArray<uint8>& Data, uint32 ExpectedChecksum) const
+{
+	uint32 ActualChecksum = CalculateChecksum(Data);
+	bool bValid = (ActualChecksum == ExpectedChecksum);
+
+	if (bValid)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[SECURITY] Checksum verification passed: 0x%08X"), ActualChecksum);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[SECURITY] Checksum verification FAILED! Expected: 0x%08X, Actual: 0x%08X"),
+			ExpectedChecksum, ActualChecksum);
+		UE_LOG(LogTemp, Error, TEXT("[ANTI-CHEAT] Save file may have been tampered with!"));
+	}
+
+	return bValid;
 }
