@@ -445,7 +445,23 @@ FHarmoniaTeleportResult UHarmoniaCheckpointSubsystem::TeleportToCheckpoint(APlay
 	FName CurrentCheckpointID = GetPlayerLastCheckpoint(Player);
 	Result.ResourceCost = CalculateTeleportCost(CurrentCheckpointID, DestinationCheckpointID);
 
-	// TODO: 소울/리소스 차감 로직
+	// 소울/리소스 차감 로직
+	// NOTE: 리소스 시스템이 구현되면 여기서 실제 차감을 수행합니다.
+	// TODO: HarmoniaResourceComponent 또는 HarmoniaInventoryComponent에서 리소스 차감
+	// Example:
+	// if (ALyraPlayerState* PS = Player->GetPlayerState<ALyraPlayerState>())
+	// {
+	//     if (UHarmoniaResourceComponent* ResourceComp = PS->FindComponentByClass<UHarmoniaResourceComponent>())
+	//     {
+	//         if (!ResourceComp->ConsumeResource(EResourceType::Soul, Result.ResourceCost))
+	//         {
+	//             Result.bSuccess = false;
+	//             Result.FailureReason = FText::FromString(TEXT("Not enough souls"));
+	//             return Result;
+	//         }
+	//     }
+	// }
+	UE_LOG(LogTemp, Log, TEXT("TeleportToCheckpoint: Cost %d souls (not yet deducted - resource system not implemented)"), Result.ResourceCost);
 
 	// 텔레포트 실행
 	FVector TeleportLocation = Checkpoint->GetActorLocation();
@@ -484,8 +500,43 @@ bool UHarmoniaCheckpointSubsystem::CanTeleportToCheckpoint(APlayerController* Pl
 		return false;
 	}
 
-	// TODO: 전투 중인지 확인
-	// TODO: 리소스 충분한지 확인
+	// 전투 중인지 확인
+	// NOTE: 전투 상태 시스템이 구현되면 여기서 확인합니다.
+	// TODO: HarmoniaCombatComponent 또는 AbilitySystemComponent에서 전투 상태 확인
+	// Example:
+	// if (ALyraPlayerState* PS = Player->GetPlayerState<ALyraPlayerState>())
+	// {
+	//     if (ULyraAbilitySystemComponent* ASC = PS->GetLyraAbilitySystemComponent())
+	//     {
+	//         if (ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(TEXT("State.Combat"))))
+	//         {
+	//             OutReason = FText::FromString(TEXT("Cannot teleport while in combat"));
+	//             return false;
+	//         }
+	//     }
+	// }
+
+	// 리소스 충분한지 확인
+	FName CurrentCheckpointID = GetPlayerLastCheckpoint(Player);
+	int32 TeleportCost = CalculateTeleportCost(CurrentCheckpointID, DestinationCheckpointID);
+
+	// NOTE: 리소스 시스템이 구현되면 여기서 확인합니다.
+	// TODO: HarmoniaResourceComponent 또는 HarmoniaInventoryComponent에서 리소스 확인
+	// Example:
+	// if (ALyraPlayerState* PS = Player->GetPlayerState<ALyraPlayerState>())
+	// {
+	//     if (UHarmoniaResourceComponent* ResourceComp = PS->FindComponentByClass<UHarmoniaResourceComponent>())
+	//     {
+	//         if (!ResourceComp->HasEnoughResource(EResourceType::Soul, TeleportCost))
+	//         {
+	//             OutReason = FText::Format(
+	//                 FText::FromString(TEXT("Not enough souls (need {0})")),
+	//                 FText::AsNumber(TeleportCost)
+	//             );
+	//             return false;
+	//         }
+	//     }
+	// }
 
 	return true;
 }

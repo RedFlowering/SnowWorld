@@ -96,8 +96,179 @@ void UHarmoniaMapClusterSystem::BuildClustersKMeans(
     TArray<FMarkerCluster>& OutClusters,
     float DistanceThreshold)
 {
-    // TODO: Implement K-means clustering for better results
-    // For now, use simple distance-based clustering
+    if (Markers.Num() < MinMarkersForCluster)
+    {
+        // Too few markers for clustering
+        return;
+    }
+
+    // Estimate number of clusters based on distance threshold
+    // For simplicity, use markers.Num() / MinMarkersForCluster as max K
+    int32 MaxK = FMath::Max(1, Markers.Num() / MinMarkersForCluster);
+    int32 K = FMath::Min(MaxK, 10); // Limit to 10 clusters max
+
+    // Initialize K random centroids
+    TArray<FVector2D> Centroids;
+    TArray<int32> SelectedIndices;
+
+    // K-means++ initialization for better initial centroids
+    FRandomStream Random(FMath::Rand());
+
+    // First centroid: random marker
+    int32 FirstIndex = Random.RandRange(0, Markers.Num() - 1);
+    Centroids.Add(FVector2D(Markers[FirstIndex].WorldPosition.X, Markers[FirstIndex].WorldPosition.Y));
+    SelectedIndices.Add(FirstIndex);
+
+    // Select remaining centroids using K-means++ method
+    for (int32 i = 1; i < K; ++i)
+    {
+        // Calculate distance to nearest centroid for each marker
+        TArray<float> MinDistances;
+        MinDistances.SetNum(Markers.Num());
+
+        for (int32 j = 0; j < Markers.Num(); ++j)
+        {
+            if (SelectedIndices.Contains(j))
+            {
+                MinDistances[j] = 0.0f;
+                continue;
+            }
+
+            FVector2D MarkerPos(Markers[j].WorldPosition.X, Markers[j].WorldPosition.Y);
+            float MinDist = TNumericLimits<float>::Max();
+
+            for (const FVector2D& Centroid : Centroids)
+            {
+                float Dist = FVector2D::DistSquared(MarkerPos, Centroid);
+                MinDist = FMath::Min(MinDist, Dist);
+            }
+
+            MinDistances[j] = MinDist;
+        }
+
+        // Select next centroid with probability proportional to distance^2
+        float TotalWeight = 0.0f;
+        for (float Dist : MinDistances)
+        {
+            TotalWeight += Dist;
+        }
+
+        if (TotalWeight > 0.0f)
+        {
+            float RandomValue = Random.FRandRange(0.0f, TotalWeight);
+            float AccumulatedWeight = 0.0f;
+
+            for (int32 j = 0; j < Markers.Num(); ++j)
+            {
+                AccumulatedWeight += MinDistances[j];
+                if (AccumulatedWeight >= RandomValue)
+                {
+                    Centroids.Add(FVector2D(Markers[j].WorldPosition.X, Markers[j].WorldPosition.Y));
+                    SelectedIndices.Add(j);
+                    break;
+                }
+            }
+        }
+    }
+
+    // K-means iterations
+    const int32 MaxIterations = 20;
+    TArray<int32> Assignments;
+    Assignments.SetNum(Markers.Num());
+
+    for (int32 Iteration = 0; Iteration < MaxIterations; ++Iteration)
+    {
+        bool bChanged = false;
+
+        // Assignment step: assign each marker to nearest centroid
+        for (int32 i = 0; i < Markers.Num(); ++i)
+        {
+            FVector2D MarkerPos(Markers[i].WorldPosition.X, Markers[i].WorldPosition.Y);
+
+            int32 NearestCentroid = 0;
+            float MinDist = FVector2D::DistSquared(MarkerPos, Centroids[0]);
+
+            for (int32 k = 1; k < K; ++k)
+            {
+                float Dist = FVector2D::DistSquared(MarkerPos, Centroids[k]);
+                if (Dist < MinDist)
+                {
+                    MinDist = Dist;
+                    NearestCentroid = k;
+                }
+            }
+
+            if (Assignments[i] != NearestCentroid)
+            {
+                Assignments[i] = NearestCentroid;
+                bChanged = true;
+            }
+        }
+
+        // If no changes, we've converged
+        if (!bChanged)
+        {
+            break;
+        }
+
+        // Update step: recalculate centroids
+        TArray<FVector2D> NewCentroids;
+        TArray<int32> ClusterCounts;
+        NewCentroids.SetNum(K);
+        ClusterCounts.SetNumZeroed(K);
+
+        for (int32 i = 0; i < Markers.Num(); ++i)
+        {
+            int32 ClusterIndex = Assignments[i];
+            FVector2D MarkerPos(Markers[i].WorldPosition.X, Markers[i].WorldPosition.Y);
+
+            NewCentroids[ClusterIndex] += MarkerPos;
+            ClusterCounts[ClusterIndex]++;
+        }
+
+        for (int32 k = 0; k < K; ++k)
+        {
+            if (ClusterCounts[k] > 0)
+            {
+                Centroids[k] = NewCentroids[k] / static_cast<float>(ClusterCounts[k]);
+            }
+        }
+    }
+
+    // Build final clusters from assignments
+    OutClusters.SetNum(K);
+    for (int32 k = 0; k < K; ++k)
+    {
+        OutClusters[k] = FMarkerCluster();
+        OutClusters[k].ClusterCenter = Centroids[k];
+    }
+
+    for (int32 i = 0; i < Markers.Num(); ++i)
+    {
+        int32 ClusterIndex = Assignments[i];
+        FVector2D MarkerPos(Markers[i].WorldPosition.X, Markers[i].WorldPosition.Y);
+        OutClusters[ClusterIndex].AddMarker(Markers[i], MarkerPos);
+    }
+
+    // Calculate cluster radii
+    for (int32 k = 0; k < K; ++k)
+    {
+        for (const FMapLocationData& Marker : OutClusters[k].Markers)
+        {
+            FVector2D MarkerPos(Marker.WorldPosition.X, Marker.WorldPosition.Y);
+            float Distance = FVector2D::Distance(OutClusters[k].ClusterCenter, MarkerPos);
+            OutClusters[k].ClusterRadius = FMath::Max(OutClusters[k].ClusterRadius, Distance);
+        }
+    }
+
+    // Remove empty clusters
+    for (int32 k = OutClusters.Num() - 1; k >= 0; --k)
+    {
+        if (OutClusters[k].MarkerCount == 0)
+        {
+            OutClusters.RemoveAt(k);
+        }
+    }
 }
 
 void UHarmoniaMapClusterSystem::BuildClustersSimple(
