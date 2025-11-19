@@ -474,7 +474,7 @@ private:
 	/** 공간 음성: 청자 기준으로 환경 효과 블렌딩 */
 	FHarmoniaVoiceEffectSettings CalculateListenerBasedEffect(
 		EHarmoniaEnvironmentPreset SpeakerEnvironment,
-		EHarmoniaEnvironmentPreset ListenerEnvironment,
+		EHarmoniaEnvironmentPreset InListenerEnvironment,
 		float Distance) const;
 
 	/** 공간 음성: 거리에 따른 감쇠 계산 */

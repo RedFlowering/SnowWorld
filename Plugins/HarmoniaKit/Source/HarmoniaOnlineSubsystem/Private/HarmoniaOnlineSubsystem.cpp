@@ -1456,11 +1456,11 @@ void UHarmoniaOnlineSubsystem::UpdatePlayerVoiceEffect(const FString& PlayerId)
 
 FHarmoniaVoiceEffectSettings UHarmoniaOnlineSubsystem::CalculateListenerBasedEffect(
 	EHarmoniaEnvironmentPreset SpeakerEnvironment,
-	EHarmoniaEnvironmentPreset ListenerEnvironment,
+	EHarmoniaEnvironmentPreset InListenerEnvironment,
 	float Distance) const
 {
 	// 기본 효과는 청자 환경 기준
-	FHarmoniaVoiceEffectSettings ListenerEffect = FHarmoniaVoiceEffectSettings::FromPreset(ListenerEnvironment);
+	FHarmoniaVoiceEffectSettings ListenerEffect = FHarmoniaVoiceEffectSettings::FromPreset(InListenerEnvironment);
 
 	// 블렌딩이 활성화되어 있으면 화자 환경과 블렌딩
 	if (SpatialVoiceSettings.bBlendSpeakerAndListenerEnvironments)
