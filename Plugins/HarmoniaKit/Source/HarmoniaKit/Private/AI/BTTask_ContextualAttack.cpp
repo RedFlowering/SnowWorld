@@ -76,11 +76,11 @@ EBTNodeResult::Type UBTTask_ContextualAttack::ExecuteTask(UBehaviorTreeComponent
 		TArray<FHarmoniaMonsterAttackPattern> AvailableAttacks;
 		for (const FHarmoniaMonsterAttackPattern& Pattern : Monster->MonsterData->AttackPatterns)
 		{
-			// TODO: Check cooldown - requires public getter method in HarmoniaMonsterBase
-			// if (Monster->IsAttackOnCooldown(Pattern.AttackID))
-			// {
-			// 	continue;
-			// }
+			// Check cooldown
+			if (Monster->IsAttackOnCooldown(Pattern.AttackID))
+			{
+				continue;
+			}
 
 			// Check state
 			if (Pattern.RequiredState != EHarmoniaMonsterState::Combat && Monster->CurrentState != Pattern.RequiredState)

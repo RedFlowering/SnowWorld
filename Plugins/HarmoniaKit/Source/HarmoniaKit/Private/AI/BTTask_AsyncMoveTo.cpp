@@ -51,8 +51,16 @@ EBTNodeResult::Type UBTTask_AsyncMoveTo::ExecuteTask(UBehaviorTreeComponent& Own
 		Memory->bPathfindingInProgress = false;
 	}
 
-	// TODO: LOD-based radius adaptation would require modifying parent class property
-	// For now, use parent implementation with default settings
+	// Apply LOD-based radius adaptation
+	if (bAdaptRadiusToLOD && ControlledPawn)
+	{
+		float AdaptedRadius = GetLODAdaptedRadius(ControlledPawn);
+		if (AdaptedRadius > 0.0f)
+		{
+			AcceptanceRadius = AdaptedRadius;
+		}
+	}
+
 	return Super::ExecuteTask(OwnerComp, NodeMemory);
 }
 
@@ -107,49 +115,43 @@ FString UBTTask_AsyncMoveTo::GetStaticDescription() const
 
 float UBTTask_AsyncMoveTo::GetLODAdaptedRadius(AActor* Owner) const
 {
-	// Note: Cannot access AcceptanceRadius directly as it's a parent class property
-	// This function is kept for future use if AcceptanceRadius becomes accessible
-	// For now, LOD adaptation should be handled differently
-	return 0.0f;
+	if (!Owner || !bAdaptRadiusToLOD)
+	{
+		return AcceptanceRadius;
+	}
 
-	// TODO: Implement LOD-based radius adaptation through alternative means
-	// if (!Owner || !bAdaptRadiusToLOD)
-	// {
-	// 	return default radius;
-	// }
-	//
-	// UHarmoniaAILODComponent* LODComponent = Owner->FindComponentByClass<UHarmoniaAILODComponent>();
-	// if (!LODComponent)
-	// {
-	// 	return default radius;
-	// }
-	//
-	// EHarmoniaAILODLevel LODLevel = LODComponent->GetCurrentLODLevel();
-	// float Multiplier = 1.0f;
-	//
-	// switch (LODLevel)
-	// {
-	// case EHarmoniaAILODLevel::VeryHigh:
-	// 	Multiplier = 1.0f;
-	// 	break;
-	// case EHarmoniaAILODLevel::High:
-	// 	Multiplier = 1.2f;
-	// 	break;
-	// case EHarmoniaAILODLevel::Medium:
-	// 	Multiplier = 1.5f;
-	// 	break;
-	// case EHarmoniaAILODLevel::Low:
-	// 	Multiplier = LowLODRadiusMultiplier;
-	// 	break;
-	// case EHarmoniaAILODLevel::VeryLow:
-	// 	Multiplier = LowLODRadiusMultiplier * 1.5f;
-	// 	break;
-	// default:
-	// 	Multiplier = 1.0f;
-	// 	break;
-	// }
-	//
-	// return default radius * Multiplier;
+	UHarmoniaAILODComponent* LODComponent = Owner->FindComponentByClass<UHarmoniaAILODComponent>();
+	if (!LODComponent)
+	{
+		return AcceptanceRadius;
+	}
+
+	EHarmoniaAILODLevel LODLevel = LODComponent->GetCurrentLODLevel();
+	float Multiplier = 1.0f;
+
+	switch (LODLevel)
+	{
+	case EHarmoniaAILODLevel::VeryHigh:
+		Multiplier = 1.0f;
+		break;
+	case EHarmoniaAILODLevel::High:
+		Multiplier = 1.2f;
+		break;
+	case EHarmoniaAILODLevel::Medium:
+		Multiplier = 1.5f;
+		break;
+	case EHarmoniaAILODLevel::Low:
+		Multiplier = LowLODRadiusMultiplier;
+		break;
+	case EHarmoniaAILODLevel::VeryLow:
+		Multiplier = LowLODRadiusMultiplier * 1.5f;
+		break;
+	default:
+		Multiplier = 1.0f;
+		break;
+	}
+
+	return AcceptanceRadius * Multiplier;
 }
 
 bool UBTTask_AsyncMoveTo::ShouldUpdatePath(float TimeSinceLastUpdate) const

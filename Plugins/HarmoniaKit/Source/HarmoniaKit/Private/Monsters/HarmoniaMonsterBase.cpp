@@ -941,3 +941,12 @@ bool AHarmoniaMonsterBase::ActivateAttackAbility(FName AttackID)
 
 	return bSuccess;
 }
+
+bool AHarmoniaMonsterBase::IsAttackOnCooldown(FName AttackID) const
+{
+	if (AttackCooldowns.Contains(AttackID))
+	{
+		return AttackCooldowns[AttackID] > 0.0f;
+	}
+	return false;
+}
