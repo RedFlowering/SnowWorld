@@ -8,6 +8,7 @@
 #include "Definitions/HarmoniaEquipmentSystemDefinitions.h"
 #include "Definitions/HarmoniaCheckpointSystemDefinitions.h"
 #include "Definitions/HarmoniaDifficultySystemDefinitions.h"
+#include "Definitions/HarmoniaMapSystemDefinitions.h"
 #include "HarmoniaSaveGame.generated.h"
 
 class ULyraInventoryItemInstance;
@@ -148,6 +149,14 @@ struct FHarmoniaPlayerSaveData
 	/** 마지막으로 공명한 체크포인트 ID */
 	UPROPERTY(SaveGame)
 	FName LastCheckpointID;
+
+	/** 탐험한 지역 목록 */
+	UPROPERTY(SaveGame)
+	TArray<FExploredRegion> ExploredRegions;
+
+	/** 발견한 위치 목록 */
+	UPROPERTY(SaveGame)
+	TArray<FMapLocationData> DiscoveredLocations;
 };
 
 /** 리소스 노드 상태 저장 데이터 */

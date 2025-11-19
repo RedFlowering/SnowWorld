@@ -9,8 +9,11 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "Engine/World.h"
+#include "Engine/LocalPlayer.h"
 #include "Camera/CameraComponent.h"
 #include "DrawDebugHelpers.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
 
 // 로그용
 DEFINE_LOG_CATEGORY_STATIC(LogBuildingSystem, Log, All);
@@ -144,14 +147,28 @@ void UHarmoniaBuildingComponent::SetBuildingMode(EBuildingMode NewMode)
 	{
 		SpawnPreviewActor();
 		UE_LOG(LogBuildingSystem, Log, TEXT("Entered Build Mode"));
+
+		// Setup input mapping for building mode
+		SetupInput();
 	}
 	else
 	{
 		DestroyPreviewActor();
 		UE_LOG(LogBuildingSystem, Log, TEXT("Exited Build Mode"));
-	}
 
-	// TODO: 나중에 InputMapping 변경 대응
+		// Remove input mapping when exiting building mode
+		if (CachedPC)
+		{
+			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(CachedPC->GetLocalPlayer()))
+			{
+				if (InputMapping)
+				{
+					Subsystem->RemoveMappingContext(InputMapping);
+					UE_LOG(LogBuildingSystem, Log, TEXT("Removed building input mapping"));
+				}
+			}
+		}
+	}
 }
 
 void UHarmoniaBuildingComponent::SetSelectedPart(FName PartID)
@@ -486,10 +503,36 @@ FBuildingPartData* UHarmoniaBuildingComponent::GetCurrentPartData() const
 
 void UHarmoniaBuildingComponent::SetupInput()
 {
-	// TODO: Enhanced Input 시스템 연동
-	// - 배치 액션
-	// - 회전 액션
-	// - 취소 액션
+	// Enhanced Input system integration
+	if (!CachedPC || !InputMapping)
+	{
+		UE_LOG(LogBuildingSystem, Warning, TEXT("SetupInput: PlayerController or InputMapping is null"));
+		return;
+	}
+
+	// Get Enhanced Input Local Player Subsystem
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(CachedPC->GetLocalPlayer()))
+	{
+		// Add input mapping context for building mode
+		// Priority 1 ensures building inputs override default inputs
+		Subsystem->AddMappingContext(InputMapping, 1);
+		UE_LOG(LogBuildingSystem, Log, TEXT("Added building input mapping context"));
+	}
+	else
+	{
+		UE_LOG(LogBuildingSystem, Warning, TEXT("SetupInput: Failed to get EnhancedInputLocalPlayerSubsystem"));
+	}
+
+	// Note: Input actions should be bound in Blueprint or via Enhanced Input Component
+	// The following actions should be defined in the InputMapping:
+	// - IA_Building_Place: Trigger for placing current building part
+	// - IA_Building_Rotate: Trigger for rotating preview actor
+	// - IA_Building_Cancel: Trigger for canceling building mode
+	//
+	// Example Blueprint binding:
+	// - Bind IA_Building_Place -> HandlePlaceAction
+	// - Bind IA_Building_Rotate -> HandleRotateAction
+	// - Bind IA_Building_Cancel -> HandleCancelAction
 }
 
 void UHarmoniaBuildingComponent::HandlePlaceAction()

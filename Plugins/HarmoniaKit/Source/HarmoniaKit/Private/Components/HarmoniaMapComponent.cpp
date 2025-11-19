@@ -4,6 +4,7 @@
 #include "System/HarmoniaMapSubsystem.h"
 #include "System/HarmoniaFogOfWarRenderer.h"
 #include "System/HarmoniaSaveGameSubsystem.h"
+#include "System/HarmoniaSaveGame.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
@@ -356,35 +357,142 @@ FVector UHarmoniaMapComponent::MapUVToWorld(const FVector2D& UV, float WorldZ) c
 
 void UHarmoniaMapComponent::SaveExplorationData()
 {
-	// Save exploration data - integrate with your save system
-	// This is a placeholder for save system integration
+	// Save exploration data - integrate with save system
 	UE_LOG(LogTemp, Log, TEXT("SaveExplorationData called (%d regions, %d locations)"),
 		ExploredRegions.Num(), DiscoveredLocations.Num());
 
-	// TODO: Integrate with HarmoniaSaveGameSubsystem when save data structures are defined
-	// Example implementation:
-	// if (UHarmoniaSaveGameSubsystem* SaveSubsystem = GetWorld()->GetSubsystem<UHarmoniaSaveGameSubsystem>())
-	// {
-	//     SaveSubsystem->SaveMapExploration(ExploredRegions, DiscoveredLocations);
-	// }
+	// Integrate with HarmoniaSaveGameSubsystem
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	UGameInstance* GameInstance = World->GetGameInstance();
+	if (!GameInstance)
+	{
+		return;
+	}
+
+	UHarmoniaSaveGameSubsystem* SaveSubsystem = GameInstance->GetSubsystem<UHarmoniaSaveGameSubsystem>();
+	if (!SaveSubsystem)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SaveExplorationData: HarmoniaSaveGameSubsystem not found"));
+		return;
+	}
+
+	// Get current save game object
+	UHarmoniaSaveGame* SaveGame = SaveSubsystem->GetCurrentSaveGame();
+	if (!SaveGame)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SaveExplorationData: No active save game"));
+		return;
+	}
+
+	// Get player's Steam ID
+	APawn* OwnerPawn = Cast<APawn>(GetOwner());
+	if (!OwnerPawn)
+	{
+		return;
+	}
+
+	APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
+	if (!PC)
+	{
+		return;
+	}
+
+	// Get or create player data
+	FString SteamID = TEXT("LocalPlayer"); // Default for local testing
+	// In multiplayer, you would get the actual Steam ID here
+
+	FHarmoniaPlayerSaveData PlayerData;
+	if (!SaveGame->GetPlayerData(SteamID, PlayerData))
+	{
+		// Create new player data if it doesn't exist
+		PlayerData.SteamID = SteamID;
+		PlayerData.PlayerName = PC->PlayerState ? PC->PlayerState->GetPlayerName() : TEXT("Player");
+	}
+
+	// Update exploration data
+	PlayerData.ExploredRegions = ExploredRegions;
+	PlayerData.DiscoveredLocations = DiscoveredLocations;
+
+	// Save back to save game
+	SaveGame->SetPlayerData(SteamID, PlayerData);
+
+	UE_LOG(LogTemp, Log, TEXT("SaveExplorationData: Saved %d regions and %d locations for player %s"),
+		ExploredRegions.Num(), DiscoveredLocations.Num(), *SteamID);
 }
 
 void UHarmoniaMapComponent::LoadExplorationData()
 {
-	// Load exploration data - integrate with your save system
-	// This is a placeholder for save system integration
+	// Load exploration data - integrate with save system
 	UE_LOG(LogTemp, Log, TEXT("LoadExplorationData called"));
 
-	// TODO: Integrate with HarmoniaSaveGameSubsystem when save data structures are defined
-	// Example implementation:
-	// if (UHarmoniaSaveGameSubsystem* SaveSubsystem = GetWorld()->GetSubsystem<UHarmoniaSaveGameSubsystem>())
-	// {
-	//     if (SaveSubsystem->LoadMapExploration(ExploredRegions, DiscoveredLocations))
-	//     {
-	//         OnRep_ExploredRegions();
-	//         OnRep_DiscoveredLocations();
-	//     }
-	// }
+	// Integrate with HarmoniaSaveGameSubsystem
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	UGameInstance* GameInstance = World->GetGameInstance();
+	if (!GameInstance)
+	{
+		return;
+	}
+
+	UHarmoniaSaveGameSubsystem* SaveSubsystem = GameInstance->GetSubsystem<UHarmoniaSaveGameSubsystem>();
+	if (!SaveSubsystem)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LoadExplorationData: HarmoniaSaveGameSubsystem not found"));
+		return;
+	}
+
+	// Get current save game object
+	UHarmoniaSaveGame* SaveGame = SaveSubsystem->GetCurrentSaveGame();
+	if (!SaveGame)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LoadExplorationData: No active save game"));
+		return;
+	}
+
+	// Get player's Steam ID
+	APawn* OwnerPawn = Cast<APawn>(GetOwner());
+	if (!OwnerPawn)
+	{
+		return;
+	}
+
+	APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
+	if (!PC)
+	{
+		return;
+	}
+
+	// Get player data
+	FString SteamID = TEXT("LocalPlayer"); // Default for local testing
+	// In multiplayer, you would get the actual Steam ID here
+
+	FHarmoniaPlayerSaveData PlayerData;
+	if (SaveGame->GetPlayerData(SteamID, PlayerData))
+	{
+		// Load exploration data
+		ExploredRegions = PlayerData.ExploredRegions;
+		DiscoveredLocations = PlayerData.DiscoveredLocations;
+
+		// Trigger replication callbacks to update fog of war and UI
+		OnRep_ExploredRegions();
+		OnRep_DiscoveredLocations();
+
+		UE_LOG(LogTemp, Log, TEXT("LoadExplorationData: Loaded %d regions and %d locations for player %s"),
+			ExploredRegions.Num(), DiscoveredLocations.Num(), *SteamID);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LoadExplorationData: No saved data found for player %s"), *SteamID);
+	}
 }
 
 void UHarmoniaMapComponent::UpdateExploration()
