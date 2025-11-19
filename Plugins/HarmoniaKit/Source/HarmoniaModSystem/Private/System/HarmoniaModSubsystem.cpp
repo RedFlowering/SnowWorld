@@ -142,12 +142,79 @@ bool UHarmoniaModSubsystem::LoadModManifest(const FString& ManifestPath, FHarmon
 		return false;
 	}
 
+	// Validate required fields
+	if (!JsonObject->HasField(TEXT("ModId")))
+	{
+		UE_LOG(LogHarmoniaModSystem, Error, TEXT("Missing required field 'ModId' in manifest: %s"), *ManifestPath);
+		return false;
+	}
+
+	if (!JsonObject->HasField(TEXT("DisplayName")))
+	{
+		UE_LOG(LogHarmoniaModSystem, Error, TEXT("Missing required field 'DisplayName' in manifest: %s"), *ManifestPath);
+		return false;
+	}
+
+	if (!JsonObject->HasField(TEXT("Author")))
+	{
+		UE_LOG(LogHarmoniaModSystem, Error, TEXT("Missing required field 'Author' in manifest: %s"), *ManifestPath);
+		return false;
+	}
+
+	if (!JsonObject->HasField(TEXT("Version")))
+	{
+		UE_LOG(LogHarmoniaModSystem, Error, TEXT("Missing required field 'Version' in manifest: %s"), *ManifestPath);
+		return false;
+	}
+
+	if (!JsonObject->HasField(TEXT("Description")))
+	{
+		UE_LOG(LogHarmoniaModSystem, Error, TEXT("Missing required field 'Description' in manifest: %s"), *ManifestPath);
+		return false;
+	}
+
+	// Validate field types
+	FString ModIdString;
+	if (!JsonObject->TryGetStringField(TEXT("ModId"), ModIdString) || ModIdString.IsEmpty())
+	{
+		UE_LOG(LogHarmoniaModSystem, Error, TEXT("Field 'ModId' must be a non-empty string in manifest: %s"), *ManifestPath);
+		return false;
+	}
+
+	FString DisplayNameString;
+	if (!JsonObject->TryGetStringField(TEXT("DisplayName"), DisplayNameString) || DisplayNameString.IsEmpty())
+	{
+		UE_LOG(LogHarmoniaModSystem, Error, TEXT("Field 'DisplayName' must be a non-empty string in manifest: %s"), *ManifestPath);
+		return false;
+	}
+
+	FString AuthorString;
+	if (!JsonObject->TryGetStringField(TEXT("Author"), AuthorString) || AuthorString.IsEmpty())
+	{
+		UE_LOG(LogHarmoniaModSystem, Error, TEXT("Field 'Author' must be a non-empty string in manifest: %s"), *ManifestPath);
+		return false;
+	}
+
+	FString VersionString;
+	if (!JsonObject->TryGetStringField(TEXT("Version"), VersionString) || VersionString.IsEmpty())
+	{
+		UE_LOG(LogHarmoniaModSystem, Error, TEXT("Field 'Version' must be a non-empty string in manifest: %s"), *ManifestPath);
+		return false;
+	}
+
+	FString DescriptionString;
+	if (!JsonObject->TryGetStringField(TEXT("Description"), DescriptionString))
+	{
+		UE_LOG(LogHarmoniaModSystem, Error, TEXT("Field 'Description' must be a string in manifest: %s"), *ManifestPath);
+		return false;
+	}
+
 	// Parse basic info
-	OutModInfo.ModId = FName(*JsonObject->GetStringField(TEXT("ModId")));
-	OutModInfo.DisplayName = FText::FromString(JsonObject->GetStringField(TEXT("DisplayName")));
-	OutModInfo.Author = JsonObject->GetStringField(TEXT("Author"));
-	OutModInfo.Version = JsonObject->GetStringField(TEXT("Version"));
-	OutModInfo.Description = FText::FromString(JsonObject->GetStringField(TEXT("Description")));
+	OutModInfo.ModId = FName(*ModIdString);
+	OutModInfo.DisplayName = FText::FromString(DisplayNameString);
+	OutModInfo.Author = AuthorString;
+	OutModInfo.Version = VersionString;
+	OutModInfo.Description = FText::FromString(DescriptionString);
 
 	// Parse optional fields
 	if (JsonObject->HasField(TEXT("LoadPriority")))
@@ -185,18 +252,54 @@ bool UHarmoniaModSubsystem::LoadModManifest(const FString& ManifestPath, FHarmon
 			if (DepValue->Type == EJson::Object)
 			{
 				TSharedPtr<FJsonObject> DepObj = DepValue->AsObject();
+
+				// Validate required dependency fields
+				if (!DepObj->HasField(TEXT("ModId")))
+				{
+					UE_LOG(LogHarmoniaModSystem, Error, TEXT("Missing required field 'ModId' in dependency entry in manifest: %s"), *ManifestPath);
+					return false;
+				}
+
+				if (!DepObj->HasField(TEXT("MinVersion")))
+				{
+					UE_LOG(LogHarmoniaModSystem, Error, TEXT("Missing required field 'MinVersion' in dependency entry in manifest: %s"), *ManifestPath);
+					return false;
+				}
+
+				FString DepModIdString;
+				if (!DepObj->TryGetStringField(TEXT("ModId"), DepModIdString) || DepModIdString.IsEmpty())
+				{
+					UE_LOG(LogHarmoniaModSystem, Error, TEXT("Dependency 'ModId' must be a non-empty string in manifest: %s"), *ManifestPath);
+					return false;
+				}
+
+				FString DepMinVersionString;
+				if (!DepObj->TryGetStringField(TEXT("MinVersion"), DepMinVersionString) || DepMinVersionString.IsEmpty())
+				{
+					UE_LOG(LogHarmoniaModSystem, Error, TEXT("Dependency 'MinVersion' must be a non-empty string in manifest: %s"), *ManifestPath);
+					return false;
+				}
+
 				FHarmoniaModDependency Dep;
-				Dep.ModId = FName(*DepObj->GetStringField(TEXT("ModId")));
-				Dep.MinVersion = DepObj->GetStringField(TEXT("MinVersion"));
+				Dep.ModId = FName(*DepModIdString);
+				Dep.MinVersion = DepMinVersionString;
 
 				if (DepObj->HasField(TEXT("MaxVersion")))
 				{
-					Dep.MaxVersion = DepObj->GetStringField(TEXT("MaxVersion"));
+					FString MaxVersionString;
+					if (DepObj->TryGetStringField(TEXT("MaxVersion"), MaxVersionString))
+					{
+						Dep.MaxVersion = MaxVersionString;
+					}
 				}
 
 				if (DepObj->HasField(TEXT("Optional")))
 				{
-					Dep.bOptional = DepObj->GetBoolField(TEXT("Optional"));
+					bool bOptional;
+					if (DepObj->TryGetBoolField(TEXT("Optional"), bOptional))
+					{
+						Dep.bOptional = bOptional;
+					}
 				}
 
 				OutModInfo.Dependencies.Add(Dep);
@@ -213,13 +316,45 @@ bool UHarmoniaModSubsystem::LoadModManifest(const FString& ManifestPath, FHarmon
 			if (IncompatValue->Type == EJson::Object)
 			{
 				TSharedPtr<FJsonObject> IncompatObj = IncompatValue->AsObject();
+
+				// Validate required incompatibility fields
+				if (!IncompatObj->HasField(TEXT("ModId")))
+				{
+					UE_LOG(LogHarmoniaModSystem, Error, TEXT("Missing required field 'ModId' in incompatibility entry in manifest: %s"), *ManifestPath);
+					return false;
+				}
+
+				if (!IncompatObj->HasField(TEXT("Reason")))
+				{
+					UE_LOG(LogHarmoniaModSystem, Error, TEXT("Missing required field 'Reason' in incompatibility entry in manifest: %s"), *ManifestPath);
+					return false;
+				}
+
+				FString IncompatModIdString;
+				if (!IncompatObj->TryGetStringField(TEXT("ModId"), IncompatModIdString) || IncompatModIdString.IsEmpty())
+				{
+					UE_LOG(LogHarmoniaModSystem, Error, TEXT("Incompatibility 'ModId' must be a non-empty string in manifest: %s"), *ManifestPath);
+					return false;
+				}
+
+				FString IncompatReasonString;
+				if (!IncompatObj->TryGetStringField(TEXT("Reason"), IncompatReasonString) || IncompatReasonString.IsEmpty())
+				{
+					UE_LOG(LogHarmoniaModSystem, Error, TEXT("Incompatibility 'Reason' must be a non-empty string in manifest: %s"), *ManifestPath);
+					return false;
+				}
+
 				FHarmoniaModIncompatibility Incompat;
-				Incompat.ModId = FName(*IncompatObj->GetStringField(TEXT("ModId")));
-				Incompat.Reason = IncompatObj->GetStringField(TEXT("Reason"));
+				Incompat.ModId = FName(*IncompatModIdString);
+				Incompat.Reason = IncompatReasonString;
 
 				if (IncompatObj->HasField(TEXT("VersionRange")))
 				{
-					Incompat.VersionRange = IncompatObj->GetStringField(TEXT("VersionRange"));
+					FString VersionRangeString;
+					if (IncompatObj->TryGetStringField(TEXT("VersionRange"), VersionRangeString))
+					{
+						Incompat.VersionRange = VersionRangeString;
+					}
 				}
 
 				OutModInfo.Incompatibilities.Add(Incompat);
