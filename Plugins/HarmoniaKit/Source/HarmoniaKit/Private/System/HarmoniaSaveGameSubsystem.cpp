@@ -551,7 +551,6 @@ void UHarmoniaSaveGameSubsystem::SaveWorldData(UHarmoniaSaveGame* SaveGameObject
 	// }
 
 	// ===== 체크포인트 데이터 저장 =====
-	UGameInstance* GameInstance = GetGameInstance();
 	if (GameInstance)
 	{
 		if (UHarmoniaCheckpointSubsystem* CheckpointSubsystem = GameInstance->GetSubsystem<UHarmoniaCheckpointSubsystem>())
@@ -681,7 +680,6 @@ void UHarmoniaSaveGameSubsystem::LoadWorldData(const UHarmoniaSaveGame* SaveGame
 	// }
 
 	// ===== 체크포인트 데이터 로드 =====
-	UGameInstance* GameInstance = GetGameInstance();
 	if (GameInstance)
 	{
 		if (UHarmoniaCheckpointSubsystem* CheckpointSubsystem = GameInstance->GetSubsystem<UHarmoniaCheckpointSubsystem>())
