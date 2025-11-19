@@ -22,10 +22,10 @@ struct FHarmoniaInteractionContext
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TObjectPtr<AActor> Interactor = nullptr; // �÷��̾�, AI ��
+    TObjectPtr<AActor> Interactor = nullptr; // Player, AI, etc.
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TObjectPtr<AActor> Interactable = nullptr; // ����, ������, �� ��
+    TObjectPtr<AActor> Interactable = nullptr; // Door, chest, NPC, etc.
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     EHarmoniaInteractionType InteractionType = EHarmoniaInteractionType::None;

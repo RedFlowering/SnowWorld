@@ -7,7 +7,7 @@
 #include "Definitions/HarmoniaCraftingSystemDefinitions.h"
 #include "HarmoniaItemSystemDefinitions.generated.h"
 
-// ī�װ��� ����
+// Item category definition
 UENUM(BlueprintType)
 enum class EItemCategory : uint8
 {
@@ -19,7 +19,7 @@ enum class EItemCategory : uint8
     Etc
 };
 
-// ������ �⺻ ���� ������
+// Item basic property structure
 USTRUCT(BlueprintType)
 struct FItemData : public FTableRowBase
 {
@@ -60,7 +60,7 @@ struct FItemData : public FTableRowBase
     EItemGrade Grade = EItemGrade::Common;
 };
 
-// �����ۺ� ����
+// Item-specific stats
 USTRUCT(BlueprintType)
 struct FItemStatData : public FTableRowBase
 {

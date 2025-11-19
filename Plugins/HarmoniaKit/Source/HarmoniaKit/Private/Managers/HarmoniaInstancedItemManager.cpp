@@ -8,11 +8,11 @@
 
 AActor* UHarmoniaInstancedItemManager::SpawnWorldActor(const FHarmoniaInstancedObjectData& Data, AController* Requestor)
 {
-    // ����: ������ ���̺� �Ǵ� ���� �ʿ��� ���� Ŭ���� ã��
+    // TODO: Find actor class from data table or other sources as needed
     TSubclassOf<AActor> ItemActorClass = nullptr;
 
-    // ------ ���� ���� �ڵ� ���� ------
-    // (���������� ���̺� �Ŵ���/���� �Ŵ��� ��� ��ȸ)
+    // ------ Example implementation below ------
+    // (lookup from data table/asset manager as appropriate)
     UDataTable* ItemDataTable = GETITEMDATATABLE();
 
     if (ItemDataTable)
@@ -44,10 +44,10 @@ AActor* UHarmoniaInstancedItemManager::SpawnWorldActor(const FHarmoniaInstancedO
         {
             RegisterSpawnedActor(Data.InstanceGuid, SpawnedActor);
 
-            // (�ʿ��ϴٸ�) ���Ϳ� ������ ������ ���� �� �߰� ó��
+            // (Optional) Set item data on spawned actor if needed
             // ex) IWorldItemInterface::SetItemData(Data);
 
-            // (�ɼ�) ��ȣ�ۿ� ���ε�, ����Ʈ ��
+            // (Optional) Interaction binding, effects, etc.
         }
         return SpawnedActor;
     }
@@ -59,7 +59,7 @@ void UHarmoniaInstancedItemManager::DestroyWorldActor(AActor* Actor)
 {
     if (Actor)
     {
-        // (�ʿ��) �ı� ���� ������, ����Ʈ, ���� ó�� ��
+        // (Optional) Pre-destroy cleanup, effects, audio, etc.
         Actor->Destroy();
     }
 }

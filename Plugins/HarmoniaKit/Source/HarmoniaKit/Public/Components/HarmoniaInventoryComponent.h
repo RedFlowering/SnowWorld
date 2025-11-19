@@ -9,7 +9,7 @@
 
 class AHarmoniaItemActor;
 
-// ��� �̺�Ʈ ��������Ʈ
+// Inventory event delegate
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryChanged);
 
 UCLASS(ClassGroup = (Harmonia), meta = (BlueprintSpawnableComponent))
@@ -100,11 +100,11 @@ protected:
 	void Clear();
 
 public:
-	// ���� <-> ���� Ŭ�� ����ȭ
+	// Server <-> Client synchronization
 	UPROPERTY(ReplicatedUsing = OnRep_InventoryData, EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	FInventoryData InventoryData = FInventoryData();
 
-	// Ŭ�� UI���� ���ε��ϴ� ���� �̺�Ʈ
+	// Delegate that client UI binds to
 	UPROPERTY(BlueprintAssignable)
 	FOnInventoryChanged OnInventoryChanged;
 };
