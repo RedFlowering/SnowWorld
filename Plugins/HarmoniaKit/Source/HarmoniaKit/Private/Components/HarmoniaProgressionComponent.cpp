@@ -820,7 +820,9 @@ void UHarmoniaProgressionComponent::ApplySkillNodeEffects(const FHarmoniaSkillNo
 	// Grant AbilitySet
 	if (Node.GrantedAbilitySet)
 	{
-		Node.GrantedAbilitySet->GiveToAbilitySystem(ASC, nullptr);
+		// Note: We pass nullptr for GrantedHandles as we're not tracking removal yet
+		// Future enhancement: Track handles for proper cleanup
+		Node.GrantedAbilitySet->GiveToAbilitySystem(ASC, nullptr, nullptr);
 	}
 }
 
@@ -871,7 +873,9 @@ void UHarmoniaProgressionComponent::ApplyClassEffects(EHarmoniaCharacterClass Cl
 	// Grant class abilities
 	if (ClassDef->ClassAbilitySet)
 	{
-		ClassDef->ClassAbilitySet->GiveToAbilitySystem(ASC, nullptr);
+		// Note: We pass nullptr for GrantedHandles as we're not tracking removal yet
+		// Future enhancement: Track handles for proper cleanup
+		ClassDef->ClassAbilitySet->GiveToAbilitySystem(ASC, nullptr, nullptr);
 	}
 
 	// Apply starting stat bonuses
