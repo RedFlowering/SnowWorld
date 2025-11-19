@@ -212,6 +212,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Monster|Combat")
 	AActor* SelectBestTarget() const;
 
+	/**
+	 * Check if an attack is currently on cooldown
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Monster|Combat")
+	bool IsAttackOnCooldown(FName AttackID) const;
+
 protected:
 	// ============================================================================
 	// Components
