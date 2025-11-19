@@ -586,29 +586,55 @@ void UHarmoniaSaveGameSubsystem::LoadWorldData(const UHarmoniaSaveGame* SaveGame
 	// ===== 빌딩 데이터 로드 =====
 	if (UHarmoniaBuildingInstanceManager* BuildingManager = World->GetSubsystem<UHarmoniaBuildingInstanceManager>())
 	{
-		// NOTE: BuildingManager의 PlaceBuilding 함수는 FBuildingPartData를 요구하지만,
-		// 우리는 PartID만 저장하고 있습니다. 따라서 BuildingDataTable에서
-		// PartID로 FBuildingPartData를 조회해야 합니다.
-		// TODO: HarmoniaBuildingInstanceManager에 PartID를 받는 PlaceBuilding 오버로드 추가
-		//       또는 데이터 테이블 접근 API 추가
-		//
-		// Example implementation:
-		// for (const FHarmoniaSavedBuildingInstance& Building : WorldData.PlacedBuildings)
-		// {
-		//     // PartID로 FBuildingPartData 조회
-		//     FBuildingPartData* PartData = BuildingManager->GetBuildingPartData(Building.PartID);
-		//     if (PartData)
-		//     {
-		//         FGuid RestoredGuid = BuildingManager->PlaceBuilding(
-		//             *PartData,
-		//             Building.Location,
-		//             Building.Rotation,
-		//             nullptr // Owner는 별도로 복원 필요
-		//         );
-		//     }
-		// }
+		// BuildingDataTable 찾기
+		UDataTable* BuildingDataTable = nullptr;
 
-		UE_LOG(LogTemp, Warning, TEXT("LoadWorldData: Building restoration not implemented - needs API enhancement"));
+		// 프로젝트 설정이나 고정 경로에서 데이터 테이블 로드
+		// NOTE: 실제 경로는 프로젝트 구조에 맞게 수정 필요
+		FSoftObjectPath DataTablePath(TEXT("/Game/Data/DT_BuildingParts.DT_BuildingParts"));
+		BuildingDataTable = Cast<UDataTable>(DataTablePath.TryLoad());
+
+		if (!BuildingDataTable)
+		{
+			// 다른 가능한 경로 시도
+			DataTablePath = FSoftObjectPath(TEXT("/HarmoniaKit/Data/DT_BuildingParts.DT_BuildingParts"));
+			BuildingDataTable = Cast<UDataTable>(DataTablePath.TryLoad());
+		}
+
+		if (BuildingDataTable)
+		{
+			int32 RestoredCount = 0;
+			for (const FHarmoniaSavedBuildingInstance& Building : WorldData.PlacedBuildings)
+			{
+				// PartID로 FBuildingPartData 조회
+				FBuildingPartData* PartData = BuildingDataTable->FindRow<FBuildingPartData>(Building.PartID, TEXT("LoadWorldData"));
+				if (PartData)
+				{
+					FGuid RestoredGuid = BuildingManager->PlaceBuilding(
+						*PartData,
+						Building.Location,
+						Building.Rotation,
+						nullptr // Owner는 별도로 복원 필요
+					);
+
+					if (RestoredGuid.IsValid())
+					{
+						RestoredCount++;
+					}
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("LoadWorldData: Failed to find building part data for PartID: %s"), *Building.PartID.ToString());
+				}
+			}
+
+			UE_LOG(LogTemp, Log, TEXT("LoadWorldData: Restored %d/%d buildings"), RestoredCount, WorldData.PlacedBuildings.Num());
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("LoadWorldData: Building data table not found. Buildings cannot be restored."));
+			UE_LOG(LogTemp, Warning, TEXT("LoadWorldData: Please ensure BuildingDataTable is set up at one of the expected paths."));
+		}
 	}
 
 	// ===== 월드 생성 정보 로드 (WorldGeneratorSubsystem) =====
