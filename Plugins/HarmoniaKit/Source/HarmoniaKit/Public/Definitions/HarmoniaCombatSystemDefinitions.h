@@ -816,3 +816,435 @@ struct HARMONIAKIT_API FHarmoniaBackstabConfig
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Backstab|Animation", meta = (EditCondition = "bEnableBackstab && bPlayTargetAnimation"))
 	TObjectPtr<UAnimMontage> TargetBackstabMontage = nullptr;
 };
+
+// ============================================================================
+// Ranged Combat Structs & Enums
+// ============================================================================
+
+/**
+ * Ranged Weapon Type
+ * Defines different categories of ranged weapons
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaRangedWeaponType : uint8
+{
+	None UMETA(DisplayName = "None"),
+
+	// Bow & Crossbow
+	Bow UMETA(DisplayName = "Bow"),								// Traditional bow
+	Longbow UMETA(DisplayName = "Longbow"),						// High damage, slow draw
+	Shortbow UMETA(DisplayName = "Shortbow"),					// Fast draw, low damage
+	CompositeBow UMETA(DisplayName = "Composite Bow"),			// Balanced
+	Crossbow UMETA(DisplayName = "Crossbow"),					// High accuracy, slow reload
+	HeavyCrossbow UMETA(DisplayName = "Heavy Crossbow"),		// Armor piercing
+	RepeatingCrossbow UMETA(DisplayName = "Repeating Crossbow"),// Multi-shot
+
+	// Firearms (Dark Fantasy)
+	Pistol UMETA(DisplayName = "Pistol"),						// Single shot pistol
+	DualPistols UMETA(DisplayName = "Dual Pistols"),			// Twin pistols
+	Rifle UMETA(DisplayName = "Rifle"),							// Long range rifle
+	Shotgun UMETA(DisplayName = "Shotgun"),						// Spread shot
+	Musket UMETA(DisplayName = "Musket"),						// Heavy single shot
+
+	// Throwing Weapons
+	ThrowingKnife UMETA(DisplayName = "Throwing Knife"),		// Fast, low damage
+	Shuriken UMETA(DisplayName = "Shuriken"),					// Multi-projectile
+	ThrowingAxe UMETA(DisplayName = "Throwing Axe"),			// High damage
+	Javelin UMETA(DisplayName = "Javelin"),						// Long range spear
+	Bomb UMETA(DisplayName = "Bomb"),							// Explosive
+	PoisonVial UMETA(DisplayName = "Poison Vial"),				// Status effect
+
+	// Magic Weapons
+	Staff UMETA(DisplayName = "Staff"),							// Basic magic weapon
+	Wand UMETA(DisplayName = "Wand"),							// Fast casting
+	Tome UMETA(DisplayName = "Tome"),							// Multiple spells
+	Catalyst UMETA(DisplayName = "Catalyst"),					// Faith-based
+	Orb UMETA(DisplayName = "Orb"),								// Intelligence-based
+
+	Custom UMETA(DisplayName = "Custom")						// User-defined
+};
+
+/**
+ * Projectile Type
+ * Defines different types of projectiles and their behavior
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaProjectileType : uint8
+{
+	// Physical Projectiles
+	Arrow UMETA(DisplayName = "Arrow"),							// Standard arrow
+	Bolt UMETA(DisplayName = "Bolt"),							// Crossbow bolt
+	Bullet UMETA(DisplayName = "Bullet"),						// Firearm bullet
+	Pellet UMETA(DisplayName = "Pellet"),						// Shotgun pellet
+
+	// Thrown Projectiles
+	Knife UMETA(DisplayName = "Knife"),
+	Shuriken UMETA(DisplayName = "Shuriken"),
+	Axe UMETA(DisplayName = "Axe"),
+	Spear UMETA(DisplayName = "Spear"),
+
+	// Explosive Projectiles
+	Bomb UMETA(DisplayName = "Bomb"),
+	Grenade UMETA(DisplayName = "Grenade"),
+	FireBomb UMETA(DisplayName = "Fire Bomb"),
+
+	// Magic Projectiles
+	MagicBolt UMETA(DisplayName = "Magic Bolt"),
+	Fireball UMETA(DisplayName = "Fireball"),
+	IceShard UMETA(DisplayName = "Ice Shard"),
+	LightningBolt UMETA(DisplayName = "Lightning Bolt"),
+	DarkOrb UMETA(DisplayName = "Dark Orb"),
+	HolyBeam UMETA(DisplayName = "Holy Beam"),
+
+	// Hitscan (Instant)
+	Hitscan UMETA(DisplayName = "Hitscan"),						// Instant hit
+
+	Custom UMETA(DisplayName = "Custom")
+};
+
+/**
+ * Spell Element Type
+ * Defines elemental types for magic
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaSpellElement : uint8
+{
+	None UMETA(DisplayName = "None"),
+	Fire UMETA(DisplayName = "Fire"),							// Damage over time
+	Ice UMETA(DisplayName = "Ice"),								// Slow/freeze
+	Lightning UMETA(DisplayName = "Lightning"),					// High damage, chain
+	Dark UMETA(DisplayName = "Dark"),							// Debuff/curse
+	Holy UMETA(DisplayName = "Holy"),							// Heal/buff
+	Arcane UMETA(DisplayName = "Arcane"),						// Pure magic
+	Poison UMETA(DisplayName = "Poison"),						// DoT
+	Blood UMETA(DisplayName = "Blood"),							// Life steal
+	Earth UMETA(DisplayName = "Earth"),							// Defense/stun
+	Wind UMETA(DisplayName = "Wind"),							// Knockback/mobility
+};
+
+/**
+ * Aiming Mode
+ * Defines how aiming is performed
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaAimingMode : uint8
+{
+	None UMETA(DisplayName = "No Aiming"),						// Fire straight
+	Soft UMETA(DisplayName = "Soft Aim"),						// Slight aim assist
+	Precision UMETA(DisplayName = "Precision Aim"),				// Full aim mode (zoom)
+	LockOn UMETA(DisplayName = "Lock-On Target"),				// Auto-aim to locked target
+	OverTheShoulder UMETA(DisplayName = "Over-The-Shoulder"),	// TPS aiming
+};
+
+/**
+ * Projectile Movement Type
+ * Defines how projectiles move through space
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaProjectileMovement : uint8
+{
+	Ballistic UMETA(DisplayName = "Ballistic"),					// Affected by gravity
+	Straight UMETA(DisplayName = "Straight"),					// Linear movement
+	Homing UMETA(DisplayName = "Homing"),						// Seeks target
+	Parabolic UMETA(DisplayName = "Parabolic"),					// Arc trajectory
+	Boomerang UMETA(DisplayName = "Boomerang"),					// Returns to owner
+	Hitscan UMETA(DisplayName = "Hitscan"),						// Instant
+};
+
+/**
+ * Ranged Weapon Data
+ * Defines properties for a ranged weapon type
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaRangedWeaponData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	// Weapon type
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
+	EHarmoniaRangedWeaponType WeaponType = EHarmoniaRangedWeaponType::Bow;
+
+	// Display name
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
+	FText DisplayName;
+
+	// Base damage multiplier
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Damage")
+	float BaseDamageMultiplier = 1.0f;
+
+	// Projectile type to spawn
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile")
+	EHarmoniaProjectileType DefaultProjectileType = EHarmoniaProjectileType::Arrow;
+
+	// Projectile class (if not using default)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile")
+	TSubclassOf<AActor> ProjectileClass;
+
+	// Fire rate (shots per second, 0 = manual)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	float FireRate = 0.0f;
+
+	// Draw/Charge time for bows (seconds)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	float DrawTime = 1.0f;
+
+	// Maximum draw time for damage bonus
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	float MaxDrawTime = 2.0f;
+
+	// Damage multiplier at max draw (min draw is always 1.0)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	float MaxDrawDamageMultiplier = 2.0f;
+
+	// Reload time (seconds, 0 = no reload)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	float ReloadTime = 0.0f;
+
+	// Magazine/Quiver size (0 = infinite)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ammo")
+	int32 MagazineSize = 0;
+
+	// Maximum ammo count (0 = infinite)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ammo")
+	int32 MaxAmmo = 0;
+
+	// Stamina cost per shot
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stamina")
+	float StaminaCostPerShot = 15.0f;
+
+	// Mana cost per shot (for magic weapons)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mana")
+	float ManaCostPerShot = 0.0f;
+
+	// Accuracy (0-1, 1 = perfect accuracy)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	float Accuracy = 0.95f;
+
+	// Spread angle (degrees, 0 = no spread)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	float SpreadAngle = 0.0f;
+
+	// Number of projectiles per shot (shotgun)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	int32 ProjectilesPerShot = 1;
+
+	// Range (cm, 0 = infinite)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	float MaxRange = 0.0f;
+
+	// Aiming mode
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Aiming")
+	EHarmoniaAimingMode DefaultAimingMode = EHarmoniaAimingMode::Soft;
+
+	// Aiming FOV multiplier (for zoom)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Aiming")
+	float AimingFOVMultiplier = 0.7f;
+
+	// Aiming movement speed multiplier
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Aiming")
+	float AimingMovementSpeedMultiplier = 0.5f;
+
+	// Can move while aiming?
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Aiming")
+	bool bCanMoveWhileAiming = true;
+
+	// Can fire while moving?
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	bool bCanFireWhileMoving = true;
+
+	// Trajectory preview (for bows/thrown)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Aiming")
+	bool bShowTrajectoryPreview = true;
+
+	// Recoil amount
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	float RecoilAmount = 1.0f;
+
+	// Camera shake on fire
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effects")
+	TSubclassOf<class UCameraShakeBase> FireCameraShakeClass;
+
+	// Animation montage for draw/ready
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> DrawMontage;
+
+	// Animation montage for fire
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> FireMontage;
+
+	// Animation montage for reload
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> ReloadMontage;
+
+	// Muzzle socket name
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effects")
+	FName MuzzleSocketName = FName("Muzzle");
+};
+
+/**
+ * Projectile Data
+ * Defines properties of a projectile
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaProjectileData
+{
+	GENERATED_BODY()
+
+	// Projectile type
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	EHarmoniaProjectileType ProjectileType = EHarmoniaProjectileType::Arrow;
+
+	// Movement type
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	EHarmoniaProjectileMovement MovementType = EHarmoniaProjectileMovement::Ballistic;
+
+	// Initial speed (cm/s)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float InitialSpeed = 3000.0f;
+
+	// Maximum speed (cm/s, 0 = no limit)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float MaxSpeed = 0.0f;
+
+	// Gravity scale (1.0 = normal gravity, 0 = no gravity)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float GravityScale = 1.0f;
+
+	// Homing acceleration (for homing projectiles)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (EditCondition = "MovementType == EHarmoniaProjectileMovement::Homing"))
+	float HomingAcceleration = 1000.0f;
+
+	// Lifetime (seconds, 0 = infinite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	float Lifetime = 10.0f;
+
+	// Damage configuration
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
+	FHarmoniaDamageEffectConfig DamageConfig;
+
+	// Hit reaction configuration
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit Reaction")
+	FHarmoniaHitReactionConfig HitReactionConfig;
+
+	// Penetration count (how many targets can it pierce)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	int32 PenetrationCount = 0;
+
+	// Damage falloff per penetration
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
+	float PenetrationDamageFalloff = 0.5f;
+
+	// Bounce count (how many times can it bounce)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	int32 BounceCount = 0;
+
+	// Bounce velocity retention (0-1)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	float BounceVelocityRetention = 0.6f;
+
+	// Stick to surfaces on hit?
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	bool bStickToSurfaces = false;
+
+	// Explode on impact?
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	bool bExplodeOnImpact = false;
+
+	// Explosion radius (if explosive)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Explosion", meta = (EditCondition = "bExplodeOnImpact"))
+	float ExplosionRadius = 500.0f;
+
+	// Mesh to use for projectile
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	TObjectPtr<UStaticMesh> ProjectileMesh;
+
+	// Particle trail effect
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	TObjectPtr<UParticleSystem> TrailEffect;
+
+	// Impact effect
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	TObjectPtr<UParticleSystem> ImpactEffect;
+
+	// Impact sound
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	TObjectPtr<USoundBase> ImpactSound;
+
+	// Gameplay Cue for impact
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay Cue")
+	FGameplayTag ImpactGameplayCueTag;
+};
+
+/**
+ * Spell Data
+ * Defines properties of a magic spell
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaSpellData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	// Spell name
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spell")
+	FText SpellName;
+
+	// Spell description
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spell")
+	FText Description;
+
+	// Element type
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spell")
+	EHarmoniaSpellElement Element = EHarmoniaSpellElement::Arcane;
+
+	// Mana cost
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spell")
+	float ManaCost = 20.0f;
+
+	// Cast time (seconds)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spell")
+	float CastTime = 1.0f;
+
+	// Cooldown (seconds)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spell")
+	float Cooldown = 5.0f;
+
+	// Projectile data (if projectile-based spell)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spell")
+	FHarmoniaProjectileData ProjectileData;
+
+	// Use projectile?
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spell")
+	bool bUsesProjectile = true;
+
+	// Intelligence requirement
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Requirements")
+	int32 IntelligenceRequirement = 0;
+
+	// Faith requirement
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Requirements")
+	int32 FaithRequirement = 0;
+
+	// Cast animation
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> CastMontage;
+
+	// Gameplay Effect to apply (for buffs/healing)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spell")
+	TSubclassOf<UGameplayEffect> SpellEffectClass;
+
+	// Can be cast while moving?
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spell")
+	bool bCanCastWhileMoving = false;
+
+	// Can be interrupted?
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spell")
+	bool bCanBeInterrupted = true;
+
+	// Charge levels (0 = no charging)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spell")
+	int32 MaxChargeLevel = 0;
+
+	// Damage multiplier per charge level
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spell", meta = (EditCondition = "MaxChargeLevel > 0"))
+	float ChargeMultiplier = 1.5f;
+};

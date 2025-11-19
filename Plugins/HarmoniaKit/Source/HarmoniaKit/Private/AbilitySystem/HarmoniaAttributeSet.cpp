@@ -13,6 +13,9 @@ UHarmoniaAttributeSet::UHarmoniaAttributeSet()
 	Stamina = 100.0f;
 	MaxStamina = 100.0f;
 	StaminaRegenRate = 10.0f; // 10 stamina per second
+	Mana = 50.0f;
+	MaxMana = 50.0f;
+	ManaRegenRate = 5.0f; // 5 mana per second
 
 	// Primary stats (Soul-like RPG system) - start at 10 each
 	Vitality = 10.0f;
@@ -48,6 +51,9 @@ void UHarmoniaAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Stamina, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, MaxStamina, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, StaminaRegenRate, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Mana, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, MaxMana, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, ManaRegenRate, COND_None, REPNOTIFY_Always);
 
 	// Primary stats
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Vitality, COND_None, REPNOTIFY_Always);
@@ -80,11 +86,13 @@ bool UHarmoniaAttributeSet::PreGameplayEffectExecute(FGameplayEffectModCallbackD
 		return false;
 	}
 
-	// Store pre-change values for damage/healing/stamina calculation
+	// Store pre-change values for damage/healing/stamina/mana calculation
 	HealthBeforeAttributeChange = GetHealth();
 	MaxHealthBeforeAttributeChange = GetMaxHealth();
 	StaminaBeforeAttributeChange = GetStamina();
 	MaxStaminaBeforeAttributeChange = GetMaxStamina();
+	ManaBeforeAttributeChange = GetMana();
+	MaxManaBeforeAttributeChange = GetMaxMana();
 	PoiseBeforeAttributeChange = GetPoise();
 	MaxPoiseBeforeAttributeChange = GetMaxPoise();
 
@@ -239,6 +247,44 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 	}
 
 	// ============================================================================
+	// Handle Mana Changes
+	// ============================================================================
+	else if (Data.EvaluatedData.Attribute == GetManaAttribute())
+	{
+		const float NewMana = FMath::Clamp(GetMana(), 0.0f, GetMaxMana());
+		SetMana(NewMana);
+
+		if (NewMana <= 0.0f && ManaBeforeAttributeChange > 0.0f)
+		{
+			bOutOfMana = true;
+			OnOutOfMana.Broadcast(Instigator, Causer, &Data.EffectSpec, 0.0f, ManaBeforeAttributeChange, NewMana);
+		}
+		else if (NewMana > 0.0f)
+		{
+			bOutOfMana = false;
+		}
+
+		OnManaChanged.Broadcast(Instigator, Causer, &Data.EffectSpec, 0.0f, ManaBeforeAttributeChange, NewMana);
+	}
+
+	// ============================================================================
+	// Handle Max Mana Changes
+	// ============================================================================
+	else if (Data.EvaluatedData.Attribute == GetMaxManaAttribute())
+	{
+		const float NewMaxMana = FMath::Max(GetMaxMana(), 1.0f);
+		SetMaxMana(NewMaxMana);
+
+		// Adjust current mana if it exceeds new max
+		if (GetMana() > NewMaxMana)
+		{
+			SetMana(NewMaxMana);
+		}
+
+		OnMaxManaChanged.Broadcast(Instigator, Causer, &Data.EffectSpec, 0.0f, MaxManaBeforeAttributeChange, NewMaxMana);
+	}
+
+	// ============================================================================
 	// Handle Poise Changes
 	// ============================================================================
 	else if (Data.EvaluatedData.Attribute == GetPoiseAttribute())
@@ -301,6 +347,11 @@ void UHarmoniaAttributeSet::PostAttributeChange(const FGameplayAttribute& Attrib
 	{
 		SetStamina(FMath::Clamp(GetStamina(), 0.0f, GetMaxStamina()));
 	}
+	// Clamp mana to max mana
+	else if (Attribute == GetManaAttribute())
+	{
+		SetMana(FMath::Clamp(GetMana(), 0.0f, GetMaxMana()));
+	}
 	// Clamp poise to max poise
 	else if (Attribute == GetPoiseAttribute())
 	{
@@ -315,6 +366,11 @@ void UHarmoniaAttributeSet::PostAttributeChange(const FGameplayAttribute& Attrib
 	else if (Attribute == GetMaxStaminaAttribute())
 	{
 		SetMaxStamina(FMath::Max(GetMaxStamina(), 1.0f));
+	}
+	// Ensure max mana is always at least 1
+	else if (Attribute == GetMaxManaAttribute())
+	{
+		SetMaxMana(FMath::Max(GetMaxMana(), 1.0f));
 	}
 	// Ensure max poise is always at least 1
 	else if (Attribute == GetMaxPoiseAttribute())
@@ -343,6 +399,18 @@ void UHarmoniaAttributeSet::ClampAttribute(const FGameplayAttribute& Attribute, 
 		NewValue = FMath::Max(NewValue, 1.0f);
 	}
 	else if (Attribute == GetStaminaRegenRateAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 0.0f);
+	}
+	else if (Attribute == GetManaAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxMana());
+	}
+	else if (Attribute == GetMaxManaAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 1.0f);
+	}
+	else if (Attribute == GetManaRegenRateAttribute())
 	{
 		NewValue = FMath::Max(NewValue, 0.0f);
 	}
@@ -463,6 +531,21 @@ void UHarmoniaAttributeSet::OnRep_AttackSpeed(const FGameplayAttributeData& OldV
 void UHarmoniaAttributeSet::OnRep_StaminaRegenRate(const FGameplayAttributeData& OldValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, StaminaRegenRate, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_Mana(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Mana, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_MaxMana(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxMana, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_ManaRegenRate(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, ManaRegenRate, OldValue);
 }
 
 void UHarmoniaAttributeSet::OnRep_Vitality(const FGameplayAttributeData& OldValue)
