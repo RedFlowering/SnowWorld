@@ -483,6 +483,12 @@ private:
 	/** 공간 음성: 장애물 감쇠 체크 (레이캐스트) */
 	float CalculateOcclusionAttenuation(const FVector& From, const FVector& To) const;
 
+	/** 공간 음성: 거리에 따른 음량 계산 */
+	float CalculateDistanceBasedVolume(float Distance) const;
+
+	/** 공간 음성: 특정 플레이어의 음량 설정 */
+	void SetPlayerVolume(const FString& PlayerId, float Volume);
+
 	//~=============================================================================
 	// OnlineSubsystem 델리게이트 핸들러
 	//~=============================================================================
@@ -635,4 +641,28 @@ private:
 
 	/** 공간 음성 업데이트 타이머 핸들 */
 	FTimerHandle SpatialVoiceUpdateTimerHandle;
+
+	//~=============================================================================
+	// 공간 음성 최적화 변수
+	//~=============================================================================
+
+	/** 레이캐스트 캐시 엔트리 */
+	struct FOcclusionCacheEntry
+	{
+		float AttenuationValue;
+		double Timestamp;
+
+		FOcclusionCacheEntry() : AttenuationValue(1.0f), Timestamp(0.0) {}
+		FOcclusionCacheEntry(float InAttenuation, double InTimestamp)
+			: AttenuationValue(InAttenuation), Timestamp(InTimestamp) {}
+	};
+
+	/** 레이캐스트 결과 캐시 (PlayerId -> CacheEntry) */
+	TMap<FString, FOcclusionCacheEntry> OcclusionCache;
+
+	/** 레이캐스트 캐시 유효 시간 (초) */
+	float OcclusionCacheLifetime = 0.3f;
+
+	/** 프레임 분산을 위한 플레이어 업데이트 카운터 맵 (PlayerId -> Counter) */
+	TMap<FString, int32> PlayerUpdateCounters;
 };

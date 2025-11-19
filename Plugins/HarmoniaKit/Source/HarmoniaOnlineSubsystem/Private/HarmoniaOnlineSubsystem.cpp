@@ -1376,6 +1376,10 @@ void UHarmoniaOnlineSubsystem::SetSpatialVoiceEnabled(bool bEnabled)
 		{
 			ClearVoiceEffectFromUser(Pair.Key);
 		}
+
+		// 최적화 캐시 정리
+		OcclusionCache.Empty();
+		PlayerUpdateCounters.Empty();
 	}
 }
 
@@ -1420,7 +1424,32 @@ void UHarmoniaOnlineSubsystem::UpdateAllPlayerVoiceStates()
 		// 범위 내에 있고 자동 효과가 활성화되어 있으면 효과 업데이트
 		if (!State.bIsOutOfRange && SpatialVoiceSettings.bAutoApplyListenerEnvironmentEffects)
 		{
-			UpdatePlayerVoiceEffect(Pair.Key);
+			// 거리 기반 업데이트 빈도 조절 (성능 최적화)
+			int32& UpdateCounter = PlayerUpdateCounters.FindOrAdd(Pair.Key, 0);
+			UpdateCounter++;
+
+			bool bShouldUpdate = false;
+
+			// 가까운 거리 (< 1000cm = 10m): 매 프레임 업데이트
+			if (State.DistanceToListener < 1000.0f)
+			{
+				bShouldUpdate = true;
+			}
+			// 중간 거리 (1000-3000cm = 10-30m): 2번에 1번
+			else if (State.DistanceToListener < 3000.0f)
+			{
+				bShouldUpdate = (UpdateCounter % 2 == 0);
+			}
+			// 먼 거리 (> 3000cm = 30m): 4번에 1번
+			else
+			{
+				bShouldUpdate = (UpdateCounter % 4 == 0);
+			}
+
+			if (bShouldUpdate)
+			{
+				UpdatePlayerVoiceEffect(Pair.Key);
+			}
 		}
 	}
 }
@@ -1440,18 +1469,63 @@ void UHarmoniaOnlineSubsystem::UpdatePlayerVoiceEffect(const FString& PlayerId)
 		State->DistanceToListener
 	);
 
-	// 장애물 감쇠 추가
+	// 장애물 감쇠 추가 (캐싱된 레이캐스트 사용)
 	if (SpatialVoiceSettings.bEnableOcclusion)
 	{
-		float OcclusionAttenuation = CalculateOcclusionAttenuation(State->Location, ListenerLocation);
+		// 캐시 확인
+		const double CurrentTime = FPlatformTime::Seconds();
+		FOcclusionCacheEntry* CachedEntry = OcclusionCache.Find(PlayerId);
+
+		float OcclusionAttenuation = 1.0f;
+
+		// 캐시가 유효하면 사용
+		if (CachedEntry && (CurrentTime - CachedEntry->Timestamp) < OcclusionCacheLifetime)
+		{
+			OcclusionAttenuation = CachedEntry->AttenuationValue;
+		}
+		else
+		{
+			// 캐시가 없거나 만료됨: 새로 계산
+			OcclusionAttenuation = CalculateOcclusionAttenuation(State->Location, ListenerLocation);
+
+			// 캐시 업데이트
+			OcclusionCache.Add(PlayerId, FOcclusionCacheEntry(OcclusionAttenuation, CurrentTime));
+		}
+
 		EffectSettings.DryWetMix *= OcclusionAttenuation;
 	}
 
 	// 플레이어에게 효과 적용
 	ApplyVoiceEffectToUser(PlayerId, EffectSettings);
 
-	UE_LOG(LogTemp, VeryVerbose, TEXT("HarmoniaOnlineSubsystem: Updated voice effect for %s (Env: %d, Distance: %.1fm)"),
-		*State->PlayerName, static_cast<int32>(State->CurrentEnvironment), State->DistanceToListener / 100.0f);
+	// 거리 기반 음량 조절
+	if (SpatialVoiceSettings.bEnableDistanceBasedVolume)
+	{
+		float Volume = CalculateDistanceBasedVolume(State->DistanceToListener);
+
+		// 장애물이 있으면 음량도 추가로 감쇠
+		if (SpatialVoiceSettings.bEnableOcclusion)
+		{
+			// 캐시 확인 (이미 위에서 계산했으므로 캐시 재사용)
+			const double CurrentTime = FPlatformTime::Seconds();
+			FOcclusionCacheEntry* CachedEntry = OcclusionCache.Find(PlayerId);
+
+			if (CachedEntry && (CurrentTime - CachedEntry->Timestamp) < OcclusionCacheLifetime)
+			{
+				Volume *= CachedEntry->AttenuationValue;
+			}
+		}
+
+		SetPlayerVolume(PlayerId, Volume);
+
+		UE_LOG(LogTemp, VeryVerbose, TEXT("HarmoniaOnlineSubsystem: Updated voice effect for %s (Env: %d, Distance: %.1fm, Volume: %.2f)"),
+			*State->PlayerName, static_cast<int32>(State->CurrentEnvironment), State->DistanceToListener / 100.0f, Volume);
+	}
+	else
+	{
+		UE_LOG(LogTemp, VeryVerbose, TEXT("HarmoniaOnlineSubsystem: Updated voice effect for %s (Env: %d, Distance: %.1fm)"),
+			*State->PlayerName, static_cast<int32>(State->CurrentEnvironment), State->DistanceToListener / 100.0f);
+	}
 }
 
 FHarmoniaVoiceEffectSettings UHarmoniaOnlineSubsystem::CalculateListenerBasedEffect(
@@ -1545,4 +1619,50 @@ float UHarmoniaOnlineSubsystem::CalculateOcclusionAttenuation(const FVector& Fro
 
 	// 장애물 없음: 감쇠 없음
 	return 1.0f;
+}
+
+float UHarmoniaOnlineSubsystem::CalculateDistanceBasedVolume(float Distance) const
+{
+	if (!SpatialVoiceSettings.bEnableDistanceBasedVolume)
+	{
+		return 1.0f;
+	}
+
+	// 감쇠 시작 거리 이내: 최대 음량
+	if (Distance <= SpatialVoiceSettings.AttenuationStartDistance)
+	{
+		return SpatialVoiceSettings.MaxVolume;
+	}
+
+	// 최대 거리 이상: 최소 음량
+	if (Distance >= SpatialVoiceSettings.MaxVoiceRange)
+	{
+		return SpatialVoiceSettings.MinVolume;
+	}
+
+	// 정규화된 거리 계산 (0.0 = 감쇠 시작 지점, 1.0 = 최대 거리)
+	float NormalizedDistance = (Distance - SpatialVoiceSettings.AttenuationStartDistance) /
+		(SpatialVoiceSettings.MaxVoiceRange - SpatialVoiceSettings.AttenuationStartDistance);
+
+	// 지수 곡선 적용
+	float VolumeFactor = 1.0f - FMath::Pow(NormalizedDistance, SpatialVoiceSettings.VolumeAttenuationExponent);
+
+	// 최소/최대 음량 사이에서 선형 보간
+	float Volume = FMath::Lerp(SpatialVoiceSettings.MinVolume, SpatialVoiceSettings.MaxVolume, VolumeFactor);
+
+	return FMath::Clamp(Volume, 0.0f, 1.0f);
+}
+
+void UHarmoniaOnlineSubsystem::SetPlayerVolume(const FString& PlayerId, float Volume)
+{
+	if (!VoiceChat.IsValid() || CurrentVoiceChannelId.IsEmpty())
+	{
+		return;
+	}
+
+	// VoiceChat 인터페이스를 통해 플레이어 음량 설정
+	// EOS VoiceChat은 SetPlayerVolume 메서드를 제공합니다
+	VoiceChat->SetPlayerVolume(PlayerId, Volume);
+
+	UE_LOG(LogTemp, VeryVerbose, TEXT("HarmoniaOnlineSubsystem: Set volume %.2f for player %s"), Volume, *PlayerId);
 }
