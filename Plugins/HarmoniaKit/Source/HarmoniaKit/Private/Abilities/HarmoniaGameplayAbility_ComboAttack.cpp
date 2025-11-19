@@ -8,6 +8,8 @@
 #include "GameFramework/Character.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "TimerManager.h"
+#include "Components/HarmoniaSenseAttackComponent.h"
+#include "Definitions/HarmoniaCombatSystemDefinitions.h"
 
 UHarmoniaGameplayAbility_ComboAttack::UHarmoniaGameplayAbility_ComboAttack(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -151,11 +153,78 @@ void UHarmoniaGameplayAbility_ComboAttack::PerformComboAttack()
 		);
 	}
 
-	// TODO: Apply damage, effects, etc. based on ComboData
-	UE_LOG(LogTemp, Log, TEXT("ComboAttack: Performing combo %d - %s (Damage: %.2fx)"),
-		CurrentComboIndex,
-		*ComboData.DisplayName.ToString(),
-		ComboData.DamageMultiplier);
+	// Trigger attack component if configured
+	if (bTriggerAttackComponent)
+	{
+		AActor* Owner = GetOwningActorFromActorInfo();
+		if (Owner)
+		{
+			// Find attack component by name or first available
+			UHarmoniaSenseAttackComponent* AttackComponent = nullptr;
+			if (AttackComponentName != NAME_None)
+			{
+				TArray<UHarmoniaSenseAttackComponent*> AttackComponents;
+				Owner->GetComponents<UHarmoniaSenseAttackComponent>(AttackComponents);
+				for (UHarmoniaSenseAttackComponent* Comp : AttackComponents)
+				{
+					if (Comp->GetFName() == AttackComponentName)
+					{
+						AttackComponent = Comp;
+						break;
+					}
+				}
+			}
+			else
+			{
+				AttackComponent = Owner->FindComponentByClass<UHarmoniaSenseAttackComponent>();
+			}
+
+			if (AttackComponent)
+			{
+				// Modify attack data based on combo multipliers
+				FHarmoniaAttackData ModifiedAttackData = AttackComponent->AttackData;
+
+				// Apply damage multiplier
+				ModifiedAttackData.DamageConfig.BaseDamage *= ComboData.DamageMultiplier;
+
+				// Apply range multiplier to trace config
+				if (ModifiedAttackData.TraceConfig.TraceShape == EHarmoniaTraceShape::Box)
+				{
+					ModifiedAttackData.TraceConfig.BoxHalfExtent *= ComboData.RangeMultiplier;
+				}
+				else if (ModifiedAttackData.TraceConfig.TraceShape == EHarmoniaTraceShape::Sphere)
+				{
+					ModifiedAttackData.TraceConfig.SphereRadius *= ComboData.RangeMultiplier;
+				}
+				else if (ModifiedAttackData.TraceConfig.TraceShape == EHarmoniaTraceShape::Capsule)
+				{
+					ModifiedAttackData.TraceConfig.CapsuleRadius *= ComboData.RangeMultiplier;
+					ModifiedAttackData.TraceConfig.CapsuleHalfHeight *= ComboData.RangeMultiplier;
+				}
+
+				// Start attack with modified data
+				AttackComponent->RequestStartAttack(ModifiedAttackData);
+
+				UE_LOG(LogTemp, Log, TEXT("ComboAttack: Triggered attack component for combo %d - %s (Damage: %.2fx, Range: %.2fx)"),
+					CurrentComboIndex,
+					*ComboData.DisplayName.ToString(),
+					ComboData.DamageMultiplier,
+					ComboData.RangeMultiplier);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("ComboAttack: Attack component not found for combo %d"), CurrentComboIndex);
+			}
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("ComboAttack: Performing combo %d - %s (Damage: %.2fx, Range: %.2fx)"),
+			CurrentComboIndex,
+			*ComboData.DisplayName.ToString(),
+			ComboData.DamageMultiplier,
+			ComboData.RangeMultiplier);
+	}
 }
 
 void UHarmoniaGameplayAbility_ComboAttack::AdvanceCombo()
