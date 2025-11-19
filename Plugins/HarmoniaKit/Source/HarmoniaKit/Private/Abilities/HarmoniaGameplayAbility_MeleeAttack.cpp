@@ -10,7 +10,7 @@
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "GameplayCueManager.h"
 #include "Camera/CameraShakeBase.h"
-#include "AbilitySystem/LyraGameplayAbilityTargetData_SingleTargetHit.h"
+#include "Abilities/GameplayAbilityTargetTypes.h"
 
 UHarmoniaGameplayAbility_MeleeAttack::UHarmoniaGameplayAbility_MeleeAttack(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -400,7 +400,7 @@ FGameplayAbilityTargetDataHandle UHarmoniaGameplayAbility_MeleeAttack::MakeTarge
 
 	if (TargetActor)
 	{
-		FLyraGameplayAbilityTargetData_SingleTargetHit* NewTargetData = new FLyraGameplayAbilityTargetData_SingleTargetHit();
+		FGameplayAbilityTargetData_SingleTargetHit* NewTargetData = new FGameplayAbilityTargetData_SingleTargetHit();
 
 		// Create a proper FHitResult
 		FHitResult HitResult;
