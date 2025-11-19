@@ -188,18 +188,21 @@ void UHarmoniaGameplayAbility_ComboAttack::PerformComboAttack()
 				ModifiedAttackData.DamageConfig.BaseDamage *= ComboData.DamageMultiplier;
 
 				// Apply range multiplier to trace config
-				if (ModifiedAttackData.TraceConfig.TraceShape == EHarmoniaTraceShape::Box)
+				if (ModifiedAttackData.TraceConfig.TraceShape == EHarmoniaAttackTraceShape::Box)
 				{
-					ModifiedAttackData.TraceConfig.BoxHalfExtent *= ComboData.RangeMultiplier;
+					// Box: TraceExtent = (Width, Height, Depth)
+					ModifiedAttackData.TraceConfig.TraceExtent *= ComboData.RangeMultiplier;
 				}
-				else if (ModifiedAttackData.TraceConfig.TraceShape == EHarmoniaTraceShape::Sphere)
+				else if (ModifiedAttackData.TraceConfig.TraceShape == EHarmoniaAttackTraceShape::Sphere)
 				{
-					ModifiedAttackData.TraceConfig.SphereRadius *= ComboData.RangeMultiplier;
+					// Sphere: TraceExtent.X = Radius
+					ModifiedAttackData.TraceConfig.TraceExtent.X *= ComboData.RangeMultiplier;
 				}
-				else if (ModifiedAttackData.TraceConfig.TraceShape == EHarmoniaTraceShape::Capsule)
+				else if (ModifiedAttackData.TraceConfig.TraceShape == EHarmoniaAttackTraceShape::Capsule)
 				{
-					ModifiedAttackData.TraceConfig.CapsuleRadius *= ComboData.RangeMultiplier;
-					ModifiedAttackData.TraceConfig.CapsuleHalfHeight *= ComboData.RangeMultiplier;
+					// Capsule: TraceExtent.X = Radius, TraceExtent.Z = HalfHeight
+					ModifiedAttackData.TraceConfig.TraceExtent.X *= ComboData.RangeMultiplier;
+					ModifiedAttackData.TraceConfig.TraceExtent.Z *= ComboData.RangeMultiplier;
 				}
 
 				// Start attack with modified data

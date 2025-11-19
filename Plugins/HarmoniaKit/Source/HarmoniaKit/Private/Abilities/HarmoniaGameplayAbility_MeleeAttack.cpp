@@ -401,8 +401,14 @@ FGameplayAbilityTargetDataHandle UHarmoniaGameplayAbility_MeleeAttack::MakeTarge
 	if (TargetActor)
 	{
 		FLyraGameplayAbilityTargetData_SingleTargetHit* NewTargetData = new FLyraGameplayAbilityTargetData_SingleTargetHit();
-		NewTargetData->HitResult.Actor = TargetActor;
-		NewTargetData->HitResult.Location = TargetActor->GetActorLocation();
+
+		// Create a proper FHitResult
+		FHitResult HitResult;
+		HitResult.HitObjectHandle = FActorInstanceHandle(TargetActor);
+		HitResult.Location = TargetActor->GetActorLocation();
+		HitResult.ImpactPoint = TargetActor->GetActorLocation();
+
+		NewTargetData->HitResult = HitResult;
 
 		TargetData.Add(NewTargetData);
 	}
