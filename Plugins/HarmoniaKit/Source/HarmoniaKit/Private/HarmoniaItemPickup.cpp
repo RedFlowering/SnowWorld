@@ -6,6 +6,9 @@
 #include "SenseStimulusComponent.h"
 #include "Components/HarmoniaInteractionComponent.h"
 #include "Components/HarmoniaInventoryComponent.h"
+#include "Components/HarmoniaCurrencyManagerComponent.h"
+#include "Definitions/HarmoniaCoreDefinitions.h"
+#include "Definitions/HarmoniaDeathPenaltyDefinitions.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -154,29 +157,35 @@ void AHarmoniaItemPickup::InitializePickup(const FHarmoniaLootTableRow& InLootIt
 	// Configure sense stimulus based on rarity
 	if (SenseStimulusComponent)
 	{
-		// Higher rarity items have larger detection range
-		float DetectionRadius = 200.0f;
+		// Set up stimulus response for "Sight" sensor tag
+		// The actual detection range is determined by the sensor, not the stimulus
+		// We configure response channels and properties based on rarity
+		FName SightTag = FName("Sight");
+
+		// Set response channel (channel 1 for item pickups)
+		SenseStimulusComponent->SetResponseChannel(SightTag, 1, true);
+
+		// Higher rarity items have higher score (affects priority in sensing)
+		float StimulusScore = 1.0f;
 		switch (LootItem.Rarity)
 		{
 		case EHarmoniaLootRarity::Uncommon:
-			DetectionRadius = 300.0f;
+			StimulusScore = 1.2f;
 			break;
 		case EHarmoniaLootRarity::Rare:
-			DetectionRadius = 400.0f;
+			StimulusScore = 1.5f;
 			break;
 		case EHarmoniaLootRarity::Epic:
-			DetectionRadius = 500.0f;
+			StimulusScore = 2.0f;
 			break;
 		case EHarmoniaLootRarity::Legendary:
-			DetectionRadius = 600.0f;
+			StimulusScore = 3.0f;
 			break;
 		default:
 			break;
 		}
 
-		// Set up stimulus
-		// TODO: Configure sense stimulus properly once SenseSystem API is confirmed
-		// SenseStimulusComponent->RegisterSenseStimulus(FName("Sight"), DetectionRadius);
+		SenseStimulusComponent->SetScore(SightTag, StimulusScore);
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("Item pickup initialized: %s x%d"), *LootItem.ItemID.ToString(), Quantity);
@@ -217,18 +226,35 @@ bool AHarmoniaItemPickup::TryPickup(AActor* Collector)
 	// Handle gold pickup
 	if (GoldAmount > 0)
 	{
-		// TODO: Add gold to player's currency
-		// For now, just log
-		UE_LOG(LogTemp, Log, TEXT("%s picked up %d gold"), *Collector->GetName(), GoldAmount);
-		bSuccess = true;
+		// Add gold to player's currency via CurrencyManagerComponent
+		UHarmoniaCurrencyManagerComponent* CurrencyComponent = Collector->FindComponentByClass<UHarmoniaCurrencyManagerComponent>();
+		if (CurrencyComponent)
+		{
+			bSuccess = CurrencyComponent->AddCurrency(EHarmoniaCurrencyType::Gold, GoldAmount);
+			if (bSuccess)
+			{
+				UE_LOG(LogTemp, Log, TEXT("%s picked up %d gold"), *Collector->GetName(), GoldAmount);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("%s failed to add %d gold (carry limit reached?)"), *Collector->GetName(), GoldAmount);
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%s has no currency component, cannot pickup gold"), *Collector->GetName());
+			bSuccess = false;
+		}
 	}
 	// Handle item pickup
 	else if (LootItem.ItemID != NAME_None)
 	{
-		// TODO: Implement proper inventory add method once API is confirmed
-		// Try to add to inventory
-		// bool bAdded = InventoryComponent->AddItemByID(LootItem.ItemID, Quantity);
-		bool bAdded = true; // Temporary - always succeed
+		// Add item to inventory
+		// Convert FName to FHarmoniaID and use default durability of 1.0 (full durability)
+		FHarmoniaID ItemHarmoniaID(LootItem.ItemID);
+		float Durability = 1.0f;
+
+		bool bAdded = InventoryComponent->AddItem(ItemHarmoniaID, Quantity, Durability);
 		if (bAdded)
 		{
 			UE_LOG(LogTemp, Log, TEXT("%s picked up %s x%d"), *Collector->GetName(), *LootItem.ItemID.ToString(), Quantity);
