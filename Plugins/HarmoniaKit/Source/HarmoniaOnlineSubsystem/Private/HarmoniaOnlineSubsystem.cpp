@@ -12,8 +12,6 @@
 #include "Interfaces/OnlinePresenceInterface.h"
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "Interfaces/OnlineExternalUIInterface.h"
-#include "VoiceChatUser.h"
-#include "EOSVoiceChatFactory.h"
 
 UHarmoniaOnlineSubsystem::UHarmoniaOnlineSubsystem()
 	: OnlineSubsystem(nullptr)

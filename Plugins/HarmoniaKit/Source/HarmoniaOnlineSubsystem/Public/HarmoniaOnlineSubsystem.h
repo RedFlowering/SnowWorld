@@ -22,7 +22,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFriendListUpdated, const TArray<F
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFriendStatusChanged, const FHarmoniaFriendInfo&, FriendInfo);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFriendRequestReceived, const FHarmoniaFriendRequest&, Request);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFriendRequestResult, bool, bSuccess, const FString&, Message);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInviteReceived, const FHarmoniaInviteInfo&, InviteInfo);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHarmoniaInviteReceived, const FHarmoniaInviteInfo&, InviteInfo);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnVoiceChatStatusChanged, const FString&, ChannelId, EHarmoniaVoiceChatStatus, Status);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnUserSearchCompleted, bool, bSuccess, const TArray<FHarmoniaUserSearchResult>&, Results);
 
@@ -366,7 +366,7 @@ public:
 
 	/** 초대를 받았을 때 */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Online|Events")
-	FOnInviteReceived OnInviteReceived;
+	FOnHarmoniaInviteReceived OnInviteReceived;
 
 	/** 음성 채팅 상태가 변경되었을 때 */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Online|Events")
