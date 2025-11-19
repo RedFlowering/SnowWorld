@@ -51,19 +51,16 @@ EBTNodeResult::Type UBTTask_AsyncMoveTo::ExecuteTask(UBehaviorTreeComponent& Own
 		Memory->bPathfindingInProgress = false;
 	}
 
-	// TODO: LOD-based radius adaptation cannot be implemented directly here because:
-	// - AcceptableRadius is FValueOrBBKey_Float with protected DefaultValue
-	// - GetValue() requires UBlackboardComponent* parameter
-	// - Cannot modify parent class's protected member in a clean way
-	//
-	// Potential solutions for future:
-	// 1. Implement custom MoveTo task from scratch (not inheriting from UBTTask_MoveTo)
-	// 2. Use decorator node to modify acceptable radius via blackboard
-	// 3. Wait for Epic to expose this functionality in future engine versions
-	//
-	// For now, bAdaptRadiusToLOD property exists but has no effect.
-	// Developers should manually adjust AcceptableRadius in the behavior tree editor
-	// based on their AI's typical LOD levels.
+	// Apply LOD-based radius adaptation
+	if (bAdaptRadiusToLOD && ControlledPawn)
+	{
+		float AdaptedRadius = GetLODAdaptedRadius(OwnerComp, ControlledPawn);
+		if (AdaptedRadius > 0.0f)
+		{
+			// Replace AcceptableRadius with a new instance containing the adapted value
+			AcceptableRadius = FValueOrBBKey_Float(AdaptedRadius);
+		}
+	}
 
 	return Super::ExecuteTask(OwnerComp, NodeMemory);
 }
@@ -117,55 +114,45 @@ FString UBTTask_AsyncMoveTo::GetStaticDescription() const
 // Private Functions
 // ============================================================================
 
-float UBTTask_AsyncMoveTo::GetLODAdaptedRadius(AActor* Owner) const
+float UBTTask_AsyncMoveTo::GetLODAdaptedRadius(const UBehaviorTreeComponent& OwnerComp, AActor* Owner) const
 {
-	// Note: This function cannot be properly implemented due to UBTTask_MoveTo limitations
-	// - AcceptableRadius is FValueOrBBKey_Float with protected DefaultValue member
-	// - GetValue() requires UBlackboardComponent* parameter which isn't available here
-	// - Cannot cleanly modify parent class's protected property
-	//
-	// This function is kept for future use if Epic exposes the necessary API
-	// or if we reimplement this task without inheriting from UBTTask_MoveTo
-	return 0.0f;
+	if (!Owner || !bAdaptRadiusToLOD)
+	{
+		return AcceptableRadius.GetValue(OwnerComp);
+	}
 
-	// Desired implementation (currently not possible):
-	// if (!Owner || !bAdaptRadiusToLOD)
-	// {
-	// 	return base acceptable radius;
-	// }
-	//
-	// UHarmoniaAILODComponent* LODComponent = Owner->FindComponentByClass<UHarmoniaAILODComponent>();
-	// if (!LODComponent)
-	// {
-	// 	return base acceptable radius;
-	// }
-	//
-	// EHarmoniaAILODLevel LODLevel = LODComponent->GetCurrentLODLevel();
-	// float Multiplier = 1.0f;
-	//
-	// switch (LODLevel)
-	// {
-	// case EHarmoniaAILODLevel::VeryHigh:
-	// 	Multiplier = 1.0f;
-	// 	break;
-	// case EHarmoniaAILODLevel::High:
-	// 	Multiplier = 1.2f;
-	// 	break;
-	// case EHarmoniaAILODLevel::Medium:
-	// 	Multiplier = 1.5f;
-	// 	break;
-	// case EHarmoniaAILODLevel::Low:
-	// 	Multiplier = LowLODRadiusMultiplier;
-	// 	break;
-	// case EHarmoniaAILODLevel::VeryLow:
-	// 	Multiplier = LowLODRadiusMultiplier * 1.5f;
-	// 	break;
-	// default:
-	// 	Multiplier = 1.0f;
-	// 	break;
-	// }
-	//
-	// return base acceptable radius * Multiplier;
+	UHarmoniaAILODComponent* LODComponent = Owner->FindComponentByClass<UHarmoniaAILODComponent>();
+	if (!LODComponent)
+	{
+		return AcceptableRadius.GetValue(OwnerComp);
+	}
+
+	EHarmoniaAILODLevel LODLevel = LODComponent->GetCurrentLODLevel();
+	float Multiplier = 1.0f;
+
+	switch (LODLevel)
+	{
+	case EHarmoniaAILODLevel::VeryHigh:
+		Multiplier = 1.0f;
+		break;
+	case EHarmoniaAILODLevel::High:
+		Multiplier = 1.2f;
+		break;
+	case EHarmoniaAILODLevel::Medium:
+		Multiplier = 1.5f;
+		break;
+	case EHarmoniaAILODLevel::Low:
+		Multiplier = LowLODRadiusMultiplier;
+		break;
+	case EHarmoniaAILODLevel::VeryLow:
+		Multiplier = LowLODRadiusMultiplier * 1.5f;
+		break;
+	default:
+		Multiplier = 1.0f;
+		break;
+	}
+
+	return AcceptableRadius.GetValue(OwnerComp) * Multiplier;
 }
 
 bool UBTTask_AsyncMoveTo::ShouldUpdatePath(float TimeSinceLastUpdate) const

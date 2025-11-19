@@ -70,7 +70,7 @@ private:
 	/**
 	 * Get acceptable radius based on LOD level
 	 */
-	float GetLODAdaptedRadius(AActor* Owner) const;
+	float GetLODAdaptedRadius(const UBehaviorTreeComponent& OwnerComp, AActor* Owner) const;
 
 	/**
 	 * Check if should update path this tick
