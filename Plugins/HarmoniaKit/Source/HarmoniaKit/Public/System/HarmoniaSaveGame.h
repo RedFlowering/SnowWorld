@@ -9,6 +9,7 @@
 #include "Definitions/HarmoniaCheckpointSystemDefinitions.h"
 #include "Definitions/HarmoniaDifficultySystemDefinitions.h"
 #include "Definitions/HarmoniaMapSystemDefinitions.h"
+#include "Definitions/HarmoniaProgressionDefinitions.h"
 #include "HarmoniaSaveGame.generated.h"
 
 class ULyraInventoryItemInstance;
@@ -157,6 +158,10 @@ struct FHarmoniaPlayerSaveData
 	/** 발견한 위치 목록 */
 	UPROPERTY(SaveGame)
 	TArray<FMapLocationData> DiscoveredLocations;
+
+	/** 캐릭터 진행 데이터 (경험치, 레벨, 스킬, 클래스 등) */
+	UPROPERTY(SaveGame)
+	FHarmoniaProgressionSaveData ProgressionData;
 };
 
 /** 리소스 노드 상태 저장 데이터 */
