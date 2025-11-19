@@ -358,3 +358,129 @@ struct HARMONIAONLINESUBSYSTEM_API FHarmoniaVoiceEffectSettings
 	/** 환경 프리셋으로 설정 생성 */
 	static FHarmoniaVoiceEffectSettings FromPreset(EHarmoniaEnvironmentPreset Preset);
 };
+
+/**
+ * 공간 음성 채팅 설정 구조체
+ * 3D 음향, 거리 감쇠, 환경 효과 등을 제어
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAONLINESUBSYSTEM_API FHarmoniaSpatialVoiceSettings
+{
+	GENERATED_BODY()
+
+	/** 최대 음성 전달 거리 (언리얼 단위, cm) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Spatial Voice", meta = (ClampMin = "0.0", ClampMax = "1000000.0"))
+	float MaxVoiceRange;
+
+	/** 음성이 감쇠되기 시작하는 거리 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Spatial Voice", meta = (ClampMin = "0.0", ClampMax = "1000000.0"))
+	float AttenuationStartDistance;
+
+	/** 거리 감쇠 곡선 지수 (1.0 = 선형, 2.0 = 제곱) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Spatial Voice", meta = (ClampMin = "0.1", ClampMax = "10.0"))
+	float DistanceAttenuationExponent;
+
+	/** 장애물에 의한 음성 감쇠 활성화 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Spatial Voice")
+	bool bEnableOcclusion;
+
+	/** 장애물 감쇠 배율 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Spatial Voice", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float OcclusionMultiplier;
+
+	/** 청자 환경에 따른 자동 효과 적용 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Spatial Voice")
+	bool bAutoApplyListenerEnvironmentEffects;
+
+	/** 화자와 청자 모두의 환경을 블렌딩 (false = 청자만) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Spatial Voice")
+	bool bBlendSpeakerAndListenerEnvironments;
+
+	/** 환경 블렌딩 비율 (0.0 = 청자만, 0.5 = 50/50, 1.0 = 화자만) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Spatial Voice", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float EnvironmentBlendRatio;
+
+	/** 3D 위치 기반 음향 활성화 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Spatial Voice")
+	bool bEnable3DSpatialAudio;
+
+	/** 음성 업데이트 주기 (초, 성능 최적화) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Spatial Voice", meta = (ClampMin = "0.01", ClampMax = "1.0"))
+	float UpdateInterval;
+
+	FHarmoniaSpatialVoiceSettings()
+		: MaxVoiceRange(5000.0f)  // 50미터
+		, AttenuationStartDistance(1000.0f)  // 10미터
+		, DistanceAttenuationExponent(2.0f)
+		, bEnableOcclusion(true)
+		, OcclusionMultiplier(0.5f)
+		, bAutoApplyListenerEnvironmentEffects(true)
+		, bBlendSpeakerAndListenerEnvironments(false)  // 청자 기준
+		, EnvironmentBlendRatio(0.0f)  // 청자 100%
+		, bEnable3DSpatialAudio(true)
+		, UpdateInterval(0.1f)  // 100ms마다 업데이트
+	{
+	}
+};
+
+/**
+ * 플레이어 음성 상태 정보
+ * 각 플레이어의 위치, 환경, 음성 컴포넌트 등을 관리
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAONLINESUBSYSTEM_API FHarmoniaPlayerVoiceState
+{
+	GENERATED_BODY()
+
+	/** 플레이어 고유 ID */
+	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Spatial Voice")
+	FString PlayerId;
+
+	/** 플레이어 표시 이름 */
+	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Spatial Voice")
+	FString PlayerName;
+
+	/** 플레이어의 현재 위치 */
+	UPROPERTY(BlueprintReadWrite, Category = "Harmonia|Spatial Voice")
+	FVector Location;
+
+	/** 플레이어의 현재 회전 */
+	UPROPERTY(BlueprintReadWrite, Category = "Harmonia|Spatial Voice")
+	FRotator Rotation;
+
+	/** 플레이어가 현재 있는 환경 프리셋 */
+	UPROPERTY(BlueprintReadWrite, Category = "Harmonia|Spatial Voice")
+	EHarmoniaEnvironmentPreset CurrentEnvironment;
+
+	/** 말하고 있는지 여부 */
+	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Spatial Voice")
+	bool bIsSpeaking;
+
+	/** 음소거 상태 */
+	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Spatial Voice")
+	bool bIsMuted;
+
+	/** 거리 밖이라 들리지 않는 상태 */
+	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Spatial Voice")
+	bool bIsOutOfRange;
+
+	/** 청자까지의 거리 (캐시) */
+	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Spatial Voice")
+	float DistanceToListener;
+
+	/** 마지막 업데이트 시간 */
+	UPROPERTY()
+	float LastUpdateTime;
+
+	FHarmoniaPlayerVoiceState()
+		: Location(FVector::ZeroVector)
+		, Rotation(FRotator::ZeroRotator)
+		, CurrentEnvironment(EHarmoniaEnvironmentPreset::Default)
+		, bIsSpeaking(false)
+		, bIsMuted(false)
+		, bIsOutOfRange(false)
+		, DistanceToListener(0.0f)
+		, LastUpdateTime(0.0f)
+	{
+	}
+};
