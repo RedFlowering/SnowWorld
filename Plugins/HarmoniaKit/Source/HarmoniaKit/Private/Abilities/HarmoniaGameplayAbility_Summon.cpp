@@ -126,14 +126,16 @@ void UHarmoniaGameplayAbility_Summon::SummonMonster(const FHarmoniaSummonConfig&
 
 		if (SummonedMonster)
 		{
-			// TODO: Initialize with monster data - method not available yet
-			// SummonedMonster->InitializeWithMonsterData(MonsterData);
+			// Initialize with monster data
+			int32 SummonLevel = 1;
 
-			// TODO: Inherit level if configured - method not available yet
-			// if (Config.bInheritSummonerLevel && SummonerMonster)
-			// {
-			// 	SummonedMonster->SetMonsterLevel(SummonerMonster->GetMonsterLevel());
-			// }
+			// Inherit level if configured
+			if (Config.bInheritSummonerLevel && SummonerMonster)
+			{
+				SummonLevel = SummonerMonster->GetMonsterLevel_Implementation();
+			}
+
+			SummonedMonster->InitializeMonster(MonsterData, SummonLevel);
 
 			// Add to active summons
 			ActiveSummons.Add(SummonedMonster);

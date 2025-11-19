@@ -151,6 +151,9 @@ protected:
 	/** 사용 타이머 핸들 */
 	FTimerHandle UsageTimerHandle;
 
+	/** 이동 체크 타이머 핸들 */
+	FTimerHandle MovementCheckTimerHandle;
+
 	/** 사용 시작 위치 (이동 감지용) */
 	FVector UsageStartLocation;
 

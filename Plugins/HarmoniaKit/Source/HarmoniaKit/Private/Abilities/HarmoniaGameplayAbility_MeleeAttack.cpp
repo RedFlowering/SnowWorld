@@ -10,6 +10,7 @@
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "GameplayCueManager.h"
 #include "Camera/CameraShakeBase.h"
+#include "Abilities/GameplayAbilityTargetTypes.h"
 
 UHarmoniaGameplayAbility_MeleeAttack::UHarmoniaGameplayAbility_MeleeAttack(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -396,6 +397,21 @@ void UHarmoniaGameplayAbility_MeleeAttack::TriggerHitEffects(const FHarmoniaAtta
 FGameplayAbilityTargetDataHandle UHarmoniaGameplayAbility_MeleeAttack::MakeTargetData(AActor* TargetActor) const
 {
 	FGameplayAbilityTargetDataHandle TargetData;
-	// TODO: Create proper target data if needed
+
+	if (TargetActor)
+	{
+		FGameplayAbilityTargetData_SingleTargetHit* NewTargetData = new FGameplayAbilityTargetData_SingleTargetHit();
+
+		// Create a proper FHitResult
+		FHitResult HitResult;
+		HitResult.HitObjectHandle = FActorInstanceHandle(TargetActor);
+		HitResult.Location = TargetActor->GetActorLocation();
+		HitResult.ImpactPoint = TargetActor->GetActorLocation();
+
+		NewTargetData->HitResult = HitResult;
+
+		TargetData.Add(NewTargetData);
+	}
+
 	return TargetData;
 }

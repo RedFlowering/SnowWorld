@@ -50,12 +50,19 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::EndAbility(const FGameplayAbility
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(UsageTimerHandle);
+		World->GetTimerManager().ClearTimer(MovementCheckTimerHandle);
 	}
 
 	// VFX 정리
 	if (VFXComponent && VFXComponent->IsActive())
 	{
 		VFXComponent->DeactivateImmediate();
+	}
+
+	// Unbind damage delegate
+	if (AActor* Avatar = GetAvatarActorFromActorInfo())
+	{
+		Avatar->OnTakeAnyDamage.RemoveDynamic(this, &UHarmoniaGameplayAbility_UseRecoveryItem::OnOwnerDamaged);
 	}
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
@@ -115,9 +122,10 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::StartUsingRecoveryItem()
 	// 애니메이션 재생
 	if (UsageAnimation)
 	{
-		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+		ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+		if (Character && Character->GetMesh())
 		{
-			// TODO: Play montage
+			Character->PlayAnimMontage(UsageAnimation);
 		}
 	}
 
@@ -138,12 +146,26 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::StartUsingRecoveryItem()
 		// 이동/피격 감지 설정
 		if (CurrentConfig.bCancelOnMovement)
 		{
-			// TODO: Bind to movement event
+			// Set timer to check movement periodically
+			if (UWorld* TimerWorld = GetWorld())
+			{
+				TimerWorld->GetTimerManager().SetTimer(
+					MovementCheckTimerHandle,
+					this,
+					&UHarmoniaGameplayAbility_UseRecoveryItem::OnOwnerMoved,
+					0.1f,
+					true
+				);
+			}
 		}
 
 		if (CurrentConfig.bCancelOnDamage)
 		{
-			// TODO: Bind to damage event
+			// Bind to damage event
+			if (AActor* Avatar = GetAvatarActorFromActorInfo())
+			{
+				Avatar->OnTakeAnyDamage.AddDynamic(this, &UHarmoniaGameplayAbility_UseRecoveryItem::OnOwnerDamaged);
+			}
 		}
 	}
 	else
