@@ -12,7 +12,6 @@
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Interfaces/OnlineUserInterface.h"
 #include "Interfaces/OnlinePresenceInterface.h"
-#include "Interfaces/OnlineVoiceInterface.h"
 #include "VoiceChat.h"
 #include "HarmoniaOnlineSubsystem.generated.h"
 
