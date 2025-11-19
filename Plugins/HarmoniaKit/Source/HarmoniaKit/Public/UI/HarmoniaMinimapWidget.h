@@ -13,6 +13,30 @@ class UCanvasPanel;
 class UMaterialInstanceDynamic;
 
 /**
+ * Ping marker tracking for minimap
+ */
+USTRUCT()
+struct FMinimapPingMarker
+{
+    GENERATED_BODY()
+
+    UPROPERTY()
+    FVector WorldPosition = FVector::ZeroVector;
+
+    UPROPERTY()
+    float CreationTime = 0.0f;
+
+    UPROPERTY()
+    TObjectPtr<UHarmoniaMapMarkerWidget> MarkerWidget = nullptr;
+
+    // Helper function to check if this marker matches a ping
+    bool Matches(const FVector& InPosition, float InCreationTime) const
+    {
+        return WorldPosition.Equals(InPosition, 1.0f) && FMath::IsNearlyEqual(CreationTime, InCreationTime, 0.001f);
+    }
+};
+
+/**
  * Minimap widget - always visible small map in corner of screen
  */
 UCLASS(Abstract, Blueprintable)
@@ -105,6 +129,10 @@ protected:
     // Active markers
     UPROPERTY()
     TArray<TObjectPtr<UHarmoniaMapMarkerWidget>> ActiveMarkers;
+
+    // Ping markers tracking
+    UPROPERTY()
+    TArray<FMinimapPingMarker> PingMarkers;
 
     // Update timer
     float UpdateTimer = 0.0f;
