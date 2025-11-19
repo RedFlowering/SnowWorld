@@ -518,21 +518,84 @@ bool UHarmoniaBuildingInstanceManager::FindNearbySnapPoint(const FVector& Target
 
 AActor* UHarmoniaBuildingInstanceManager::SpawnWorldActor(const FHarmoniaInstancedObjectData& Data, AController* Requestor)
 {
-	// TODO: 필요시 인스턴스를 실제 액터로 변환
-	// 현재는 모든 건축물을 ISM으로만 관리
-	UE_LOG(LogBuildingInstanceManager, Log, TEXT("SpawnWorldActor called for building: %s (currently managed as ISM)"),
-		*Data.DataId.ToString());
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		UE_LOG(LogBuildingInstanceManager, Error, TEXT("World is null - cannot spawn building actor"));
+		return nullptr;
+	}
 
-	return nullptr;
+	if (!BuildingDataTable)
+	{
+		UE_LOG(LogBuildingInstanceManager, Error, TEXT("BuildingDataTable is null - cannot spawn building actor"));
+		return nullptr;
+	}
+
+	// Get building part data from data table
+	FBuildingPartData* PartData = BuildingDataTable->FindRow<FBuildingPartData>(Data.DataId, TEXT("SpawnWorldActor"));
+	if (!PartData || !PartData->PreviewMesh.Mesh)
+	{
+		UE_LOG(LogBuildingInstanceManager, Error, TEXT("Invalid part data or mesh for PartID: %s"), *Data.DataId.ToString());
+		return nullptr;
+	}
+
+	// Spawn a simple actor to represent the building part
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Name = FName(*FString::Printf(TEXT("BuildingPart_%s"), *Data.InstanceGuid.ToString()));
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AActor* NewActor = World->SpawnActor<AActor>(AActor::StaticClass(),
+		Data.WorldTransform.GetLocation(),
+		Data.WorldTransform.GetRotation().Rotator(),
+		SpawnParams);
+
+	if (!NewActor)
+	{
+		UE_LOG(LogBuildingInstanceManager, Error, TEXT("Failed to spawn building actor"));
+		return nullptr;
+	}
+
+	// Create and attach static mesh component
+	UStaticMeshComponent* MeshComponent = NewObject<UStaticMeshComponent>(NewActor,
+		UStaticMeshComponent::StaticClass(),
+		TEXT("BuildingMesh"));
+
+	if (MeshComponent)
+	{
+		MeshComponent->SetStaticMesh(PartData->PreviewMesh.Mesh);
+		MeshComponent->SetRelativeLocation(PartData->PreviewMesh.RelativeLocation);
+		MeshComponent->SetRelativeRotation(PartData->PreviewMesh.RelativeRotation);
+		MeshComponent->SetWorldScale3D(PartData->PreviewMesh.PreviewScale);
+		MeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		MeshComponent->SetCastShadow(true);
+		MeshComponent->RegisterComponent();
+
+		NewActor->SetRootComponent(MeshComponent);
+	}
+
+	// Also hide the corresponding ISM instance (if we want to avoid duplicate visuals)
+	// This can be implemented based on requirements
+
+	UE_LOG(LogBuildingInstanceManager, Log, TEXT("Building actor spawned: %s at %s (GUID: %s)"),
+		*Data.DataId.ToString(), *Data.WorldTransform.GetLocation().ToString(), *Data.InstanceGuid.ToString());
+
+	return NewActor;
 }
 
 void UHarmoniaBuildingInstanceManager::DestroyWorldActor(AActor* Actor)
 {
-	// TODO: 액터 -> 인스턴스 변환 시 구현
-	if (Actor)
+	if (!Actor)
 	{
-		Actor->Destroy();
+		UE_LOG(LogBuildingInstanceManager, Warning, TEXT("DestroyWorldActor called with null actor"));
+		return;
 	}
+
+	UE_LOG(LogBuildingInstanceManager, Log, TEXT("Destroying building actor: %s"), *Actor->GetName());
+
+	// If we hid the ISM instance when spawning the actor, we should unhide it here
+	// This can be implemented based on requirements when ISM hiding is implemented
+
+	Actor->Destroy();
 }
 
 void UHarmoniaBuildingInstanceManager::InitializeISMComponent(const FName& PartID, UStaticMesh* Mesh)
