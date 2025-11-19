@@ -151,6 +151,19 @@ protected:
 	/** 자동 저장 타이머 */
 	void OnAutoSaveTimer();
 
+	// [SECURITY] Save file encryption and integrity
+	/** Encrypt save data using XOR cipher */
+	void EncryptSaveData(const TArray<uint8>& InData, TArray<uint8>& OutEncryptedData) const;
+
+	/** Decrypt save data using XOR cipher */
+	void DecryptSaveData(const TArray<uint8>& InEncryptedData, TArray<uint8>& OutData) const;
+
+	/** Calculate CRC32 checksum for save data integrity */
+	uint32 CalculateChecksum(const TArray<uint8>& Data) const;
+
+	/** Verify save data integrity using CRC32 checksum */
+	bool VerifyChecksum(const TArray<uint8>& Data, uint32 ExpectedChecksum) const;
+
 private:
 	/** 현재 로드된 세이브 게임 */
 	UPROPERTY(Transient)

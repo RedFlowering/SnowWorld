@@ -5,6 +5,8 @@
 #include "Definitions/HarmoniaCoreDefinitions.h"
 #include "Definitions/HarmoniaMacroDefinitions.h"
 #include "Actors/HarmoniaItemActor.h"
+#include "Interfaces/HarmoniaAdminInterface.h"
+#include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
 
 UHarmoniaInventoryComponent::UHarmoniaInventoryComponent()
@@ -94,17 +96,47 @@ void UHarmoniaInventoryComponent::RequestSwapSlots(int32 SlotA, int32 SlotB)
 
 void UHarmoniaInventoryComponent::RequestClear()
 {
-	// [SECURITY] Clear is a dangerous operation that can only be executed on the server
-	// Removed ServerClear RPC as it was disabled for security (always returned false in validation)
-	// If this functionality is needed, implement proper permission checks (e.g., GM/Admin only)
-	if (GetOwner() && GetOwner()->HasAuthority())
+	// [SECURITY] Clear is a dangerous operation that requires Admin permissions
+	if (!GetOwner() || !GetOwner()->HasAuthority())
 	{
-		Clear();
+		UE_LOG(LogTemp, Warning, TEXT("[SECURITY] RequestClear: Must be called on server"));
+		return;
 	}
-	else
+
+	// Check admin permissions via PlayerState
+	APawn* OwnerPawn = Cast<APawn>(GetOwner());
+	if (!OwnerPawn)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[SECURITY] RequestClear called from client - operation denied for security"));
+		UE_LOG(LogTemp, Warning, TEXT("[SECURITY] RequestClear: Owner is not a Pawn"));
+		return;
 	}
+
+	APlayerState* PlayerState = OwnerPawn->GetPlayerState();
+	if (!PlayerState)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[SECURITY] RequestClear: No PlayerState found"));
+		return;
+	}
+
+	// Check if PlayerState implements admin interface
+	IHarmoniaAdminInterface* AdminInterface = Cast<IHarmoniaAdminInterface>(PlayerState);
+	if (!AdminInterface)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[SECURITY] RequestClear: Player does not have admin interface - operation denied"));
+		UE_LOG(LogTemp, Warning, TEXT("[SECURITY] To enable this feature, implement IHarmoniaAdminInterface in your PlayerState"));
+		return;
+	}
+
+	// Require Admin level or higher
+	if (!AdminInterface->Execute_HasAdminPermission(PlayerState, EHarmoniaAdminLevel::Admin))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[SECURITY] RequestClear: Insufficient admin permissions (requires Admin level)"));
+		return;
+	}
+
+	// Permission granted - execute clear operation
+	UE_LOG(LogTemp, Log, TEXT("[ADMIN] Inventory cleared by player %s with Admin permissions"), *PlayerState->GetPlayerName());
+	Clear();
 }
 
 bool UHarmoniaInventoryComponent::AddItem(const FHarmoniaID& ItemID, int32 Count, float Durability)
