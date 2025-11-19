@@ -15,7 +15,10 @@ UHarmoniaGameplayAbility_RangedAttack::UHarmoniaGameplayAbility_RangedAttack()
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
 	// Set default tags
-	AbilityTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Ability.Attack.Ranged")));
+	FGameplayTagContainer Tags;
+	Tags.AddTag(FGameplayTag::RequestGameplayTag(FName("Ability.Attack.Ranged")));
+	SetAssetTags(Tags);
+
 	ActivationOwnedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Attacking")));
 	CancelAbilitiesWithTag.AddTag(FGameplayTag::RequestGameplayTag(FName("Ability.Attack.Melee")));
 
@@ -73,12 +76,6 @@ void UHarmoniaGameplayAbility_RangedAttack::ActivateAbility(const FGameplayAbili
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
-	}
-
-	// Apply activation tags
-	if (AttackingTags.Num() > 0)
-	{
-		ApplyGameplayEffectToOwner(Handle, ActorInfo, ActivationInfo, MakeOutgoingGameplayEffectSpec(Handle, ActorInfo, ActivationInfo, UGameplayEffect::StaticClass(), GetAbilityLevel()), FGameplayEffectSpecHandle());
 	}
 
 	UHarmoniaRangedCombatComponent* RangedCombat = GetRangedCombatComponent(ActorInfo);

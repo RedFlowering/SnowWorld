@@ -443,9 +443,9 @@ private:
 	float LastSpellCastTime = 0.0f;
 
 	/** Cached components */
-	UPROPERTY()
+	mutable UPROPERTY()
 	TObjectPtr<UAbilitySystemComponent> CachedAbilitySystemComponent;
 
-	UPROPERTY()
+	mutable UPROPERTY()
 	TObjectPtr<UHarmoniaLockOnComponent> CachedLockOnComponent;
 };

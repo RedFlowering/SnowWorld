@@ -13,6 +13,7 @@
 #include "Net/UnrealNetwork.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/DamageEvents.h"
+#include "Engine/OverlapResult.h"
 
 AHarmoniaProjectile::AHarmoniaProjectile()
 {
@@ -398,7 +399,7 @@ void AHarmoniaProjectile::Explode(const FVector& ExplosionLocation)
 				FHitResult HitResult;
 				HitResult.ImpactPoint = HitActor->GetActorLocation();
 				HitResult.Location = HitActor->GetActorLocation();
-				HitResult.Actor = HitActor;
+				HitResult.HitObjectHandle = FActorInstanceHandle(HitActor);
 
 				// Temporarily modify damage for falloff
 				float OriginalDamage = ProjectileData.DamageConfig.BaseDamage;
@@ -427,7 +428,7 @@ void AHarmoniaProjectile::Explode(const FVector& ExplosionLocation)
 void AHarmoniaProjectile::StickToSurface(const FHitResult& HitResult)
 {
 	// Stop movement
-	MovementComponent->StopMovingImmediately();
+	MovementComponent->Velocity = FVector::ZeroVector;
 	MovementComponent->SetActive(false);
 
 	// Attach to hit actor if possible

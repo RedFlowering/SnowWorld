@@ -19,7 +19,7 @@
 UHarmoniaRangedCombatComponent::UHarmoniaRangedCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	SetIsReplicatedUsing(true);
+	SetIsReplicated(true);
 
 	// Load default data tables
 	static ConstructorHelpers::FObjectFinder<UDataTable> WeaponDataTableFinder(TEXT("/HarmoniaKit/Data/DT_RangedWeapons"));
@@ -267,7 +267,7 @@ FVector UHarmoniaRangedCombatComponent::GetAimDirection() const
 
 	// Check if we have a locked target
 	UHarmoniaLockOnComponent* LockOn = GetLockOnComponent();
-	if (LockOn && LockOn->IsLockingOn())
+	if (LockOn && LockOn->GetCurrentTarget())
 	{
 		AActor* Target = LockOn->GetCurrentTarget();
 		if (Target)
