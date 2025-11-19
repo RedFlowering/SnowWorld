@@ -29,6 +29,8 @@
 #include "Components/HarmoniaInventoryComponent.h"
 #include "Components/HarmoniaBuildingComponent.h"
 #include "Managers/HarmoniaBuildingInstanceManager.h"
+#include "HarmoniaWorldGeneratorSubsystem.h"
+#include "System/HarmoniaTimeWeatherManager.h"
 
 const FString UHarmoniaSaveGameSubsystem::DefaultSaveSlotName = TEXT("DefaultSave");
 const int32 UHarmoniaSaveGameSubsystem::SaveGameUserIndex = 0;
@@ -468,12 +470,10 @@ void UHarmoniaSaveGameSubsystem::SaveWorldData(UHarmoniaSaveGame* SaveGameObject
 		for (const FBuildingInstanceMetadata& Metadata : AllBuildings)
 		{
 			FHarmoniaSavedBuildingInstance SavedBuilding;
-			SavedBuilding.BuildingGuid = Metadata.BuildingGuid;
-			SavedBuilding.PartData = Metadata.PartData;
+			SavedBuilding.PartID = Metadata.PartID;
 			SavedBuilding.Location = Metadata.Location;
 			SavedBuilding.Rotation = Metadata.Rotation;
-			SavedBuilding.CurrentDurability = Metadata.CurrentDurability;
-			SavedBuilding.OwnerSteamID = Metadata.OwnerSteamID;
+			SavedBuilding.Scale = FVector::OneVector; // Default scale
 
 			WorldData.PlacedBuildings.Add(SavedBuilding);
 		}
@@ -587,34 +587,29 @@ void UHarmoniaSaveGameSubsystem::LoadWorldData(const UHarmoniaSaveGame* SaveGame
 	// ===== 빌딩 데이터 로드 =====
 	if (UHarmoniaBuildingInstanceManager* BuildingManager = World->GetSubsystem<UHarmoniaBuildingInstanceManager>())
 	{
-		for (const FHarmoniaSavedBuildingInstance& Building : WorldData.PlacedBuildings)
-		{
-			// 건축물 복원
-			FGuid RestoredGuid = BuildingManager->PlaceBuilding(
-				Building.PartData,
-				Building.Location,
-				Building.Rotation,
-				nullptr // Owner는 별도로 복원 필요
-			);
+		// NOTE: BuildingManager의 PlaceBuilding 함수는 FBuildingPartData를 요구하지만,
+		// 우리는 PartID만 저장하고 있습니다. 따라서 BuildingDataTable에서
+		// PartID로 FBuildingPartData를 조회해야 합니다.
+		// TODO: HarmoniaBuildingInstanceManager에 PartID를 받는 PlaceBuilding 오버로드 추가
+		//       또는 데이터 테이블 접근 API 추가
+		//
+		// Example implementation:
+		// for (const FHarmoniaSavedBuildingInstance& Building : WorldData.PlacedBuildings)
+		// {
+		//     // PartID로 FBuildingPartData 조회
+		//     FBuildingPartData* PartData = BuildingManager->GetBuildingPartData(Building.PartID);
+		//     if (PartData)
+		//     {
+		//         FGuid RestoredGuid = BuildingManager->PlaceBuilding(
+		//             *PartData,
+		//             Building.Location,
+		//             Building.Rotation,
+		//             nullptr // Owner는 별도로 복원 필요
+		//         );
+		//     }
+		// }
 
-			// 내구도 복원
-			if (RestoredGuid.IsValid())
-			{
-				FBuildingInstanceMetadata Metadata;
-				if (BuildingManager->GetBuildingMetadata(RestoredGuid, Metadata))
-				{
-					// 내구도만 업데이트하는 것은 별도 함수가 없으므로 직접 DamageBuilding으로 조정
-					float MaxDurability = Metadata.CurrentDurability;
-					float DamageToDeal = MaxDurability - Building.CurrentDurability;
-					if (DamageToDeal > 0.0f)
-					{
-						BuildingManager->DamageBuilding(RestoredGuid, DamageToDeal);
-					}
-				}
-			}
-		}
-
-		UE_LOG(LogTemp, Log, TEXT("LoadWorldData: Restored %d buildings"), WorldData.PlacedBuildings.Num());
+		UE_LOG(LogTemp, Warning, TEXT("LoadWorldData: Building restoration not implemented - needs API enhancement"));
 	}
 
 	// ===== 월드 생성 정보 로드 (WorldGeneratorSubsystem) =====
