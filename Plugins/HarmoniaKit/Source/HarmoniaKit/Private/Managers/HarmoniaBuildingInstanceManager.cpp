@@ -2,6 +2,7 @@
 
 #include "Managers/HarmoniaBuildingInstanceManager.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Components/SceneComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Pawn.h"
@@ -17,19 +18,40 @@ void UHarmoniaBuildingInstanceManager::Initialize(FSubsystemCollectionBase& Coll
 
 	// ISM을 관리할 더미 액터 생성
 	UWorld* World = GetWorld();
-	if (World)
+	if (!World)
 	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Name = FName(TEXT("BuildingISMManager"));
-		ISMManagerActor = World->SpawnActor<AActor>(AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-
-		if (ISMManagerActor)
-		{
-#if WITH_EDITOR
-			ISMManagerActor->SetActorLabel(TEXT("BuildingISMManager"));
-#endif
-		}
+		UE_LOG(LogBuildingInstanceManager, Error, TEXT("Failed to get World in Initialize - cannot create ISMManagerActor"));
+		return;
 	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Name = FName(TEXT("BuildingISMManager"));
+	ISMManagerActor = World->SpawnActor<AActor>(AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+
+	if (!ISMManagerActor)
+	{
+		UE_LOG(LogBuildingInstanceManager, Error, TEXT("Failed to spawn ISMManagerActor - building system will not work"));
+		return;
+	}
+
+	// AActor는 기본적으로 RootComponent가 없으므로 생성
+	USceneComponent* RootComp = NewObject<USceneComponent>(ISMManagerActor, USceneComponent::StaticClass(), TEXT("RootComponent"));
+	if (RootComp)
+	{
+		RootComp->RegisterComponent();
+		ISMManagerActor->SetRootComponent(RootComp);
+	}
+	else
+	{
+		UE_LOG(LogBuildingInstanceManager, Error, TEXT("Failed to create RootComponent for ISMManagerActor"));
+		ISMManagerActor->Destroy();
+		ISMManagerActor = nullptr;
+		return;
+	}
+
+#if WITH_EDITOR
+	ISMManagerActor->SetActorLabel(TEXT("BuildingISMManager"));
+#endif
 
 	// BuildingDataTable 로드
 	if (UHarmoniaLoadManager* LoadManager = UHarmoniaLoadManager::Get())
@@ -603,7 +625,17 @@ void UHarmoniaBuildingInstanceManager::DestroyWorldActor(AActor* Actor)
 void UHarmoniaBuildingInstanceManager::InitializeISMComponent(const FName& PartID, UStaticMesh* Mesh)
 {
 	if (!ISMManagerActor || !Mesh)
+	{
+		UE_LOG(LogBuildingInstanceManager, Warning, TEXT("Cannot initialize ISM component - ISMManagerActor or Mesh is null"));
 		return;
+	}
+
+	USceneComponent* RootComponent = ISMManagerActor->GetRootComponent();
+	if (!RootComponent)
+	{
+		UE_LOG(LogBuildingInstanceManager, Error, TEXT("ISMManagerActor has no RootComponent - cannot attach ISM components"));
+		return;
+	}
 
 	// 새 ISM 컴포넌트 생성
 	UInstancedStaticMeshComponent* NewISM = NewObject<UInstancedStaticMeshComponent>(ISMManagerActor,
@@ -616,7 +648,7 @@ void UHarmoniaBuildingInstanceManager::InitializeISMComponent(const FName& PartI
 		NewISM->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		NewISM->SetCastShadow(true);
 		NewISM->RegisterComponent();
-		NewISM->AttachToComponent(ISMManagerActor->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+		NewISM->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 
 		PartToISMMap.Add(PartID, NewISM);
 
