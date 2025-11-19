@@ -1376,6 +1376,10 @@ void UHarmoniaOnlineSubsystem::SetSpatialVoiceEnabled(bool bEnabled)
 		{
 			ClearVoiceEffectFromUser(Pair.Key);
 		}
+
+		// 최적화 캐시 정리
+		OcclusionCache.Empty();
+		PlayerUpdateCounters.Empty();
 	}
 }
 
@@ -1420,7 +1424,32 @@ void UHarmoniaOnlineSubsystem::UpdateAllPlayerVoiceStates()
 		// 범위 내에 있고 자동 효과가 활성화되어 있으면 효과 업데이트
 		if (!State.bIsOutOfRange && SpatialVoiceSettings.bAutoApplyListenerEnvironmentEffects)
 		{
-			UpdatePlayerVoiceEffect(Pair.Key);
+			// 거리 기반 업데이트 빈도 조절 (성능 최적화)
+			int32& UpdateCounter = PlayerUpdateCounters.FindOrAdd(Pair.Key, 0);
+			UpdateCounter++;
+
+			bool bShouldUpdate = false;
+
+			// 가까운 거리 (< 1000cm = 10m): 매 프레임 업데이트
+			if (State.DistanceToListener < 1000.0f)
+			{
+				bShouldUpdate = true;
+			}
+			// 중간 거리 (1000-3000cm = 10-30m): 2번에 1번
+			else if (State.DistanceToListener < 3000.0f)
+			{
+				bShouldUpdate = (UpdateCounter % 2 == 0);
+			}
+			// 먼 거리 (> 3000cm = 30m): 4번에 1번
+			else
+			{
+				bShouldUpdate = (UpdateCounter % 4 == 0);
+			}
+
+			if (bShouldUpdate)
+			{
+				UpdatePlayerVoiceEffect(Pair.Key);
+			}
 		}
 	}
 }
@@ -1440,10 +1469,29 @@ void UHarmoniaOnlineSubsystem::UpdatePlayerVoiceEffect(const FString& PlayerId)
 		State->DistanceToListener
 	);
 
-	// 장애물 감쇠 추가
+	// 장애물 감쇠 추가 (캐싱된 레이캐스트 사용)
 	if (SpatialVoiceSettings.bEnableOcclusion)
 	{
-		float OcclusionAttenuation = CalculateOcclusionAttenuation(State->Location, ListenerLocation);
+		// 캐시 확인
+		const double CurrentTime = FPlatformTime::Seconds();
+		FOcclusionCacheEntry* CachedEntry = OcclusionCache.Find(PlayerId);
+
+		float OcclusionAttenuation = 1.0f;
+
+		// 캐시가 유효하면 사용
+		if (CachedEntry && (CurrentTime - CachedEntry->Timestamp) < OcclusionCacheLifetime)
+		{
+			OcclusionAttenuation = CachedEntry->AttenuationValue;
+		}
+		else
+		{
+			// 캐시가 없거나 만료됨: 새로 계산
+			OcclusionAttenuation = CalculateOcclusionAttenuation(State->Location, ListenerLocation);
+
+			// 캐시 업데이트
+			OcclusionCache.Add(PlayerId, FOcclusionCacheEntry(OcclusionAttenuation, CurrentTime));
+		}
+
 		EffectSettings.DryWetMix *= OcclusionAttenuation;
 	}
 
