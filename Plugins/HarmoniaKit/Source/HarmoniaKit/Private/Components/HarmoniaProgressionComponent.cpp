@@ -818,12 +818,17 @@ void UHarmoniaProgressionComponent::ApplySkillNodeEffects(const FHarmoniaSkillNo
 	}
 
 	// Grant AbilitySet
+	// TODO: Re-enable when AbilitySet linking issue is resolved
+	// Currently commented out due to linker errors with LyraGame module
+	// Workaround: Create GameplayEffects that grant abilities instead
+	/*
 	if (Node.GrantedAbilitySet)
 	{
 		// Note: We pass nullptr for GrantedHandles as we're not tracking removal yet
 		// Future enhancement: Track handles for proper cleanup
 		Node.GrantedAbilitySet->GiveToAbilitySystem(ASC, nullptr, nullptr);
 	}
+	*/
 }
 
 void UHarmoniaProgressionComponent::RemoveSkillNodeEffects(const FHarmoniaSkillNode& Node)
@@ -871,12 +876,17 @@ void UHarmoniaProgressionComponent::ApplyClassEffects(EHarmoniaCharacterClass Cl
 	}
 
 	// Grant class abilities
+	// TODO: Re-enable when AbilitySet linking issue is resolved
+	// Currently commented out due to linker errors with LyraGame module
+	// Workaround: Use ClassEffects (GameplayEffects) to grant abilities
+	/*
 	if (ClassDef->ClassAbilitySet)
 	{
 		// Note: We pass nullptr for GrantedHandles as we're not tracking removal yet
 		// Future enhancement: Track handles for proper cleanup
 		ClassDef->ClassAbilitySet->GiveToAbilitySystem(ASC, nullptr, nullptr);
 	}
+	*/
 
 	// Apply starting stat bonuses
 	for (const auto& StatBonus : ClassDef->StartingStatBonuses)
