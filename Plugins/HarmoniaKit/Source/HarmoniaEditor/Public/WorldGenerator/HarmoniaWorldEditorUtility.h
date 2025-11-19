@@ -755,6 +755,9 @@ private:
 	/** 생성된 오브젝트 데이터 / Generated object data */
 	TArray<FWorldObjectData> GeneratedObjectData;
 
+	/** 생성된 광석 자원 데이터 / Generated ore vein data */
+	TArray<FOreVeinData> GeneratedOreVeinData;
+
 	//=============================================================================
 	// NEW: Internal Data Structures
 	//=============================================================================
