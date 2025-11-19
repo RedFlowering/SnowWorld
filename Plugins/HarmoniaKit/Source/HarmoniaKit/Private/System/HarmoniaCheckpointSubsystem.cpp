@@ -454,7 +454,8 @@ FHarmoniaTeleportResult UHarmoniaCheckpointSubsystem::TeleportToCheckpoint(APlay
 		{
 			// HarmoniaResourceComponent 확인 (있는 경우)
 			// NOTE: HarmoniaResourceComponent가 구현되지 않은 경우 이 부분은 스킵됩니다.
-			TArray<UActorComponent*> ResourceComponents = PS->GetComponentsByClass(UActorComponent::StaticClass());
+			TArray<UActorComponent*> ResourceComponents;
+			PS->GetComponents(UActorComponent::StaticClass(), ResourceComponents);
 			bool bResourceDeducted = false;
 
 			for (UActorComponent* Component : ResourceComponents)
@@ -564,7 +565,8 @@ bool UHarmoniaCheckpointSubsystem::CanTeleportToCheckpoint(APlayerController* Pl
 		if (ALyraPlayerState* PS = Player->GetPlayerState<ALyraPlayerState>())
 		{
 			// HarmoniaResourceComponent 확인 (있는 경우)
-			TArray<UActorComponent*> ResourceComponents = PS->GetComponentsByClass(UActorComponent::StaticClass());
+			TArray<UActorComponent*> ResourceComponents;
+			PS->GetComponents(UActorComponent::StaticClass(), ResourceComponents);
 			bool bHasResourceSystem = false;
 
 			for (UActorComponent* Component : ResourceComponents)
