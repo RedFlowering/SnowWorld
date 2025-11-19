@@ -7,12 +7,37 @@
 #include "Definitions/HarmoniaProgressionDefinitions.h"
 #include "GameplayTagContainer.h"
 #include "ActiveGameplayEffectHandle.h"
+#include "GameplayAbilitySpecHandle.h"
 #include "HarmoniaProgressionComponent.generated.h"
 
 class UHarmoniaSkillTreeData;
 class UHarmoniaClassData;
 class ULyraAbilitySystemComponent;
 class UGameplayEffect;
+class ULyraAbilitySet;
+class UAttributeSet;
+
+/**
+ * Tracks handles for granted abilities, effects, and attribute sets
+ * Used for proper cleanup when removing progression bonuses
+ */
+USTRUCT()
+struct FHarmoniaGrantedHandles
+{
+	GENERATED_BODY()
+
+	/** Handles to granted gameplay abilities */
+	UPROPERTY()
+	TArray<FGameplayAbilitySpecHandle> AbilitySpecHandles;
+
+	/** Handles to granted gameplay effects */
+	UPROPERTY()
+	TArray<FActiveGameplayEffectHandle> GameplayEffectHandles;
+
+	/** Pointers to granted attribute sets */
+	UPROPERTY()
+	TArray<TObjectPtr<UAttributeSet>> GrantedAttributeSets;
+};
 
 /**
  * Delegates
@@ -274,6 +299,9 @@ protected:
 	/** Apply prestige effects */
 	void ApplyPrestigeEffects();
 
+	/** Grant ability set to ASC (direct implementation to avoid linker issues) */
+	void GrantAbilitySetToASC(const ULyraAbilitySet* AbilitySet, ULyraAbilitySystemComponent* ASC, FHarmoniaGrantedHandles* OutGrantedHandles);
+
 	//~ Server RPCs
 	UFUNCTION(Server, Reliable)
 	void Server_AddExperience(int32 Amount);
@@ -331,4 +359,8 @@ private:
 	/** Active gameplay effect handles from skills/class/awakening */
 	UPROPERTY()
 	TArray<FActiveGameplayEffectHandle> ActiveProgressionEffects;
+
+	/** Granted handles from ability sets for proper cleanup */
+	UPROPERTY()
+	TArray<FHarmoniaGrantedHandles> GrantedHandlesList;
 };

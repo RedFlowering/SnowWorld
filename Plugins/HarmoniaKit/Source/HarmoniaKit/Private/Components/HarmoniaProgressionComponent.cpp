@@ -3,6 +3,7 @@
 #include "Components/HarmoniaProgressionComponent.h"
 #include "AbilitySystem/LyraAbilitySystemComponent.h"
 #include "AbilitySystem/LyraAbilitySet.h"
+#include "AbilitySystem/Abilities/LyraGameplayAbility.h"
 #include "Data/HarmoniaSkillTreeData.h"
 #include "Data/HarmoniaClassData.h"
 #include "GameFramework/PlayerState.h"
@@ -10,6 +11,8 @@
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayEffect.h"
+#include "AttributeSet.h"
+#include "GameplayAbilitySpec.h"
 
 UHarmoniaProgressionComponent::UHarmoniaProgressionComponent()
 {
@@ -794,6 +797,109 @@ bool UHarmoniaProgressionComponent::ArePrerequisitesMet(const FHarmoniaSkillNode
 	return true;
 }
 
+void UHarmoniaProgressionComponent::GrantAbilitySetToASC(const ULyraAbilitySet* AbilitySet, ULyraAbilitySystemComponent* ASC, FHarmoniaGrantedHandles* OutGrantedHandles)
+{
+	if (!AbilitySet || !ASC)
+	{
+		return;
+	}
+
+	// Check authority - abilities should only be granted on the server
+	if (!ASC->IsOwnerActorAuthoritative())
+	{
+		return;
+	}
+
+	// Access protected members using reflection
+	UClass* AbilitySetClass = ULyraAbilitySet::StaticClass();
+
+	// Get GrantedAttributes array using reflection
+	FArrayProperty* AttributesProperty = FindFProperty<FArrayProperty>(AbilitySetClass, TEXT("GrantedAttributes"));
+	if (AttributesProperty)
+	{
+		const TArray<FLyraAbilitySet_AttributeSet>* GrantedAttributes = AttributesProperty->ContainerPtrToValuePtr<TArray<FLyraAbilitySet_AttributeSet>>(AbilitySet);
+		if (GrantedAttributes)
+		{
+			for (int32 SetIndex = 0; SetIndex < GrantedAttributes->Num(); ++SetIndex)
+			{
+				const FLyraAbilitySet_AttributeSet& SetToGrant = (*GrantedAttributes)[SetIndex];
+
+				if (!IsValid(SetToGrant.AttributeSet))
+				{
+					continue;
+				}
+
+				UAttributeSet* NewSet = NewObject<UAttributeSet>(ASC->GetOwner(), SetToGrant.AttributeSet);
+				ASC->AddAttributeSetSubobject(NewSet);
+
+				if (OutGrantedHandles)
+				{
+					OutGrantedHandles->GrantedAttributeSets.Add(NewSet);
+				}
+			}
+		}
+	}
+
+	// Get GrantedGameplayAbilities array using reflection
+	FArrayProperty* AbilitiesProperty = FindFProperty<FArrayProperty>(AbilitySetClass, TEXT("GrantedGameplayAbilities"));
+	if (AbilitiesProperty)
+	{
+		const TArray<FLyraAbilitySet_GameplayAbility>* GrantedAbilities = AbilitiesProperty->ContainerPtrToValuePtr<TArray<FLyraAbilitySet_GameplayAbility>>(AbilitySet);
+		if (GrantedAbilities)
+		{
+			for (int32 AbilityIndex = 0; AbilityIndex < GrantedAbilities->Num(); ++AbilityIndex)
+			{
+				const FLyraAbilitySet_GameplayAbility& AbilityToGrant = (*GrantedAbilities)[AbilityIndex];
+
+				if (!IsValid(AbilityToGrant.Ability))
+				{
+					continue;
+				}
+
+				ULyraGameplayAbility* AbilityCDO = AbilityToGrant.Ability->GetDefaultObject<ULyraGameplayAbility>();
+
+				FGameplayAbilitySpec AbilitySpec(AbilityCDO, AbilityToGrant.AbilityLevel);
+				AbilitySpec.SourceObject = ASC->GetAvatarActor();
+				AbilitySpec.DynamicAbilityTags.AddTag(AbilityToGrant.InputTag);
+
+				const FGameplayAbilitySpecHandle AbilitySpecHandle = ASC->GiveAbility(AbilitySpec);
+
+				if (OutGrantedHandles)
+				{
+					OutGrantedHandles->AbilitySpecHandles.Add(AbilitySpecHandle);
+				}
+			}
+		}
+	}
+
+	// Get GrantedGameplayEffects array using reflection
+	FArrayProperty* EffectsProperty = FindFProperty<FArrayProperty>(AbilitySetClass, TEXT("GrantedGameplayEffects"));
+	if (EffectsProperty)
+	{
+		const TArray<FLyraAbilitySet_GameplayEffect>* GrantedEffects = EffectsProperty->ContainerPtrToValuePtr<TArray<FLyraAbilitySet_GameplayEffect>>(AbilitySet);
+		if (GrantedEffects)
+		{
+			for (int32 EffectIndex = 0; EffectIndex < GrantedEffects->Num(); ++EffectIndex)
+			{
+				const FLyraAbilitySet_GameplayEffect& EffectToGrant = (*GrantedEffects)[EffectIndex];
+
+				if (!IsValid(EffectToGrant.GameplayEffect))
+				{
+					continue;
+				}
+
+				const UGameplayEffect* GameplayEffect = EffectToGrant.GameplayEffect->GetDefaultObject<UGameplayEffect>();
+				const FActiveGameplayEffectHandle GameplayEffectHandle = ASC->ApplyGameplayEffectToSelf(GameplayEffect, EffectToGrant.EffectLevel, ASC->MakeEffectContext());
+
+				if (OutGrantedHandles)
+				{
+					OutGrantedHandles->GameplayEffectHandles.Add(GameplayEffectHandle);
+				}
+			}
+		}
+	}
+}
+
 void UHarmoniaProgressionComponent::ApplySkillNodeEffects(const FHarmoniaSkillNode& Node)
 {
 	ULyraAbilitySystemComponent* ASC = GetAbilitySystemComponent();
@@ -817,18 +923,13 @@ void UHarmoniaProgressionComponent::ApplySkillNodeEffects(const FHarmoniaSkillNo
 		}
 	}
 
-	// Grant AbilitySet
-	// TODO: Re-enable when AbilitySet linking issue is resolved
-	// Currently commented out due to linker errors with LyraGame module
-	// Workaround: Create GameplayEffects that grant abilities instead
-	/*
+	// Grant AbilitySet using our direct implementation
 	if (Node.GrantedAbilitySet)
 	{
-		// Note: We pass nullptr for GrantedHandles as we're not tracking removal yet
-		// Future enhancement: Track handles for proper cleanup
-		Node.GrantedAbilitySet->GiveToAbilitySystem(ASC, nullptr, nullptr);
+		FHarmoniaGrantedHandles GrantedHandles;
+		GrantAbilitySetToASC(Node.GrantedAbilitySet, ASC, &GrantedHandles);
+		GrantedHandlesList.Add(GrantedHandles);
 	}
-	*/
 }
 
 void UHarmoniaProgressionComponent::RemoveSkillNodeEffects(const FHarmoniaSkillNode& Node)
@@ -875,18 +976,13 @@ void UHarmoniaProgressionComponent::ApplyClassEffects(EHarmoniaCharacterClass Cl
 		}
 	}
 
-	// Grant class abilities
-	// TODO: Re-enable when AbilitySet linking issue is resolved
-	// Currently commented out due to linker errors with LyraGame module
-	// Workaround: Use ClassEffects (GameplayEffects) to grant abilities
-	/*
+	// Grant class abilities using our direct implementation
 	if (ClassDef->ClassAbilitySet)
 	{
-		// Note: We pass nullptr for GrantedHandles as we're not tracking removal yet
-		// Future enhancement: Track handles for proper cleanup
-		ClassDef->ClassAbilitySet->GiveToAbilitySystem(ASC, nullptr, nullptr);
+		FHarmoniaGrantedHandles GrantedHandles;
+		GrantAbilitySetToASC(ClassDef->ClassAbilitySet, ASC, &GrantedHandles);
+		GrantedHandlesList.Add(GrantedHandles);
 	}
-	*/
 
 	// Apply starting stat bonuses
 	for (const auto& StatBonus : ClassDef->StartingStatBonuses)
