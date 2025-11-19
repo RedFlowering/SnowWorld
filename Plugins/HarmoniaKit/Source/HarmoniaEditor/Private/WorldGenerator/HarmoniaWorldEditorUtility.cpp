@@ -706,7 +706,7 @@ void UHarmoniaWorldEditorUtility::ShowResourceVisualization()
 	UHarmoniaWorldGeneratorEditorSubsystem* EditorSub = GetEditorSubsystem();
 	if (EditorSub && GEditor && GEditor->GetEditorWorldContext().World())
 	{
-		TArray<FOreVeinData> OreVeins; // TODO: Store this from generation
+		// Use stored ore vein data instead of creating empty array
 		TArray<FWorldObjectData> ResourceNodes;
 		for (const FWorldObjectData& ObjData : GeneratedObjectData)
 		{
@@ -715,8 +715,8 @@ void UHarmoniaWorldEditorUtility::ShowResourceVisualization()
 				ResourceNodes.Add(ObjData);
 			}
 		}
-		EditorSub->DrawResourceDebugVisualization(GEditor->GetEditorWorldContext().World(), OreVeins, ResourceNodes);
-		StatusMessage = FString::Printf(TEXT("Resource visualization shown (%d nodes)"), ResourceNodes.Num());
+		EditorSub->DrawResourceDebugVisualization(GEditor->GetEditorWorldContext().World(), GeneratedOreVeinData, ResourceNodes);
+		StatusMessage = FString::Printf(TEXT("Resource visualization shown (%d veins, %d nodes)"), GeneratedOreVeinData.Num(), ResourceNodes.Num());
 	}
 }
 
