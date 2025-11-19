@@ -13,6 +13,21 @@ class UCanvasPanel;
 class UMaterialInstanceDynamic;
 
 /**
+ * Ping marker tracking for minimap
+ */
+USTRUCT()
+struct FMinimapPingMarker
+{
+    GENERATED_BODY()
+
+    UPROPERTY()
+    int32 PingID = -1;
+
+    UPROPERTY()
+    TObjectPtr<UHarmoniaMapMarkerWidget> MarkerWidget = nullptr;
+};
+
+/**
  * Minimap widget - always visible small map in corner of screen
  */
 UCLASS(Abstract, Blueprintable)
@@ -105,6 +120,10 @@ protected:
     // Active markers
     UPROPERTY()
     TArray<TObjectPtr<UHarmoniaMapMarkerWidget>> ActiveMarkers;
+
+    // Ping markers tracking
+    UPROPERTY()
+    TArray<FMinimapPingMarker> PingMarkers;
 
     // Update timer
     float UpdateTimer = 0.0f;

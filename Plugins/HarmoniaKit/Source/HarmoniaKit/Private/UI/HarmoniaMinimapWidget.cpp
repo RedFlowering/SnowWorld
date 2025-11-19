@@ -135,8 +135,117 @@ void UHarmoniaMinimapWidget::UpdatePlayerMarker()
 
 void UHarmoniaMinimapWidget::UpdatePingMarkers()
 {
-    // TODO: Implement ping markers on minimap
-    // Similar to main map but need to convert world positions relative to player
+    if (!MapComponent || !MarkerCanvas)
+    {
+        return;
+    }
+
+    // Get active pings from map component
+    TArray<FMapPingData> ActivePings = MapComponent->GetActivePings();
+
+    // Get player position for relative calculations
+    FVector PlayerPosition = MapComponent->GetPlayerWorldPosition();
+
+    // Remove expired ping markers that are no longer in ActivePings
+    for (int32 i = PingMarkers.Num() - 1; i >= 0; --i)
+    {
+        bool bStillActive = false;
+        for (const FMapPingData& Ping : ActivePings)
+        {
+            if (PingMarkers[i].PingID == Ping.PingID)
+            {
+                bStillActive = true;
+                break;
+            }
+        }
+
+        if (!bStillActive)
+        {
+            if (PingMarkers[i].MarkerWidget)
+            {
+                PingMarkers[i].MarkerWidget->RemoveFromParent();
+                ActiveMarkers.Remove(PingMarkers[i].MarkerWidget);
+            }
+            PingMarkers.RemoveAt(i);
+        }
+    }
+
+    // Update or create ping markers
+    for (const FMapPingData& Ping : ActivePings)
+    {
+        // Calculate relative position to player
+        FVector RelativePosition = Ping.WorldPosition - PlayerPosition;
+        float Distance = FVector2D(RelativePosition.X, RelativePosition.Y).Size();
+
+        // Only show pings within minimap range
+        if (Distance > MinimapRange)
+        {
+            continue;
+        }
+
+        // Find existing marker or create new one
+        FMinimapPingMarker* ExistingMarker = PingMarkers.FindByPredicate(
+            [&Ping](const FMinimapPingMarker& Marker) { return Marker.PingID == Ping.PingID; }
+        );
+
+        UHarmoniaMapMarkerWidget* MarkerWidget = nullptr;
+
+        if (ExistingMarker)
+        {
+            MarkerWidget = ExistingMarker->MarkerWidget;
+        }
+        else if (PingMarkerClass)
+        {
+            // Create new marker
+            MarkerWidget = CreateMarker(PingMarkerClass);
+            if (MarkerWidget)
+            {
+                FMinimapPingMarker NewMarker;
+                NewMarker.PingID = Ping.PingID;
+                NewMarker.MarkerWidget = MarkerWidget;
+                PingMarkers.Add(NewMarker);
+            }
+        }
+
+        // Update marker position
+        if (MarkerWidget && MinimapImage)
+        {
+            // Convert relative world position to minimap screen position
+            // Minimap center is player position
+            FVector2D ImageSize = MinimapImage->GetCachedGeometry().GetLocalSize();
+            FVector2D MinimapCenter = ImageSize * 0.5f;
+
+            // Scale relative position to minimap range
+            FVector2D RelativeUV(
+                RelativePosition.X / MinimapRange,
+                RelativePosition.Y / MinimapRange
+            );
+
+            // Convert to screen position (apply rotation if needed)
+            FVector2D ScreenPos = MinimapCenter;
+            if (bRotateWithPlayer)
+            {
+                // Rotate relative position by negative player rotation
+                float PlayerRotation = MapComponent->GetPlayerWorldRotation();
+                float Radians = FMath::DegreesToRadians(-PlayerRotation);
+                float CosAngle = FMath::Cos(Radians);
+                float SinAngle = FMath::Sin(Radians);
+
+                FVector2D RotatedUV(
+                    RelativeUV.X * CosAngle - RelativeUV.Y * SinAngle,
+                    RelativeUV.X * SinAngle + RelativeUV.Y * CosAngle
+                );
+
+                ScreenPos += RotatedUV * MinimapCenter;
+            }
+            else
+            {
+                ScreenPos += RelativeUV * MinimapCenter;
+            }
+
+            MarkerWidget->UpdateMarker(ScreenPos, 0.0f);
+        }
+    }
 }
 
 void UHarmoniaMinimapWidget::UpdateFogOfWar()

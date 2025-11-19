@@ -3,6 +3,7 @@
 #include "UI/HarmoniaMapWidget.h"
 #include "UI/HarmoniaMapMarkerWidget.h"
 #include "Components/HarmoniaMapComponent.h"
+#include "System/HarmoniaFogOfWarRenderer.h"
 #include "Components/Image.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
@@ -23,12 +24,8 @@ void UHarmoniaMapWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// Create fog of war material instance
-	if (FogOfWarMaterial && FogOfWarImage)
-	{
-		FogOfWarMaterialInstance = UMaterialInstanceDynamic::Create(FogOfWarMaterial, this);
-		FogOfWarImage->SetBrushFromMaterial(FogOfWarMaterialInstance);
-	}
+	// Fog of war material instance will be created in UpdateFogOfWar()
+	// when the fog of war renderer is available from the map component
 }
 
 void UHarmoniaMapWidget::NativeDestruct()
@@ -118,22 +115,39 @@ void UHarmoniaMapWidget::UpdateMarkers()
 
 void UHarmoniaMapWidget::UpdateFogOfWar()
 {
-	if (!MapComponent || !FogOfWarMaterialInstance)
+	if (!MapComponent || !FogOfWarImage)
 	{
 		return;
 	}
 
-	// TODO: Update fog of war material parameters based on explored regions
-	// This requires generating a texture mask from explored regions
-	// For now, we'll just pass the explored regions count as a parameter
+	// Get fog of war renderer from map component
+	UHarmoniaFogOfWarRenderer* FogRenderer = MapComponent->GetFogOfWarRenderer();
+	if (!FogRenderer || !FogRenderer->GetFogOfWarTexture())
+	{
+		return;
+	}
 
-	int32 ExploredRegionCount = MapComponent->ExploredRegions.Num();
-	FogOfWarMaterialInstance->SetScalarParameterValue(TEXT("ExploredRegions"), ExploredRegionCount);
+	// Create material instance if needed
+	if (!FogOfWarMaterialInstance && FogRenderer->GetFogOfWarMaterial())
+	{
+		FogOfWarMaterialInstance = UMaterialInstanceDynamic::Create(
+			FogRenderer->GetFogOfWarMaterial()->GetMaterial(),
+			this
+		);
+	}
 
-	// You would typically:
-	// 1. Create a render target
-	// 2. Draw explored regions as circles/shapes
-	// 3. Use that as a mask in the material
+	// Update fog of war material with the renderer's fog texture
+	if (FogOfWarMaterialInstance)
+	{
+		// Set fog texture parameter
+		FogOfWarMaterialInstance->SetTextureParameterValue(
+			TEXT("FogMask"),
+			FogRenderer->GetFogOfWarTexture()
+		);
+
+		// Apply material to the fog of war image
+		FogOfWarImage->SetBrushFromMaterial(FogOfWarMaterialInstance);
+	}
 }
 
 void UHarmoniaMapWidget::ZoomIn(float Amount)
