@@ -449,6 +449,9 @@ private:
 	/** Presence 인터페이스 */
 	IOnlinePresencePtr PresenceInterface;
 
+	/** 로그인 델리게이트 핸들 (IOnlineIdentity는 여전히 핸들 패턴 사용) */
+	FDelegateHandle OnLoginCompleteHandle;
+
 	//~=============================================================================
 	// 캐싱된 데이터
 	//~=============================================================================

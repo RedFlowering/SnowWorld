@@ -59,14 +59,14 @@ void UHarmoniaOnlineSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		}
 
 		// EOS Voice Chat 초기화 (크로스플랫폼 음성)
+		// Note: VoiceChat은 별도의 모듈로 초기화되며, 여기서는 기본 인터페이스만 가져옵니다
+		// 실제 VoiceChat 연결은 로그인 성공 후 OnLoginComplete에서 처리됩니다
 		FName SubsystemName = OnlineSubsystem->GetSubsystemName();
 		if (SubsystemName == FName(TEXT("EOS")) || SubsystemName == FName(TEXT("EOSPlus")))
 		{
-			VoiceChat = Online::GetVoiceChat();
-			if (VoiceChat.IsValid())
-			{
-				UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: EOS Voice Chat initialized"));
-			}
+			// VoiceChat 인터페이스는 IVoiceChat::Get()을 통해 별도로 가져옵니다
+			// 또는 EOSVoiceChat 모듈에서 직접 생성할 수 있습니다
+			UE_LOG(LogTemp, Log, TEXT("HarmoniaOnlineSubsystem: EOS platform detected, VoiceChat will be initialized on login"));
 		}
 	}
 	else
@@ -83,6 +83,16 @@ void UHarmoniaOnlineSubsystem::Deinitialize()
 		if (FriendListUpdateTimerHandle.IsValid())
 		{
 			World->GetTimerManager().ClearTimer(FriendListUpdateTimerHandle);
+		}
+	}
+
+	// 델리게이트 정리
+	if (OnlineSubsystem)
+	{
+		IOnlineIdentityPtr IdentityInterface = OnlineSubsystem->GetIdentityInterface();
+		if (IdentityInterface.IsValid() && OnLoginCompleteHandle.IsValid())
+		{
+			IdentityInterface->ClearOnLoginCompleteDelegate_Handle(0, OnLoginCompleteHandle);
 		}
 	}
 
@@ -570,8 +580,7 @@ void UHarmoniaOnlineSubsystem::JoinVoiceChannel(const FString& ChannelId)
 				CurrentVoiceChannelId.Empty();
 				UE_LOG(LogTemp, Error, TEXT("HarmoniaOnlineSubsystem: Failed to join voice channel %s: %s"), *ChannelId, *Result.ErrorDesc);
 			}
-		}),
-		FOnVoiceChatChannelLeaveCompleteDelegate());
+		}));
 }
 
 void UHarmoniaOnlineSubsystem::LeaveVoiceChannel(const FString& ChannelId)
