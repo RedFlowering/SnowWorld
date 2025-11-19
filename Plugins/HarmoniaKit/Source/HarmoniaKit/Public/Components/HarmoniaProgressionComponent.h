@@ -325,9 +325,8 @@ protected:
 	void OnRep_PrestigeLevel();
 
 private:
-	//~ Cached References
-	UPROPERTY()
-	TObjectPtr<ULyraAbilitySystemComponent> CachedAbilitySystemComponent;
+	//~ Cached References (mutable for const getter functions)
+	mutable TObjectPtr<ULyraAbilitySystemComponent> CachedAbilitySystemComponent;
 
 	/** Active gameplay effect handles from skills/class/awakening */
 	UPROPERTY()
