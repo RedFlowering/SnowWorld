@@ -738,7 +738,48 @@ void UHarmoniaSenseAttackComponent::ApplyHitReaction(
 		}
 	}
 
-	// TODO: Apply camera shake, hit pause, etc.
+	// Apply camera shake to the attacker's player controller
+	if (ReactionConfig.CameraShakeClass)
+	{
+		AActor* Owner = GetOwner();
+		if (Owner)
+		{
+			APlayerController* PC = Cast<APlayerController>(Owner->GetInstigatorController());
+			if (PC)
+			{
+				PC->ClientStartCameraShake(ReactionConfig.CameraShakeClass, ReactionConfig.CameraShakeScale);
+			}
+		}
+	}
+
+	// Apply hit pause (time dilation effect)
+	if (ReactionConfig.bApplyHitPause && ReactionConfig.HitPauseDuration > 0.0f)
+	{
+		UWorld* World = GetWorld();
+		if (World)
+		{
+			// Store original time dilation
+			const float OriginalTimeDilation = World->GetWorldSettings()->TimeDilation;
+
+			// Apply hit pause (slow down time)
+			World->GetWorldSettings()->SetTimeDilation(0.1f);
+
+			// Set timer to restore normal time
+			FTimerHandle HitPauseTimerHandle;
+			World->GetTimerManager().SetTimer(
+				HitPauseTimerHandle,
+				[World, OriginalTimeDilation]()
+				{
+					if (World && World->GetWorldSettings())
+					{
+						World->GetWorldSettings()->SetTimeDilation(OriginalTimeDilation);
+					}
+				},
+				ReactionConfig.HitPauseDuration * 0.1f, // Adjust for dilated time
+				false
+			);
+		}
+	}
 }
 
 FGameplayEffectContextHandle UHarmoniaSenseAttackComponent::CreateDamageEffectContext(
