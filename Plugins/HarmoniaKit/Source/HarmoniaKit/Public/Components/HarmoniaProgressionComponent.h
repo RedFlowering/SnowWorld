@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "Definitions/HarmoniaProgressionDefinitions.h"
 #include "GameplayTagContainer.h"
+#include "ActiveGameplayEffectHandle.h"
 #include "HarmoniaProgressionComponent.generated.h"
 
 class UHarmoniaSkillTreeData;

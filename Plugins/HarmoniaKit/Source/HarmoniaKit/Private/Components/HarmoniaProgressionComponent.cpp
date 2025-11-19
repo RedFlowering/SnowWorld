@@ -7,6 +7,7 @@
 #include "Data/HarmoniaClassData.h"
 #include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
+#include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayEffect.h"
 
@@ -747,14 +748,17 @@ ULyraAbilitySystemComponent* UHarmoniaProgressionComponent::GetAbilitySystemComp
 		return nullptr;
 	}
 
-	// Try to get from PlayerState
-	if (APlayerState* PS = Cast<APlayerState>(Owner))
+	// Try to get from IAbilitySystemInterface
+	if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(Owner))
 	{
-		CachedAbilitySystemComponent = Cast<ULyraAbilitySystemComponent>(PS->GetAbilitySystemComponent());
+		CachedAbilitySystemComponent = Cast<ULyraAbilitySystemComponent>(ASI->GetAbilitySystemComponent());
 	}
-	else if (APlayerState* PS = Owner->GetOwner<APlayerState>())
+	else if (AActor* OwnerActor = Owner->GetOwner())
 	{
-		CachedAbilitySystemComponent = Cast<ULyraAbilitySystemComponent>(PS->GetAbilitySystemComponent());
+		if (IAbilitySystemInterface* ASI2 = Cast<IAbilitySystemInterface>(OwnerActor))
+		{
+			CachedAbilitySystemComponent = Cast<ULyraAbilitySystemComponent>(ASI2->GetAbilitySystemComponent());
+		}
 	}
 
 	return CachedAbilitySystemComponent;
