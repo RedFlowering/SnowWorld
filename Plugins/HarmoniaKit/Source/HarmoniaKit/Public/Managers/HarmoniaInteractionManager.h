@@ -17,11 +17,11 @@ class HARMONIAKIT_API UHarmoniaInteractionManager : public UGameInstanceSubsyste
     GENERATED_BODY()
 
 public:
-    /** 상호작용 시도: Context 정보를 받아 상호작용을 처리 */
+    /** Try to interact: Process interaction with given context information */
     UFUNCTION(BlueprintCallable, Category="Interaction")
     void TryInteract(const FHarmoniaInteractionContext& Context);
 
-    /** 상호작용 완료 시 발생 (블루프린트 등에서 구독 가능) */
+    /** Fired when interaction is completed (can be subscribed in Blueprint) */
     UPROPERTY(BlueprintAssignable, Category="Interaction")
     FOnInteractionCompleted OnInteractionCompleted;
 

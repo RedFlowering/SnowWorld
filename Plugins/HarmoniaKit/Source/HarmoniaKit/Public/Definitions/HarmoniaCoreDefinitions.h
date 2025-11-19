@@ -4,7 +4,7 @@
 
 #include "HarmoniaCoreDefinitions.generated.h"
 
-// ������ ���� �ĺ���
+// Harmonia universal identifier
 USTRUCT(BlueprintType, meta = (DisplayName = "HarmoniaID"))
 struct HARMONIAKIT_API FHarmoniaID
 {

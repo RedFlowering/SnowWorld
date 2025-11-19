@@ -4,7 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
+#include "Definitions/HarmoniaInteractionSystemDefinitions.h"
 #include "HarmoniaGameplayAbility_Interact.generated.h"
+
+DECLARE_LOG_CATEGORY_EXTERN(LogHarmoniaInteraction, Log, All);
 
 /**
  * Base Gameplay Ability for Harmonia Interactions
@@ -25,4 +28,7 @@ protected:
 	/** Tag to listen for */
 	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
 	FGameplayTag InteractionEventTag;
+
+	/** Derive interaction type from gameplay event tag */
+	EHarmoniaInteractionType DeriveInteractionType(const FGameplayEventData* EventData) const;
 };

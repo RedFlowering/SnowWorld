@@ -17,14 +17,14 @@ protected:
     virtual void BeginPlay() override;
 
 public:
-	/** �þ߿� �ִ� ���ͷ��ͺ� ���� (Ʈ���̽�) */
+	/** Set currently targeted interactable actor (trace) */
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
     void SetTargetActor(AActor* TargetActor);
 
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
     AActor* GetTargetActor();
 
-	/** ���� ��ȣ�ۿ� �õ� (�Է� ��� ȣ��) */
+	/** Try to interact with target (called from input) */
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
 	void Interact();
 
@@ -32,23 +32,23 @@ public:
 	void Server_TryInteract(const FHarmoniaInteractionContext& Context);
 
 protected:
-    /** ���� Ʈ���̽��� ��ȣ�ۿ� ��� (ĳ��) */
+    /** Currently traced interactable target (cached) */
     UPROPERTY()
     TObjectPtr<AActor> TargetActor = nullptr;
 
-    /** Ʈ���̽� ��������/ä�� ���� (�ʿ�� Ŀ����) */
+    /** Trace collision channel (customize if needed) */
     UPROPERTY(EditAnywhere, Category="Interaction")
     TEnumAsByte<ECollisionChannel> TraceChannel = ECC_Visibility;
 
-    /** Ʈ���̽� �Ÿ� */
+    /** Trace distance */
     UPROPERTY(EditAnywhere, Category="Interaction")
     float TraceDistance = 300.f;
 
-    /** Ʈ���̽� �� ������ ���� ������ (�ʿ��) */
+    /** Trace start offset from camera (optional) */
     UPROPERTY(EditAnywhere, Category="Interaction")
     FVector TraceStartOffset = FVector::ZeroVector;
 
-    /** �Ŵ��� ���� */
+    /** Manager reference */
     UPROPERTY()
     TObjectPtr<UHarmoniaInteractionManager> InteractionManager = nullptr;
 };
