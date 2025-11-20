@@ -2,6 +2,7 @@
 
 #include "Components/HarmoniaEnhancementSystemComponent.h"
 #include "Components/HarmoniaInventoryComponent.h"
+#include "Interfaces/IRepairStation.h"
 #include "AbilitySystemComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/DataTable.h"
