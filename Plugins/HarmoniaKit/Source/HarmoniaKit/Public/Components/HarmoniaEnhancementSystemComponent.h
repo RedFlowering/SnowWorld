@@ -352,9 +352,9 @@ protected:
 	// State
 	// ============================================================================
 
-	/** Enhanced items registry (GUID -> Enhanced Item Data) */
+	/** Enhanced items registry */
 	UPROPERTY(Replicated, SaveGame)
-	TMap<FGuid, FEnhancedItemData> EnhancedItems;
+	TArray<FEnhancedItemData> EnhancedItems;
 
 	/** Current enhancement session (if active) */
 	UPROPERTY()
@@ -450,4 +450,10 @@ protected:
 
 	/** Apply durability penalty to stat modifiers */
 	void ApplyDurabilityPenalty(FGuid ItemGUID, TArray<FEquipmentStatModifier>& InOutModifiers) const;
+
+	/** Find enhanced item by GUID */
+	FEnhancedItemData* FindEnhancedItem(FGuid ItemGUID);
+
+	/** Find enhanced item by GUID (const) */
+	const FEnhancedItemData* FindEnhancedItem(FGuid ItemGUID) const;
 };

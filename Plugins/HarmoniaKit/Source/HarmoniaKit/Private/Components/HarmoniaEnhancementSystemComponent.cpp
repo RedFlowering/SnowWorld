@@ -42,7 +42,7 @@ void UHarmoniaEnhancementSystemComponent::Initialize(UHarmoniaInventoryComponent
 
 bool UHarmoniaEnhancementSystemComponent::GetEnhancementData(FGuid ItemGUID, FEnhancedItemData& OutData) const
 {
-	if (const FEnhancedItemData* Data = EnhancedItems.Find(ItemGUID))
+	if (const FEnhancedItemData* Data = FindEnhancedItem(ItemGUID))
 	{
 		OutData = *Data;
 		return true;
@@ -53,7 +53,7 @@ bool UHarmoniaEnhancementSystemComponent::GetEnhancementData(FGuid ItemGUID, FEn
 bool UHarmoniaEnhancementSystemComponent::CanEnhanceItem(FGuid ItemGUID, int32 TargetLevel, FString& OutReason) const
 {
 	// Check if item exists
-	const FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		OutReason = TEXT("Item not found");
@@ -128,7 +128,7 @@ void UHarmoniaEnhancementSystemComponent::ServerEnhanceItem_Implementation(FGuid
 		return;
 	}
 
-	FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		return;
@@ -353,7 +353,7 @@ void UHarmoniaEnhancementSystemComponent::GetEnhancedStatModifiers(const FEnhanc
 
 bool UHarmoniaEnhancementSystemComponent::AddSocket(FGuid ItemGUID, ESocketType SocketType, bool bUnlocked)
 {
-	FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		return false;
@@ -365,7 +365,7 @@ bool UHarmoniaEnhancementSystemComponent::AddSocket(FGuid ItemGUID, ESocketType 
 
 bool UHarmoniaEnhancementSystemComponent::UnlockSocket(FGuid ItemGUID, int32 SocketIndex)
 {
-	FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData || !ItemData->Sockets.IsValidIndex(SocketIndex))
 	{
 		return false;
@@ -377,7 +377,7 @@ bool UHarmoniaEnhancementSystemComponent::UnlockSocket(FGuid ItemGUID, int32 Soc
 
 bool UHarmoniaEnhancementSystemComponent::CanInsertGem(FGuid ItemGUID, int32 SocketIndex, FHarmoniaID GemId, FString& OutReason) const
 {
-	const FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		OutReason = TEXT("Item not found");
@@ -443,7 +443,7 @@ void UHarmoniaEnhancementSystemComponent::ServerInsertGem_Implementation(FGuid I
 		return;
 	}
 
-	FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		return;
@@ -471,7 +471,7 @@ bool UHarmoniaEnhancementSystemComponent::RemoveGem(FGuid ItemGUID, int32 Socket
 
 void UHarmoniaEnhancementSystemComponent::ServerRemoveGem_Implementation(FGuid ItemGUID, int32 SocketIndex, bool bDestroyGem)
 {
-	FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData || !ItemData->Sockets.IsValidIndex(SocketIndex))
 	{
 		return;
@@ -518,7 +518,7 @@ void UHarmoniaEnhancementSystemComponent::GetInsertedGems(FGuid ItemGUID, TArray
 {
 	OutGems.Reset();
 
-	const FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		return;
@@ -543,7 +543,7 @@ void UHarmoniaEnhancementSystemComponent::GetInsertedGems(FGuid ItemGUID, TArray
 
 bool UHarmoniaEnhancementSystemComponent::CanReforgeItem(FGuid ItemGUID, FString& OutReason) const
 {
-	const FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		OutReason = TEXT("Item not found");
@@ -602,7 +602,7 @@ void UHarmoniaEnhancementSystemComponent::ServerReforgeItem_Implementation(FGuid
 		return;
 	}
 
-	FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		return;
@@ -674,7 +674,7 @@ bool UHarmoniaEnhancementSystemComponent::LockReforgeStat(FGuid ItemGUID, int32 
 
 bool UHarmoniaEnhancementSystemComponent::CanTranscendItem(FGuid ItemGUID, ETranscendenceTier TargetTier, FString& OutReason) const
 {
-	const FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		OutReason = TEXT("Item not found");
@@ -758,7 +758,7 @@ void UHarmoniaEnhancementSystemComponent::ServerTranscendItem_Implementation(FGu
 		return;
 	}
 
-	FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		return;
@@ -822,7 +822,7 @@ bool UHarmoniaEnhancementSystemComponent::GetTranscendenceConfig(ETranscendenceT
 
 bool UHarmoniaEnhancementSystemComponent::CanApplyTransmog(FGuid TargetItemGUID, FHarmoniaID AppearanceItemId, FString& OutReason) const
 {
-	const FEnhancedItemData* ItemData = EnhancedItems.Find(TargetItemGUID);
+	const FEnhancedItemData* ItemData = FindEnhancedItem(TargetItemGUID);
 	if (!ItemData)
 	{
 		OutReason = TEXT("Item not found");
@@ -882,7 +882,7 @@ void UHarmoniaEnhancementSystemComponent::ServerApplyTransmog_Implementation(FGu
 		return;
 	}
 
-	FEnhancedItemData* ItemData = EnhancedItems.Find(TargetItemGUID);
+	FEnhancedItemData* ItemData = FindEnhancedItem(TargetItemGUID);
 	if (!ItemData)
 	{
 		return;
@@ -924,7 +924,7 @@ bool UHarmoniaEnhancementSystemComponent::RemoveTransmog(FGuid ItemGUID)
 
 void UHarmoniaEnhancementSystemComponent::ServerRemoveTransmog_Implementation(FGuid ItemGUID)
 {
-	FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		return;
@@ -936,7 +936,7 @@ void UHarmoniaEnhancementSystemComponent::ServerRemoveTransmog_Implementation(FG
 
 bool UHarmoniaEnhancementSystemComponent::GetTransmogData(FGuid ItemGUID, FTransmogData& OutData) const
 {
-	const FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		return false;
@@ -952,7 +952,7 @@ bool UHarmoniaEnhancementSystemComponent::GetTransmogData(FGuid ItemGUID, FTrans
 
 void UHarmoniaEnhancementSystemComponent::DamageItemDurability(FGuid ItemGUID, float DamageAmount)
 {
-	FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		return;
@@ -972,7 +972,7 @@ void UHarmoniaEnhancementSystemComponent::DamageItemDurability(FGuid ItemGUID, f
 
 bool UHarmoniaEnhancementSystemComponent::CanRepairItem(FGuid ItemGUID, FString& OutReason) const
 {
-	const FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		OutReason = TEXT("Item not found");
@@ -1018,7 +1018,7 @@ void UHarmoniaEnhancementSystemComponent::ServerRepairItem_Implementation(FGuid 
 		return;
 	}
 
-	FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		return;
@@ -1044,7 +1044,7 @@ void UHarmoniaEnhancementSystemComponent::ServerRepairItem_Implementation(FGuid 
 
 int32 UHarmoniaEnhancementSystemComponent::GetRepairCost(FGuid ItemGUID, bool bFullRepair, float RepairAmount) const
 {
-	const FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		return 0;
@@ -1110,7 +1110,7 @@ bool UHarmoniaEnhancementSystemComponent::GetRepairKitData(FHarmoniaID RepairKit
 
 bool UHarmoniaEnhancementSystemComponent::CanUseRepairKit(FGuid ItemGUID, FHarmoniaID RepairKitId, FString& OutReason) const
 {
-	const FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		OutReason = TEXT("Item not found");
@@ -1184,7 +1184,7 @@ void UHarmoniaEnhancementSystemComponent::ServerRepairItemWithKit_Implementation
 		return;
 	}
 
-	FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		return;
@@ -1259,7 +1259,7 @@ void UHarmoniaEnhancementSystemComponent::ServerRepairItemAtStation_Implementati
 		return;
 	}
 
-	FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData || !ItemData->IsDamaged())
 	{
 		return;
@@ -1328,7 +1328,7 @@ float UHarmoniaEnhancementSystemComponent::GetDurabilityPenaltyMultiplier(FGuid 
 		return 1.0f;
 	}
 
-	const FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		return 1.0f;
@@ -1354,7 +1354,7 @@ float UHarmoniaEnhancementSystemComponent::GetDurabilityPenaltyMultiplier(FGuid 
 
 bool UHarmoniaEnhancementSystemComponent::ShouldShowDurabilityWarning(FGuid ItemGUID, float WarningThreshold) const
 {
-	const FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)
 	{
 		return false;
@@ -1382,13 +1382,18 @@ FGuid UHarmoniaEnhancementSystemComponent::CreateEnhancedItem(FHarmoniaID ItemId
 		NewItem.CurrentDurability = BaseData.MaxDurability;
 	}
 
-	EnhancedItems.Add(NewItem.ItemGUID, NewItem);
+	EnhancedItems.Add(NewItem);
 	return NewItem.ItemGUID;
 }
 
 void UHarmoniaEnhancementSystemComponent::DestroyEnhancedItem(FGuid ItemGUID, bool bWasEnhancementFailure)
 {
-	if (EnhancedItems.Remove(ItemGUID) > 0)
+	int32 RemovedCount = EnhancedItems.RemoveAll([ItemGUID](const FEnhancedItemData& Item)
+	{
+		return Item.ItemGUID == ItemGUID;
+	});
+
+	if (RemovedCount > 0)
 	{
 		OnItemDestroyed.Broadcast(ItemGUID, bWasEnhancementFailure);
 	}
@@ -1396,7 +1401,7 @@ void UHarmoniaEnhancementSystemComponent::DestroyEnhancedItem(FGuid ItemGUID, bo
 
 bool UHarmoniaEnhancementSystemComponent::ItemExists(FGuid ItemGUID) const
 {
-	return EnhancedItems.Contains(ItemGUID);
+	return FindEnhancedItem(ItemGUID) != nullptr;
 }
 
 bool UHarmoniaEnhancementSystemComponent::GetItemBaseData(FHarmoniaID ItemId, FEquipmentData& OutData) const
@@ -1564,7 +1569,7 @@ void UHarmoniaEnhancementSystemComponent::TryAutoRepair(FGuid ItemGUID)
 		return;
 	}
 
-	FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData || !ItemData->IsDamaged())
 	{
 		return;
@@ -1598,4 +1603,28 @@ void UHarmoniaEnhancementSystemComponent::ApplyDurabilityPenalty(FGuid ItemGUID,
 			Modifier.Value *= PenaltyMultiplier;
 		}
 	}
+}
+
+FEnhancedItemData* UHarmoniaEnhancementSystemComponent::FindEnhancedItem(FGuid ItemGUID)
+{
+	for (FEnhancedItemData& Item : EnhancedItems)
+	{
+		if (Item.ItemGUID == ItemGUID)
+		{
+			return &Item;
+		}
+	}
+	return nullptr;
+}
+
+const FEnhancedItemData* UHarmoniaEnhancementSystemComponent::FindEnhancedItem(FGuid ItemGUID) const
+{
+	for (const FEnhancedItemData& Item : EnhancedItems)
+	{
+		if (Item.ItemGUID == ItemGUID)
+		{
+			return &Item;
+		}
+	}
+	return nullptr;
 }
