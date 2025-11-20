@@ -59,11 +59,11 @@ void UHarmoniaGameplayAbility_Mount::ActivateAbility(
 			UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
 			if (AnimInstance)
 			{
+				FOnMontageEnded EndDelegate;
+				EndDelegate.BindUObject(this, &UHarmoniaGameplayAbility_Mount::OnMontageCompleted);
+
 				AnimInstance->Montage_Play(MountMontage);
-				AnimInstance->Montage_SetEndDelegate(
-					FOnMontageEnded::CreateUObject(this, &UHarmoniaGameplayAbility_Mount::OnMontageCompleted),
-					MountMontage
-				);
+				AnimInstance->Montage_SetEndDelegate(EndDelegate, MountMontage);
 			}
 		}
 	}
