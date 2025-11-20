@@ -7,6 +7,13 @@
 #include "GameplayTagContainer.h"
 #include "HarmoniaMovementSystemDefinitions.generated.h"
 
+// Forward Declarations
+class UGameplayAbility;
+class USkeletalMesh;
+class UAnimInstance;
+class UAnimMontage;
+class UTexture2D;
+
 // ============================================================================
 // ENUMS
 // ============================================================================
