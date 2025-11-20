@@ -61,11 +61,11 @@ void UHarmoniaGameplayAbility_Vault::ActivateAbility(
 			UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
 			if (AnimInstance)
 			{
+				FOnMontageEnded EndDelegate;
+				EndDelegate.BindUObject(this, &UHarmoniaGameplayAbility_Vault::OnMontageCompleted);
+
 				AnimInstance->Montage_Play(VaultMontage);
-				AnimInstance->Montage_SetEndDelegate(
-					FOnMontageEnded::CreateUObject(this, &UHarmoniaGameplayAbility_Vault::OnMontageCompleted),
-					VaultMontage
-				);
+				AnimInstance->Montage_SetEndDelegate(EndDelegate, VaultMontage);
 			}
 		}
 	}
