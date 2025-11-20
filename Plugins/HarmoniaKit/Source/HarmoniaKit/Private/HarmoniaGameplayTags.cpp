@@ -247,6 +247,129 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_Voice_Player_Grunt, "Sound.Voice.Player.Grunt", "Player grunt sound");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_Voice_Player_Death, "Sound.Voice.Player.Death", "Player death sound");
 
+	// ============================================================
+	// Mount System Tags
+	// ============================================================
+
+	// Input Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Mount, "InputTag.Mount", "Mount input");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Dismount, "InputTag.Dismount", "Dismount input");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_MountSpecialAbility, "InputTag.MountSpecialAbility", "Mount special ability input");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_MountSprint, "InputTag.MountSprint", "Mount sprint input");
+
+	// State Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Mounted, "State.Mounted", "Character is mounted");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Mounting, "State.Mounting", "Character is mounting");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Dismounting, "State.Dismounting", "Character is dismounting");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Mount_Sprinting, "State.Mount.Sprinting", "Mount is sprinting");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Mount_Flying, "State.Mount.Flying", "Mount is flying");
+
+	// Mount Type Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Mount_Type_Ground, "Mount.Type.Ground", "Ground mount");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Mount_Type_Flying, "Mount.Type.Flying", "Flying mount");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Mount_Type_Amphibious, "Mount.Type.Amphibious", "Amphibious mount");
+
+	// Event Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Mount_Mounted, "GameplayEvent.Mount.Mounted", "Successfully mounted");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Mount_Dismounted, "GameplayEvent.Mount.Dismounted", "Successfully dismounted");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Mount_ChargeAttack, "GameplayEvent.Mount.ChargeAttack", "Mount charge attack triggered");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Mount_Trample, "GameplayEvent.Mount.Trample", "Mount trample triggered");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Mount_AerialStrike, "GameplayEvent.Mount.AerialStrike", "Mount aerial strike triggered");
+
+	// ============================================================
+	// Fast Travel System Tags
+	// ============================================================
+
+	// Input Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_FastTravel, "InputTag.FastTravel", "Fast travel input");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_OpenFastTravelMap, "InputTag.OpenFastTravelMap", "Open fast travel map");
+
+	// State Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_FastTraveling, "State.FastTraveling", "Character is fast traveling");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_CanFastTravel, "State.CanFastTravel", "Character can fast travel");
+
+	// Waypoint Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Waypoint_Discovered, "Waypoint.Discovered", "Waypoint is discovered");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Waypoint_Active, "Waypoint.Active", "Waypoint is active");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Waypoint_Locked, "Waypoint.Locked", "Waypoint is locked");
+
+	// Event Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Waypoint_Discovered, "GameplayEvent.Waypoint.Discovered", "Waypoint discovered");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_FastTravel_Started, "GameplayEvent.FastTravel.Started", "Fast travel started");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_FastTravel_Completed, "GameplayEvent.FastTravel.Completed", "Fast travel completed");
+
+	// ============================================================
+	// Climbing and Parkour System Tags
+	// ============================================================
+
+	// Input Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Climb, "InputTag.Climb", "Climb input");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Vault, "InputTag.Vault", "Vault input");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Hang, "InputTag.Hang", "Hang input");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Mantle, "InputTag.Mantle", "Mantle input");
+
+	// State Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Climbing, "State.Climbing", "Character is climbing");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Hanging, "State.Hanging", "Character is hanging");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_WallRunning, "State.WallRunning", "Character is wall running");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Vaulting, "State.Vaulting", "Character is vaulting");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Mantling, "State.Mantling", "Character is mantling");
+
+	// Surface Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Surface_Climbable, "Surface.Climbable", "Surface is climbable");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Surface_Climbable_Rough, "Surface.Climbable.Rough", "Rough climbable surface");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Surface_Climbable_Smooth, "Surface.Climbable.Smooth", "Smooth climbable surface");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Surface_Climbable_Ledge, "Surface.Climbable.Ledge", "Ledge surface");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Surface_Climbable_Ladder, "Surface.Climbable.Ladder", "Ladder surface");
+
+	// Event Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Climbing_Started, "GameplayEvent.Climbing.Started", "Climbing started");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Climbing_Stopped, "GameplayEvent.Climbing.Stopped", "Climbing stopped");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Parkour_Vault, "GameplayEvent.Parkour.Vault", "Vault performed");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Parkour_WallJump, "GameplayEvent.Parkour.WallJump", "Wall jump performed");
+
+	// ============================================================
+	// Swimming and Diving System Tags
+	// ============================================================
+
+	// Input Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Dive, "InputTag.Dive", "Dive input");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Surface, "InputTag.Surface", "Surface input");
+
+	// State Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Swimming, "State.Swimming", "Character is swimming");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Diving, "State.Diving", "Character is diving");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Underwater, "State.Underwater", "Character is underwater");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_LowOxygen, "State.LowOxygen", "Low oxygen warning");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Drowning, "State.Drowning", "Character is drowning");
+
+	// Water Environment Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Water_Environment_Fresh, "Water.Environment.Fresh", "Freshwater environment");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Water_Environment_Salt, "Water.Environment.Salt", "Saltwater environment");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Water_Environment_Toxic, "Water.Environment.Toxic", "Toxic water environment");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Water_Environment_Lava, "Water.Environment.Lava", "Lava environment");
+
+	// Event Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Swimming_Started, "GameplayEvent.Swimming.Started", "Swimming started");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Swimming_Stopped, "GameplayEvent.Swimming.Stopped", "Swimming stopped");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Diving_Started, "GameplayEvent.Diving.Started", "Diving started");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Oxygen_Depleted, "GameplayEvent.Oxygen.Depleted", "Oxygen depleted");
+
+	// ============================================================
+	// General Movement System Tags
+	// ============================================================
+
+	// Ability Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Movement_Sprint, "Ability.Movement.Sprint", "Sprint ability");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Movement_Dash, "Ability.Movement.Dash", "Dash ability");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Movement_Slide, "Ability.Movement.Slide", "Slide ability");
+
+	// Movement Restriction Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Movement_Restricted_NoMount, "Movement.Restricted.NoMount", "Cannot mount in this area");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Movement_Restricted_NoClimb, "Movement.Restricted.NoClimb", "Cannot climb in this area");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Movement_Restricted_NoSwim, "Movement.Restricted.NoSwim", "Cannot swim in this area");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Movement_Restricted_NoFastTravel, "Movement.Restricted.NoFastTravel", "Cannot fast travel from this area");
+
 	FGameplayTag FindTagByString(const FString& TagString, bool bMatchPartialString)
 	{
 		const UGameplayTagsManager& Manager = UGameplayTagsManager::Get();

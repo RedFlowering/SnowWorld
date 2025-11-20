@@ -244,4 +244,127 @@ namespace HarmoniaGameplayTags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Sound_Voice_Player);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Sound_Voice_Player_Grunt);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Sound_Voice_Player_Death);
+
+	// ============================================================
+	// Mount System Tags
+	// ============================================================
+
+	// Input Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Mount);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Dismount);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_MountSpecialAbility);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_MountSprint);
+
+	// State Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Mounted);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Mounting);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Dismounting);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Mount_Sprinting);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Mount_Flying);
+
+	// Mount Type Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Mount_Type_Ground);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Mount_Type_Flying);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Mount_Type_Amphibious);
+
+	// Event Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Mount_Mounted);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Mount_Dismounted);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Mount_ChargeAttack);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Mount_Trample);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Mount_AerialStrike);
+
+	// ============================================================
+	// Fast Travel System Tags
+	// ============================================================
+
+	// Input Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_FastTravel);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_OpenFastTravelMap);
+
+	// State Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_FastTraveling);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_CanFastTravel);
+
+	// Waypoint Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Waypoint_Discovered);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Waypoint_Active);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Waypoint_Locked);
+
+	// Event Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Waypoint_Discovered);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_FastTravel_Started);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_FastTravel_Completed);
+
+	// ============================================================
+	// Climbing and Parkour System Tags
+	// ============================================================
+
+	// Input Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Climb);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Vault);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Hang);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Mantle);
+
+	// State Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Climbing);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Hanging);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_WallRunning);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Vaulting);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Mantling);
+
+	// Surface Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Surface_Climbable);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Surface_Climbable_Rough);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Surface_Climbable_Smooth);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Surface_Climbable_Ledge);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Surface_Climbable_Ladder);
+
+	// Event Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Climbing_Started);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Climbing_Stopped);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Parkour_Vault);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Parkour_WallJump);
+
+	// ============================================================
+	// Swimming and Diving System Tags
+	// ============================================================
+
+	// Input Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Dive);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Surface);
+
+	// State Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Swimming);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Diving);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Underwater);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_LowOxygen);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Drowning);
+
+	// Water Environment Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Water_Environment_Fresh);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Water_Environment_Salt);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Water_Environment_Toxic);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Water_Environment_Lava);
+
+	// Event Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Swimming_Started);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Swimming_Stopped);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Diving_Started);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Oxygen_Depleted);
+
+	// ============================================================
+	// General Movement System Tags
+	// ============================================================
+
+	// Ability Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Movement_Sprint);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Movement_Dash);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Movement_Slide);
+
+	// Movement Restriction Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Movement_Restricted_NoMount);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Movement_Restricted_NoClimb);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Movement_Restricted_NoSwim);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Movement_Restricted_NoFastTravel);
 }
