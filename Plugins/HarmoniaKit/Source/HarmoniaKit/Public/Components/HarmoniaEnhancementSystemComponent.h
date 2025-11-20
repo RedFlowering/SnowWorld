@@ -74,7 +74,7 @@ public:
 
 	/** Add socket to item */
 	UFUNCTION(BlueprintCallable, Category = "Enhancement|Sockets")
-	bool AddSocket(FGuid ItemGUID, ESocketType SocketType, bool bUnlocked = true);
+	bool AddSocket(FGuid ItemGUID, EGemSocketType SocketType, bool bUnlocked = true);
 
 	/** Unlock socket */
 	UFUNCTION(BlueprintCallable, Category = "Enhancement|Sockets")

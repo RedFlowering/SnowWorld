@@ -351,7 +351,7 @@ void UHarmoniaEnhancementSystemComponent::GetEnhancedStatModifiers(const FEnhanc
 // Socket/Gem System
 // ============================================================================
 
-bool UHarmoniaEnhancementSystemComponent::AddSocket(FGuid ItemGUID, ESocketType SocketType, bool bUnlocked)
+bool UHarmoniaEnhancementSystemComponent::AddSocket(FGuid ItemGUID, EGemSocketType SocketType, bool bUnlocked)
 {
 	FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
 	if (!ItemData)

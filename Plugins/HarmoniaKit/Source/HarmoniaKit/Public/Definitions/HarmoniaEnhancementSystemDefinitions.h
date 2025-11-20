@@ -29,10 +29,10 @@ enum class EEnhancementResult : uint8
 };
 
 /**
- * Socket type for gems
+ * Gem socket type
  */
 UENUM(BlueprintType)
-enum class ESocketType : uint8
+enum class EGemSocketType : uint8
 {
 	None				UMETA(DisplayName = "None"),
 	Red					UMETA(DisplayName = "Red Socket"),			// Strength/Attack gems
@@ -172,7 +172,7 @@ struct FSocketData
 
 	/** Socket type */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Socket")
-	ESocketType SocketType = ESocketType::None;
+	EGemSocketType SocketType = EGemSocketType::None;
 
 	/** Inserted gem ID (invalid if empty) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Socket")
@@ -183,12 +183,12 @@ struct FSocketData
 	bool bIsUnlocked = false;
 
 	FSocketData()
-		: SocketType(ESocketType::None)
+		: SocketType(EGemSocketType::None)
 		, InsertedGemId()
 		, bIsUnlocked(false)
 	{}
 
-	FSocketData(ESocketType InType, bool bUnlocked = true)
+	FSocketData(EGemSocketType InType, bool bUnlocked = true)
 		: SocketType(InType)
 		, InsertedGemId()
 		, bIsUnlocked(bUnlocked)
@@ -239,7 +239,7 @@ struct FGemData : public FTableRowBase
 
 	/** Compatible socket types */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gem")
-	TArray<ESocketType> CompatibleSockets;
+	TArray<EGemSocketType> CompatibleSockets;
 
 	/** Stat modifiers granted by this gem */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gem|Stats")
@@ -254,10 +254,10 @@ struct FGemData : public FTableRowBase
 	TArray<TSubclassOf<class UGameplayEffect>> GrantedEffects;
 
 	/** Check if gem can be inserted into socket type */
-	bool CanInsertIntoSocket(ESocketType SocketType) const
+	bool CanInsertIntoSocket(EGemSocketType SocketType) const
 	{
-		if (SocketType == ESocketType::Universal) return true;
-		return CompatibleSockets.Contains(SocketType) || CompatibleSockets.Contains(ESocketType::Universal);
+		if (SocketType == EGemSocketType::Universal) return true;
+		return CompatibleSockets.Contains(SocketType) || CompatibleSockets.Contains(EGemSocketType::Universal);
 	}
 };
 
