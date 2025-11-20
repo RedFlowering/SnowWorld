@@ -98,6 +98,21 @@ enum class ETranscendenceTier : uint8
 	MAX					UMETA(Hidden)
 };
 
+/**
+ * Repair kit type
+ */
+UENUM(BlueprintType)
+enum class ERepairKitType : uint8
+{
+	None				UMETA(DisplayName = "None"),
+	Basic				UMETA(DisplayName = "Basic Repair Kit"),		// Repairs 25% durability
+	Advanced			UMETA(DisplayName = "Advanced Repair Kit"),		// Repairs 50% durability
+	Professional		UMETA(DisplayName = "Professional Repair Kit"),	// Repairs 75% durability
+	Master				UMETA(DisplayName = "Master Repair Kit"),		// Repairs 100% durability
+	Magical				UMETA(DisplayName = "Magical Repair Kit"),		// Repairs 100% + bonus
+	MAX					UMETA(Hidden)
+};
+
 // ============================================================================
 // Structs
 // ============================================================================
@@ -452,6 +467,79 @@ struct FRepairConfig : public FTableRowBase
 	/** Durability restored per material */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Repair")
 	float DurabilityPerMaterial = 10.0f;
+};
+
+/**
+ * Repair kit data (DataTable row)
+ */
+USTRUCT(BlueprintType)
+struct FRepairKitData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** Repair kit ID */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Repair Kit")
+	FHarmoniaID RepairKitId = FHarmoniaID();
+
+	/** Repair kit type */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Repair Kit")
+	ERepairKitType KitType = ERepairKitType::Basic;
+
+	/** Display name */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Repair Kit")
+	FText DisplayName = FText();
+
+	/** Description */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Repair Kit")
+	FText Description = FText();
+
+	/** Icon */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Repair Kit")
+	TSoftObjectPtr<UTexture2D> Icon = nullptr;
+
+	/** Durability restored (percentage, 0.0 - 1.0) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Repair Kit", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float DurabilityRestored = 0.25f;
+
+	/** Quality bonus (adds extra durability %) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Repair Kit")
+	float QualityBonus = 0.0f;
+
+	/** Can be used in combat? */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Repair Kit")
+	bool bCanUseInCombat = false;
+
+	/** Repair time (seconds, 0 = instant) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Repair Kit")
+	float RepairTime = 0.0f;
+
+	/** Maximum item grade that can be repaired */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Repair Kit")
+	EItemGrade MaxRepairableGrade = EItemGrade::Rare;
+
+	/** Compatible equipment slots (empty = all slots) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Repair Kit")
+	TArray<EEquipmentSlot> CompatibleSlots;
+
+	/** Number of uses before consumed */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Repair Kit")
+	int32 MaxUses = 1;
+
+	/** Item grade/rarity */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Repair Kit")
+	EItemGrade Grade = EItemGrade::Common;
+
+	/** Check if can repair equipment slot */
+	bool CanRepairSlot(EEquipmentSlot Slot) const
+	{
+		return CompatibleSlots.Num() == 0 || CompatibleSlots.Contains(Slot);
+	}
+
+	/** Check if can repair item grade */
+	bool CanRepairGrade(EItemGrade ItemGrade) const
+	{
+		return ItemGrade <= MaxRepairableGrade;
+	}
 };
 
 /**

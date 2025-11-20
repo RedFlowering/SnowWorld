@@ -339,6 +339,12 @@ void UHarmoniaEnhancementSystemComponent::GetEnhancedStatModifiers(const FEnhanc
 		Modifier.Value = ReforgeStat.Value;
 		OutModifiers.Add(Modifier);
 	}
+
+	// Apply durability penalty
+	if (bEnableDurabilityPenalty)
+	{
+		ApplyDurabilityPenalty(ItemData.ItemGUID, OutModifiers);
+	}
 }
 
 // ============================================================================
@@ -958,6 +964,10 @@ void UHarmoniaEnhancementSystemComponent::DamageItemDurability(FGuid ItemGUID, f
 	{
 		OnItemDestroyed.Broadcast(ItemGUID, false);
 	}
+	else if (bAutoRepairEnabled && ItemData->GetDurabilityPercent() < AutoRepairThreshold)
+	{
+		TryAutoRepair(ItemGUID);
+	}
 }
 
 bool UHarmoniaEnhancementSystemComponent::CanRepairItem(FGuid ItemGUID, FString& OutReason) const
@@ -1077,6 +1087,280 @@ bool UHarmoniaEnhancementSystemComponent::GetRepairConfig(EItemGrade ItemGrade, 
 	}
 
 	return false;
+}
+
+bool UHarmoniaEnhancementSystemComponent::GetRepairKitData(FHarmoniaID RepairKitId, FRepairKitData& OutData) const
+{
+	if (!RepairKitDataTable)
+	{
+		return false;
+	}
+
+	FString ContextString(TEXT("GetRepairKitData"));
+	FRepairKitData* Data = RepairKitDataTable->FindRow<FRepairKitData>(FName(*RepairKitId.ToString()), ContextString);
+
+	if (Data)
+	{
+		OutData = *Data;
+		return true;
+	}
+
+	return false;
+}
+
+bool UHarmoniaEnhancementSystemComponent::CanUseRepairKit(FGuid ItemGUID, FHarmoniaID RepairKitId, FString& OutReason) const
+{
+	const FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	if (!ItemData)
+	{
+		OutReason = TEXT("Item not found");
+		return false;
+	}
+
+	if (!ItemData->IsDamaged())
+	{
+		OutReason = TEXT("Item is not damaged");
+		return false;
+	}
+
+	FRepairKitData KitData;
+	if (!GetRepairKitData(RepairKitId, KitData))
+	{
+		OutReason = TEXT("Repair kit data not found");
+		return false;
+	}
+
+	FEquipmentData BaseData;
+	if (!GetItemBaseData(ItemData->ItemId, BaseData))
+	{
+		OutReason = TEXT("Base item data not found");
+		return false;
+	}
+
+	// Check grade compatibility
+	if (!KitData.CanRepairGrade(BaseData.Grade))
+	{
+		OutReason = TEXT("Repair kit cannot repair this item grade");
+		return false;
+	}
+
+	// Check slot compatibility
+	if (!KitData.CanRepairSlot(BaseData.EquipmentSlot))
+	{
+		OutReason = TEXT("Repair kit cannot repair this equipment slot");
+		return false;
+	}
+
+	// Check combat restriction
+	if (!KitData.bCanUseInCombat && GetOwner() && GetOwner()->Implements<UGenericTeamAgentInterface>())
+	{
+		// TODO: Check if in combat
+		// For now, always allow
+	}
+
+	return true;
+}
+
+bool UHarmoniaEnhancementSystemComponent::RepairItemWithKit(FGuid ItemGUID, FHarmoniaID RepairKitId)
+{
+	if (GetOwner()->HasAuthority())
+	{
+		ServerRepairItemWithKit(ItemGUID, RepairKitId);
+		return true;
+	}
+	else
+	{
+		ServerRepairItemWithKit(ItemGUID, RepairKitId);
+		return false;
+	}
+}
+
+void UHarmoniaEnhancementSystemComponent::ServerRepairItemWithKit_Implementation(FGuid ItemGUID, FHarmoniaID RepairKitId)
+{
+	FString Reason;
+	if (!CanUseRepairKit(ItemGUID, RepairKitId, Reason))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot use repair kit: %s"), *Reason);
+		return;
+	}
+
+	FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	if (!ItemData)
+	{
+		return;
+	}
+
+	FRepairKitData KitData;
+	if (!GetRepairKitData(RepairKitId, KitData))
+	{
+		return;
+	}
+
+	// Consume repair kit from inventory
+	// TODO: Implement inventory consumption
+
+	// Calculate repair amount
+	float RepairAmount = ItemData->MaxDurability * KitData.DurabilityRestored;
+	RepairAmount += ItemData->MaxDurability * KitData.QualityBonus;
+
+	// Apply repair
+	ItemData->CurrentDurability = FMath::Min(ItemData->MaxDurability, ItemData->CurrentDurability + RepairAmount);
+
+	OnItemRepaired.Broadcast(ItemGUID, ItemData->CurrentDurability);
+}
+
+bool UHarmoniaEnhancementSystemComponent::RepairItemAtStation(FGuid ItemGUID, AActor* RepairStation, bool bFullRepair)
+{
+	if (GetOwner()->HasAuthority())
+	{
+		ServerRepairItemAtStation(ItemGUID, RepairStation, bFullRepair);
+		return true;
+	}
+	else
+	{
+		ServerRepairItemAtStation(ItemGUID, RepairStation, bFullRepair);
+		return false;
+	}
+}
+
+void UHarmoniaEnhancementSystemComponent::ServerRepairItemAtStation_Implementation(FGuid ItemGUID, AActor* RepairStation, bool bFullRepair)
+{
+	if (!RepairStation)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Repair station is null"));
+		return;
+	}
+
+	// Check if actor implements repair station interface
+	if (!RepairStation->Implements<URepairStation>())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Actor does not implement IRepairStation interface"));
+		return;
+	}
+
+	IRepairStation* Station = Cast<IRepairStation>(RepairStation);
+	if (!Station)
+	{
+		return;
+	}
+
+	// Check if station is available
+	if (!Station->Execute_IsAvailableForRepair(RepairStation, GetOwner()))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Repair station is not available"));
+		return;
+	}
+
+	// Check if station can repair this item
+	FString Reason;
+	if (!Station->Execute_CanRepairItem(RepairStation, ItemGUID, Reason))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Station cannot repair item: %s"), *Reason);
+		return;
+	}
+
+	FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	if (!ItemData || !ItemData->IsDamaged())
+	{
+		return;
+	}
+
+	// Get discounted cost from station
+	int32 BaseCost = GetRepairCost(ItemGUID, bFullRepair, 0.0f);
+	int32 DiscountedCost = Station->Execute_GetDiscountedRepairCost(RepairStation, ItemGUID, BaseCost);
+
+	// Consume currency
+	if (!ConsumeCurrency(DiscountedCost))
+	{
+		return;
+	}
+
+	// Notify station
+	Station->Execute_OnRepairStarted(RepairStation, GetOwner(), ItemGUID);
+
+	// Get station data for quality bonus
+	FRepairStationData StationData = Station->Execute_GetRepairStationData(RepairStation);
+
+	float DurabilityToRepair;
+	if (bFullRepair)
+	{
+		DurabilityToRepair = ItemData->MaxDurability - ItemData->CurrentDurability;
+	}
+	else
+	{
+		// Partial repair based on cost
+		DurabilityToRepair = ItemData->MaxDurability * 0.5f; // 50% repair
+	}
+
+	// Apply quality bonus
+	DurabilityToRepair += ItemData->MaxDurability * StationData.QualityBonus;
+
+	// Apply repair
+	ItemData->CurrentDurability = FMath::Min(ItemData->MaxDurability, ItemData->CurrentDurability + DurabilityToRepair);
+
+	// Notify station
+	Station->Execute_OnRepairCompleted(RepairStation, GetOwner(), ItemGUID, DurabilityToRepair);
+
+	OnItemRepaired.Broadcast(ItemGUID, ItemData->CurrentDurability);
+}
+
+int32 UHarmoniaEnhancementSystemComponent::GetRepairCostAtStation(FGuid ItemGUID, AActor* RepairStation, bool bFullRepair) const
+{
+	if (!RepairStation || !RepairStation->Implements<URepairStation>())
+	{
+		return GetRepairCost(ItemGUID, bFullRepair, 0.0f);
+	}
+
+	IRepairStation* Station = Cast<IRepairStation>(RepairStation);
+	if (!Station)
+	{
+		return GetRepairCost(ItemGUID, bFullRepair, 0.0f);
+	}
+
+	int32 BaseCost = GetRepairCost(ItemGUID, bFullRepair, 0.0f);
+	return Station->Execute_GetDiscountedRepairCost(RepairStation, ItemGUID, BaseCost);
+}
+
+float UHarmoniaEnhancementSystemComponent::GetDurabilityPenaltyMultiplier(FGuid ItemGUID) const
+{
+	if (!bEnableDurabilityPenalty)
+	{
+		return 1.0f;
+	}
+
+	const FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	if (!ItemData)
+	{
+		return 1.0f;
+	}
+
+	float DurabilityPercent = ItemData->GetDurabilityPercent();
+
+	// No penalty above threshold
+	if (DurabilityPercent >= DurabilityPenaltyThreshold)
+	{
+		return 1.0f;
+	}
+
+	// Linear penalty from threshold to 0
+	float PenaltyRange = DurabilityPenaltyThreshold;
+	float CurrentBelowThreshold = DurabilityPenaltyThreshold - DurabilityPercent;
+	float PenaltyRatio = CurrentBelowThreshold / PenaltyRange;
+
+	// Calculate final multiplier
+	float Penalty = MaxDurabilityPenalty * PenaltyRatio;
+	return FMath::Clamp(1.0f - Penalty, 0.0f, 1.0f);
+}
+
+bool UHarmoniaEnhancementSystemComponent::ShouldShowDurabilityWarning(FGuid ItemGUID, float WarningThreshold) const
+{
+	const FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	if (!ItemData)
+	{
+		return false;
+	}
+
+	return ItemData->GetDurabilityPercent() < WarningThreshold;
 }
 
 // ============================================================================
@@ -1267,4 +1551,51 @@ void UHarmoniaEnhancementSystemComponent::RemoveStatModifiers(const TArray<FEqui
 void UHarmoniaEnhancementSystemComponent::OnRep_EnhancedItems()
 {
 	// Handle replication
+}
+
+// ============================================================================
+// Helper Methods
+// ============================================================================
+
+void UHarmoniaEnhancementSystemComponent::TryAutoRepair(FGuid ItemGUID)
+{
+	if (!bAutoRepairEnabled)
+	{
+		return;
+	}
+
+	FEnhancedItemData* ItemData = EnhancedItems.Find(ItemGUID);
+	if (!ItemData || !ItemData->IsDamaged())
+	{
+		return;
+	}
+
+	// Try repair kits first if preferred
+	if (bAutoRepairPreferKits)
+	{
+		// TODO: Search inventory for appropriate repair kit
+		// For now, skip to currency repair
+	}
+
+	// Fall back to currency repair
+	FString Reason;
+	if (CanRepairItem(ItemGUID, Reason))
+	{
+		RepairItem(ItemGUID, true, 0.0f);
+	}
+}
+
+void UHarmoniaEnhancementSystemComponent::ApplyDurabilityPenalty(FGuid ItemGUID, TArray<FEquipmentStatModifier>& InOutModifiers) const
+{
+	float PenaltyMultiplier = GetDurabilityPenaltyMultiplier(ItemGUID);
+
+	// Apply penalty to all stat modifiers
+	for (FEquipmentStatModifier& Modifier : InOutModifiers)
+	{
+		// Only apply to flat and percentage modifiers, not overrides
+		if (Modifier.ModifierType != EStatModifierType::Override)
+		{
+			Modifier.Value *= PenaltyMultiplier;
+		}
+	}
 }

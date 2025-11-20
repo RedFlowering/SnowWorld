@@ -168,17 +168,45 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Enhancement|Repair")
 	bool CanRepairItem(FGuid ItemGUID, FString& OutReason) const;
 
-	/** Repair item */
+	/** Repair item at repair station */
 	UFUNCTION(BlueprintCallable, Category = "Enhancement|Repair")
 	bool RepairItem(FGuid ItemGUID, bool bFullRepair = true, float RepairAmount = 0.0f);
+
+	/** Repair item using repair kit */
+	UFUNCTION(BlueprintCallable, Category = "Enhancement|Repair")
+	bool RepairItemWithKit(FGuid ItemGUID, FHarmoniaID RepairKitId);
+
+	/** Repair item at specific repair station */
+	UFUNCTION(BlueprintCallable, Category = "Enhancement|Repair")
+	bool RepairItemAtStation(FGuid ItemGUID, AActor* RepairStation, bool bFullRepair = true);
 
 	/** Get repair cost */
 	UFUNCTION(BlueprintPure, Category = "Enhancement|Repair")
 	int32 GetRepairCost(FGuid ItemGUID, bool bFullRepair = true, float RepairAmount = 0.0f) const;
 
+	/** Get repair cost at specific station */
+	UFUNCTION(BlueprintCallable, Category = "Enhancement|Repair")
+	int32 GetRepairCostAtStation(FGuid ItemGUID, AActor* RepairStation, bool bFullRepair = true) const;
+
 	/** Get repair config */
 	UFUNCTION(BlueprintPure, Category = "Enhancement|Repair")
 	bool GetRepairConfig(EItemGrade ItemGrade, FRepairConfig& OutConfig) const;
+
+	/** Get repair kit data */
+	UFUNCTION(BlueprintPure, Category = "Enhancement|Repair")
+	bool GetRepairKitData(FHarmoniaID RepairKitId, FRepairKitData& OutData) const;
+
+	/** Can use repair kit on item? */
+	UFUNCTION(BlueprintCallable, Category = "Enhancement|Repair")
+	bool CanUseRepairKit(FGuid ItemGUID, FHarmoniaID RepairKitId, FString& OutReason) const;
+
+	/** Get durability penalty multiplier (0.0 - 1.0) based on current durability */
+	UFUNCTION(BlueprintPure, Category = "Enhancement|Repair")
+	float GetDurabilityPenaltyMultiplier(FGuid ItemGUID) const;
+
+	/** Check if item is damaged enough to show warnings */
+	UFUNCTION(BlueprintPure, Category = "Enhancement|Repair")
+	bool ShouldShowDurabilityWarning(FGuid ItemGUID, float WarningThreshold = 0.25f) const;
 
 	// ============================================================================
 	// Item Management
@@ -268,6 +296,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Config")
 	TObjectPtr<UDataTable> RepairConfigTable = nullptr;
 
+	/** Repair kit data table */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Config")
+	TObjectPtr<UDataTable> RepairKitDataTable = nullptr;
+
 	/** Equipment data table (base item data) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Config")
 	TObjectPtr<UDataTable> EquipmentDataTable = nullptr;
@@ -291,6 +323,30 @@ protected:
 	/** Durability loss on death */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Config")
 	float DurabilityLossOnDeath = 10.0f;
+
+	/** Enable durability-based performance penalty? */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Config|Durability")
+	bool bEnableDurabilityPenalty = true;
+
+	/** Durability threshold below which penalty starts (0.0 - 1.0) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Config|Durability", meta = (EditCondition = "bEnableDurabilityPenalty", ClampMin = "0.0", ClampMax = "1.0"))
+	float DurabilityPenaltyThreshold = 0.5f; // 50%
+
+	/** Maximum stat penalty at 0 durability (0.0 - 1.0) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Config|Durability", meta = (EditCondition = "bEnableDurabilityPenalty", ClampMin = "0.0", ClampMax = "1.0"))
+	float MaxDurabilityPenalty = 0.5f; // 50% stat reduction at 0 durability
+
+	/** Auto repair enabled? */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Config|Auto Repair")
+	bool bAutoRepairEnabled = false;
+
+	/** Auto repair threshold (repair when durability drops below this %) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Config|Auto Repair", meta = (EditCondition = "bAutoRepairEnabled", ClampMin = "0.0", ClampMax = "1.0"))
+	float AutoRepairThreshold = 0.25f; // 25%
+
+	/** Auto repair uses repair kits first? */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Config|Auto Repair", meta = (EditCondition = "bAutoRepairEnabled"))
+	bool bAutoRepairPreferKits = true;
 
 	// ============================================================================
 	// State
@@ -378,4 +434,20 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void ServerRepairItem(FGuid ItemGUID, bool bFullRepair, float RepairAmount);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRepairItemWithKit(FGuid ItemGUID, FHarmoniaID RepairKitId);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRepairItemAtStation(FGuid ItemGUID, AActor* RepairStation, bool bFullRepair);
+
+	// ============================================================================
+	// Helper Methods
+	// ============================================================================
+
+	/** Try auto repair for item */
+	void TryAutoRepair(FGuid ItemGUID);
+
+	/** Apply durability penalty to stat modifiers */
+	void ApplyDurabilityPenalty(FGuid ItemGUID, TArray<FEquipmentStatModifier>& InOutModifiers) const;
 };
