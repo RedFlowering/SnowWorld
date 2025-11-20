@@ -6,6 +6,7 @@
 #include "AbilitySystemComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/DataTable.h"
+#include "GenericTeamAgentInterface.h"
 
 UHarmoniaEnhancementSystemComponent::UHarmoniaEnhancementSystemComponent()
 {
