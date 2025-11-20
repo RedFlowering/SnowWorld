@@ -37,13 +37,13 @@ protected:
 
 	/** Animation callbacks */
 	UFUNCTION()
-	void OnMontageCompleted();
+	void OnMontageCompleted(UAnimMontage* Montage, bool bInterrupted);
 
 	UFUNCTION()
-	void OnMontageCancelled();
+	void OnMontageCancelled(UAnimMontage* Montage, bool bInterrupted);
 
 	UFUNCTION()
-	void OnMontageInterrupted();
+	void OnMontageInterrupted(UAnimMontage* Montage, bool bInterrupted);
 
 protected:
 	/** Tags to apply while mounting */
@@ -64,7 +64,7 @@ protected:
 
 	/** Cached mount component */
 	UPROPERTY()
-	TObjectPtr<UHarmoniaMountComponent> MountComponent;
+	mutable TObjectPtr<UHarmoniaMountComponent> MountComponent;
 
 private:
 	UHarmoniaMountComponent* GetMountComponent() const;

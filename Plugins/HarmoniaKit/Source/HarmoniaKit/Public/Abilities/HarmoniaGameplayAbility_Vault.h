@@ -24,7 +24,7 @@ protected:
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 
 	UFUNCTION()
-	void OnMontageCompleted();
+	void OnMontageCompleted(UAnimMontage* Montage, bool bInterrupted);
 
 protected:
 	/** Vault animation montage */

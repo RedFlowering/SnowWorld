@@ -30,10 +30,23 @@ void UHarmoniaGameplayAbility_FastTravel::ActivateAbility(
 	}
 
 	// Get target location from event data
-	if (TriggerEventData)
+	if (TriggerEventData && TriggerEventData->TargetData.IsValid(0))
 	{
-		TargetLocation = TriggerEventData->TargetLocation;
-		// TargetRotation can be extracted from TargetData if needed
+		FGameplayAbilityTargetDataHandle TargetDataHandle = TriggerEventData->TargetData;
+		if (TargetDataHandle.IsValid(0))
+		{
+			const FGameplayAbilityTargetData* Data = TargetDataHandle.Get(0);
+			if (Data)
+			{
+				TArray<TWeakObjectPtr<AActor>> TargetActors = Data->GetActors();
+				if (TargetActors.Num() > 0 && TargetActors[0].IsValid())
+				{
+					AActor* TargetActor = TargetActors[0].Get();
+					TargetLocation = TargetActor->GetActorLocation();
+					TargetRotation = TargetActor->GetActorRotation();
+				}
+			}
+		}
 	}
 
 	// Send start event
@@ -132,7 +145,7 @@ void UHarmoniaGameplayAbility_FastTravel::CompleteTeleport()
 	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
 	{
 		FGameplayEventData EventData;
-		EventData.TargetLocation = TargetLocation;
+		EventData.EventMagnitude = TargetLocation.Size();
 		ASC->HandleGameplayEvent(HarmoniaGameplayTags::GameplayEvent_FastTravel_Completed, &EventData);
 	}
 

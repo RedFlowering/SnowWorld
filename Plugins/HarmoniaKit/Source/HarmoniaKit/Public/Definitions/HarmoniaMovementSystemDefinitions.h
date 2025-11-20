@@ -206,7 +206,7 @@ struct FHarmoniaMountData : public FTableRowBase
 
 	/** Allowed weapon types while mounted */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mount|Combat")
-	TArray<FGameplayTag> AllowedWeaponTags;
+	FGameplayTagContainer AllowedWeaponTags;
 
 	/** Mount special ability (charge, aerial strike, etc.) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mount|Combat")

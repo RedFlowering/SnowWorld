@@ -49,7 +49,7 @@ void UHarmoniaGameplayAbility_Vault::ActivateAbility(
 	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
 	{
 		FGameplayEventData EventData;
-		EventData.TargetLocation = VaultLocation;
+		EventData.EventMagnitude = VaultLocation.Size();
 		ASC->HandleGameplayEvent(HarmoniaGameplayTags::GameplayEvent_Parkour_Vault, &EventData);
 	}
 
@@ -128,7 +128,7 @@ bool UHarmoniaGameplayAbility_Vault::CanActivateAbility(
 	return true;
 }
 
-void UHarmoniaGameplayAbility_Vault::OnMontageCompleted()
+void UHarmoniaGameplayAbility_Vault::OnMontageCompleted(UAnimMontage* Montage, bool bInterrupted)
 {
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }

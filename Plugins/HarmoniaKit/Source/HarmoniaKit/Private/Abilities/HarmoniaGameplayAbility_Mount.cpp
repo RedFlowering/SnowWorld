@@ -106,7 +106,7 @@ bool UHarmoniaGameplayAbility_Mount::CanActivateAbility(
 	return MountComp->CanMount();
 }
 
-void UHarmoniaGameplayAbility_Mount::OnMontageCompleted()
+void UHarmoniaGameplayAbility_Mount::OnMontageCompleted(UAnimMontage* Montage, bool bInterrupted)
 {
 	UHarmoniaMountComponent* MountComp = GetMountComponent();
 	if (MountComp)
@@ -119,14 +119,14 @@ void UHarmoniaGameplayAbility_Mount::OnMontageCompleted()
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UHarmoniaGameplayAbility_Mount::OnMontageCancelled()
+void UHarmoniaGameplayAbility_Mount::OnMontageCancelled(UAnimMontage* Montage, bool bInterrupted)
 {
 	bool bReplicateEndAbility = true;
 	bool bWasCancelled = true;
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UHarmoniaGameplayAbility_Mount::OnMontageInterrupted()
+void UHarmoniaGameplayAbility_Mount::OnMontageInterrupted(UAnimMontage* Montage, bool bInterrupted)
 {
 	bool bReplicateEndAbility = true;
 	bool bWasCancelled = true;
