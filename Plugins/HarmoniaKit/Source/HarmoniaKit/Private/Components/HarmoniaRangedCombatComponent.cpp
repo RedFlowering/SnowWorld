@@ -867,8 +867,10 @@ UAbilitySystemComponent* UHarmoniaRangedCombatComponent::GetAbilitySystemCompone
 		return nullptr;
 	}
 
-	CachedAbilitySystemComponent = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Owner);
-	return CachedAbilitySystemComponent;
+	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Owner);
+	// Cache it using const_cast since this is a lazy initialization pattern
+	const_cast<UHarmoniaRangedCombatComponent*>(this)->CachedAbilitySystemComponent = ASC;
+	return ASC;
 }
 
 UHarmoniaLockOnComponent* UHarmoniaRangedCombatComponent::GetLockOnComponent() const
@@ -884,8 +886,10 @@ UHarmoniaLockOnComponent* UHarmoniaRangedCombatComponent::GetLockOnComponent() c
 		return nullptr;
 	}
 
-	CachedLockOnComponent = Owner->FindComponentByClass<UHarmoniaLockOnComponent>();
-	return CachedLockOnComponent;
+	UHarmoniaLockOnComponent* LockOn = Owner->FindComponentByClass<UHarmoniaLockOnComponent>();
+	// Cache it using const_cast since this is a lazy initialization pattern
+	const_cast<UHarmoniaRangedCombatComponent*>(this)->CachedLockOnComponent = LockOn;
+	return LockOn;
 }
 
 // ============================================================================
