@@ -36,25 +36,16 @@
     {
       "Name": "HarmoniaOnlineSubsystem",
       "Type": "Runtime",
-      "LoadingPhase": "Default"
+      "LoadingPhase": "Default",
+      "SupportedTargetPlatforms": [ "Win64" ]
     },
     {
-      "Name": "HarmoniaGameService",
-      "Type": "Runtime",
-      "LoadingPhase": "Default"
-    },
-    {
-      "Name": "HarmoniaWorldGenerator",
+      "Name": "HarmoniaStory",
       "Type": "Runtime",
       "LoadingPhase": "Default"
     }
   ],
   "Plugins": [
-    {
-      "Name": "ALS",
-      "Enabled": true,
-      "SupportedTargetPlatforms": [ "Win64" ]
-    },
     {
       "Name": "CommonUI",
       "Enabled": true
@@ -81,6 +72,10 @@
     },
     {
       "Name": "SenseSystem",
+      "Enabled": true
+    },
+    {
+      "Name": "ALS",
       "Enabled": true
     }
   ]

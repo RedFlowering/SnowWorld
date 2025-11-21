@@ -23,7 +23,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestReadyToComplete, FHarmoniaI
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnQuestCompleted, FHarmoniaID, QuestId, const FQuestData&, QuestData, const TArray<FQuestReward>&, Rewards);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestFailed, FHarmoniaID, QuestId, const FQuestData&, QuestData);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestAbandoned, FHarmoniaID, QuestId, const FQuestData&, QuestData);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestUnlocked, FHarmoniaID, QuestId, const FQuestData&, QuestData);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestEventTriggered, FHarmoniaID, QuestId, const FQuestEvent&, Event);
 
 /**
  * HarmoniaQuestComponent
@@ -598,6 +600,10 @@ public:
 	/** Called when a quest is unlocked (becomes available) */
 	UPROPERTY(BlueprintAssignable, Category = "Quest|Events")
 	FOnQuestUnlocked OnQuestUnlocked;
+
+	/** Called when a quest event is triggered */
+	UPROPERTY(BlueprintAssignable, Category = "Quest|Events")
+	FOnQuestEventTriggered OnQuestEventTriggered;
 
 	//~==============================================
 	//~ Save/Load System

@@ -7,6 +7,8 @@
 #include "Definitions/HarmoniaCoreDefinitions.h"
 #include "HarmoniaQuestSystemDefinitions.generated.h"
 
+class ULevelSequence;
+
 /**
  * Quest state enum
  */
@@ -303,6 +305,10 @@ struct FQuestReward
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
 	FHarmoniaID QuestToUnlock = FHarmoniaID();
 
+	// Journal Entry ID to unlock (for Custom/Journal reward)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FHarmoniaID JournalEntryToUnlock = FHarmoniaID();
+
 	FQuestReward()
 		: RewardType(EQuestRewardType::None)
 		, ExperienceAmount(0)
@@ -312,6 +318,7 @@ struct FQuestReward
 		, RecipeId()
 		, TagsToGrant()
 		, QuestToUnlock()
+		, JournalEntryToUnlock()
 	{}
 };
 
@@ -473,12 +480,17 @@ struct FQuestDialogue
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
 	TArray<FText> FailureDialogues;
 
+	// Dialogue Tree to play when starting quest (Soft reference to avoid circular dependency)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest", meta = (AllowedClasses = "/Script/HarmoniaStory.HarmoniaDialogueTree"))
+	TSoftObjectPtr<UDataAsset> StartDialogueTree;
+
 	FQuestDialogue()
 		: StartDialogues()
 		, InProgressDialogues()
 		, ReadyToCompleteDialogues()
 		, CompletionDialogues()
 		, FailureDialogues()
+		, StartDialogueTree(nullptr)
 	{}
 };
 
@@ -663,6 +675,10 @@ struct FQuestEvent
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
 	FHarmoniaID TargetQuestId;
 
+	// Cutscene to play (for PlayCutscene event type)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	TSoftObjectPtr<ULevelSequence> CutsceneToPlay;
+
 	FQuestEvent()
 		: TriggerType(EQuestEventTrigger::OnStart)
 		, EventType(EQuestEventType::None)
@@ -673,6 +689,7 @@ struct FQuestEvent
 		, CustomEventName(NAME_None)
 		, BonusReward()
 		, TargetQuestId()
+		, CutsceneToPlay(nullptr)
 	{}
 };
 

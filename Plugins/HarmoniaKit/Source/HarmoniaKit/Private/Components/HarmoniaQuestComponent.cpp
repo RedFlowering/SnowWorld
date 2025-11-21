@@ -1693,6 +1693,9 @@ void UHarmoniaQuestComponent::TriggerQuestEvents(FHarmoniaID QuestId, EQuestEven
 
 void UHarmoniaQuestComponent::ExecuteQuestEvent(const FQuestEvent& Event, FHarmoniaID QuestId)
 {
+	// Broadcast event for external systems (e.g. Storytelling)
+	OnQuestEventTriggered.Broadcast(QuestId, Event);
+
 	switch (Event.EventType)
 	{
 		case EQuestEventType::SpawnActor:

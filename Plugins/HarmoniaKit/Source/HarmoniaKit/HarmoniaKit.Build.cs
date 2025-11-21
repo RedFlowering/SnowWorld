@@ -32,8 +32,9 @@ public class HarmoniaKit : ModuleRules
                 "NavigationSystem", // For waypoint pathfinding
                 "AIModule", // For AI navigation
                 "RenderCore", // For GWhiteTexture in FogOfWarRenderer (client-side rendering)
-                "Niagara" // For Crystal Resonator VFX
-                // Note: RHI, ImageWrapper are in HarmoniaEditor module (editor-only texture capture)
+                "Niagara", // For Crystal Resonator VFX
+                "LevelSequence", // For cutscenes
+                "MovieScene" // For cutscenes
             });
     }
 }
