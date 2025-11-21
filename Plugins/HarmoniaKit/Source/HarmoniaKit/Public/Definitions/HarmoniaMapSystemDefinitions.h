@@ -283,6 +283,43 @@ struct FMapPingData
 };
 
 /**
+ * Struct for map bookmark data
+ */
+USTRUCT(BlueprintType)
+struct FMapBookmark
+{
+	GENERATED_BODY()
+
+	// Bookmark name
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bookmark")
+	FText BookmarkName;
+
+	// World position
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bookmark")
+	FVector WorldPosition;
+
+	// Icon for this bookmark
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bookmark")
+	TObjectPtr<UTexture2D> Icon;
+
+	// Color for this bookmark
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bookmark")
+	FLinearColor Color;
+
+	// Whether this bookmark is visible on the map
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bookmark")
+	bool bVisible = true;
+
+	FMapBookmark()
+		: BookmarkName(FText::GetEmpty())
+		, WorldPosition(FVector::ZeroVector)
+		, Icon(nullptr)
+		, Color(FLinearColor::White)
+		, bVisible(true)
+	{}
+};
+
+/**
  * Data asset for map configuration
  */
 UCLASS(BlueprintType)

@@ -433,5 +433,96 @@ bool UHarmoniaInventoryComponent::ServerSwapSlots_Validate(int32 SlotA, int32 Sl
 	return true;
 }
 
-// [CODE CLEANUP] ServerClear RPC removed - it was always disabled for security (returned false in validation)
-// If clearing inventory from clients is needed in the future, implement proper GM/Admin permission checks
+void UHarmoniaInventoryComponent::RequestSortInventory(EInventorySortMethod Method)
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		SortInventory(Method);
+	}
+	else
+	{
+		ServerSortInventory(Method);
+	}
+}
+
+void UHarmoniaInventoryComponent::SortInventory(EInventorySortMethod Method)
+{
+	// Server-only execution
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
+	// Sort logic
+	InventoryData.Slots.Sort([Method](const FInventorySlot& A, const FInventorySlot& B)
+	{
+		// Empty slots always go to the end
+		bool bAValid = A.ItemID.IsValid() && A.Count > 0;
+		bool bBValid = B.ItemID.IsValid() && B.Count > 0;
+
+		if (bAValid != bBValid)
+		{
+			return bAValid; // Valid items come first
+		}
+
+		if (!bAValid && !bBValid)
+		{
+			return false; // Both empty, keep order
+		}
+
+		// Both are valid, sort based on method
+		switch (Method)
+		{
+		case EInventorySortMethod::Name:
+			// Sort by ID (Name)
+			if (A.ItemID.Id != B.ItemID.Id)
+			{
+				return A.ItemID.Id.LexicalLess(B.ItemID.Id);
+			}
+			break;
+
+		case EInventorySortMethod::Count:
+			// Sort by Count (Descending)
+			if (A.Count != B.Count)
+			{
+				return A.Count > B.Count;
+			}
+			break;
+
+		case EInventorySortMethod::Type:
+		case EInventorySortMethod::Rarity:
+			// Fallback to Name sort for now as Type/Rarity requires lookup
+			if (A.ItemID.Id != B.ItemID.Id)
+			{
+				return A.ItemID.Id.LexicalLess(B.ItemID.Id);
+			}
+			break;
+		}
+
+		// Secondary sort: Name (if primary sort was equal or not Name)
+		if (Method != EInventorySortMethod::Name)
+		{
+			return A.ItemID.Id.LexicalLess(B.ItemID.Id);
+		}
+
+		return false;
+	});
+
+	// Re-assign indices
+	for (int32 i = 0; i < InventoryData.Slots.Num(); ++i)
+	{
+		InventoryData.Slots[i].Index = i;
+	}
+
+	OnInventoryChanged.Broadcast(); // Server-side broadcast
+}
+
+void UHarmoniaInventoryComponent::ServerSortInventory_Implementation(EInventorySortMethod Method)
+{
+	SortInventory(Method);
+}
+
+bool UHarmoniaInventoryComponent::ServerSortInventory_Validate(EInventorySortMethod Method)
+{
+	return true;
+}

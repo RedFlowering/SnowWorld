@@ -52,6 +52,10 @@ public:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Map|Pings")
 	TArray<FMapPingData> ActivePings;
 
+	// Player bookmarks (replicated to owner only)
+	UPROPERTY(ReplicatedUsing = OnRep_Bookmarks, BlueprintReadOnly, Category = "Map|Bookmarks")
+	TArray<FMapBookmark> Bookmarks;
+
 	// Exploration radius around the player
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map|Exploration")
 	float ExplorationRadius = 1000.0f;
@@ -118,6 +122,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Map|Pings")
 	TArray<FMapPingData> GetActivePings() const { return ActivePings; }
 
+	// Add a bookmark
+	UFUNCTION(BlueprintCallable, Category = "Map|Bookmarks")
+	void AddBookmark(const FText& Name, const FVector& Location, const FLinearColor& Color = FLinearColor::White);
+
+	// Remove a bookmark
+	UFUNCTION(BlueprintCallable, Category = "Map|Bookmarks")
+	void RemoveBookmark(int32 BookmarkIndex);
+
+	// Get all bookmarks
+	UFUNCTION(BlueprintCallable, Category = "Map|Bookmarks")
+	TArray<FMapBookmark> GetBookmarks() const { return Bookmarks; }
+
 	// Get player world position
 	UFUNCTION(BlueprintCallable, Category = "Map")
 	FVector GetPlayerWorldPosition() const;
@@ -174,6 +190,18 @@ protected:
 	// Server RPC for discovering locations
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerDiscoverLocation(const FMapLocationData& Location);
+
+	// Server RPC for adding bookmarks
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerAddBookmark(const FMapBookmark& Bookmark);
+
+	// Server RPC for removing bookmarks
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRemoveBookmark(int32 BookmarkIndex);
+
+	// Replication notify for bookmarks
+	UFUNCTION()
+	void OnRep_Bookmarks();
 
 	// Multicast RPC for broadcasting ping creation (pings are shared with all players)
 	UFUNCTION(NetMulticast, Reliable)

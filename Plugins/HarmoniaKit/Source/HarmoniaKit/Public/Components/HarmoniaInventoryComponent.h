@@ -12,6 +12,15 @@ class AHarmoniaItemActor;
 // Inventory event delegate
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryChanged);
 
+UENUM(BlueprintType)
+enum class EInventorySortMethod : uint8
+{
+	Name,
+	Count,
+	Type,
+	Rarity
+};
+
 UCLASS(ClassGroup = (Harmonia), meta = (BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaInventoryComponent : public UActorComponent
 {
@@ -44,6 +53,9 @@ public:
 	void RequestSwapSlots(int32 SlotA, int32 SlotB);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void RequestSortInventory(EInventorySortMethod Method);
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void RequestClear();
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
@@ -73,6 +85,11 @@ public:
 	 */
 	void SwapSlots(int32 SlotA, int32 SlotB);
 
+	/**
+	 * Sort inventory items (Server-only, internal use)
+	 */
+	void SortInventory(EInventorySortMethod Method);
+
 protected:
 	void PickupItem(AHarmoniaItemActor* Item);
 
@@ -92,6 +109,9 @@ protected:
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerSwapSlots(int32 SlotA, int32 SlotB);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSortInventory(EInventorySortMethod Method);
 
 	/**
 	 * Clear entire inventory (Server-only)

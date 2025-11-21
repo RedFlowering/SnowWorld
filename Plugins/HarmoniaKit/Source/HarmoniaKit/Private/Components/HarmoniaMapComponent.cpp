@@ -62,6 +62,9 @@ void UHarmoniaMapComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 
 	// Pings are shared with all clients (for team coordination)
 	DOREPLIFETIME(UHarmoniaMapComponent, ActivePings);
+
+	// Bookmarks are owner only
+	DOREPLIFETIME_CONDITION(UHarmoniaMapComponent, Bookmarks, COND_OwnerOnly);
 }
 
 void UHarmoniaMapComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -111,6 +114,12 @@ void UHarmoniaMapComponent::OnRep_DiscoveredLocations()
 	{
 		OnLocationDiscovered.Broadcast(DiscoveredLocations.Last());
 	}
+}
+
+void UHarmoniaMapComponent::OnRep_Bookmarks()
+{
+	// Optional: Broadcast event if UI needs to update immediately
+	// OnBookmarksChanged.Broadcast();
 }
 
 bool UHarmoniaMapComponent::IsLocationExplored(const FVector& WorldLocation) const
@@ -315,6 +324,46 @@ void UHarmoniaMapComponent::ClearAllPings()
 	}
 
 	ActivePings.Empty();
+}
+
+void UHarmoniaMapComponent::AddBookmark(const FText& Name, const FVector& Location, const FLinearColor& Color)
+{
+	if (GetOwnerRole() == ROLE_Authority)
+	{
+		FMapBookmark NewBookmark;
+		NewBookmark.BookmarkName = Name;
+		NewBookmark.WorldPosition = Location;
+		NewBookmark.Color = Color;
+		NewBookmark.bVisible = true;
+
+		Bookmarks.Add(NewBookmark);
+		// OnRep_Bookmarks will be called on client
+	}
+	else
+	{
+		FMapBookmark NewBookmark;
+		NewBookmark.BookmarkName = Name;
+		NewBookmark.WorldPosition = Location;
+		NewBookmark.Color = Color;
+		NewBookmark.bVisible = true;
+		
+		ServerAddBookmark(NewBookmark);
+	}
+}
+
+void UHarmoniaMapComponent::RemoveBookmark(int32 BookmarkIndex)
+{
+	if (GetOwnerRole() == ROLE_Authority)
+	{
+		if (Bookmarks.IsValidIndex(BookmarkIndex))
+		{
+			Bookmarks.RemoveAt(BookmarkIndex);
+		}
+	}
+	else
+	{
+		ServerRemoveBookmark(BookmarkIndex);
+	}
 }
 
 FVector UHarmoniaMapComponent::GetPlayerWorldPosition() const
@@ -643,6 +692,35 @@ bool UHarmoniaMapComponent::ServerDiscoverLocation_Validate(const FMapLocationDa
 		return false;
 	}
 
+	return true;
+}
+
+void UHarmoniaMapComponent::ServerAddBookmark_Implementation(const FMapBookmark& Bookmark)
+{
+	// Add directly to bookmarks array
+	if (Bookmarks.Num() < 100) // Hard limit
+	{
+		Bookmarks.Add(Bookmark);
+	}
+}
+
+bool UHarmoniaMapComponent::ServerAddBookmark_Validate(const FMapBookmark& Bookmark)
+{
+	// Basic validation
+	if (Bookmark.BookmarkName.IsEmpty())
+	{
+		return false;
+	}
+	return true;
+}
+
+void UHarmoniaMapComponent::ServerRemoveBookmark_Implementation(int32 BookmarkIndex)
+{
+	RemoveBookmark(BookmarkIndex);
+}
+
+bool UHarmoniaMapComponent::ServerRemoveBookmark_Validate(int32 BookmarkIndex)
+{
 	return true;
 }
 
