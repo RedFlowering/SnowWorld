@@ -43,6 +43,11 @@
       "Name": "HarmoniaStory",
       "Type": "Runtime",
       "LoadingPhase": "Default"
+    },
+    {
+      "Name": "HarmoniaWorldGenerator",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
     }
   ],
   "Plugins": [

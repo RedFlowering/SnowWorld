@@ -1506,130 +1506,37 @@ void UHarmoniaWorldGeneratorSubsystem::AsyncGenerationWorker(
                 }
 
                 ProcessedChunks++;
-                const float Progress = (float)ProcessedChunks / (float)TotalChunks * 0.4f;
-                UpdateProgress(Progress);
+                UpdateProgress(0.4f * (float)ProcessedChunks / (float)TotalChunks);
             }
         }
+
+        // Phase 2: Apply erosion if enabled (10% of progress)
+        UpdateProgress(0.4f);
 
         if (bCancelRequested) { CompleteAsyncGeneration(HeightData, Objects, false); return; }
 
-        // Phase 2: Apply Erosion (20% of progress)
-        if (Config.ErosionSettings.bEnableErosion && Config.ErosionSettings.ErosionIterations > 0)
+        if (Config.ErosionSettings.bEnableErosion)
         {
-            UpdateProgress(0.4f);
-
-            TArray<float> HeightMapFloat;
-            HeightMapFloat.SetNumUninitialized(HeightData.Num());
-            for (int32 i = 0; i < HeightData.Num(); ++i)
-            {
-                HeightMapFloat[i] = (float)HeightData[i] / 65535.f;
-            }
-
-            FRandomStream Random(Config.Seed + 5000);
-            const int32 TotalIterations = Config.ErosionSettings.ErosionIterations;
-
-            for (int32 Iteration = 0; Iteration < TotalIterations && !bCancelRequested; ++Iteration)
-            {
-                SimulateDroplet(HeightMapFloat, Config, Random);
-
-                if (Iteration % FMath::Max(1, TotalIterations / 20) == 0)
-                {
-                    const float ErosionProgress = (float)Iteration / (float)TotalIterations;
-                    UpdateProgress(0.4f + ErosionProgress * 0.2f);
-                }
-            }
-
-            for (int32 i = 0; i < HeightData.Num(); ++i)
-            {
-                HeightData[i] = FMath::Clamp(
-                    FMath::RoundToInt(HeightMapFloat[i] * 65535.f),
-                    0,
-                    65535
-                );
-            }
+            ApplyErosion(Config, HeightData);
         }
+
+        // Phase 3: Generate objects (50% of progress)
+        UpdateProgress(0.5f);
 
         if (bCancelRequested) { CompleteAsyncGeneration(HeightData, Objects, false); return; }
 
-        // Phase 3: Generate Objects (40% of progress)
-        UpdateProgress(0.6f);
-
-        const int32 TotalTiles = Config.SizeX * Config.SizeY;
-        const int32 ApproxObjectCount = FMath::CeilToInt(TotalTiles * Config.ObjectDensity);
-        Objects.Reserve(ApproxObjectCount);
-
-        ProcessedChunks = 0;
-
-        for (int32 ChunkY = 0; ChunkY < ChunksY && !bCancelRequested; ++ChunkY)
-        {
-            for (int32 ChunkX = 0; ChunkX < ChunksX && !bCancelRequested; ++ChunkX)
-            {
-                const int32 StartX = ChunkX * ChunkSize;
-                const int32 StartY = ChunkY * ChunkSize;
-                const int32 EndX = FMath::Min(StartX + ChunkSize, Config.SizeX);
-                const int32 EndY = FMath::Min(StartY + ChunkSize, Config.SizeY);
-
-                for (int32 Y = StartY; Y < EndY; ++Y)
-                {
-                    for (int32 X = StartX; X < EndX; ++X)
-                    {
-                        int32 LocationSeed = Config.Seed + X * 73856093 + Y * 19349663;
-                        FRandomStream Random(LocationSeed);
-
-                        if (!IsValidObjectLocation(X, Y, HeightData, Config))
-                        {
-                            continue;
-                        }
-
-                        if (Random.FRand() >= Config.ObjectDensity)
-                        {
-                            continue;
-                        }
-
-                        EWorldObjectType ObjType = PickObjectType(Config.ObjectTypeProbabilities, Random);
-                        if (ObjType == EWorldObjectType::None)
-                        {
-                            continue;
-                        }
-
-                        float HeightNorm = (float)HeightData[Y * Config.SizeX + X] / 65535.f;
-                        FVector Location(X * 100.f, Y * 100.f, HeightNorm * Config.MaxHeight);
-
-                        FWorldObjectData ObjData;
-                        ObjData.ObjectType = ObjType;
-                        ObjData.ActorClass = ActorClassMap.Contains(ObjType) ? ActorClassMap[ObjType] : nullptr;
-                        ObjData.Location = Location;
-                        ObjData.Rotation = FRotator(0.f, Random.FRandRange(0.f, 360.f), 0.f);
-                        ObjData.Scale = FVector(Random.FRandRange(0.8f, 1.2f));
-
-                        Objects.Add(ObjData);
-                    }
-                }
-
-                ProcessedChunks++;
-                const float Progress = 0.6f + ((float)ProcessedChunks / (float)TotalChunks * 0.4f);
-                UpdateProgress(Progress);
-            }
-        }
-
-        if (bCancelRequested)
-        {
-            CompleteAsyncGeneration(HeightData, Objects, false);
-            return;
-        }
+        GenerateObjects(Config, HeightData, ActorClassMap, Objects);
 
         UpdateProgress(1.0f);
         bSuccess = true;
-
-        UE_LOG(LogTemp, Log, TEXT("Async world generation completed successfully! Generated %d objects"), Objects.Num());
     }
-    catch (const std::exception& e)
+    catch (...)
     {
-        UE_LOG(LogTemp, Error, TEXT("Async world generation failed: %s"), ANSI_TO_TCHAR(e.what()));
+        UE_LOG(LogTemp, Error, TEXT("Exception during async world generation"));
         bSuccess = false;
     }
 
-    CompleteAsyncGeneration(MoveTemp(HeightData), MoveTemp(Objects), bSuccess);
+    CompleteAsyncGeneration(HeightData, Objects, bSuccess);
 }
 
 void UHarmoniaWorldGeneratorSubsystem::UpdateProgress(float Progress)

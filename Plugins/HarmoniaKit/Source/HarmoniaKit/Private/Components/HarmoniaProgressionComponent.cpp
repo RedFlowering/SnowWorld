@@ -853,20 +853,6 @@ void UHarmoniaProgressionComponent::GrantAbilitySetToASC(const ULyraAbilitySet* 
 
 				if (!IsValid(AbilityToGrant.Ability))
 				{
-					continue;
-				}
-
-				ULyraGameplayAbility* AbilityCDO = AbilityToGrant.Ability->GetDefaultObject<ULyraGameplayAbility>();
-
-				FGameplayAbilitySpec AbilitySpec(AbilityCDO, AbilityToGrant.AbilityLevel);
-				AbilitySpec.SourceObject = ASC->GetAvatarActor();
-				AbilitySpec.DynamicAbilityTags.AddTag(AbilityToGrant.InputTag);
-
-				const FGameplayAbilitySpecHandle AbilitySpecHandle = ASC->GiveAbility(AbilitySpec);
-
-				if (OutGrantedHandles)
-				{
-					OutGrantedHandles->AbilitySpecHandles.Add(AbilitySpecHandle);
 				}
 			}
 		}
