@@ -1,0 +1,558 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+
+#include "Components/HarmoniaMusicComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/Character.h"
+
+UHarmoniaMusicComponent::UHarmoniaMusicComponent()
+{
+	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bStartWithTickEnabled = false;
+}
+
+void UHarmoniaMusicComponent::BeginPlay()
+{
+	Super::BeginPlay();
+}
+
+void UHarmoniaMusicComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (bIsPerforming)
+	{
+		float ElapsedTime = GetWorld()->GetTimeSeconds() - PerformanceStartTime;
+		if (ElapsedTime >= RequiredPerformanceTime)
+		{
+			CompletePerformance();
+		}
+	}
+}
+
+bool UHarmoniaMusicComponent::StartPerformance(FName MusicID)
+{
+	if (bIsPerforming || !MusicSheetDatabase.Contains(MusicID))
+	{
+		return false;
+	}
+
+	const FMusicSheetData& MusicSheet = MusicSheetDatabase[MusicID];
+
+	// 레벨 체크
+	if (PerformanceLevel < MusicSheet.MinPerformanceLevel)
+	{
+		return false;
+	}
+
+	// 악보를 알고 있는지 확인
+	if (MusicSheet.bHidden && !IsMusicSheetKnown(MusicID))
+	{
+		return false;
+	}
+
+	// 악기 체크
+	if (MusicSheet.RequiredInstruments.Num() > 0)
+	{
+		if (!HasInstrumentEquipped())
+		{
+			return false;
+		}
+
+		bool bHasRequiredInstrument = false;
+		for (EInstrumentType RequiredType : MusicSheet.RequiredInstruments)
+		{
+			if (EquippedInstrument.InstrumentType == RequiredType)
+			{
+				bHasRequiredInstrument = true;
+				break;
+			}
+		}
+
+		if (!bHasRequiredInstrument)
+		{
+			return false;
+		}
+	}
+
+	CurrentMusicID = MusicID;
+	bIsPerforming = true;
+	PerformanceStartTime = GetWorld()->GetTimeSeconds();
+	RequiredPerformanceTime = MusicSheet.PerformanceDuration;
+
+	// 미니게임 초기화
+	if (bUseMinigame)
+	{
+		int32 NoteCount = FMath::Max(5, MusicSheet.Difficulty * 3);
+		CurrentRhythmNotes = GenerateRhythmNotes(MusicID, NoteCount);
+		TotalNoteCount = CurrentRhythmNotes.Num();
+		PerfectNoteCount = 0;
+		MinigameScore = 0.0f;
+	}
+
+	SetComponentTickEnabled(true);
+
+	OnPerformanceStarted.Broadcast(MusicID, RequiredPerformanceTime, MusicSheet.Genre);
+
+	return true;
+}
+
+void UHarmoniaMusicComponent::CancelPerformance()
+{
+	if (!bIsPerforming)
+	{
+		return;
+	}
+
+	bIsPerforming = false;
+	CurrentMusicID = NAME_None;
+	CurrentRhythmNotes.Empty();
+	SetComponentTickEnabled(false);
+
+	OnPerformanceCancelled.Broadcast();
+}
+
+float UHarmoniaMusicComponent::GetPerformanceProgress() const
+{
+	if (!bIsPerforming || RequiredPerformanceTime <= 0.0f)
+	{
+		return 0.0f;
+	}
+
+	float ElapsedTime = GetWorld()->GetTimeSeconds() - PerformanceStartTime;
+	return FMath::Clamp(ElapsedTime / RequiredPerformanceTime, 0.0f, 1.0f);
+}
+
+bool UHarmoniaMusicComponent::CanPerformMusic(FName MusicID) const
+{
+	if (!MusicSheetDatabase.Contains(MusicID))
+	{
+		return false;
+	}
+
+	const FMusicSheetData& MusicSheet = MusicSheetDatabase[MusicID];
+
+	if (PerformanceLevel < MusicSheet.MinPerformanceLevel)
+	{
+		return false;
+	}
+
+	if (MusicSheet.bHidden && !IsMusicSheetKnown(MusicID))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+void UHarmoniaMusicComponent::EquipInstrument(const FInstrumentData& Instrument)
+{
+	EquippedInstrument = Instrument;
+}
+
+void UHarmoniaMusicComponent::UnequipInstrument()
+{
+	EquippedInstrument = FInstrumentData();
+}
+
+bool UHarmoniaMusicComponent::HasInstrumentEquipped() const
+{
+	return EquippedInstrument.Durability > 0;
+}
+
+void UHarmoniaMusicComponent::ReduceInstrumentDurability(int32 Amount)
+{
+	if (!HasInstrumentEquipped())
+	{
+		return;
+	}
+
+	EquippedInstrument.Durability = FMath::Max(0, EquippedInstrument.Durability - Amount);
+
+	if (EquippedInstrument.Durability <= 0)
+	{
+		UnequipInstrument();
+	}
+}
+
+void UHarmoniaMusicComponent::LearnMusicSheet(FName MusicID)
+{
+	if (!KnownMusicSheets.Contains(MusicID))
+	{
+		KnownMusicSheets.Add(MusicID);
+		OnMusicSheetLearned.Broadcast(MusicID);
+	}
+}
+
+bool UHarmoniaMusicComponent::IsMusicSheetKnown(FName MusicID) const
+{
+	return KnownMusicSheets.Contains(MusicID);
+}
+
+bool UHarmoniaMusicComponent::GetMusicSheetData(FName MusicID, FMusicSheetData& OutMusicSheet) const
+{
+	if (const FMusicSheetData* MusicSheet = MusicSheetDatabase.Find(MusicID))
+	{
+		OutMusicSheet = *MusicSheet;
+		return true;
+	}
+	return false;
+}
+
+TArray<FRhythmNote> UHarmoniaMusicComponent::GenerateRhythmNotes(FName MusicID, int32 NoteCount)
+{
+	TArray<FRhythmNote> Notes;
+
+	if (!MusicSheetDatabase.Contains(MusicID))
+	{
+		return Notes;
+	}
+
+	const FMusicSheetData& MusicSheet = MusicSheetDatabase[MusicID];
+	float Duration = MusicSheet.PerformanceDuration;
+
+	for (int32 i = 0; i < NoteCount; ++i)
+	{
+		FRhythmNote Note;
+		Note.NoteType = FMath::RandRange(0, 3);
+		Note.Timing = (Duration / NoteCount) * (i + 1);
+		Note.PerfectWindow = 0.05f;
+		Note.GoodWindow = 0.15f;
+
+		Notes.Add(Note);
+	}
+
+	return Notes;
+}
+
+bool UHarmoniaMusicComponent::HitRhythmNote(int32 NoteIndex, float InputTime, bool& bPerfectHit)
+{
+	if (NoteIndex < 0 || NoteIndex >= CurrentRhythmNotes.Num())
+	{
+		return false;
+	}
+
+	const FRhythmNote& Note = CurrentRhythmNotes[NoteIndex];
+	float TimeDiff = FMath::Abs(InputTime - Note.Timing);
+
+	bPerfectHit = TimeDiff <= Note.PerfectWindow;
+	bool bGoodHit = TimeDiff <= Note.GoodWindow;
+
+	if (bPerfectHit)
+	{
+		MinigameScore += 100.0f;
+		PerfectNoteCount++;
+	}
+	else if (bGoodHit)
+	{
+		MinigameScore += 70.0f;
+	}
+	else
+	{
+		MinigameScore += 30.0f;
+	}
+
+	OnRhythmNoteHit.Broadcast(NoteIndex, bPerfectHit);
+
+	return bGoodHit;
+}
+
+void UHarmoniaMusicComponent::AddPerformanceExperience(int32 Amount)
+{
+	int32 ModifiedAmount = FMath::CeilToInt(Amount * ExperienceMultiplier);
+	CurrentExperience += ModifiedAmount;
+
+	CheckAndProcessLevelUp();
+}
+
+int32 UHarmoniaMusicComponent::GetExperienceForNextLevel() const
+{
+	return BaseExperiencePerLevel * PerformanceLevel;
+}
+
+void UHarmoniaMusicComponent::AddTrait(const FPerformanceTrait& Trait)
+{
+	for (const FPerformanceTrait& ExistingTrait : ActiveTraits)
+	{
+		if (ExistingTrait.TraitName == Trait.TraitName)
+		{
+			return;
+		}
+	}
+
+	ActiveTraits.Add(Trait);
+}
+
+void UHarmoniaMusicComponent::RemoveTrait(FName TraitName)
+{
+	ActiveTraits.RemoveAll([TraitName](const FPerformanceTrait& Trait)
+	{
+		return Trait.TraitName == TraitName;
+	});
+}
+
+void UHarmoniaMusicComponent::CompletePerformance()
+{
+	if (!MusicSheetDatabase.Contains(CurrentMusicID))
+	{
+		CancelPerformance();
+		return;
+	}
+
+	const FMusicSheetData& MusicSheet = MusicSheetDatabase[CurrentMusicID];
+
+	// 연주 결과 계산
+	FPerformanceResult Result = CalculatePerformanceResult(MusicSheet);
+
+	// 경험치 획득
+	AddPerformanceExperience(Result.Experience);
+
+	// 악보 습득
+	LearnMusicSheet(CurrentMusicID);
+
+	// 악기 내구도 감소
+	if (HasInstrumentEquipped())
+	{
+		ReduceInstrumentDurability(1);
+	}
+
+	// 버프 적용
+	Result.AffectedActorCount = ApplyBuffToNearbyActors(Result.AppliedBuff);
+
+	OnPerformanceCompleted.Broadcast(Result);
+
+	// 연주 종료
+	bIsPerforming = false;
+	CurrentMusicID = NAME_None;
+	CurrentRhythmNotes.Empty();
+	SetComponentTickEnabled(false);
+}
+
+FPerformanceResult UHarmoniaMusicComponent::CalculatePerformanceResult(const FMusicSheetData& MusicSheet)
+{
+	FPerformanceResult Result;
+	Result.MusicID = CurrentMusicID;
+
+	// 미니게임 점수 계산
+	float FinalScore = 0.0f;
+	if (bUseMinigame && TotalNoteCount > 0)
+	{
+		float MaxScore = TotalNoteCount * 100.0f;
+		FinalScore = (MinigameScore / MaxScore) * 100.0f;
+	}
+	else
+	{
+		// 미니게임 없이 자동 계산
+		float SuccessRate = BaseSuccessRate + GetTotalQualityBonus();
+		FinalScore = FMath::Clamp(SuccessRate, 0.0f, 100.0f);
+	}
+
+	// 품질 결정
+	Result.Quality = DeterminePerformanceQuality(MusicSheet.Difficulty, FinalScore);
+	Result.bPerfect = Result.Quality == EPerformanceQuality::Legendary;
+
+	// 버프 효과 계산
+	Result.AppliedBuff = MusicSheet.BuffEffect;
+
+	float QualityMultiplier = 1.0f;
+	if (MusicSheet.QualityMultipliers.Contains(Result.Quality))
+	{
+		QualityMultiplier = MusicSheet.QualityMultipliers[Result.Quality];
+	}
+
+	float BuffMultiplier = QualityMultiplier * (1.0f + GetTotalBuffEffectBonus() / 100.0f);
+
+	// 버프 효과에 배율 적용
+	Result.AppliedBuff.HealthRegenPerSecond *= BuffMultiplier;
+	Result.AppliedBuff.ManaRegenPerSecond *= BuffMultiplier;
+	Result.AppliedBuff.StaminaRegenPerSecond *= BuffMultiplier;
+	Result.AppliedBuff.AttackBonus *= BuffMultiplier;
+	Result.AppliedBuff.DefenseBonus *= BuffMultiplier;
+	Result.AppliedBuff.SpeedBonus *= BuffMultiplier;
+	Result.AppliedBuff.CriticalChanceBonus *= BuffMultiplier;
+	Result.AppliedBuff.CooldownReduction *= BuffMultiplier;
+	Result.AppliedBuff.ExperienceBonus *= BuffMultiplier;
+
+	// 범위 보너스
+	Result.AppliedBuff.EffectRadius *= (1.0f + GetTotalRangeBonus() / 100.0f);
+
+	// 앙코르 체크
+	for (const FPerformanceTrait& Trait : ActiveTraits)
+	{
+		if (FMath::FRand() * 100.0f <= Trait.EncoreChance)
+		{
+			Result.AppliedBuff.Duration *= 2.0f;
+			break;
+		}
+	}
+
+	// 경험치 계산
+	float ExpMultiplier = 1.0f;
+	for (const FPerformanceTrait& Trait : ActiveTraits)
+	{
+		ExpMultiplier += Trait.ExperienceBonus / 100.0f;
+	}
+
+	Result.Experience = FMath::CeilToInt(MusicSheet.ExperienceReward * ExpMultiplier * (FinalScore / 50.0f));
+
+	return Result;
+}
+
+EPerformanceQuality UHarmoniaMusicComponent::DeterminePerformanceQuality(int32 Difficulty, float Score)
+{
+	// 난이도에 따른 품질 기준 조정
+	float LegendaryThreshold = FMath::Max(95.0f, 98.0f - (Difficulty * 0.3f));
+	float PerfectThreshold = FMath::Max(85.0f, 90.0f - (Difficulty * 0.5f));
+	float GreatThreshold = FMath::Max(70.0f, 75.0f - (Difficulty * 0.5f));
+	float GoodThreshold = 60.0f;
+	float FairThreshold = 40.0f;
+
+	if (Score >= LegendaryThreshold)
+	{
+		return EPerformanceQuality::Legendary;
+	}
+	else if (Score >= PerfectThreshold)
+	{
+		return EPerformanceQuality::Perfect;
+	}
+	else if (Score >= GreatThreshold)
+	{
+		return EPerformanceQuality::Great;
+	}
+	else if (Score >= GoodThreshold)
+	{
+		return EPerformanceQuality::Good;
+	}
+	else if (Score >= FairThreshold)
+	{
+		return EPerformanceQuality::Fair;
+	}
+	else
+	{
+		return EPerformanceQuality::Poor;
+	}
+}
+
+void UHarmoniaMusicComponent::ApplyMusicBuff(const FMusicBuffEffect& BuffEffect)
+{
+	// 개별 액터에 버프 적용 로직
+	// 실제 구현은 게임의 버프 시스템에 따라 달라짐
+}
+
+int32 UHarmoniaMusicComponent::ApplyBuffToNearbyActors(const FMusicBuffEffect& BuffEffect)
+{
+	AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		return 0;
+	}
+
+	TArray<AActor*> OverlappingActors;
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(Owner);
+
+	UKismetSystemLibrary::SphereOverlapActors(
+		GetWorld(),
+		Owner->GetActorLocation(),
+		BuffEffect.EffectRadius,
+		ObjectTypes,
+		nullptr,
+		ActorsToIgnore,
+		OverlappingActors
+	);
+
+	int32 AffectedCount = 0;
+
+	for (AActor* Actor : OverlappingActors)
+	{
+		// 아군 체크 로직 추가 필요
+		if (BuffEffect.bAllyOnly)
+		{
+			// TODO: 팀 시스템과 연동하여 아군인지 확인
+		}
+
+		// 버프 적용
+		ApplyMusicBuff(BuffEffect);
+		OnMusicBuffApplied.Broadcast(Actor, BuffEffect.BuffName, BuffEffect.Duration);
+
+		AffectedCount++;
+	}
+
+	// 자신에게도 적용
+	if (BuffEffect.bAffectSelf)
+	{
+		ApplyMusicBuff(BuffEffect);
+		OnMusicBuffApplied.Broadcast(Owner, BuffEffect.BuffName, BuffEffect.Duration);
+		AffectedCount++;
+	}
+
+	return AffectedCount;
+}
+
+void UHarmoniaMusicComponent::CheckAndProcessLevelUp()
+{
+	int32 ExpNeeded = GetExperienceForNextLevel();
+
+	while (CurrentExperience >= ExpNeeded)
+	{
+		CurrentExperience -= ExpNeeded;
+		PerformanceLevel++;
+
+		OnPerformanceLevelUp.Broadcast(PerformanceLevel, 1);
+
+		ExpNeeded = GetExperienceForNextLevel();
+	}
+}
+
+float UHarmoniaMusicComponent::GetTotalQualityBonus() const
+{
+	float TotalBonus = 0.0f;
+
+	for (const FPerformanceTrait& Trait : ActiveTraits)
+	{
+		TotalBonus += Trait.QualityBonus;
+	}
+
+	if (HasInstrumentEquipped())
+	{
+		TotalBonus += EquippedInstrument.QualityBonus;
+	}
+
+	return TotalBonus;
+}
+
+float UHarmoniaMusicComponent::GetTotalBuffEffectBonus() const
+{
+	float TotalBonus = 0.0f;
+
+	for (const FPerformanceTrait& Trait : ActiveTraits)
+	{
+		TotalBonus += Trait.BuffEffectBonus;
+	}
+
+	if (HasInstrumentEquipped())
+	{
+		TotalBonus += EquippedInstrument.BuffEffectBonus;
+	}
+
+	return TotalBonus;
+}
+
+float UHarmoniaMusicComponent::GetTotalRangeBonus() const
+{
+	float TotalBonus = 0.0f;
+
+	for (const FPerformanceTrait& Trait : ActiveTraits)
+	{
+		TotalBonus += Trait.RangeBonus;
+	}
+
+	if (HasInstrumentEquipped())
+	{
+		TotalBonus += EquippedInstrument.RangeBonus;
+	}
+
+	return TotalBonus;
+}
