@@ -84,7 +84,7 @@ UENUM(BlueprintType)
 enum class EHarmoniaMeleeWeaponType : uint8
 {
 	None UMETA(DisplayName = "None"),
-	Sword UMETA(DisplayName = "Sword"),						// Balanced weapon
+	Sword UMETA(DisplayName = "Sword"),					// Balanced weapon
 	GreatSword UMETA(DisplayName = "Great Sword"),			// Slow, powerful
 	Dagger UMETA(DisplayName = "Dagger"),					// Fast, low damage
 	Axe UMETA(DisplayName = "Axe"),							// High damage, slow
