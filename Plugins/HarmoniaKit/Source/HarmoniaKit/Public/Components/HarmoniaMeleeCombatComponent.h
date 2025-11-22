@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Components/HarmoniaBaseCombatComponent.h"
 #include "GameplayTagContainer.h"
 #include "Definitions/HarmoniaCombatSystemDefinitions.h"
 #include "HarmoniaMeleeCombatComponent.generated.h"
@@ -24,7 +24,7 @@ class UDataTable;
  * - Stamina management
  */
 UCLASS(ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
-class HARMONIAKIT_API UHarmoniaMeleeCombatComponent : public UActorComponent
+class HARMONIAKIT_API UHarmoniaMeleeCombatComponent : public UHarmoniaBaseCombatComponent
 {
 	GENERATED_BODY()
 
@@ -238,46 +238,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Backstab")
 	float GetBackstabDamageMultiplier() const;
 
-	// ============================================================================
-	// Stamina Management
-	// ============================================================================
-
-	/** Check if has enough stamina */
-	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Stamina")
-	bool HasEnoughStamina(float StaminaCost) const;
-
-	/** Consume stamina */
-	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Stamina")
-	bool ConsumeStamina(float StaminaCost);
-
-	/** Get current stamina */
-	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Stamina")
-	float GetCurrentStamina() const;
-
-	/** Get maximum stamina */
-	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Stamina")
-	float GetMaxStamina() const;
-
-	// ============================================================================
-	// Component References
-	// ============================================================================
-
-	/** Get or find attack component */
-	UFUNCTION(BlueprintCallable, Category = "Melee Combat")
-	UHarmoniaSenseAttackComponent* GetAttackComponent() const;
-
-	/** Get or find ability system component */
-	UFUNCTION(BlueprintCallable, Category = "Melee Combat")
-	UAbilitySystemComponent* GetAbilitySystemComponent() const;
-
-	/** Get or find attribute set */
-	UFUNCTION(BlueprintCallable, Category = "Melee Combat")
-	UHarmoniaAttributeSet* GetAttributeSet() const;
-
-	/** Get or find equipment component */
-	UFUNCTION(BlueprintCallable, Category = "Melee Combat")
-	UHarmoniaEquipmentComponent* GetEquipmentComponent() const;
-
 protected:
 	// ============================================================================
 	// Data Tables
@@ -370,22 +330,6 @@ protected:
 	/** Parried target (for riposte) */
 	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|State")
 	TWeakObjectPtr<AActor> ParriedTarget;
-
-	// ============================================================================
-	// Cached References
-	// ============================================================================
-
-	UPROPERTY()
-	mutable TObjectPtr<UHarmoniaSenseAttackComponent> CachedAttackComponent;
-
-	UPROPERTY()
-	mutable TObjectPtr<UAbilitySystemComponent> CachedAbilitySystemComponent;
-
-	UPROPERTY()
-	mutable TObjectPtr<UHarmoniaAttributeSet> CachedAttributeSet;
-
-	UPROPERTY()
-	mutable TObjectPtr<UHarmoniaEquipmentComponent> CachedEquipmentComponent;
 
 	// ============================================================================
 	// Timers

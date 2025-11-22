@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Components/HarmoniaBaseCombatComponent.h"
 #include "Definitions/HarmoniaCombatSystemDefinitions.h"
 #include "GameplayTagContainer.h"
 #include "HarmoniaRangedCombatComponent.generated.h"
@@ -34,7 +35,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAmmoChangedDelegate, int32, Curr
  * - Aiming modes and reticle
  */
 UCLASS(ClassGroup = (Harmonia), meta = (BlueprintSpawnableComponent))
-class HARMONIAKIT_API UHarmoniaRangedCombatComponent : public UActorComponent
+class HARMONIAKIT_API UHarmoniaRangedCombatComponent : public UHarmoniaBaseCombatComponent
 {
 	GENERATED_BODY()
 
@@ -318,10 +319,7 @@ protected:
 	 */
 	bool ConsumeResources();
 
-	/**
-	 * Get ability system component
-	 */
-	UAbilitySystemComponent* GetAbilitySystemComponent() const;
+
 
 	/**
 	 * Get lock-on component
@@ -441,10 +439,6 @@ private:
 
 	/** Last spell cast time */
 	float LastSpellCastTime = 0.0f;
-
-	/** Cached components */
-	UPROPERTY()
-	TObjectPtr<UAbilitySystemComponent> CachedAbilitySystemComponent;
 
 	UPROPERTY()
 	TObjectPtr<UHarmoniaLockOnComponent> CachedLockOnComponent;

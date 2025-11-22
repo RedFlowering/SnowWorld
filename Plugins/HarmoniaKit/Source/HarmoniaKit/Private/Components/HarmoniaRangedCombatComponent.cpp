@@ -637,42 +637,18 @@ bool UHarmoniaRangedCombatComponent::ConsumeResources()
 	// Consume stamina
 	if (WeaponData.StaminaCostPerShot > 0.0f)
 	{
-		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-		if (ASC)
+		if (!ConsumeStamina(WeaponData.StaminaCostPerShot))
 		{
-			const UHarmoniaAttributeSet* AttributeSet = ASC->GetSet<UHarmoniaAttributeSet>();
-			if (AttributeSet)
-			{
-				float CurrentStamina = AttributeSet->GetStamina();
-				if (CurrentStamina < WeaponData.StaminaCostPerShot)
-				{
-					return false;
-				}
-
-				// Apply stamina cost via gameplay effect
-				// TODO: Create and apply stamina cost effect
-			}
+			return false;
 		}
 	}
 
 	// Consume mana (for magic weapons)
 	if (WeaponData.ManaCostPerShot > 0.0f)
 	{
-		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-		if (ASC)
+		if (!ConsumeMana(WeaponData.ManaCostPerShot))
 		{
-			const UHarmoniaAttributeSet* AttributeSet = ASC->GetSet<UHarmoniaAttributeSet>();
-			if (AttributeSet)
-			{
-				float CurrentMana = AttributeSet->GetMana();
-				if (CurrentMana < WeaponData.ManaCostPerShot)
-				{
-					return false;
-				}
-
-				// Apply mana cost via gameplay effect
-				// TODO: Create and apply mana cost effect
-			}
+			return false;
 		}
 	}
 
@@ -781,17 +757,9 @@ bool UHarmoniaRangedCombatComponent::CanCastSpell() const
 	}
 
 	// Check mana
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	if (ASC)
+	if (!HasEnoughMana(SpellData.ManaCost))
 	{
-		const UHarmoniaAttributeSet* AttributeSet = ASC->GetSet<UHarmoniaAttributeSet>();
-		if (AttributeSet)
-		{
-			if (AttributeSet->GetMana() < SpellData.ManaCost)
-			{
-				return false;
-			}
-		}
+		return false;
 	}
 
 	return true;
@@ -854,24 +822,7 @@ AActor* UHarmoniaRangedCombatComponent::SpawnProjectile(const FHarmoniaProjectil
 // Helper Functions
 // ============================================================================
 
-UAbilitySystemComponent* UHarmoniaRangedCombatComponent::GetAbilitySystemComponent() const
-{
-	if (CachedAbilitySystemComponent)
-	{
-		return CachedAbilitySystemComponent;
-	}
 
-	AActor* Owner = GetOwner();
-	if (!Owner)
-	{
-		return nullptr;
-	}
-
-	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Owner);
-	// Cache it using const_cast since this is a lazy initialization pattern
-	const_cast<UHarmoniaRangedCombatComponent*>(this)->CachedAbilitySystemComponent = ASC;
-	return ASC;
-}
 
 UHarmoniaLockOnComponent* UHarmoniaRangedCombatComponent::GetLockOnComponent() const
 {

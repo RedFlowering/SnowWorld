@@ -1,6 +1,9 @@
-# Harmonia Quest System - Enhanced Edition
+# Harmonia Quest System
 
-하모니아 키트 플러그인의 확장된 퀘스트 시스템입니다. 모던 RPG에 필요한 모든 퀘스트 기능을 지원합니다.
+**Version:** 2.0 (Enhanced Edition)  
+**Last Updated:** 2025-11-23
+
+하모니아 키트 플러그인의 퀘스트 시스템입니다. 모던 RPG에 필요한 모든 퀘스트 기능을 지원하며, 기본 퀘스트부터 복잡한 단계별 스토리 퀘스트까지 구현할 수 있습니다.
 
 ## 🎯 핵심 기능
 
@@ -75,13 +78,6 @@ struct FQuestDialogue
 };
 ```
 
-**사용 예:**
-```
-NPC: "늑대들이 마을을 위협하고 있소." (시작)
-NPC: "아직 늑대들이 남아있소!" (진행 중)
-NPC: "잘 하셨소! 보상을 받아가시오." (완료)
-```
-
 ### 5. 💡 퀘스트 힌트 시스템
 플레이어가 막혔을 때 자동으로 힌트 제공:
 
@@ -97,12 +93,6 @@ struct FQuestHint
 };
 ```
 
-**예:**
-```
-30초 후: "늑대는 숲 북쪽에 자주 출몰합니다."
-60초 후: "숲 입구 근처를 살펴보세요."
-```
-
 ### 6. 📊 동적 목표 시스템
 플레이어 레벨이나 파티 크기에 따라 목표 수량 자동 조정:
 
@@ -114,9 +104,6 @@ struct FDynamicObjectiveCount
     float CountPerLevel;                    // 레벨당 추가
     float CountPerPartyMember;              // 파티원당 추가
     int32 MaxCount;                         // 최대 제한
-
-    // 계산 예: 레벨 10, 파티 3명
-    // 10 + (10 * 0.5) + (2 * 2) = 19마리
 };
 ```
 
@@ -140,12 +127,6 @@ bool bBonus;                                // 보너스 목표 여부
 
 // FQuestData에 추가
 TArray<FQuestReward> BonusRewards;          // 보너스 목표 완료 시 추가 보상
-```
-
-**예:**
-```
-필수 목표: 늑대 10마리 처치
-보너스 목표: 알파 늑대 1마리 처치 → 희귀 아이템 추가 획득
 ```
 
 ### 9. ❌ 퀘스트 실패 조건
@@ -186,21 +167,6 @@ struct FQuestEvent
 };
 ```
 
-**트리거 타입:**
-- `OnStart`: 퀘스트 시작 시
-- `OnComplete`: 완료 시
-- `OnFail`: 실패 시
-- `OnPhaseChange`: 단계 변경 시
-- `OnObjectiveComplete`: 목표 완료 시
-
-**사용 예:**
-```cpp
-// 퀘스트 시작 시 적 스폰
-Event.TriggerType = OnStart;
-Event.ActorToSpawn = ABoss::StaticClass();
-Event.SpawnLocation = FVector(1000, 0, 0);
-```
-
 ### 11. 🔔 퀘스트 알림 시스템
 UI 알림으로 퀘스트 진행 상황 표시:
 
@@ -216,13 +182,6 @@ struct FQuestNotification
     float DisplayDuration;                  // 표시 시간 (초)
 };
 ```
-
-**알림 타입:**
-- `QuestAdded`: 퀘스트 추가됨
-- `QuestStarted`: 퀘스트 시작
-- `QuestCompleted`: 퀘스트 완료
-- `ObjectiveComplete`: 목표 완료
-- `PhaseComplete`: 단계 완료
 
 ### 12. 📈 퀘스트 통계 시스템
 플레이어의 퀘스트 활동 추적:
@@ -241,12 +200,6 @@ struct FQuestStatistics
     FDateTime LastCompletionDate;           // 마지막 완료 날짜
 };
 ```
-
-**활용:**
-- 업적 시스템 연동
-- 플레이어 프로필
-- 리더보드
-- 보상 시스템
 
 ### 13. 📔 퀘스트 로그/저널
 플레이어의 퀘스트 기록:
@@ -516,84 +469,6 @@ Notification.DisplayDuration = 3.0f;
 
 ShowNotification(Notification);
 ```
-
-## 🔧 확장 가능성
-
-시스템을 쉽게 확장할 수 있도록 설계되었습니다:
-
-### 새로운 목표 타입 추가
-1. `EQuestObjectiveType`에 새 타입 추가
-2. `UpdateQuestObjectivesByType` 함수에 처리 로직 추가
-
-### 새로운 조건 타입 추가
-1. `EQuestConditionType`에 새 타입 추가
-2. `CheckQuestCondition` 함수에 검증 로직 추가
-
-### 새로운 보상 타입 추가
-1. `EQuestRewardType`에 새 타입 추가
-2. `GrantReward` 함수에 지급 로직 추가
-
-## 📚 추가 기능 (향후 확장)
-
-현재 구조로 쉽게 추가 가능한 기능들:
-
-1. **퀘스트 추천 시스템** - 플레이 스타일 분석
-2. **업적 연동** - 퀘스트 완료 기반 업적
-3. **시즌 퀘스트** - 특정 시즌에만 활성화
-4. **랜덤 퀘스트** - 절차적 생성
-5. **퀘스트 평판 시스템** - NPC 호감도
-6. **퀘스트 난이도 조절** - 플레이어 실력 기반
-7. **협동 퀘스트** - 파티 협력 필수
-8. **경쟁 퀘스트** - PvP 요소
-
-## 🎯 베스트 프랙티스
-
-### 1. 퀘스트 설계
-- 단일 목표는 Objectives 사용
-- 복잡한 스토리는 Phases 사용
-- 3-5개 목표가 적당
-- 보너스 목표로 깊이 추가
-
-### 2. 마커 사용
-- 주요 목표는 Objective 타입
-- 선택 목표는 Optional 타입
-- 색상으로 긴급도 표현
-
-### 3. 힌트 타이밍
-- 첫 힌트: 30-60초
-- 두 번째 힌트: 90-120초
-- 위치 힌트는 마지막에
-
-### 4. 파티 퀘스트
-- 2-4인 기준으로 설계
-- bSharedProgress로 협력 유도
-- 파티 크기별 난이도 조정
-
-### 5. 통계 활용
-- 업적 시스템과 연동
-- 플레이어 프로필 표시
-- 보상 시스템 기준
-
-## 🔒 보안 기능
-
-- 서버 권한 검증
-- 속도 제한
-- 조건 서버 검증
-- 보상 서버 지급
-- 거리 검증
-
-## ⚡ 성능 최적화
-
-- 데이터 캐싱
-- 효율적인 목표 매칭
-- 네트워크 복제 최적화
-- 선택적 틱 활성화
-
-## 📝 라이센스
-
-Copyright 2025 Snow Game Studio.
-
----
 
 ## 🎓 튜토리얼
 

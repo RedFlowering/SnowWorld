@@ -27,12 +27,6 @@ UHarmoniaMeleeCombatComponent::UHarmoniaMeleeCombatComponent()
 void UHarmoniaMeleeCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// Cache component references
-	GetAttackComponent();
-	GetAbilitySystemComponent();
-	GetAttributeSet();
-	GetEquipmentComponent();
 }
 
 void UHarmoniaMeleeCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -67,11 +61,8 @@ bool UHarmoniaMeleeCombatComponent::GetWeaponDataForType(EHarmoniaMeleeWeaponTyp
 		return false;
 	}
 
-	// Convert enum to string for row name
-	FString WeaponTypeName = UEnum::GetValueAsString(WeaponType);
-	WeaponTypeName = WeaponTypeName.Right(WeaponTypeName.Len() - WeaponTypeName.Find("::") - 2);
-
-	FHarmoniaMeleeWeaponData* WeaponData = WeaponDataTable->FindRow<FHarmoniaMeleeWeaponData>(FName(*WeaponTypeName), TEXT("GetWeaponDataForType"));
+	FName RowName = EnumToRowName(WeaponType);
+	FHarmoniaMeleeWeaponData* WeaponData = WeaponDataTable->FindRow<FHarmoniaMeleeWeaponData>(RowName, TEXT("GetWeaponDataForType"));
 	if (WeaponData)
 	{
 		OutWeaponData = *WeaponData;
@@ -233,10 +224,8 @@ bool UHarmoniaMeleeCombatComponent::GetComboSequence(bool bHeavyCombo, FHarmonia
 	}
 
 	// Try to find combo sequence for current weapon type
-	FString WeaponTypeName = UEnum::GetValueAsString(CurrentWeaponType);
-	WeaponTypeName = WeaponTypeName.Right(WeaponTypeName.Len() - WeaponTypeName.Find("::") - 2);
-
-	FString ComboName = WeaponTypeName + (bHeavyCombo ? "_Heavy" : "_Light");
+	FName WeaponRowName = EnumToRowName(CurrentWeaponType);
+	FString ComboName = WeaponRowName.ToString() + (bHeavyCombo ? "_Heavy" : "_Light");
 
 	FHarmoniaComboAttackSequence* ComboSequence = ComboSequencesDataTable->FindRow<FHarmoniaComboAttackSequence>(FName(*ComboName), TEXT("GetComboSequence"));
 	if (ComboSequence)
@@ -493,99 +482,7 @@ void UHarmoniaMeleeCombatComponent::OnParrySuccess(AActor* Attacker)
 // Stamina Management
 // ============================================================================
 
-bool UHarmoniaMeleeCombatComponent::HasEnoughStamina(float StaminaCost) const
-{
-	return GetCurrentStamina() >= StaminaCost;
-}
 
-bool UHarmoniaMeleeCombatComponent::ConsumeStamina(float StaminaCost)
-{
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	if (!ASC)
-	{
-		return false;
-	}
-
-	// Use the HarmoniaAbilitySystemLibrary to consume stamina
-	// This handles the stamina check and consumption in one call
-	return UHarmoniaAbilitySystemLibrary::ConsumeStamina(ASC, StaminaCost);
-}
-
-float UHarmoniaMeleeCombatComponent::GetCurrentStamina() const
-{
-	UHarmoniaAttributeSet* Attributes = GetAttributeSet();
-	if (Attributes)
-	{
-		return Attributes->GetStamina();
-	}
-	return 0.0f;
-}
-
-float UHarmoniaMeleeCombatComponent::GetMaxStamina() const
-{
-	UHarmoniaAttributeSet* Attributes = GetAttributeSet();
-	if (Attributes)
-	{
-		return Attributes->GetMaxStamina();
-	}
-	return 100.0f;
-}
-
-// ============================================================================
-// Component References
-// ============================================================================
-
-UHarmoniaSenseAttackComponent* UHarmoniaMeleeCombatComponent::GetAttackComponent() const
-{
-	if (!CachedAttackComponent)
-	{
-		AActor* Owner = GetOwner();
-		if (Owner)
-		{
-			CachedAttackComponent = Owner->FindComponentByClass<UHarmoniaSenseAttackComponent>();
-		}
-	}
-	return CachedAttackComponent;
-}
-
-UAbilitySystemComponent* UHarmoniaMeleeCombatComponent::GetAbilitySystemComponent() const
-{
-	if (!CachedAbilitySystemComponent)
-	{
-		AActor* Owner = GetOwner();
-		if (Owner)
-		{
-			CachedAbilitySystemComponent = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Owner);
-		}
-	}
-	return CachedAbilitySystemComponent;
-}
-
-UHarmoniaAttributeSet* UHarmoniaMeleeCombatComponent::GetAttributeSet() const
-{
-	if (!CachedAttributeSet)
-	{
-		UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-		if (ASC)
-		{
-			CachedAttributeSet = const_cast<UHarmoniaAttributeSet*>(ASC->GetSet<UHarmoniaAttributeSet>());
-		}
-	}
-	return CachedAttributeSet;
-}
-
-UHarmoniaEquipmentComponent* UHarmoniaMeleeCombatComponent::GetEquipmentComponent() const
-{
-	if (!CachedEquipmentComponent)
-	{
-		AActor* Owner = GetOwner();
-		if (Owner)
-		{
-			CachedEquipmentComponent = Owner->FindComponentByClass<UHarmoniaEquipmentComponent>();
-		}
-	}
-	return CachedEquipmentComponent;
-}
 
 // ============================================================================
 // Riposte System
