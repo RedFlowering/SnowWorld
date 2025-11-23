@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Components/HarmoniaBaseAIComponent.h"
 #include "Definitions/HarmoniaMonsterSystemDefinitions.h"
 #include "HarmoniaAdvancedAIComponent.generated.h"
 
@@ -26,18 +26,24 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTacticalPositionFoundDelegate, EH
  * - Context-aware attack selection
  *
  * Attach to monster actors to enable advanced AI features
+ * Inherits common AI functionality from UHarmoniaBaseAIComponent
  */
 UCLASS(ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
-class HARMONIAKIT_API UHarmoniaAdvancedAIComponent : public UActorComponent
+class HARMONIAKIT_API UHarmoniaAdvancedAIComponent : public UHarmoniaBaseAIComponent
 {
 	GENERATED_BODY()
 
 public:
 	UHarmoniaAdvancedAIComponent();
 
+protected:
+	//~UHarmoniaBaseAIComponent interface
+	virtual void InitializeAIComponent() override;
+	virtual void UpdateAIComponent(float DeltaTime) override;
+	//~End of UHarmoniaBaseAIComponent interface
+
+public:
 	//~UActorComponent interface
-	virtual void BeginPlay() override;
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	//~End of UActorComponent interface
 
