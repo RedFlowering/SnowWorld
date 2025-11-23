@@ -15,6 +15,7 @@
 #include "HarmoniaItemPickup.h"
 #include "Components/HarmoniaAdvancedAIComponent.h"
 #include "Components/HarmoniaAILODComponent.h"
+#include "System/HarmoniaTeamManagementSubsystem.h"
 
 AHarmoniaMonsterBase::AHarmoniaMonsterBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -127,6 +128,10 @@ void AHarmoniaMonsterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	DOREPLIFETIME_CONDITION(AHarmoniaMonsterBase, MonsterLevel, COND_InitialOnly);
 	DOREPLIFETIME(AHarmoniaMonsterBase, CurrentState);
 	DOREPLIFETIME(AHarmoniaMonsterBase, CurrentTarget);
+
+	// [BANDWIDTH OPTIMIZATION] TeamIdentification only needs to replicate once at spawn
+	// Team usually doesn't change during gameplay
+	DOREPLIFETIME_CONDITION(AHarmoniaMonsterBase, TeamIdentification, COND_InitialOnly);
 }
 
 UAbilitySystemComponent* AHarmoniaMonsterBase::GetAbilitySystemComponent() const
@@ -949,4 +954,121 @@ bool AHarmoniaMonsterBase::IsAttackOnCooldown(FName AttackID) const
 		return AttackCooldowns[AttackID] > 0.0f;
 	}
 	return false;
+}
+
+// ============================================================================
+// IHarmoniaTeamAgentInterface Implementation
+// ============================================================================
+
+FHarmoniaTeamIdentification AHarmoniaMonsterBase::GetTeamID_Implementation() const
+{
+	// If using legacy faction system, convert to team ID
+	if (bUseLegacyFactionSystem && MonsterData)
+	{
+		// Convert legacy faction to numeric team ID
+		FHarmoniaTeamIdentification LegacyTeamID;
+		LegacyTeamID.TeamNumericID = static_cast<int32>(MonsterData->FactionSettings.Faction) + 1000; // Offset to avoid conflict
+		LegacyTeamID.TeamName = FText::FromString(UEnum::GetValueAsString(MonsterData->FactionSettings.Faction));
+		return LegacyTeamID;
+	}
+
+	// Use new team system
+	if (TeamIdentification.IsValid())
+	{
+		return TeamIdentification;
+	}
+
+	// Fall back to team from monster data
+	if (MonsterData && MonsterData->TeamID.IsValid())
+	{
+		return MonsterData->TeamID;
+	}
+
+	return FHarmoniaTeamIdentification();
+}
+
+void AHarmoniaMonsterBase::SetTeamID_Implementation(const FHarmoniaTeamIdentification& NewTeamID)
+{
+	TeamIdentification = NewTeamID;
+	bUseLegacyFactionSystem = false;
+}
+
+EHarmoniaTeamRelationship AHarmoniaMonsterBase::GetRelationshipWith_Implementation(AActor* OtherActor) const
+{
+	if (!OtherActor)
+	{
+		return EHarmoniaTeamRelationship::Neutral;
+	}
+
+	// Get team management subsystem
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return EHarmoniaTeamRelationship::Neutral;
+	}
+
+	UHarmoniaTeamManagementSubsystem* TeamSubsystem = World->GetSubsystem<UHarmoniaTeamManagementSubsystem>();
+	if (!TeamSubsystem)
+	{
+		return EHarmoniaTeamRelationship::Neutral;
+	}
+
+	return TeamSubsystem->GetActorRelationship(const_cast<AHarmoniaMonsterBase*>(this), OtherActor);
+}
+
+bool AHarmoniaMonsterBase::CanAttackActor_Implementation(AActor* OtherActor) const
+{
+	if (!OtherActor)
+	{
+		return false;
+	}
+
+	EHarmoniaTeamRelationship Relationship = Execute_GetRelationshipWith(this, OtherActor);
+	return Relationship == EHarmoniaTeamRelationship::Enemy;
+}
+
+bool AHarmoniaMonsterBase::ShouldHelpActor_Implementation(AActor* OtherActor) const
+{
+	if (!OtherActor)
+	{
+		return false;
+	}
+
+	EHarmoniaTeamRelationship Relationship = Execute_GetRelationshipWith(this, OtherActor);
+	return Relationship == EHarmoniaTeamRelationship::Ally;
+}
+
+bool AHarmoniaMonsterBase::IsSameTeamAs_Implementation(AActor* OtherActor) const
+{
+	if (!OtherActor || !OtherActor->Implements<UHarmoniaTeamAgentInterface>())
+	{
+		return false;
+	}
+
+	FHarmoniaTeamIdentification MyTeam = Execute_GetTeamID(this);
+	FHarmoniaTeamIdentification OtherTeam = IHarmoniaTeamAgentInterface::Execute_GetTeamID(OtherActor);
+
+	return MyTeam.IsValid() && OtherTeam.IsValid() && MyTeam.IsSameTeam(OtherTeam);
+}
+
+bool AHarmoniaMonsterBase::IsAllyWith_Implementation(AActor* OtherActor) const
+{
+	if (!OtherActor)
+	{
+		return false;
+	}
+
+	EHarmoniaTeamRelationship Relationship = Execute_GetRelationshipWith(this, OtherActor);
+	return Relationship == EHarmoniaTeamRelationship::Ally;
+}
+
+bool AHarmoniaMonsterBase::IsEnemyWith_Implementation(AActor* OtherActor) const
+{
+	if (!OtherActor)
+	{
+		return false;
+	}
+
+	EHarmoniaTeamRelationship Relationship = Execute_GetRelationshipWith(this, OtherActor);
+	return Relationship == EHarmoniaTeamRelationship::Enemy;
 }

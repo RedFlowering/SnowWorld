@@ -6,6 +6,7 @@
 #include "Engine/DataTable.h"
 #include "GameplayTagContainer.h"
 #include "Engine/DataAsset.h"
+#include "HarmoniaTeamSystemDefinitions.h"
 #include "HarmoniaMonsterSystemDefinitions.generated.h"
 
 class UGameplayEffect;
@@ -634,9 +635,22 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
 	EHarmoniaMonsterAggroType AggroType = EHarmoniaMonsterAggroType::Neutral;
 
-	// Faction settings (determines allies and enemies)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Faction")
+	// Faction settings (determines allies and enemies) - LEGACY SYSTEM
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Faction (Legacy)")
 	FHarmoniaFactionSettings FactionSettings;
+
+	/**
+	 * Team identification (NEW SYSTEM - preferred over legacy faction)
+	 * Leave invalid to use legacy faction system
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Team")
+	FHarmoniaTeamIdentification TeamID;
+
+	/**
+	 * Whether to use new team system (false = use legacy faction system)
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Team")
+	bool bUseTeamSystem = true;
 
 	// Aggro range (how far the monster can detect players)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")

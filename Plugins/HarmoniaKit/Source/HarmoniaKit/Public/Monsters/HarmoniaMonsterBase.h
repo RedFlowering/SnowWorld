@@ -7,6 +7,7 @@
 #include "AbilitySystemInterface.h"
 #include "Monsters/HarmoniaMonsterInterface.h"
 #include "Definitions/HarmoniaMonsterSystemDefinitions.h"
+#include "Definitions/HarmoniaTeamSystemDefinitions.h"
 #include "HarmoniaMonsterBase.generated.h"
 
 class UAbilitySystemComponent;
@@ -43,9 +44,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMonsterStateChangedDelegate, EHa
  * - Level scaling
  * - Animation interface support
  * - Network replication ready
+ * - Team-based friend-or-foe identification
  */
 UCLASS(Blueprintable)
-class HARMONIAKIT_API AHarmoniaMonsterBase : public ACharacter, public IAbilitySystemInterface, public IHarmoniaMonsterInterface
+class HARMONIAKIT_API AHarmoniaMonsterBase : public ACharacter, public IAbilitySystemInterface, public IHarmoniaMonsterInterface, public IHarmoniaTeamAgentInterface
 {
 	GENERATED_BODY()
 
@@ -85,6 +87,17 @@ public:
 	virtual void OnTargetLost_Implementation() override;
 	//~End of IHarmoniaMonsterInterface
 
+	//~IHarmoniaTeamAgentInterface
+	virtual FHarmoniaTeamIdentification GetTeamID_Implementation() const override;
+	virtual void SetTeamID_Implementation(const FHarmoniaTeamIdentification& NewTeamID) override;
+	virtual EHarmoniaTeamRelationship GetRelationshipWith_Implementation(AActor* OtherActor) const override;
+	virtual bool CanAttackActor_Implementation(AActor* OtherActor) const override;
+	virtual bool ShouldHelpActor_Implementation(AActor* OtherActor) const override;
+	virtual bool IsSameTeamAs_Implementation(AActor* OtherActor) const override;
+	virtual bool IsAllyWith_Implementation(AActor* OtherActor) const override;
+	virtual bool IsEnemyWith_Implementation(AActor* OtherActor) const override;
+	//~End of IHarmoniaTeamAgentInterface
+
 	// ============================================================================
 	// Monster Configuration
 	// ============================================================================
@@ -112,6 +125,20 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster|Loot")
 	float LootLuckModifier = 0.0f;
+
+	/**
+	 * Team identification (for friend-or-foe identification)
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster|Team", Replicated, meta = (ExposeOnSpawn = "true"))
+	FHarmoniaTeamIdentification TeamIdentification;
+
+	/**
+	 * Whether to use legacy faction system (backward compatibility)
+	 * If true, uses EHarmoniaMonsterFaction from MonsterData
+	 * If false, uses TeamIdentification
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster|Team")
+	bool bUseLegacyFactionSystem = false;
 
 	// ============================================================================
 	// Monster State
