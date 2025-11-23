@@ -1,5 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+#include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaLearningAIComponent.h"
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
@@ -45,7 +46,7 @@ void UHarmoniaLearningAIComponent::BeginPlay()
 	OwnerMonster = Cast<AHarmoniaMonsterBase>(GetOwner());
 	if (!OwnerMonster)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("LearningAIComponent: Owner is not a HarmoniaMonsterBase!"));
+		UE_LOG(LogHarmoniaAI, Warning, TEXT("LearningAIComponent: Owner is not a HarmoniaMonsterBase!"));
 	}
 }
 
@@ -310,7 +311,7 @@ void UHarmoniaLearningAIComponent::RecordCombatResult(AActor* Player, bool bPlay
 
 	UpdatePatternConfidence(Player);
 
-	UE_LOG(LogTemp, Log, TEXT("Combat result recorded: Player %s, Duration: %.1fs, Encounters: %d"),
+	UE_LOG(LogHarmoniaAI, Log, TEXT("Combat result recorded: Player %s, Duration: %.1fs, Encounters: %d"),
 		bPlayerWon ? TEXT("Won") : TEXT("Lost"), CombatDuration, Pattern.EncounterCount);
 }
 
@@ -415,7 +416,7 @@ void UHarmoniaLearningAIComponent::AdjustDifficulty()
 			CurrentDifficulty = static_cast<EHarmoniaAdaptiveDifficulty>(static_cast<int32>(CurrentDifficulty) + 1);
 			ApplyDifficultyAdjustments();
 
-			UE_LOG(LogTemp, Log, TEXT("Difficulty increased due to high player win rate (%.1f%%)"), WinRate * 100.0f);
+			UE_LOG(LogHarmoniaAI, Log, TEXT("Difficulty increased due to high player win rate (%.1f%%)"), WinRate * 100.0f);
 		}
 	}
 	else if (WinRate < 0.3f)
@@ -426,7 +427,7 @@ void UHarmoniaLearningAIComponent::AdjustDifficulty()
 			CurrentDifficulty = static_cast<EHarmoniaAdaptiveDifficulty>(static_cast<int32>(CurrentDifficulty) - 1);
 			ApplyDifficultyAdjustments();
 
-			UE_LOG(LogTemp, Log, TEXT("Difficulty decreased due to low player win rate (%.1f%%)"), WinRate * 100.0f);
+			UE_LOG(LogHarmoniaAI, Log, TEXT("Difficulty decreased due to low player win rate (%.1f%%)"), WinRate * 100.0f);
 		}
 	}
 }
@@ -485,7 +486,7 @@ void UHarmoniaLearningAIComponent::ApplyDifficultyAdjustments()
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Difficulty adjustments applied: Multiplier = %.2f"), Multiplier);
+	UE_LOG(LogHarmoniaAI, Log, TEXT("Difficulty adjustments applied: Multiplier = %.2f"), Multiplier);
 }
 
 float UHarmoniaLearningAIComponent::GetDifficultyMultiplier() const

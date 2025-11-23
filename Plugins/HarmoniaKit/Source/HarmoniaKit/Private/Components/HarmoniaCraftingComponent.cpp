@@ -1,5 +1,6 @@
 // Copyright 2025 Snow Game Studio.
 
+#include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaCraftingComponent.h"
 #include "Components/HarmoniaInventoryComponent.h"
 #include "Interfaces/ICraftingStation.h"
@@ -114,7 +115,7 @@ bool UHarmoniaCraftingComponent::StartCrafting(FHarmoniaID RecipeId)
 	// Check if already crafting
 	if (ActiveSession.bIsActive)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UHarmoniaCraftingComponent::StartCrafting - Already crafting!"));
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("UHarmoniaCraftingComponent::StartCrafting - Already crafting!"));
 		return false;
 	}
 
@@ -129,28 +130,28 @@ bool UHarmoniaCraftingComponent::StartCrafting(FHarmoniaID RecipeId)
 	FCraftingRecipeData RecipeData;
 	if (!GetRecipeData(RecipeId, RecipeData))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UHarmoniaCraftingComponent::StartCrafting - Recipe not found: %s"), *RecipeId.ToString());
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("UHarmoniaCraftingComponent::StartCrafting - Recipe not found: %s"), *RecipeId.ToString());
 		return false;
 	}
 
 	// Check if recipe requires learning and player knows it
 	if (RecipeData.bRequiresLearning && !HasLearnedRecipe(RecipeId))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UHarmoniaCraftingComponent::StartCrafting - Recipe not learned: %s"), *RecipeId.ToString());
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("UHarmoniaCraftingComponent::StartCrafting - Recipe not learned: %s"), *RecipeId.ToString());
 		return false;
 	}
 
 	// Check if player meets requirements
 	if (!MeetsRecipeRequirements(RecipeData))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UHarmoniaCraftingComponent::StartCrafting - Player doesn't meet requirements for recipe: %s"), *RecipeId.ToString());
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("UHarmoniaCraftingComponent::StartCrafting - Player doesn't meet requirements for recipe: %s"), *RecipeId.ToString());
 		return false;
 	}
 
 	// Check if at correct crafting station
 	if (!CheckStationRequirement(RecipeData))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UHarmoniaCraftingComponent::StartCrafting - Wrong crafting station for recipe: %s (Requires: %d, Current: %d)"),
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("UHarmoniaCraftingComponent::StartCrafting - Wrong crafting station for recipe: %s (Requires: %d, Current: %d)"),
 			*RecipeId.ToString(), (int32)RecipeData.RequiredStation, (int32)CurrentStation);
 		return false;
 	}
@@ -158,7 +159,7 @@ bool UHarmoniaCraftingComponent::StartCrafting(FHarmoniaID RecipeId)
 	// Server-side: Verify player is within range of station (anti-cheat)
 	if (GetOwnerRole() == ROLE_Authority && !VerifyStationDistance())
 	{
-		UE_LOG(LogTemp, Error, TEXT("UHarmoniaCraftingComponent::StartCrafting - Station distance verification failed"));
+		UE_LOG(LogHarmoniaCrafting, Error, TEXT("UHarmoniaCraftingComponent::StartCrafting - Station distance verification failed"));
 		return false;
 	}
 
@@ -166,14 +167,14 @@ bool UHarmoniaCraftingComponent::StartCrafting(FHarmoniaID RecipeId)
 	TArray<FCraftingMaterial> MissingMaterials;
 	if (!CanCraftRecipe(RecipeId, MissingMaterials))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UHarmoniaCraftingComponent::StartCrafting - Missing materials for recipe: %s"), *RecipeId.ToString());
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("UHarmoniaCraftingComponent::StartCrafting - Missing materials for recipe: %s"), *RecipeId.ToString());
 		return false;
 	}
 
 	// Consume materials
 	if (!ConsumeMaterials(RecipeData.RequiredMaterials))
 	{
-		UE_LOG(LogTemp, Error, TEXT("UHarmoniaCraftingComponent::StartCrafting - Failed to consume materials for recipe: %s"), *RecipeId.ToString());
+		UE_LOG(LogHarmoniaCrafting, Error, TEXT("UHarmoniaCraftingComponent::StartCrafting - Failed to consume materials for recipe: %s"), *RecipeId.ToString());
 		return false;
 	}
 
@@ -201,7 +202,7 @@ bool UHarmoniaCraftingComponent::StartCrafting(FHarmoniaID RecipeId)
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::StartCrafting - Started crafting recipe: %s"), *RecipeId.ToString());
+	UE_LOG(LogHarmoniaCrafting, Log, TEXT("UHarmoniaCraftingComponent::StartCrafting - Started crafting recipe: %s"), *RecipeId.ToString());
 	return true;
 }
 
@@ -242,7 +243,7 @@ void UHarmoniaCraftingComponent::CancelCrafting()
 						if (RefundAmount > 0)
 						{
 							Inventory->AddItem(Material.ItemId, RefundAmount, MaxItemDurability);
-							UE_LOG(LogTemp, Log, TEXT("Refunded %d x %s (%.0f%% refund)"),
+							UE_LOG(LogHarmoniaCrafting, Log, TEXT("Refunded %d x %s (%.0f%% refund)"),
 								RefundAmount, *Material.ItemId.ToString(), RefundMultiplier * 100.0f);
 						}
 					}
@@ -266,7 +267,7 @@ void UHarmoniaCraftingComponent::CancelCrafting()
 	// Notify clients
 	ClientCraftingCancelled(RecipeId, ProgressLost);
 
-	UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::CancelCrafting - Cancelled crafting: %s (Progress: %.2f%%)"), *RecipeId.ToString(), ProgressLost * 100.0f);
+	UE_LOG(LogHarmoniaCrafting, Log, TEXT("UHarmoniaCraftingComponent::CancelCrafting - Cancelled crafting: %s (Progress: %.2f%%)"), *RecipeId.ToString(), ProgressLost * 100.0f);
 }
 
 bool UHarmoniaCraftingComponent::CanCraftRecipe(FHarmoniaID RecipeId, TArray<FCraftingMaterial>& OutMissingMaterials) const
@@ -315,7 +316,7 @@ bool UHarmoniaCraftingComponent::GetRecipeData(FHarmoniaID RecipeId, FCraftingRe
 {
 	if (!RecipeDataTable)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UHarmoniaCraftingComponent::GetRecipeData - RecipeDataTable is null!"));
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("UHarmoniaCraftingComponent::GetRecipeData - RecipeDataTable is null!"));
 		return false;
 	}
 
@@ -396,7 +397,7 @@ bool UHarmoniaCraftingComponent::LearnRecipe(FHarmoniaID RecipeId)
 	FCraftingRecipeData RecipeData;
 	if (!GetRecipeData(RecipeId, RecipeData))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UHarmoniaCraftingComponent::LearnRecipe - Recipe not found: %s"), *RecipeId.ToString());
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("UHarmoniaCraftingComponent::LearnRecipe - Recipe not found: %s"), *RecipeId.ToString());
 		return false;
 	}
 
@@ -406,7 +407,7 @@ bool UHarmoniaCraftingComponent::LearnRecipe(FHarmoniaID RecipeId)
 	// Broadcast event
 	OnRecipeLearned.Broadcast(RecipeId, RecipeData.RecipeName);
 
-	UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::LearnRecipe - Learned recipe: %s"), *RecipeId.ToString());
+	UE_LOG(LogHarmoniaCrafting, Log, TEXT("UHarmoniaCraftingComponent::LearnRecipe - Learned recipe: %s"), *RecipeId.ToString());
 	return true;
 }
 
@@ -500,7 +501,7 @@ void UHarmoniaCraftingComponent::CompleteCrafting()
 	FCraftingRecipeData RecipeData;
 	if (!GetRecipeData(ActiveSession.RecipeId, RecipeData))
 	{
-		UE_LOG(LogTemp, Error, TEXT("UHarmoniaCraftingComponent::CompleteCrafting - Recipe not found: %s"), *ActiveSession.RecipeId.ToString());
+		UE_LOG(LogHarmoniaCrafting, Error, TEXT("UHarmoniaCraftingComponent::CompleteCrafting - Recipe not found: %s"), *ActiveSession.RecipeId.ToString());
 		ActiveSession = FActiveCraftingSession();
 		return;
 	}
@@ -514,18 +515,18 @@ void UHarmoniaCraftingComponent::CompleteCrafting()
 	{
 	case ECraftingResult::Success:
 		ResultItems = RecipeData.SuccessResults;
-		UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::CompleteCrafting - Crafting succeeded: %s"), *ActiveSession.RecipeId.ToString());
+		UE_LOG(LogHarmoniaCrafting, Log, TEXT("UHarmoniaCraftingComponent::CompleteCrafting - Crafting succeeded: %s"), *ActiveSession.RecipeId.ToString());
 		break;
 
 	case ECraftingResult::CriticalSuccess:
 		ResultItems = RecipeData.SuccessResults;
 		ResultItems.Append(RecipeData.CriticalSuccessResults);
-		UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::CompleteCrafting - Critical success: %s"), *ActiveSession.RecipeId.ToString());
+		UE_LOG(LogHarmoniaCrafting, Log, TEXT("UHarmoniaCraftingComponent::CompleteCrafting - Critical success: %s"), *ActiveSession.RecipeId.ToString());
 		break;
 
 	case ECraftingResult::Failure:
 		ResultItems = RecipeData.FailureResults;
-		UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::CompleteCrafting - Crafting failed: %s"), *ActiveSession.RecipeId.ToString());
+		UE_LOG(LogHarmoniaCrafting, Log, TEXT("UHarmoniaCraftingComponent::CompleteCrafting - Crafting failed: %s"), *ActiveSession.RecipeId.ToString());
 		break;
 
 	default:
@@ -573,7 +574,7 @@ bool UHarmoniaCraftingComponent::ConsumeMaterials(const TArray<FCraftingMaterial
 		int32 CurrentAmount = Inventory->GetTotalCount(Material.ItemId);
 		if (CurrentAmount < Material.Amount)
 		{
-			UE_LOG(LogTemp, Error, TEXT("UHarmoniaCraftingComponent::ConsumeMaterials - Insufficient materials: %s (Required: %d, Has: %d)"),
+			UE_LOG(LogHarmoniaCrafting, Error, TEXT("UHarmoniaCraftingComponent::ConsumeMaterials - Insufficient materials: %s (Required: %d, Has: %d)"),
 				*Material.ItemId.ToString(), Material.Amount, CurrentAmount);
 			return false;
 		}
@@ -591,7 +592,7 @@ bool UHarmoniaCraftingComponent::ConsumeMaterials(const TArray<FCraftingMaterial
 		bool bSuccess = Inventory->RemoveItem(Material.ItemId, Material.Amount, AnyDurability);
 		if (!bSuccess)
 		{
-			UE_LOG(LogTemp, Error, TEXT("UHarmoniaCraftingComponent::ConsumeMaterials - Failed to remove material: %s"), *Material.ItemId.ToString());
+			UE_LOG(LogHarmoniaCrafting, Error, TEXT("UHarmoniaCraftingComponent::ConsumeMaterials - Failed to remove material: %s"), *Material.ItemId.ToString());
 			// Note: This shouldn't happen since we verified in first pass, but log it anyway
 		}
 	}
@@ -637,7 +638,7 @@ void UHarmoniaCraftingComponent::DistributeResults(const TArray<FCraftingResultI
 			float Roll = FMath::FRand();
 			if (Roll > ResultItem.Probability)
 			{
-				UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::DistributeResults - Skipped item due to probability: %s (Roll: %.2f, Required: %.2f)"),
+				UE_LOG(LogHarmoniaCrafting, Log, TEXT("UHarmoniaCraftingComponent::DistributeResults - Skipped item due to probability: %s (Roll: %.2f, Required: %.2f)"),
 					*ResultItem.ItemId.ToString(), Roll, ResultItem.Probability);
 				continue;
 			}
@@ -647,11 +648,11 @@ void UHarmoniaCraftingComponent::DistributeResults(const TArray<FCraftingResultI
 		bool bSuccess = Inventory->AddItem(ResultItem.ItemId, ResultItem.Amount, MaxItemDurability);
 		if (bSuccess)
 		{
-			UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::DistributeResults - Added item: %s x%d"), *ResultItem.ItemId.ToString(), ResultItem.Amount);
+			UE_LOG(LogHarmoniaCrafting, Log, TEXT("UHarmoniaCraftingComponent::DistributeResults - Added item: %s x%d"), *ResultItem.ItemId.ToString(), ResultItem.Amount);
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("UHarmoniaCraftingComponent::DistributeResults - Failed to add item: %s"), *ResultItem.ItemId.ToString());
+			UE_LOG(LogHarmoniaCrafting, Warning, TEXT("UHarmoniaCraftingComponent::DistributeResults - Failed to add item: %s"), *ResultItem.ItemId.ToString());
 		}
 	}
 }
@@ -673,7 +674,7 @@ void UHarmoniaCraftingComponent::PlayCraftingAnimation(UAnimMontage* Montage)
 	if (AnimInstance)
 	{
 		AnimInstance->Montage_Play(Montage);
-		UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::PlayCraftingAnimation - Playing montage: %s"), *Montage->GetName());
+		UE_LOG(LogHarmoniaCrafting, Log, TEXT("UHarmoniaCraftingComponent::PlayCraftingAnimation - Playing montage: %s"), *Montage->GetName());
 	}
 }
 
@@ -689,7 +690,7 @@ void UHarmoniaCraftingComponent::StopCraftingAnimation()
 	if (AnimInstance && AnimInstance->GetCurrentActiveMontage())
 	{
 		AnimInstance->Montage_Stop(0.2f);
-		UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::StopCraftingAnimation - Stopped montage"));
+		UE_LOG(LogHarmoniaCrafting, Log, TEXT("UHarmoniaCraftingComponent::StopCraftingAnimation - Stopped montage"));
 	}
 }
 
@@ -762,14 +763,14 @@ void UHarmoniaCraftingComponent::SetCurrentStation(ECraftingStationType StationT
 	// Server-only execution
 	if (GetOwnerRole() != ROLE_Authority)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SetCurrentStation called on client - use RequestSetCurrentStation instead"));
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("SetCurrentStation called on client - use RequestSetCurrentStation instead"));
 		return;
 	}
 
 	CurrentStation = StationType;
 	CurrentStationTags = StationTags;
 
-	UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::SetCurrentStation - Station set to: %d"), (int32)StationType);
+	UE_LOG(LogHarmoniaCrafting, Log, TEXT("UHarmoniaCraftingComponent::SetCurrentStation - Station set to: %d"), (int32)StationType);
 }
 
 void UHarmoniaCraftingComponent::ClearCurrentStation()
@@ -777,7 +778,7 @@ void UHarmoniaCraftingComponent::ClearCurrentStation()
 	// Server-only execution
 	if (GetOwnerRole() != ROLE_Authority)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("ClearCurrentStation called on client - use RequestClearCurrentStation instead"));
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("ClearCurrentStation called on client - use RequestClearCurrentStation instead"));
 		return;
 	}
 
@@ -785,7 +786,7 @@ void UHarmoniaCraftingComponent::ClearCurrentStation()
 	CurrentStationTags.Reset();
 	CurrentStationActor = nullptr;
 
-	UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::ClearCurrentStation - Station cleared"));
+	UE_LOG(LogHarmoniaCrafting, Log, TEXT("UHarmoniaCraftingComponent::ClearCurrentStation - Station cleared"));
 }
 
 bool UHarmoniaCraftingComponent::GetStationData(ECraftingStationType StationType, FCraftingStationData& OutStationData) const
@@ -895,14 +896,14 @@ bool UHarmoniaCraftingComponent::ServerStartCrafting_Validate(FHarmoniaID Recipe
 	// Reject invalid recipe IDs
 	if (!RecipeId.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartCrafting_Validate: Invalid RecipeId"));
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] ServerStartCrafting_Validate: Invalid RecipeId"));
 		return false;
 	}
 
 	// Reject if already crafting (prevent spam)
 	if (ActiveSession.bIsActive)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartCrafting_Validate: Already crafting"));
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] ServerStartCrafting_Validate: Already crafting"));
 		return false;
 	}
 
@@ -919,7 +920,7 @@ bool UHarmoniaCraftingComponent::ServerStartCrafting_Validate(FHarmoniaID Recipe
 	// Check minimum time between crafts
 	if (CurrentTime - LastCraftingAttempt < MinTimeBetweenCrafts)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Player %s: Crafting spam detected (too fast)"),
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] Player %s: Crafting spam detected (too fast)"),
 			*GetOwner()->GetName());
 		return false;
 	}
@@ -927,7 +928,7 @@ bool UHarmoniaCraftingComponent::ServerStartCrafting_Validate(FHarmoniaID Recipe
 	// Check attempts per second
 	if (CraftingAttemptsThisSecond >= MaxCraftingAttemptsPerSecond)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Player %s: Too many crafting attempts per second"),
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] Player %s: Too many crafting attempts per second"),
 			*GetOwner()->GetName());
 		return false;
 	}
@@ -958,7 +959,7 @@ bool UHarmoniaCraftingComponent::ServerLearnRecipe_Validate(FHarmoniaID RecipeId
 	// Verify recipe ID is valid
 	if (!RecipeId.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerLearnRecipe_Validate: Invalid RecipeId"));
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] ServerLearnRecipe_Validate: Invalid RecipeId"));
 		return false;
 	}
 
@@ -966,7 +967,7 @@ bool UHarmoniaCraftingComponent::ServerLearnRecipe_Validate(FHarmoniaID RecipeId
 	FCraftingRecipeData RecipeData;
 	if (!GetRecipeData(RecipeId, RecipeData))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Player %s: Attempted to learn non-existent recipe %s"),
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] Player %s: Attempted to learn non-existent recipe %s"),
 			*GetOwner()->GetName(), *RecipeId.ToString());
 		return false;
 	}
@@ -1065,7 +1066,7 @@ void UHarmoniaCraftingComponent::CacheConfigurationData()
 				GradeConfigCache.Add(Config->Grade, *Config);
 			}
 		}
-		UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::CacheConfigurationData - Cached %d grade configs"), GradeConfigCache.Num());
+		UE_LOG(LogHarmoniaCrafting, Log, TEXT("UHarmoniaCraftingComponent::CacheConfigurationData - Cached %d grade configs"), GradeConfigCache.Num());
 	}
 
 	// Cache station data for fast O(1) lookups
@@ -1081,7 +1082,7 @@ void UHarmoniaCraftingComponent::CacheConfigurationData()
 				StationDataCache.Add(Station->StationType, *Station);
 			}
 		}
-		UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::CacheConfigurationData - Cached %d station configs"), StationDataCache.Num());
+		UE_LOG(LogHarmoniaCrafting, Log, TEXT("UHarmoniaCraftingComponent::CacheConfigurationData - Cached %d station configs"), StationDataCache.Num());
 	}
 }
 
@@ -1094,7 +1095,7 @@ bool UHarmoniaCraftingComponent::VerifyStationDistance() const
 
 	if (!CurrentStationActor.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Player %s: No station actor set but station type is %d"),
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] Player %s: No station actor set but station type is %d"),
 			*GetOwner()->GetName(), (int32)CurrentStation);
 		return false;
 	}
@@ -1109,7 +1110,7 @@ bool UHarmoniaCraftingComponent::VerifyStationDistance() const
 
 	if (Distance > MaxStationInteractionDistance)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Player %s: Too far from station (Distance: %.2f, Max: %.2f)"),
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] Player %s: Too far from station (Distance: %.2f, Max: %.2f)"),
 			*GetOwner()->GetName(), Distance, MaxStationInteractionDistance);
 		return false;
 	}
@@ -1122,7 +1123,7 @@ void UHarmoniaCraftingComponent::SetCurrentStationWithActor(AActor* StationActor
 	// Server-only execution
 	if (GetOwnerRole() != ROLE_Authority)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SetCurrentStationWithActor called on client - use RequestSetCurrentStationWithActor instead"));
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("SetCurrentStationWithActor called on client - use RequestSetCurrentStationWithActor instead"));
 		return;
 	}
 
@@ -1130,7 +1131,7 @@ void UHarmoniaCraftingComponent::SetCurrentStationWithActor(AActor* StationActor
 	CurrentStationTags = StationTags;
 	CurrentStationActor = StationActor;
 
-	UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::SetCurrentStationWithActor - Station set to: %d with actor: %s"),
+	UE_LOG(LogHarmoniaCrafting, Log, TEXT("UHarmoniaCraftingComponent::SetCurrentStationWithActor - Station set to: %d with actor: %s"),
 		(int32)StationType, *GetNameSafe(StationActor));
 }
 
@@ -1152,7 +1153,7 @@ bool UHarmoniaCraftingComponent::ServerSetCurrentStation_Validate(ECraftingStati
 	FCraftingStationData StationData;
 	if (!GetStationData(StationType, StationData))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStation: Invalid StationType %d"), (int32)StationType);
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStation: Invalid StationType %d"), (int32)StationType);
 		return false;
 	}
 
@@ -1167,7 +1168,7 @@ void UHarmoniaCraftingComponent::ServerSetCurrentStationWithActor_Implementation
 		float Distance = FVector::Dist(GetOwner()->GetActorLocation(), StationActor->GetActorLocation());
 		if (Distance > MaxStationInteractionDistance)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("ServerSetCurrentStationWithActor: Station too far (Distance: %.1f, Max: %.1f)"),
+			UE_LOG(LogHarmoniaCrafting, Warning, TEXT("ServerSetCurrentStationWithActor: Station too far (Distance: %.1f, Max: %.1f)"),
 				Distance, MaxStationInteractionDistance);
 			return;
 		}
@@ -1181,7 +1182,7 @@ bool UHarmoniaCraftingComponent::ServerSetCurrentStationWithActor_Validate(AActo
 	// Anti-cheat: Validate station type
 	if (StationType == ECraftingStationType::None)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Cannot set None with actor"));
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Cannot set None with actor"));
 		return false;
 	}
 
@@ -1189,14 +1190,14 @@ bool UHarmoniaCraftingComponent::ServerSetCurrentStationWithActor_Validate(AActo
 	FCraftingStationData StationData;
 	if (!GetStationData(StationType, StationData))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Invalid StationType %d"), (int32)StationType);
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Invalid StationType %d"), (int32)StationType);
 		return false;
 	}
 
 	// Validate station actor exists
 	if (!StationActor)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: StationActor is null"));
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: StationActor is null"));
 		return false;
 	}
 
@@ -1206,7 +1207,7 @@ bool UHarmoniaCraftingComponent::ServerSetCurrentStationWithActor_Validate(AActo
 		float Distance = FVector::Dist(GetOwner()->GetActorLocation(), StationActor->GetActorLocation());
 		if (Distance > MaxStationInteractionDistance * 2.0f)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Station too far (Distance: %.1f, Max: %.1f)"),
+			UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Station too far (Distance: %.1f, Max: %.1f)"),
 				Distance, MaxStationInteractionDistance * 2.0f);
 			return false;
 		}
@@ -1220,7 +1221,7 @@ bool UHarmoniaCraftingComponent::ServerSetCurrentStationWithActor_Validate(AActo
 
 		if (ActualStationType != StationType)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Station type mismatch (Claimed: %d, Actual: %d)"),
+			UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Station type mismatch (Claimed: %d, Actual: %d)"),
 				(int32)StationType, (int32)ActualStationType);
 			return false;
 		}
@@ -1235,7 +1236,7 @@ bool UHarmoniaCraftingComponent::ServerSetCurrentStationWithActor_Validate(AActo
 			{
 				if (!ActualTags.HasTag(ClaimedTag))
 				{
-					UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Station missing claimed tag: %s"),
+					UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Station missing claimed tag: %s"),
 						*ClaimedTag.ToString());
 					return false;
 				}
@@ -1245,14 +1246,14 @@ bool UHarmoniaCraftingComponent::ServerSetCurrentStationWithActor_Validate(AActo
 		// Check if station is available for use
 		if (!Station->Execute_IsAvailableForUse(StationActor, GetOwner()))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Station not available for use"));
+			UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Station not available for use"));
 			return false;
 		}
 	}
 	else
 	{
 		// Station actor doesn't implement ICraftingStation interface
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Station actor doesn't implement ICraftingStation interface"));
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Station actor doesn't implement ICraftingStation interface"));
 		return false;
 	}
 
@@ -1273,7 +1274,7 @@ void UHarmoniaCraftingComponent::Debug_LearnAllRecipes()
 {
 	if (!RecipeDataTable)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UHarmoniaCraftingComponent::Debug_LearnAllRecipes - RecipeDataTable is null!"));
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("UHarmoniaCraftingComponent::Debug_LearnAllRecipes - RecipeDataTable is null!"));
 		return;
 	}
 
@@ -1288,20 +1289,20 @@ void UHarmoniaCraftingComponent::Debug_LearnAllRecipes()
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::Debug_LearnAllRecipes - Learned %d recipes"), AllRecipes.Num());
+	UE_LOG(LogHarmoniaCrafting, Log, TEXT("UHarmoniaCraftingComponent::Debug_LearnAllRecipes - Learned %d recipes"), AllRecipes.Num());
 }
 
 void UHarmoniaCraftingComponent::Debug_InstantCraft()
 {
 	if (!ActiveSession.bIsActive)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UHarmoniaCraftingComponent::Debug_InstantCraft - No active crafting session!"));
+		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("UHarmoniaCraftingComponent::Debug_InstantCraft - No active crafting session!"));
 		return;
 	}
 
 	// Set elapsed time to completion
 	ActiveSession.ElapsedTime = ActiveSession.TotalCastingTime;
 
-	UE_LOG(LogTemp, Log, TEXT("UHarmoniaCraftingComponent::Debug_InstantCraft - Instantly completing crafting"));
+	UE_LOG(LogHarmoniaCrafting, Log, TEXT("UHarmoniaCraftingComponent::Debug_InstantCraft - Instantly completing crafting"));
 }
 #endif

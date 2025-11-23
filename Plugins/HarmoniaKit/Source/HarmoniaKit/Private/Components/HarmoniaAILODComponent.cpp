@@ -1,5 +1,6 @@
 // Copyright 2025 Snow Game Studio.
 
+#include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaAILODComponent.h"
 #include "Monsters/HarmoniaMonsterInterface.h"
 #include "GameFramework/PlayerController.h"
@@ -200,7 +201,7 @@ void UHarmoniaAILODComponent::UpdateLODLevel()
 		OnLODLevelChanged.Broadcast(OldLevel, CurrentLODLevel);
 		TimeSinceLastUpdate = 0.0f;
 
-		UE_LOG(LogTemp, Verbose, TEXT("%s LOD changed: %s -> %s (Distance: %.0f, Visible: %s)"),
+		UE_LOG(LogHarmoniaAI, Verbose, TEXT("%s LOD changed: %s -> %s (Distance: %.0f, Visible: %s)"),
 			*GetOwner()->GetName(),
 			*UEnum::GetValueAsString(OldLevel),
 			*UEnum::GetValueAsString(NewLOD),

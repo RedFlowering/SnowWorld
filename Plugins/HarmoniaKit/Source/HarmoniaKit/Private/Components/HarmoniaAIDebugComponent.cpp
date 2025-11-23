@@ -1,5 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+#include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaAIDebugComponent.h"
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
@@ -220,6 +221,6 @@ void UHarmoniaAIDebugComponent::LogDecision(const FString& Decision, const FStri
 
 	if (bLogDecisions)
 	{
-		UE_LOG(LogTemp, Log, TEXT("[AI Decision] %s - %s"), *Decision, *Reason);
+		UE_LOG(LogHarmoniaAI, Log, TEXT("[AI Decision] %s - %s"), *Decision, *Reason);
 	}
 }

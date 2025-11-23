@@ -1,5 +1,6 @@
 // Copyright 2025 Snow Game Studio.
 
+#include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaInventoryComponent.h"
 #include "Definitions/HarmoniaInventorySystemDefinitions.h"
 #include "Definitions/HarmoniaCoreDefinitions.h"
@@ -99,7 +100,7 @@ void UHarmoniaInventoryComponent::RequestClear()
 	// [SECURITY] Clear is a dangerous operation that requires Admin permissions
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[SECURITY] RequestClear: Must be called on server"));
+		UE_LOG(LogHarmoniaInventory, Warning, TEXT("[SECURITY] RequestClear: Must be called on server"));
 		return;
 	}
 
@@ -107,14 +108,14 @@ void UHarmoniaInventoryComponent::RequestClear()
 	APawn* OwnerPawn = Cast<APawn>(GetOwner());
 	if (!OwnerPawn)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[SECURITY] RequestClear: Owner is not a Pawn"));
+		UE_LOG(LogHarmoniaInventory, Warning, TEXT("[SECURITY] RequestClear: Owner is not a Pawn"));
 		return;
 	}
 
 	APlayerState* PlayerState = OwnerPawn->GetPlayerState();
 	if (!PlayerState)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[SECURITY] RequestClear: No PlayerState found"));
+		UE_LOG(LogHarmoniaInventory, Warning, TEXT("[SECURITY] RequestClear: No PlayerState found"));
 		return;
 	}
 
@@ -122,20 +123,20 @@ void UHarmoniaInventoryComponent::RequestClear()
 	IHarmoniaAdminInterface* AdminInterface = Cast<IHarmoniaAdminInterface>(PlayerState);
 	if (!AdminInterface)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[SECURITY] RequestClear: Player does not have admin interface - operation denied"));
-		UE_LOG(LogTemp, Warning, TEXT("[SECURITY] To enable this feature, implement IHarmoniaAdminInterface in your PlayerState"));
+		UE_LOG(LogHarmoniaInventory, Warning, TEXT("[SECURITY] RequestClear: Player does not have admin interface - operation denied"));
+		UE_LOG(LogHarmoniaInventory, Warning, TEXT("[SECURITY] To enable this feature, implement IHarmoniaAdminInterface in your PlayerState"));
 		return;
 	}
 
 	// Require Admin level or higher
 	if (!AdminInterface->Execute_HasAdminPermission(PlayerState, EHarmoniaAdminLevel::Admin))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[SECURITY] RequestClear: Insufficient admin permissions (requires Admin level)"));
+		UE_LOG(LogHarmoniaInventory, Warning, TEXT("[SECURITY] RequestClear: Insufficient admin permissions (requires Admin level)"));
 		return;
 	}
 
 	// Permission granted - execute clear operation
-	UE_LOG(LogTemp, Log, TEXT("[ADMIN] Inventory cleared by player %s with Admin permissions"), *PlayerState->GetPlayerName());
+	UE_LOG(LogHarmoniaInventory, Log, TEXT("[ADMIN] Inventory cleared by player %s with Admin permissions"), *PlayerState->GetPlayerName());
 	Clear();
 }
 
@@ -273,7 +274,7 @@ bool UHarmoniaInventoryComponent::ServerPickupItem_Validate(AHarmoniaItemActor* 
 	// Anti-cheat: Validate item is not null
 	if (!Item)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerPickupItem: Item is null"));
+		UE_LOG(LogHarmoniaInventory, Warning, TEXT("[ANTI-CHEAT] ServerPickupItem: Item is null"));
 		return false;
 	}
 
@@ -285,7 +286,7 @@ bool UHarmoniaInventoryComponent::ServerPickupItem_Validate(AHarmoniaItemActor* 
 		const float MaxPickupDistance = 500.0f;
 		if (Distance > MaxPickupDistance)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerPickupItem: Item too far (%.1f > %.1f)"), Distance, MaxPickupDistance);
+			UE_LOG(LogHarmoniaInventory, Warning, TEXT("[ANTI-CHEAT] ServerPickupItem: Item too far (%.1f > %.1f)"), Distance, MaxPickupDistance);
 			return false;
 		}
 	}
@@ -346,7 +347,7 @@ bool UHarmoniaInventoryComponent::ServerDropItem_Validate(int32 SlotIndex)
 	// Anti-cheat: Validate slot index
 	if (!InventoryData.Slots.IsValidIndex(SlotIndex))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerDropItem: Invalid slot index %d (Max: %d)"), SlotIndex, InventoryData.Slots.Num() - 1);
+		UE_LOG(LogHarmoniaInventory, Warning, TEXT("[ANTI-CHEAT] ServerDropItem: Invalid slot index %d (Max: %d)"), SlotIndex, InventoryData.Slots.Num() - 1);
 		return false;
 	}
 
@@ -363,14 +364,14 @@ bool UHarmoniaInventoryComponent::ServerAddItem_Validate(const FHarmoniaID& Item
 	// Anti-cheat: Validate item count
 	if (Count <= 0 || Count > 9999)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerAddItem: Invalid count %d for item %s"), Count, *ItemID.ToString());
+		UE_LOG(LogHarmoniaInventory, Warning, TEXT("[ANTI-CHEAT] ServerAddItem: Invalid count %d for item %s"), Count, *ItemID.ToString());
 		return false;
 	}
 
 	// Validate item ID
 	if (!ItemID.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerAddItem: Invalid ItemID"));
+		UE_LOG(LogHarmoniaInventory, Warning, TEXT("[ANTI-CHEAT] ServerAddItem: Invalid ItemID"));
 		return false;
 	}
 
@@ -387,14 +388,14 @@ bool UHarmoniaInventoryComponent::ServerRemoveItem_Validate(const FHarmoniaID& I
 	// Anti-cheat: Validate item count
 	if (Count <= 0 || Count > 9999)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerRemoveItem: Invalid count %d for item %s"), Count, *ItemID.ToString());
+		UE_LOG(LogHarmoniaInventory, Warning, TEXT("[ANTI-CHEAT] ServerRemoveItem: Invalid count %d for item %s"), Count, *ItemID.ToString());
 		return false;
 	}
 
 	// Validate item ID
 	if (!ItemID.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerRemoveItem: Invalid ItemID"));
+		UE_LOG(LogHarmoniaInventory, Warning, TEXT("[ANTI-CHEAT] ServerRemoveItem: Invalid ItemID"));
 		return false;
 	}
 
@@ -402,7 +403,7 @@ bool UHarmoniaInventoryComponent::ServerRemoveItem_Validate(const FHarmoniaID& I
 	int32 CurrentCount = GetTotalCount(ItemID);
 	if (CurrentCount < Count)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerRemoveItem: Player doesn't have enough items (Has: %d, Trying to remove: %d)"), CurrentCount, Count);
+		UE_LOG(LogHarmoniaInventory, Warning, TEXT("[ANTI-CHEAT] ServerRemoveItem: Player doesn't have enough items (Has: %d, Trying to remove: %d)"), CurrentCount, Count);
 		return false;
 	}
 
@@ -419,14 +420,14 @@ bool UHarmoniaInventoryComponent::ServerSwapSlots_Validate(int32 SlotA, int32 Sl
 	// Anti-cheat: Validate slot indices
 	if (!InventoryData.Slots.IsValidIndex(SlotA) || !InventoryData.Slots.IsValidIndex(SlotB))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSwapSlots: Invalid slot indices (A: %d, B: %d, Max: %d)"),
+		UE_LOG(LogHarmoniaInventory, Warning, TEXT("[ANTI-CHEAT] ServerSwapSlots: Invalid slot indices (A: %d, B: %d, Max: %d)"),
 			SlotA, SlotB, InventoryData.Slots.Num() - 1);
 		return false;
 	}
 
 	if (SlotA == SlotB)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerSwapSlots: Cannot swap slot with itself"));
+		UE_LOG(LogHarmoniaInventory, Warning, TEXT("[ANTI-CHEAT] ServerSwapSlots: Cannot swap slot with itself"));
 		return false;
 	}
 

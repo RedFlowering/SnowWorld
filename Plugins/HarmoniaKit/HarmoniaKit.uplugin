@@ -48,6 +48,16 @@
       "Name": "HarmoniaWorldGenerator",
       "Type": "Runtime",
       "LoadingPhase": "Default"
+    },
+    {
+      "Name": "HarmoniaModSystem",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    },
+    {
+      "Name": "HarmoniaLocalizationSystem",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
     }
   ],
   "Plugins": [
