@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Components/HarmoniaBaseLifeContentComponent.h"
 #include "Definitions/HarmoniaGatheringSystemDefinitions.h"
 #include "HarmoniaGatheringComponent.generated.h"
 
@@ -16,19 +16,22 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnToolDurabilityChanged, FName, To
 /**
  * 채집 시스템 컴포넌트
  * 광물, 약초, 벌목 등 다양한 자원 채집 처리
+ * Inherits leveling, experience, and activity management from UHarmoniaBaseLifeContentComponent
  */
 UCLASS(ClassGroup=(HarmoniaKit), meta=(BlueprintSpawnableComponent))
-class HARMONIAKIT_API UHarmoniaGatheringComponent : public UActorComponent
+class HARMONIAKIT_API UHarmoniaGatheringComponent : public UHarmoniaBaseLifeContentComponent
 {
 	GENERATED_BODY()
 
-public:	
+public:
 	UHarmoniaGatheringComponent();
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void OnActivityComplete() override;
+	virtual void OnLevelUpInternal(int32 NewLevel) override;
 
-public:	
+public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	// ====================================
@@ -80,22 +83,22 @@ public:
 	void ReduceToolDurability(int32 Amount);
 
 	// ====================================
-	// 레벨 및 경험치 시스템
+	// 레벨 및 경험치 시스템 (per resource type)
 	// ====================================
 
-	/** 채집 경험치 획득 */
+	/** 채집 경험치 획득 (per resource type) */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Gathering")
 	void AddGatheringExperience(int32 Amount, EGatheringResourceType ResourceType);
 
-	/** 현재 채집 레벨 */
+	/** 현재 채집 레벨 (per resource type) */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Gathering")
 	int32 GetGatheringLevel(EGatheringResourceType ResourceType) const;
 
-	/** 현재 경험치 */
+	/** 현재 경험치 (per resource type) */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Gathering")
 	int32 GetCurrentExperience(EGatheringResourceType ResourceType) const;
 
-	/** 다음 레벨까지 필요한 경험치 */
+	/** 다음 레벨까지 필요한 경험치 (per resource type) */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Gathering")
 	int32 GetExperienceForNextLevel(EGatheringResourceType ResourceType) const;
 
@@ -159,13 +162,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gathering Settings")
 	TMap<FName, FGatheringResourceData> ResourceDatabase;
 
-	/** 레벨업 경험치 배율 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gathering Settings")
-	float ExperienceMultiplier = 1.0f;
-
-	/** 기본 레벨업 필요 경험치 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gathering Settings")
-	int32 BaseExperiencePerLevel = 100;
+	// Note: ExperienceMultiplier, BaseExperiencePerLevel은 base class에 정의됨
 
 	/** 기본 크리티컬 확률 (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gathering Settings")
@@ -218,7 +215,7 @@ private:
 	/** 채집 결과 계산 */
 	FGatheringResult CalculateGatheringResult(const FGatheringResourceData& ResourceData);
 
-	/** 레벨 체크 및 처리 */
+	/** 레벨 체크 및 처리 (per resource type) */
 	void CheckAndProcessLevelUp(EGatheringResourceType ResourceType);
 
 	/** 채집 시간 계산 (보너스 적용) */
