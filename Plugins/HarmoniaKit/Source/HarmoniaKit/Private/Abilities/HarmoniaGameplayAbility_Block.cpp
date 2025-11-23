@@ -12,9 +12,9 @@ UHarmoniaGameplayAbility_Block::UHarmoniaGameplayAbility_Block(const FObjectInit
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
-	// Setup default tags
-	BlockingTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Blocking")));
-	BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Attacking")));
+	// Setup default tags - Commented out to avoid callstack issues. Configure in header or Blueprint instead.
+	// BlockingTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Blocking")));
+	// BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Attacking")));
 }
 
 bool UHarmoniaGameplayAbility_Block::CanActivateAbility(
