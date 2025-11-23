@@ -18,11 +18,11 @@ UHarmoniaGameplayAbility_MeleeAttack::UHarmoniaGameplayAbility_MeleeAttack(const
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
-	// Setup default tags
-	AttackingTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Attacking")));
-	BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Attacking")));
-	BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Blocking")));
-	BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Dodging")));
+	// Setup default tags - Commented out to avoid callstack issues. Configure in header or Blueprint instead.
+	// AttackingTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Attacking")));
+	// BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Attacking")));
+	// BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Blocking")));
+	// BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Dodging")));
 }
 
 bool UHarmoniaGameplayAbility_MeleeAttack::CanActivateAbility(
@@ -78,12 +78,6 @@ void UHarmoniaGameplayAbility_MeleeAttack::ActivateAbility(
 		return;
 	}
 
-	// Apply attacking tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->AddLooseGameplayTags(AttackingTags);
-	}
-
 	// Get combo sequence
 	if (!MeleeCombatComponent->GetComboSequence(bIsHeavyAttack, CurrentComboSequence))
 	{
@@ -106,12 +100,6 @@ void UHarmoniaGameplayAbility_MeleeAttack::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	// Remove attacking tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->RemoveLooseGameplayTags(AttackingTags);
-	}
-
 	// End attack in melee combat component
 	if (MeleeCombatComponent)
 	{

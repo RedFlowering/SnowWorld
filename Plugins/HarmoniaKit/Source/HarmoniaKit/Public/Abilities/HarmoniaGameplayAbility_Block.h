@@ -34,14 +34,6 @@ protected:
 	//~End of UGameplayAbility interface
 
 protected:
-	/** Tags to apply while blocking */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block")
-	FGameplayTagContainer BlockingTags;
-
-	/** Tags to block while blocking */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block")
-	FGameplayTagContainer BlockedTags;
-
 	/** Block start animation */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block|Animation")
 	TObjectPtr<UAnimMontage> BlockStartMontage;

@@ -102,14 +102,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Attack")
 	bool bIsHeavyAttack = false;
 
-	/** Tags to apply while attacking */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Attack|Tags")
-	FGameplayTagContainer AttackingTags;
-
-	/** Tags to block while attacking */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Attack|Tags")
-	FGameplayTagContainer BlockedTags;
-
 	/** Damage gameplay effect to apply on hit */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Attack|Damage")
 	TSubclassOf<UGameplayEffect> DamageEffectClass;

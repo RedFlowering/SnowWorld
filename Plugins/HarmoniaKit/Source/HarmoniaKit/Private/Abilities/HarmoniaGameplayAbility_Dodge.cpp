@@ -15,10 +15,10 @@ UHarmoniaGameplayAbility_Dodge::UHarmoniaGameplayAbility_Dodge(const FObjectInit
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
-	// Setup default tags
-	DodgingTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Dodging")));
-	BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Attacking")));
-	BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Blocking")));
+	// Setup default tags - Commented out to avoid callstack issues. Configure in header or Blueprint instead.
+	// DodgingTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Dodging")));
+	// BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Attacking")));
+	// BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Blocking")));
 }
 
 bool UHarmoniaGameplayAbility_Dodge::CanActivateAbility(
@@ -90,12 +90,6 @@ void UHarmoniaGameplayAbility_Dodge::ActivateAbility(
 	if (MeleeCombatComponent)
 	{
 		MeleeCombatComponent->ConsumeStamina(CurrentStaminaCost);
-	}
-
-	// Apply dodging tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->AddLooseGameplayTags(DodgingTags);
 	}
 
 	// Set defense state
@@ -172,12 +166,6 @@ void UHarmoniaGameplayAbility_Dodge::EndAbility(
 	if (MeleeCombatComponent && MeleeCombatComponent->IsInvulnerable())
 	{
 		MeleeCombatComponent->SetInvulnerable(false);
-	}
-
-	// Remove dodging tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->RemoveLooseGameplayTags(DodgingTags);
 	}
 
 	// Reset defense state

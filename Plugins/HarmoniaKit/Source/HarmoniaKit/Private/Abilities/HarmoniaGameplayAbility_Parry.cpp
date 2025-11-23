@@ -13,9 +13,9 @@ UHarmoniaGameplayAbility_Parry::UHarmoniaGameplayAbility_Parry(const FObjectInit
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
-	// Setup default tags
-	ParryingTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Parrying")));
-	BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Attacking")));
+	// Setup default tags - Commented out to avoid callstack issues. Configure in header or Blueprint instead.
+	// ParryingTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Parrying")));
+	// BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Attacking")));
 }
 
 bool UHarmoniaGameplayAbility_Parry::CanActivateAbility(
@@ -67,12 +67,6 @@ void UHarmoniaGameplayAbility_Parry::ActivateAbility(
 		MeleeCombatComponent->ConsumeStamina(ParryStaminaCost);
 	}
 
-	// Apply parrying tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->AddLooseGameplayTags(ParryingTags);
-	}
-
 	// Set defense state
 	if (MeleeCombatComponent)
 	{
@@ -122,12 +116,6 @@ void UHarmoniaGameplayAbility_Parry::EndAbility(
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(ParryWindowTimerHandle);
-	}
-
-	// Remove parrying tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->RemoveLooseGameplayTags(ParryingTags);
 	}
 
 	// Reset defense state

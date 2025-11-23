@@ -21,10 +21,10 @@ UHarmoniaGameplayAbility_ComboAttack::UHarmoniaGameplayAbility_ComboAttack(const
 	ActivationPolicy = ELyraAbilityActivationPolicy::OnInputTriggered;
 	ActivationGroup = ELyraAbilityActivationGroup::Exclusive_Replaceable;
 
-	// Setup default tags
-	AttackingTags.AddTag(HarmoniaGameplayTags::State_Combat_Attacking);
+	// Setup default tags - Commented out to avoid callstack issues. Configure in header or Blueprint instead.
+	// AttackingTags.AddTag(HarmoniaGameplayTags::State_Combat_Attacking);
 
-	BlockedTags.AddTag(HarmoniaGameplayTags::State_Combat_Attacking);
+	// BlockedTags.AddTag(HarmoniaGameplayTags::State_Combat_Attacking);
 }
 
 bool UHarmoniaGameplayAbility_ComboAttack::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
@@ -56,12 +56,6 @@ void UHarmoniaGameplayAbility_ComboAttack::ActivateAbility(const FGameplayAbilit
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
-	}
-
-	// Apply attacking tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->AddLooseGameplayTags(AttackingTags);
 	}
 
 	// If we're in a combo window, advance to next combo
@@ -261,12 +255,6 @@ void UHarmoniaGameplayAbility_ComboAttack::ResetCombo()
 
 void UHarmoniaGameplayAbility_ComboAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	// Remove attacking tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->RemoveLooseGameplayTags(AttackingTags);
-	}
-
 	// Clear combo window timer if still active
 	if (UWorld* World = GetWorld())
 	{

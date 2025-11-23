@@ -56,14 +56,6 @@ protected:
 	void OnMontageInterrupted();
 
 protected:
-	/** Tags to apply while dodging */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge")
-	FGameplayTagContainer DodgingTags;
-
-	/** Tags to block while dodging */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge")
-	FGameplayTagContainer BlockedTags;
-
 	/** Dodge/roll animation */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Animation")
 	TObjectPtr<UAnimMontage> DodgeMontage;

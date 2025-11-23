@@ -15,11 +15,11 @@ UHarmoniaGameplayAbility_Riposte::UHarmoniaGameplayAbility_Riposte(const FObject
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
-	// Setup default tags
-	RiposteTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Riposting")));
-	BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Attacking")));
-	BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Blocking")));
-	BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Dodging")));
+	// Setup default tags - Commented out to avoid callstack issues. Configure in header or Blueprint instead.
+	// RiposteTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Riposting")));
+	// BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Attacking")));
+	// BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Blocking")));
+	// BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Dodging")));
 
 	// Default riposte config
 	RiposteConfig.RiposteWindowDuration = 2.0f;
@@ -86,12 +86,6 @@ void UHarmoniaGameplayAbility_Riposte::ActivateAbility(
 	// Consume stamina
 	MeleeCombatComponent->ConsumeStamina(RiposteConfig.RiposteStaminaCost);
 
-	// Apply riposting tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->AddLooseGameplayTags(RiposteTags);
-	}
-
 	// Get parried target from combat component
 	ParriedTarget = MeleeCombatComponent->GetParriedTarget();
 
@@ -134,12 +128,6 @@ void UHarmoniaGameplayAbility_Riposte::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	// Remove riposting tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->RemoveLooseGameplayTags(RiposteTags);
-	}
-
 	// Reset defense state
 	if (MeleeCombatComponent)
 	{

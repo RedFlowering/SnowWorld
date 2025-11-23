@@ -42,14 +42,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Riposte")
 	FHarmoniaRiposteConfig RiposteConfig;
 
-	/** Tags to apply during riposte */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Riposte")
-	FGameplayTagContainer RiposteTags;
-
-	/** Tags to block during riposte */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Riposte")
-	FGameplayTagContainer BlockedTags;
-
 	/** Damage gameplay effect to apply on hit */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Riposte|Damage")
 	TSubclassOf<UGameplayEffect> RiposteDamageEffectClass;
