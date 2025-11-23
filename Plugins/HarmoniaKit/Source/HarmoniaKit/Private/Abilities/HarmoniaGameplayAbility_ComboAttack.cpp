@@ -58,12 +58,6 @@ void UHarmoniaGameplayAbility_ComboAttack::ActivateAbility(const FGameplayAbilit
 		return;
 	}
 
-	// Apply attacking tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->AddLooseGameplayTags(AttackingTags);
-	}
-
 	// If we're in a combo window, advance to next combo
 	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
 	{
@@ -261,12 +255,6 @@ void UHarmoniaGameplayAbility_ComboAttack::ResetCombo()
 
 void UHarmoniaGameplayAbility_ComboAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	// Remove attacking tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->RemoveLooseGameplayTags(AttackingTags);
-	}
-
 	// Clear combo window timer if still active
 	if (UWorld* World = GetWorld())
 	{

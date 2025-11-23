@@ -67,12 +67,6 @@ void UHarmoniaGameplayAbility_Parry::ActivateAbility(
 		MeleeCombatComponent->ConsumeStamina(ParryStaminaCost);
 	}
 
-	// Apply parrying tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->AddLooseGameplayTags(ParryingTags);
-	}
-
 	// Set defense state
 	if (MeleeCombatComponent)
 	{
@@ -122,12 +116,6 @@ void UHarmoniaGameplayAbility_Parry::EndAbility(
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(ParryWindowTimerHandle);
-	}
-
-	// Remove parrying tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->RemoveLooseGameplayTags(ParryingTags);
 	}
 
 	// Reset defense state

@@ -78,12 +78,6 @@ void UHarmoniaGameplayAbility_MeleeAttack::ActivateAbility(
 		return;
 	}
 
-	// Apply attacking tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->AddLooseGameplayTags(AttackingTags);
-	}
-
 	// Get combo sequence
 	if (!MeleeCombatComponent->GetComboSequence(bIsHeavyAttack, CurrentComboSequence))
 	{
@@ -106,12 +100,6 @@ void UHarmoniaGameplayAbility_MeleeAttack::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	// Remove attacking tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->RemoveLooseGameplayTags(AttackingTags);
-	}
-
 	// End attack in melee combat component
 	if (MeleeCombatComponent)
 	{

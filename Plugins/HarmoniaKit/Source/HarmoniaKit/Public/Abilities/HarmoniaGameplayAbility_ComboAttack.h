@@ -133,14 +133,6 @@ protected:
 	// Timer handle for combo reset
 	FTimerHandle ComboResetTimerHandle;
 
-	// Tags to apply while attacking
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combo")
-	FGameplayTagContainer AttackingTags;
-
-	// Tags to block while attacking
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combo")
-	FGameplayTagContainer BlockedTags;
-
 	// ============================================================================
 	// Attack Component Integration
 	// ============================================================================

@@ -92,12 +92,6 @@ void UHarmoniaGameplayAbility_Dodge::ActivateAbility(
 		MeleeCombatComponent->ConsumeStamina(CurrentStaminaCost);
 	}
 
-	// Apply dodging tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->AddLooseGameplayTags(DodgingTags);
-	}
-
 	// Set defense state
 	if (MeleeCombatComponent)
 	{
@@ -172,12 +166,6 @@ void UHarmoniaGameplayAbility_Dodge::EndAbility(
 	if (MeleeCombatComponent && MeleeCombatComponent->IsInvulnerable())
 	{
 		MeleeCombatComponent->SetInvulnerable(false);
-	}
-
-	// Remove dodging tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->RemoveLooseGameplayTags(DodgingTags);
 	}
 
 	// Reset defense state

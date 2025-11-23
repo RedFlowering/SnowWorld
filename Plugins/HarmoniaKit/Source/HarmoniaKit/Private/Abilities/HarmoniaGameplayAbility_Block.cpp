@@ -51,12 +51,6 @@ void UHarmoniaGameplayAbility_Block::ActivateAbility(
 
 	MeleeCombatComponent = GetMeleeCombatComponent();
 
-	// Apply blocking tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->AddLooseGameplayTags(BlockingTags);
-	}
-
 	// Set defense state
 	if (MeleeCombatComponent)
 	{
@@ -90,12 +84,6 @@ void UHarmoniaGameplayAbility_Block::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	// Remove blocking tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->RemoveLooseGameplayTags(BlockingTags);
-	}
-
 	// Reset defense state
 	if (MeleeCombatComponent)
 	{

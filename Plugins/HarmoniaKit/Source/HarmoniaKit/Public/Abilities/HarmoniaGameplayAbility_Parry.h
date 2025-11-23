@@ -34,14 +34,6 @@ protected:
 	//~End of UGameplayAbility interface
 
 protected:
-	/** Tags to apply during parry window */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Parry")
-	FGameplayTagContainer ParryingTags;
-
-	/** Tags to block while parrying */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Parry")
-	FGameplayTagContainer BlockedTags;
-
 	/** Parry animation */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Parry|Animation")
 	TObjectPtr<UAnimMontage> ParryMontage;

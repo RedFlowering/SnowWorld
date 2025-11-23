@@ -86,12 +86,6 @@ void UHarmoniaGameplayAbility_Riposte::ActivateAbility(
 	// Consume stamina
 	MeleeCombatComponent->ConsumeStamina(RiposteConfig.RiposteStaminaCost);
 
-	// Apply riposting tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->AddLooseGameplayTags(RiposteTags);
-	}
-
 	// Get parried target from combat component
 	ParriedTarget = MeleeCombatComponent->GetParriedTarget();
 
@@ -134,12 +128,6 @@ void UHarmoniaGameplayAbility_Riposte::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	// Remove riposting tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->RemoveLooseGameplayTags(RiposteTags);
-	}
-
 	// Reset defense state
 	if (MeleeCombatComponent)
 	{
