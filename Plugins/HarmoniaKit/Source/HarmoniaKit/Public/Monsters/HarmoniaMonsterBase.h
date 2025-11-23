@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
+#include "GenericTeamAgentInterface.h"
 #include "Monsters/HarmoniaMonsterInterface.h"
 #include "Definitions/HarmoniaMonsterSystemDefinitions.h"
 #include "Definitions/HarmoniaTeamSystemDefinitions.h"
@@ -45,9 +46,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMonsterStateChangedDelegate, EHa
  * - Animation interface support
  * - Network replication ready
  * - Team-based friend-or-foe identification
+ * - Unreal's standard IGenericTeamAgentInterface integration
  */
 UCLASS(Blueprintable)
-class HARMONIAKIT_API AHarmoniaMonsterBase : public ACharacter, public IAbilitySystemInterface, public IHarmoniaMonsterInterface, public IHarmoniaTeamAgentInterface
+class HARMONIAKIT_API AHarmoniaMonsterBase : public ACharacter, public IAbilitySystemInterface, public IHarmoniaMonsterInterface, public IHarmoniaTeamAgentInterface, public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
 
@@ -97,6 +99,12 @@ public:
 	virtual bool IsAllyWith_Implementation(AActor* OtherActor) const override;
 	virtual bool IsEnemyWith_Implementation(AActor* OtherActor) const override;
 	//~End of IHarmoniaTeamAgentInterface
+
+	//~IGenericTeamAgentInterface (Unreal's standard team system)
+	virtual FGenericTeamId GetGenericTeamId() const override;
+	virtual void SetGenericTeamId(const FGenericTeamId& TeamID) override;
+	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
+	//~End of IGenericTeamAgentInterface
 
 	// ============================================================================
 	// Monster Configuration

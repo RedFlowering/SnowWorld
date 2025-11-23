@@ -270,6 +270,90 @@ public:
 	void ClearAllTeams();
 
 	// ============================================================================
+	// Advanced Team Management (Dynamic Faction System)
+	// ============================================================================
+
+	/**
+	 * Create a new faction dynamically
+	 * @param FactionName Display name for the faction
+	 * @param DefaultAttitude Default attitude towards other factions
+	 * @param TeamColor Color for UI representation
+	 * @return Created team identification
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Team Management|Factions")
+	FHarmoniaTeamIdentification CreateFaction(FText FactionName,
+		EHarmoniaTeamAttitude DefaultAttitude = EHarmoniaTeamAttitude::Neutral,
+		FLinearColor TeamColor = FLinearColor::White);
+
+	/**
+	 * Create multiple factions and set their relationships
+	 * @param FactionDefinitions Array of faction definitions with relationships
+	 * @return Array of created team IDs
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Team Management|Factions")
+	TArray<FHarmoniaTeamIdentification> CreateFactionNetwork(const TArray<UHarmoniaTeamConfigData*>& FactionDefinitions);
+
+	/**
+	 * Make a faction hostile to multiple other factions
+	 * @param SourceTeam The faction to set as hostile
+	 * @param HostileFactions Array of factions to be hostile towards
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Team Management|Factions")
+	void SetFactionHostileToMany(const FHarmoniaTeamIdentification& SourceTeam,
+		const TArray<FHarmoniaTeamIdentification>& HostileFactions);
+
+	/**
+	 * Create alliance between multiple factions
+	 * @param AllianceFactions Array of factions that should be allies with each other
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Team Management|Factions")
+	void CreateAlliance(const TArray<FHarmoniaTeamIdentification>& AllianceFactions);
+
+	/**
+	 * Break alliance between two factions (set to neutral)
+	 * @param TeamA First faction
+	 * @param TeamB Second faction
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Team Management|Factions")
+	void BreakAlliance(const FHarmoniaTeamIdentification& TeamA,
+		const FHarmoniaTeamIdentification& TeamB);
+
+	/**
+	 * Get all factions that are enemies of a specific faction
+	 * @param Team The faction to query
+	 * @return Array of enemy faction IDs
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Team Management|Factions")
+	TArray<FHarmoniaTeamIdentification> GetEnemyFactions(const FHarmoniaTeamIdentification& Team) const;
+
+	/**
+	 * Get all factions that are allies of a specific faction
+	 * @param Team The faction to query
+	 * @return Array of allied faction IDs
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Team Management|Factions")
+	TArray<FHarmoniaTeamIdentification> GetAlliedFactions(const FHarmoniaTeamIdentification& Team) const;
+
+	/**
+	 * Change faction relationship dynamically (for story events, quests, etc.)
+	 * @param FactionA First faction
+	 * @param FactionB Second faction
+	 * @param NewRelationship New relationship to set
+	 * @param bBidirectional Whether to set relationship in both directions
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Team Management|Factions")
+	void ChangeFactionRelationship(const FHarmoniaTeamIdentification& FactionA,
+		const FHarmoniaTeamIdentification& FactionB,
+		EHarmoniaTeamRelationship NewRelationship,
+		bool bBidirectional = true);
+
+	/**
+	 * Get total number of registered factions
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Team Management|Factions")
+	int32 GetFactionCount() const;
+
+	// ============================================================================
 	// Delegates
 	// ============================================================================
 

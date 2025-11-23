@@ -560,6 +560,151 @@ void UHarmoniaTeamManagementSubsystem::DebugPrintRelationshipMatrix() const
 }
 
 // ============================================================================
+// Advanced Team Management (Dynamic Faction System)
+// ============================================================================
+
+FHarmoniaTeamIdentification UHarmoniaTeamManagementSubsystem::CreateFaction(FText FactionName,
+	EHarmoniaTeamAttitude DefaultAttitude,
+	FLinearColor TeamColor)
+{
+	FHarmoniaTeamIdentification NewFaction;
+	NewFaction.TeamNumericID = GenerateUniqueTeamID();
+	NewFaction.TeamName = FactionName;
+	NewFaction.TeamColor = TeamColor;
+	NewFaction.DefaultAttitude = DefaultAttitude;
+
+	// Register the faction
+	RegisterTeam(NewFaction);
+
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaTeamManagementSubsystem: Created faction '%s' (ID: %d)"),
+		*FactionName.ToString(), NewFaction.TeamNumericID);
+
+	return NewFaction;
+}
+
+TArray<FHarmoniaTeamIdentification> UHarmoniaTeamManagementSubsystem::CreateFactionNetwork(
+	const TArray<UHarmoniaTeamConfigData*>& FactionDefinitions)
+{
+	TArray<FHarmoniaTeamIdentification> CreatedFactions;
+
+	// First pass: Create all factions
+	for (UHarmoniaTeamConfigData* FactionConfig : FactionDefinitions)
+	{
+		if (FactionConfig && RegisterTeam(FactionConfig->TeamID, FactionConfig))
+		{
+			CreatedFactions.Add(FactionConfig->TeamID);
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaTeamManagementSubsystem: Created faction network with %d factions"),
+		CreatedFactions.Num());
+
+	return CreatedFactions;
+}
+
+void UHarmoniaTeamManagementSubsystem::SetFactionHostileToMany(const FHarmoniaTeamIdentification& SourceTeam,
+	const TArray<FHarmoniaTeamIdentification>& HostileFactions)
+{
+	for (const FHarmoniaTeamIdentification& HostileTeam : HostileFactions)
+	{
+		MakeTeamsEnemies(SourceTeam, HostileTeam);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaTeamManagementSubsystem: Set faction '%s' hostile to %d factions"),
+		*SourceTeam.TeamName.ToString(), HostileFactions.Num());
+}
+
+void UHarmoniaTeamManagementSubsystem::CreateAlliance(const TArray<FHarmoniaTeamIdentification>& AllianceFactions)
+{
+	// Make all factions allies with each other
+	for (int32 i = 0; i < AllianceFactions.Num(); ++i)
+	{
+		for (int32 j = i + 1; j < AllianceFactions.Num(); ++j)
+		{
+			MakeTeamsAllies(AllianceFactions[i], AllianceFactions[j]);
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaTeamManagementSubsystem: Created alliance with %d factions"),
+		AllianceFactions.Num());
+}
+
+void UHarmoniaTeamManagementSubsystem::BreakAlliance(const FHarmoniaTeamIdentification& TeamA,
+	const FHarmoniaTeamIdentification& TeamB)
+{
+	SetMutualRelationship(TeamA, TeamB, EHarmoniaTeamRelationship::Neutral);
+
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaTeamManagementSubsystem: Broke alliance between '%s' and '%s'"),
+		*TeamA.TeamName.ToString(), *TeamB.TeamName.ToString());
+}
+
+TArray<FHarmoniaTeamIdentification> UHarmoniaTeamManagementSubsystem::GetEnemyFactions(
+	const FHarmoniaTeamIdentification& Team) const
+{
+	TArray<FHarmoniaTeamIdentification> Enemies;
+
+	if (const TMap<FHarmoniaTeamIdentification, EHarmoniaTeamRelationship>* TeamRelationships =
+		RelationshipMatrix.Find(Team))
+	{
+		for (const auto& Pair : *TeamRelationships)
+		{
+			if (Pair.Value == EHarmoniaTeamRelationship::Enemy)
+			{
+				Enemies.Add(Pair.Key);
+			}
+		}
+	}
+
+	return Enemies;
+}
+
+TArray<FHarmoniaTeamIdentification> UHarmoniaTeamManagementSubsystem::GetAlliedFactions(
+	const FHarmoniaTeamIdentification& Team) const
+{
+	TArray<FHarmoniaTeamIdentification> Allies;
+
+	if (const TMap<FHarmoniaTeamIdentification, EHarmoniaTeamRelationship>* TeamRelationships =
+		RelationshipMatrix.Find(Team))
+	{
+		for (const auto& Pair : *TeamRelationships)
+		{
+			if (Pair.Value == EHarmoniaTeamRelationship::Ally)
+			{
+				Allies.Add(Pair.Key);
+			}
+		}
+	}
+
+	return Allies;
+}
+
+void UHarmoniaTeamManagementSubsystem::ChangeFactionRelationship(const FHarmoniaTeamIdentification& FactionA,
+	const FHarmoniaTeamIdentification& FactionB,
+	EHarmoniaTeamRelationship NewRelationship,
+	bool bBidirectional)
+{
+	if (bBidirectional)
+	{
+		SetMutualRelationship(FactionA, FactionB, NewRelationship);
+	}
+	else
+	{
+		SetTeamRelationship(FactionA, FactionB, NewRelationship);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaTeamManagementSubsystem: Changed relationship between '%s' and '%s' to %s (%s)"),
+		*FactionA.TeamName.ToString(),
+		*FactionB.TeamName.ToString(),
+		*UEnum::GetValueAsString(NewRelationship),
+		bBidirectional ? TEXT("bidirectional") : TEXT("unidirectional"));
+}
+
+int32 UHarmoniaTeamManagementSubsystem::GetFactionCount() const
+{
+	return RegisteredTeams.Num();
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 

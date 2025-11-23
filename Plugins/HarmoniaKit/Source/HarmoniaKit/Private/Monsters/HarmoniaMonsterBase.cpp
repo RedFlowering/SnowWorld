@@ -1072,3 +1072,55 @@ bool AHarmoniaMonsterBase::IsEnemyWith_Implementation(AActor* OtherActor) const
 	EHarmoniaTeamRelationship Relationship = Execute_GetRelationshipWith(this, OtherActor);
 	return Relationship == EHarmoniaTeamRelationship::Enemy;
 }
+
+// ============================================================================
+// IGenericTeamAgentInterface Implementation (Unreal's Standard Team System)
+// ============================================================================
+
+FGenericTeamId AHarmoniaMonsterBase::GetGenericTeamId() const
+{
+	// Convert our team ID to Unreal's FGenericTeamId
+	FHarmoniaTeamIdentification HarmoniaTeam = Execute_GetTeamID(this);
+
+	if (HarmoniaTeam.IsValid() && HarmoniaTeam.TeamNumericID > 0)
+	{
+		// Use numeric ID for Unreal's team system
+		// FGenericTeamId supports values 0-255
+		uint8 GenericTeamID = static_cast<uint8>(HarmoniaTeam.TeamNumericID % 256);
+		return FGenericTeamId(GenericTeamID);
+	}
+
+	// Return NoTeam if no valid team
+	return FGenericTeamId::NoTeam;
+}
+
+void AHarmoniaMonsterBase::SetGenericTeamId(const FGenericTeamId& TeamID)
+{
+	// Convert Unreal's FGenericTeamId to our team system
+	if (TeamID != FGenericTeamId::NoTeam)
+	{
+		FHarmoniaTeamIdentification NewTeamID;
+		NewTeamID.TeamNumericID = TeamID.GetId();
+		NewTeamID.TeamName = FText::FromString(FString::Printf(TEXT("Team %d"), TeamID.GetId()));
+		Execute_SetTeamID(this, NewTeamID);
+	}
+}
+
+ETeamAttitude::Type AHarmoniaMonsterBase::GetTeamAttitudeTowards(const AActor& Other) const
+{
+	// Convert our relationship system to Unreal's ETeamAttitude
+	EHarmoniaTeamRelationship Relationship = Execute_GetRelationshipWith(this, const_cast<AActor*>(&Other));
+
+	switch (Relationship)
+	{
+	case EHarmoniaTeamRelationship::Ally:
+		return ETeamAttitude::Friendly;
+
+	case EHarmoniaTeamRelationship::Enemy:
+		return ETeamAttitude::Hostile;
+
+	case EHarmoniaTeamRelationship::Neutral:
+	default:
+		return ETeamAttitude::Neutral;
+	}
+}
