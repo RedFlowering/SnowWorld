@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Components/HarmoniaBaseLifeContentComponent.h"
 #include "Definitions/HarmoniaCookingSystemDefinitions.h"
 #include "HarmoniaCookingComponent.generated.h"
 
@@ -19,7 +19,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFoodConsumed, FName, FoodID, con
  * 음식 제작, 버프 시스템, 레시피 관리
  */
 UCLASS(ClassGroup=(HarmoniaKit), meta=(BlueprintSpawnableComponent))
-class HARMONIAKIT_API UHarmoniaCookingComponent : public UActorComponent
+class HARMONIAKIT_API UHarmoniaCookingComponent : public UHarmoniaBaseLifeContentComponent
 {
 	GENERATED_BODY()
 

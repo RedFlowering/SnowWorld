@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Components/HarmoniaBaseLifeContentComponent.h"
 #include "Definitions/HarmoniaMusicSystemDefinitions.h"
 #include "HarmoniaMusicComponent.generated.h"
 
@@ -20,7 +20,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnRhythmNoteHit, int32, NoteIndex,
  * 악기 연주, 버프 제공, 리듬 미니게임
  */
 UCLASS(ClassGroup=(HarmoniaKit), meta=(BlueprintSpawnableComponent))
-class HARMONIAKIT_API UHarmoniaMusicComponent : public UActorComponent
+class HARMONIAKIT_API UHarmoniaMusicComponent : public UHarmoniaBaseLifeContentComponent
 {
 	GENERATED_BODY()
 

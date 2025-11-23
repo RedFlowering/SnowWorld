@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Components/HarmoniaBaseAIComponent.h"
 #include "Definitions/HarmoniaMonsterSystemDefinitions.h"
 #include "HarmoniaSquadComponent.generated.h"
 
@@ -29,18 +29,26 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSquadMemberRemovedDelegate, AActo
  * - Coordinated attacks
  * - Regrouping behavior
  * - Leader following
+ *
+ * Inherits common AI functionality from UHarmoniaBaseAIComponent
  */
 UCLASS(ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
-class HARMONIAKIT_API UHarmoniaSquadComponent : public UActorComponent
+class HARMONIAKIT_API UHarmoniaSquadComponent : public UHarmoniaBaseAIComponent
 {
 	GENERATED_BODY()
 
 public:
 	UHarmoniaSquadComponent();
 
+protected:
+	//~UHarmoniaBaseAIComponent interface
+	virtual void InitializeAIComponent() override;
+	virtual void UpdateAIComponent(float DeltaTime) override;
+	virtual bool IsInCombat() const override;
+	//~End of UHarmoniaBaseAIComponent interface
+
+public:
 	//~UActorComponent interface
-	virtual void BeginPlay() override;
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	//~End of UActorComponent interface
 

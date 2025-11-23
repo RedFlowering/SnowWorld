@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Components/HarmoniaBaseLifeContentComponent.h"
 #include "Definitions/HarmoniaFarmingSystemDefinitions.h"
 #include "HarmoniaFarmingComponent.generated.h"
 
@@ -19,7 +19,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFarmingLevelUp, int32, NewLevel,
  * 작물 재배, 성장 관리, 수확 처리
  */
 UCLASS(ClassGroup=(HarmoniaKit), meta=(BlueprintSpawnableComponent))
-class HARMONIAKIT_API UHarmoniaFarmingComponent : public UActorComponent
+class HARMONIAKIT_API UHarmoniaFarmingComponent : public UHarmoniaBaseLifeContentComponent
 {
 	GENERATED_BODY()
 

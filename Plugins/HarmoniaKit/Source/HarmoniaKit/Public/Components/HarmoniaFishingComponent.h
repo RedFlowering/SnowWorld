@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Components/HarmoniaBaseLifeContentComponent.h"
 #include "Definitions/HarmoniaFishingSystemDefinitions.h"
 #include "HarmoniaFishingComponent.generated.h"
 
@@ -19,19 +19,22 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFishingLevelUp, int32, NewLevel,
 /**
  * 낚시 시스템 컴포넌트
  * 낚시 미니게임, 물고기 잡기, 레벨링 시스템 처리
+ * Inherits leveling, experience, and activity management from UHarmoniaBaseLifeContentComponent
  */
 UCLASS(ClassGroup=(HarmoniaKit), meta=(BlueprintSpawnableComponent))
-class HARMONIAKIT_API UHarmoniaFishingComponent : public UActorComponent
+class HARMONIAKIT_API UHarmoniaFishingComponent : public UHarmoniaBaseLifeContentComponent
 {
 	GENERATED_BODY()
 
-public:	
+public:
 	UHarmoniaFishingComponent();
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void OnActivityComplete() override;
+	virtual void OnLevelUpInternal(int32 NewLevel) override;
 
-public:	
+public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	// ====================================
@@ -63,24 +66,19 @@ public:
 	bool IsMinigameActive() const { return bMinigameActive; }
 
 	// ====================================
-	// 레벨 및 경험치 시스템
+	// 레벨 및 경험치 시스템 (Base class에서 상속)
 	// ====================================
 
-	/** 낚시 경험치 획득 */
+	/** 낚시 경험치 획득 (wrapper for base class) */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Fishing")
-	void AddFishingExperience(int32 Amount);
+	void AddFishingExperience(int32 Amount) { AddExperience(Amount); }
 
-	/** 현재 낚시 레벨 */
+	/** 현재 낚시 레벨 (wrapper for base class) */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Fishing")
-	int32 GetFishingLevel() const { return FishingLevel; }
+	int32 GetFishingLevel() const { return GetLevel(); }
 
-	/** 현재 경험치 */
-	UFUNCTION(BlueprintPure, Category = "Harmonia|Fishing")
-	int32 GetCurrentExperience() const { return CurrentExperience; }
-
-	/** 다음 레벨까지 필요한 경험치 */
-	UFUNCTION(BlueprintPure, Category = "Harmonia|Fishing")
-	int32 GetExperienceForNextLevel() const;
+	/** 현재 경험치는 base class의 GetCurrentExperience() 사용 */
+	/** 다음 레벨까지 필요한 경험치는 base class의 GetExperienceForNextLevel() 사용 */
 
 	// ====================================
 	// 물고기 도감
@@ -162,13 +160,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fishing Settings")
 	float MaxBiteTime = 15.0f;
 
-	/** 레벨업 경험치 배율 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fishing Settings")
-	float ExperienceMultiplier = 1.0f;
-
-	/** 기본 레벨업 필요 경험치 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fishing Settings")
-	int32 BaseExperiencePerLevel = 100;
+	// Note: ExperienceMultiplier, BaseExperiencePerLevel은 base class에 정의됨
 
 private:
 	/** 낚시 중 플래그 */
@@ -195,13 +187,7 @@ private:
 	UPROPERTY()
 	float TimeUntilBite = 0.0f;
 
-	/** 낚시 레벨 */
-	UPROPERTY()
-	int32 FishingLevel = 1;
-
-	/** 현재 경험치 */
-	UPROPERTY()
-	int32 CurrentExperience = 0;
+	// Note: Level, CurrentExperience는 base class에 정의됨
 
 	/** 잡은 물고기 컬렉션 */
 	UPROPERTY()
@@ -221,6 +207,5 @@ private:
 	/** 물고기 생성 */
 	FCaughtFish GenerateFish(FName FishID, const FFishData& FishData);
 
-	/** 레벨 체크 및 처리 */
-	void CheckAndProcessLevelUp();
+	// Note: CheckAndProcessLevelUp는 base class에 정의됨
 };

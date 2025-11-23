@@ -1,5 +1,6 @@
 // Copyright 2025 Snow Game Studio.
 
+#include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaSquadComponent.h"
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "Monsters/HarmoniaMonsterInterface.h"
@@ -114,7 +115,7 @@ bool UHarmoniaSquadComponent::JoinSquad(AActor* Leader)
 	UHarmoniaSquadComponent* LeaderSquad = Leader->FindComponentByClass<UHarmoniaSquadComponent>();
 	if (!LeaderSquad)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Leader %s has no squad component"), *Leader->GetName());
+		UE_LOG(LogHarmoniaSquad, Warning, TEXT("Leader %s has no squad component"), *Leader->GetName());
 		return false;
 	}
 
@@ -131,7 +132,7 @@ bool UHarmoniaSquadComponent::JoinSquad(AActor* Leader)
 		SquadLeader = Leader;
 		MyRole = AssignedRole;
 
-		UE_LOG(LogTemp, Log, TEXT("%s joined squad led by %s with role %d"),
+		UE_LOG(LogHarmoniaSquad, Log, TEXT("%s joined squad led by %s with role %d"),
 			*GetOwner()->GetName(), *Leader->GetName(), (int32)AssignedRole);
 
 		return true;
@@ -173,7 +174,7 @@ bool UHarmoniaSquadComponent::AddSquadMember(AActor* NewMember, EHarmoniaSquadRo
 	{
 		if (Member.Monster == NewMember)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("%s is already in the squad"), *NewMember->GetName());
+			UE_LOG(LogHarmoniaSquad, Warning, TEXT("%s is already in the squad"), *NewMember->GetName());
 			return false;
 		}
 	}
@@ -206,7 +207,7 @@ bool UHarmoniaSquadComponent::AddSquadMember(AActor* NewMember, EHarmoniaSquadRo
 	// Update formation
 	UpdateFormation();
 
-	UE_LOG(LogTemp, Log, TEXT("Added %s to squad with role %d"), *NewMember->GetName(), (int32)Role);
+	UE_LOG(LogHarmoniaSquad, Log, TEXT("Added %s to squad with role %d"), *NewMember->GetName(), (int32)Role);
 
 	return true;
 }
@@ -228,7 +229,7 @@ void UHarmoniaSquadComponent::RemoveSquadMember(AActor* Member)
 			OnSquadMemberRemoved.Broadcast(Member);
 			OnSquadStateChanged.Broadcast(GetOwner(), GetSquadSize());
 
-			UE_LOG(LogTemp, Log, TEXT("Removed %s from squad"), *Member->GetName());
+			UE_LOG(LogHarmoniaSquad, Log, TEXT("Removed %s from squad"), *Member->GetName());
 			break;
 		}
 	}
@@ -307,7 +308,7 @@ void UHarmoniaSquadComponent::RequestCoordinatedAttack(AActor* Target)
 
 	SetSquadTarget(Target);
 
-	UE_LOG(LogTemp, Log, TEXT("Squad coordinated attack on %s"), *Target->GetName());
+	UE_LOG(LogHarmoniaSquad, Log, TEXT("Squad coordinated attack on %s"), *Target->GetName());
 }
 
 TArray<AActor*> UHarmoniaSquadComponent::GetAliveSquadMembers() const
@@ -405,7 +406,7 @@ bool UHarmoniaSquadComponent::TryFormSquad()
 			}
 		}
 
-		UE_LOG(LogTemp, Log, TEXT("%s formed a squad with %d members"), *GetOwner()->GetName(), GetSquadSize());
+		UE_LOG(LogHarmoniaSquad, Log, TEXT("%s formed a squad with %d members"), *GetOwner()->GetName(), GetSquadSize());
 
 		return GetSquadSize() > 0;
 	}
@@ -567,7 +568,7 @@ void UHarmoniaSquadComponent::CheckSquadCohesion()
 		// If too far, remove from squad
 		if (Distance > MaxSquadDistance)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Squad member %s is too far (%.1f > %.1f), removing from squad"),
+			UE_LOG(LogHarmoniaSquad, Warning, TEXT("Squad member %s is too far (%.1f > %.1f), removing from squad"),
 				*SquadMembers[i].Monster->GetName(), Distance, MaxSquadDistance);
 
 			RemoveSquadMember(SquadMembers[i].Monster);
@@ -588,7 +589,7 @@ void UHarmoniaSquadComponent::OnMemberDeath(AHarmoniaMonsterBase* DeadMember, AA
 		if (Member.Monster == DeadMember)
 		{
 			Member.bIsAlive = false;
-			UE_LOG(LogTemp, Log, TEXT("Squad member %s died"), *DeadMember->GetName());
+			UE_LOG(LogHarmoniaSquad, Log, TEXT("Squad member %s died"), *DeadMember->GetName());
 			break;
 		}
 	}

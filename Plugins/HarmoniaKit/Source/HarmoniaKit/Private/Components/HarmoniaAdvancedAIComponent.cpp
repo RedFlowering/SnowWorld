@@ -1,5 +1,6 @@
 // Copyright 2025 Snow Game Studio.
 
+#include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaAdvancedAIComponent.h"
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "Monsters/HarmoniaMonsterInterface.h"
@@ -95,7 +96,7 @@ void UHarmoniaAdvancedAIComponent::TriggerEmotion(EHarmoniaMonsterEmotion Emotio
 	// Broadcast event
 	OnEmotionStateChanged.Broadcast(OldEmotion, Emotion);
 
-	UE_LOG(LogTemp, Log, TEXT("%s entered %s state (Intensity: %.2f, Duration: %.1fs)"),
+	UE_LOG(LogHarmoniaAI, Log, TEXT("%s entered %s state (Intensity: %.2f, Duration: %.1fs)"),
 		*GetOwner()->GetName(), *UEnum::GetValueAsString(Emotion), Intensity, Duration);
 }
 
@@ -180,7 +181,7 @@ void UHarmoniaAdvancedAIComponent::StartCombo(const FHarmoniaMonsterAttackPatter
 	ComboState.ComboWindowRemaining = AttackPattern.ComboWindow;
 	ComboState.ComboCount = 1;
 
-	UE_LOG(LogTemp, Log, TEXT("%s started combo with %s (%d follow-ups available)"),
+	UE_LOG(LogHarmoniaAI, Log, TEXT("%s started combo with %s (%d follow-ups available)"),
 		*GetOwner()->GetName(), *AttackPattern.AttackID.ToString(), AttackPattern.ComboFollowUps.Num());
 }
 
@@ -205,7 +206,7 @@ bool UHarmoniaAdvancedAIComponent::TryContinueCombo(FName& OutNextAttackID)
 		ComboState.ComboCount++;
 		OnComboExecuted.Broadcast(OutNextAttackID, ComboState.ComboCount);
 
-		UE_LOG(LogTemp, Log, TEXT("%s continuing combo with %s (Count: %d)"),
+		UE_LOG(LogHarmoniaAI, Log, TEXT("%s continuing combo with %s (Count: %d)"),
 			*GetOwner()->GetName(), *OutNextAttackID.ToString(), ComboState.ComboCount);
 
 		return true;
@@ -259,7 +260,7 @@ bool UHarmoniaAdvancedAIComponent::FindTacticalPosition(AActor* Target, EHarmoni
 
 			OnTacticalPositionFound.Broadcast(EHarmoniaTacticalPosition::Cover);
 
-			UE_LOG(LogTemp, Log, TEXT("%s found cover position at %s"), *GetOwner()->GetName(), *BestCover.ToString());
+			UE_LOG(LogHarmoniaAI, Log, TEXT("%s found cover position at %s"), *GetOwner()->GetName(), *BestCover.ToString());
 			return true;
 		}
 	}
@@ -290,7 +291,7 @@ bool UHarmoniaAdvancedAIComponent::FindTacticalPosition(AActor* Target, EHarmoni
 
 					OnTacticalPositionFound.Broadcast(EHarmoniaTacticalPosition::HighGround);
 
-					UE_LOG(LogTemp, Log, TEXT("%s found high ground at %s (Advantage: %.0fcm)"),
+					UE_LOG(LogHarmoniaAI, Log, TEXT("%s found high ground at %s (Advantage: %.0fcm)"),
 						*GetOwner()->GetName(), *HitResult.Location.ToString(), TacticalState.HeightAdvantage);
 					return true;
 				}
@@ -480,7 +481,7 @@ void UHarmoniaAdvancedAIComponent::UpdateComboSystem(float DeltaTime)
 		ComboState.ComboWindowRemaining -= DeltaTime;
 		if (ComboState.ComboWindowRemaining <= 0.0f)
 		{
-			UE_LOG(LogTemp, Log, TEXT("%s combo window expired"), *GetOwner()->GetName());
+			UE_LOG(LogHarmoniaAI, Log, TEXT("%s combo window expired"), *GetOwner()->GetName());
 			ComboState.Reset();
 		}
 	}

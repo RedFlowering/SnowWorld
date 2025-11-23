@@ -37,8 +37,8 @@ bool UHarmoniaFishingComponent::StartFishing(UFishingSpotData* FishingSpot)
 		return false;
 	}
 
-	// 레벨 체크
-	if (FishingLevel < FishingSpot->MinimumFishingLevel)
+	// 레벨 체크 (base class의 Level 사용)
+	if (Level < FishingSpot->MinimumFishingLevel)
 	{
 		return false;
 	}
@@ -122,6 +122,7 @@ void UHarmoniaFishingComponent::CompleteFishingMinigame(bool bSuccess, float Per
 			BaseExp = FMath::CeilToInt(BaseExp * CurrentMinigameSettings.SuccessBonus);
 		}
 
+		// AddFishingExperience calls base class AddExperience
 		AddFishingExperience(BaseExp);
 
 		OnFishCaught.Broadcast(CaughtFish, bPerfectCatch);
@@ -135,18 +136,8 @@ void UHarmoniaFishingComponent::CompleteFishingMinigame(bool bSuccess, float Per
 	CancelFishing();
 }
 
-void UHarmoniaFishingComponent::AddFishingExperience(int32 Amount)
-{
-	int32 ModifiedAmount = FMath::CeilToInt(Amount * ExperienceMultiplier);
-	CurrentExperience += ModifiedAmount;
-
-	CheckAndProcessLevelUp();
-}
-
-int32 UHarmoniaFishingComponent::GetExperienceForNextLevel() const
-{
-	return BaseExperiencePerLevel * FishingLevel;
-}
+// Note: AddFishingExperience is now a wrapper in the header that calls base class AddExperience()
+// Note: GetExperienceForNextLevel is now provided by base class
 
 void UHarmoniaFishingComponent::RegisterFishToCollection(const FCaughtFish& Fish)
 {
@@ -185,11 +176,11 @@ FCaughtFish UHarmoniaFishingComponent::SelectFishFromSpawnTable()
 		return FCaughtFish();
 	}
 
-	// 레벨 요구사항을 만족하는 물고기만 필터링
+	// 레벨 요구사항을 만족하는 물고기만 필터링 (base class의 Level 사용)
 	TArray<FFishingSpotSpawnEntry> ValidFish;
 	for (const FFishingSpotSpawnEntry& Entry : CurrentFishingSpot->SpawnTable)
 	{
-		if (FishingLevel >= Entry.MinFishingLevel)
+		if (Level >= Entry.MinFishingLevel)
 		{
 			ValidFish.Add(Entry);
 		}
@@ -250,17 +241,18 @@ FCaughtFish UHarmoniaFishingComponent::GenerateFish(FName FishID, const FFishDat
 	return Result;
 }
 
-void UHarmoniaFishingComponent::CheckAndProcessLevelUp()
+// Note: CheckAndProcessLevelUp is now provided by base class
+
+void UHarmoniaFishingComponent::OnActivityComplete()
 {
-	int32 ExpNeeded = GetExperienceForNextLevel();
+	// Base class implementation handles common cleanup
+	Super::OnActivityComplete();
 
-	while (CurrentExperience >= ExpNeeded)
-	{
-		CurrentExperience -= ExpNeeded;
-		FishingLevel++;
+	// Fishing-specific completion logic can be added here if needed
+}
 
-		OnFishingLevelUp.Broadcast(FishingLevel, 1);
-
-		ExpNeeded = GetExperienceForNextLevel();
-	}
+void UHarmoniaFishingComponent::OnLevelUpInternal(int32 NewLevel)
+{
+	// Broadcast fishing-specific level up event
+	OnFishingLevelUp.Broadcast(NewLevel, 1);
 }

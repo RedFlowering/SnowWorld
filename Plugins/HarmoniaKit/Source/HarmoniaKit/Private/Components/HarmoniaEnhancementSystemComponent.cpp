@@ -1,5 +1,6 @@
 // Copyright 2025 Snow Game Studio.
 
+#include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaEnhancementSystemComponent.h"
 #include "Components/HarmoniaInventoryComponent.h"
 #include "Interfaces/IRepairStation.h"
@@ -126,7 +127,7 @@ void UHarmoniaEnhancementSystemComponent::ServerEnhanceItem_Implementation(FGuid
 	FString Reason;
 	if (!CanEnhanceItem(ItemGUID, TargetLevel, Reason))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot enhance item: %s"), *Reason);
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("Cannot enhance item: %s"), *Reason);
 		return;
 	}
 
@@ -441,7 +442,7 @@ void UHarmoniaEnhancementSystemComponent::ServerInsertGem_Implementation(FGuid I
 	FString Reason;
 	if (!CanInsertGem(ItemGUID, SocketIndex, GemId, Reason))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot insert gem: %s"), *Reason);
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("Cannot insert gem: %s"), *Reason);
 		return;
 	}
 
@@ -600,7 +601,7 @@ void UHarmoniaEnhancementSystemComponent::ServerReforgeItem_Implementation(FGuid
 	FString Reason;
 	if (!CanReforgeItem(ItemGUID, Reason))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot reforge item: %s"), *Reason);
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("Cannot reforge item: %s"), *Reason);
 		return;
 	}
 
@@ -756,7 +757,7 @@ void UHarmoniaEnhancementSystemComponent::ServerTranscendItem_Implementation(FGu
 	FString Reason;
 	if (!CanTranscendItem(ItemGUID, TargetTier, Reason))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot transcend item: %s"), *Reason);
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("Cannot transcend item: %s"), *Reason);
 		return;
 	}
 
@@ -880,7 +881,7 @@ void UHarmoniaEnhancementSystemComponent::ServerApplyTransmog_Implementation(FGu
 	FString Reason;
 	if (!CanApplyTransmog(TargetItemGUID, AppearanceItemId, Reason))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot apply transmog: %s"), *Reason);
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("Cannot apply transmog: %s"), *Reason);
 		return;
 	}
 
@@ -1016,7 +1017,7 @@ void UHarmoniaEnhancementSystemComponent::ServerRepairItem_Implementation(FGuid 
 	FString Reason;
 	if (!CanRepairItem(ItemGUID, Reason))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot repair item: %s"), *Reason);
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("Cannot repair item: %s"), *Reason);
 		return;
 	}
 
@@ -1182,7 +1183,7 @@ void UHarmoniaEnhancementSystemComponent::ServerRepairItemWithKit_Implementation
 	FString Reason;
 	if (!CanUseRepairKit(ItemGUID, RepairKitId, Reason))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot use repair kit: %s"), *Reason);
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("Cannot use repair kit: %s"), *Reason);
 		return;
 	}
 
@@ -1229,14 +1230,14 @@ void UHarmoniaEnhancementSystemComponent::ServerRepairItemAtStation_Implementati
 {
 	if (!RepairStation)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Repair station is null"));
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("Repair station is null"));
 		return;
 	}
 
 	// Check if actor implements repair station interface
 	if (!RepairStation->Implements<URepairStation>())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Actor does not implement IRepairStation interface"));
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("Actor does not implement IRepairStation interface"));
 		return;
 	}
 
@@ -1249,7 +1250,7 @@ void UHarmoniaEnhancementSystemComponent::ServerRepairItemAtStation_Implementati
 	// Check if station is available
 	if (!Station->Execute_IsAvailableForRepair(RepairStation, GetOwner()))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Repair station is not available"));
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("Repair station is not available"));
 		return;
 	}
 
@@ -1257,7 +1258,7 @@ void UHarmoniaEnhancementSystemComponent::ServerRepairItemAtStation_Implementati
 	FString Reason;
 	if (!Station->Execute_CanRepairItem(RepairStation, ItemGUID, Reason))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Station cannot repair item: %s"), *Reason);
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("Station cannot repair item: %s"), *Reason);
 		return;
 	}
 

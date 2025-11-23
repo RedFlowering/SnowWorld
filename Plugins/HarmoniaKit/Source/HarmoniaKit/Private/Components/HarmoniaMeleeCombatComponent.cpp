@@ -1,4 +1,5 @@
 // Copyright 2025 Snow Game Studio.
+#include "HarmoniaLogCategories.h"
 
 #include "Components/HarmoniaMeleeCombatComponent.h"
 #include "Components/HarmoniaSenseAttackComponent.h"
@@ -452,7 +453,7 @@ void UHarmoniaMeleeCombatComponent::OnAttackBlocked(AActor* Attacker, float Dama
 		// - Play guard break animation
 		// - Possibly apply a defense debuff
 		// Example: ASC->ApplyGameplayEffectToSelf(GuardBreakEffectClass, 1.0f, ASC->MakeEffectContext());
-		UE_LOG(LogTemp, Log, TEXT("Guard broken - stunned state applied"));
+		UE_LOG(LogHarmoniaCombat, Log, TEXT("Guard broken - stunned state applied"));
 	}
 }
 
@@ -475,7 +476,7 @@ void UHarmoniaMeleeCombatComponent::OnParrySuccess(AActor* Attacker)
 	//     Context.AddInstigator(GetOwner(), GetOwner());
 	//     AttackerASC->ApplyGameplayEffectToSelf(ParryStunEffectClass, 1.0f, Context);
 	// }
-	UE_LOG(LogTemp, Log, TEXT("Parry successful - attacker %s is vulnerable to riposte"), *Attacker->GetName());
+	UE_LOG(LogHarmoniaCombat, Log, TEXT("Parry successful - attacker %s is vulnerable to riposte"), *Attacker->GetName());
 }
 
 // ============================================================================

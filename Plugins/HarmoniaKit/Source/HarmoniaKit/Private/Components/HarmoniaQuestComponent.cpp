@@ -3,6 +3,7 @@
 #include "Components/HarmoniaQuestComponent.h"
 #include "Components/HarmoniaInventoryComponent.h"
 #include "Components/HarmoniaCraftingComponent.h"
+#include "HarmoniaLogCategories.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/DataTable.h"
 #include "GameFramework/Character.h"
@@ -93,7 +94,7 @@ bool UHarmoniaQuestComponent::StartQuest(FHarmoniaID QuestId)
 	// Check if already active
 	if (IsQuestActive(QuestId))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Quest %s is already active"), *QuestId.ToString());
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("Quest %s is already active"), *QuestId.ToString());
 		return false;
 	}
 
@@ -108,7 +109,7 @@ bool UHarmoniaQuestComponent::StartQuest(FHarmoniaID QuestId)
 				QuestData.QuestType != EQuestType::Daily &&
 				QuestData.QuestType != EQuestType::Weekly)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Quest %s is already completed and not repeatable"), *QuestId.ToString());
+				UE_LOG(LogHarmoniaQuest, Warning, TEXT("Quest %s is already completed and not repeatable"), *QuestId.ToString());
 				return false;
 			}
 		}
@@ -118,21 +119,21 @@ bool UHarmoniaQuestComponent::StartQuest(FHarmoniaID QuestId)
 	FQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
-		UE_LOG(LogTemp, Error, TEXT("Quest %s not found in data table"), *QuestId.ToString());
+		UE_LOG(LogHarmoniaQuest, Error, TEXT("Quest %s not found in data table"), *QuestId.ToString());
 		return false;
 	}
 
 	// Check if quest is available (conditions met)
 	if (!IsQuestAvailable(QuestId))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Quest %s is not available (conditions not met)"), *QuestId.ToString());
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("Quest %s is not available (conditions not met)"), *QuestId.ToString());
 		return false;
 	}
 
 	// Check max active quests limit
 	if (ActiveQuests.Num() >= MaxActiveQuests)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Max active quests limit reached (%d)"), MaxActiveQuests);
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("Max active quests limit reached (%d)"), MaxActiveQuests);
 		return false;
 	}
 
@@ -178,7 +179,7 @@ bool UHarmoniaQuestComponent::StartQuest(FHarmoniaID QuestId)
 		ClientQuestStarted(QuestId);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Quest %s started"), *QuestId.ToString());
+	UE_LOG(LogHarmoniaQuest, Log, TEXT("Quest %s started"), *QuestId.ToString());
 	return true;
 }
 
@@ -200,7 +201,7 @@ bool UHarmoniaQuestComponent::CompleteQuest(FHarmoniaID QuestId, const TArray<in
 	FActiveQuestProgress* Progress = FindActiveQuest(QuestId);
 	if (!Progress)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Quest %s is not active"), *QuestId.ToString());
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("Quest %s is not active"), *QuestId.ToString());
 		return false;
 	}
 
@@ -208,14 +209,14 @@ bool UHarmoniaQuestComponent::CompleteQuest(FHarmoniaID QuestId, const TArray<in
 	FQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
-		UE_LOG(LogTemp, Error, TEXT("Quest %s not found in data table"), *QuestId.ToString());
+		UE_LOG(LogHarmoniaQuest, Error, TEXT("Quest %s not found in data table"), *QuestId.ToString());
 		return false;
 	}
 
 	// Check if all required objectives are completed
 	if (!Progress->AreObjectivesCompleted())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Quest %s objectives not completed"), *QuestId.ToString());
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("Quest %s objectives not completed"), *QuestId.ToString());
 		return false;
 	}
 
@@ -225,7 +226,7 @@ bool UHarmoniaQuestComponent::CompleteQuest(FHarmoniaID QuestId, const TArray<in
 	{
 		if (SelectedOptionalRewards.Num() > QuestData.MaxOptionalRewardChoices)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Too many optional rewards selected"));
+			UE_LOG(LogHarmoniaQuest, Warning, TEXT("Too many optional rewards selected"));
 			return false;
 		}
 
@@ -290,7 +291,7 @@ bool UHarmoniaQuestComponent::CompleteQuest(FHarmoniaID QuestId, const TArray<in
 	// Check quest chain
 	CheckQuestChain(QuestId);
 
-	UE_LOG(LogTemp, Log, TEXT("Quest %s completed in %.2f seconds"), *QuestId.ToString(), CompletionTime);
+	UE_LOG(LogHarmoniaQuest, Log, TEXT("Quest %s completed in %.2f seconds"), *QuestId.ToString(), CompletionTime);
 	return true;
 }
 
@@ -311,7 +312,7 @@ bool UHarmoniaQuestComponent::AbandonQuest(FHarmoniaID QuestId)
 	// Check if quest is active
 	if (!IsQuestActive(QuestId))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Quest %s is not active"), *QuestId.ToString());
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("Quest %s is not active"), *QuestId.ToString());
 		return false;
 	}
 
@@ -319,14 +320,14 @@ bool UHarmoniaQuestComponent::AbandonQuest(FHarmoniaID QuestId)
 	FQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
-		UE_LOG(LogTemp, Error, TEXT("Quest %s not found in data table"), *QuestId.ToString());
+		UE_LOG(LogHarmoniaQuest, Error, TEXT("Quest %s not found in data table"), *QuestId.ToString());
 		return false;
 	}
 
 	// Check if quest can be abandoned
 	if (!QuestData.bCanAbandon)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Quest %s cannot be abandoned"), *QuestId.ToString());
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("Quest %s cannot be abandoned"), *QuestId.ToString());
 		return false;
 	}
 
@@ -353,7 +354,7 @@ bool UHarmoniaQuestComponent::AbandonQuest(FHarmoniaID QuestId)
 		ClientQuestAbandoned(QuestId);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Quest %s abandoned"), *QuestId.ToString());
+	UE_LOG(LogHarmoniaQuest, Log, TEXT("Quest %s abandoned"), *QuestId.ToString());
 	return true;
 }
 
@@ -413,7 +414,7 @@ bool UHarmoniaQuestComponent::FailQuest(FHarmoniaID QuestId)
 	// Notify client
 	ClientQuestFailed(QuestId);
 
-	UE_LOG(LogTemp, Log, TEXT("Quest %s failed"), *QuestId.ToString());
+	UE_LOG(LogHarmoniaQuest, Log, TEXT("Quest %s failed"), *QuestId.ToString());
 	return true;
 }
 
@@ -441,7 +442,7 @@ bool UHarmoniaQuestComponent::UpdateQuestObjective(FHarmoniaID QuestId, int32 Ob
 	// Validate objective index
 	if (!QuestProgress->ObjectiveProgress.IsValidIndex(ObjectiveIndex))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Invalid objective index %d for quest %s"), ObjectiveIndex, *QuestId.ToString());
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("Invalid objective index %d for quest %s"), ObjectiveIndex, *QuestId.ToString());
 		return false;
 	}
 
@@ -521,7 +522,7 @@ bool UHarmoniaQuestComponent::UpdateQuestObjective(FHarmoniaID QuestId, int32 Ob
 		}
 	}
 
-	UE_LOG(LogTemp, Verbose, TEXT("Quest %s objective %d updated: %d/%d"),
+	UE_LOG(LogHarmoniaQuest, Verbose, TEXT("Quest %s objective %d updated: %d/%d"),
 		*QuestId.ToString(), ObjectiveIndex, Objective.CurrentCount, Objective.RequiredCount);
 
 	return true;
@@ -843,7 +844,7 @@ void UHarmoniaQuestComponent::GrantReward(const FQuestReward& Reward)
 			// Grant experience
 			// Note: You'll need to implement experience system
 			// For now, log the reward
-			UE_LOG(LogTemp, Log, TEXT("Granted %d experience"), Reward.ExperienceAmount);
+			UE_LOG(LogHarmoniaQuest, Log, TEXT("Granted %d experience"), Reward.ExperienceAmount);
 			break;
 		}
 
@@ -851,7 +852,7 @@ void UHarmoniaQuestComponent::GrantReward(const FQuestReward& Reward)
 		{
 			// Grant gold
 			// Note: You'll need to implement currency system
-			UE_LOG(LogTemp, Log, TEXT("Granted %d gold"), Reward.GoldAmount);
+			UE_LOG(LogHarmoniaQuest, Log, TEXT("Granted %d gold"), Reward.GoldAmount);
 			break;
 		}
 
@@ -862,7 +863,7 @@ void UHarmoniaQuestComponent::GrantReward(const FQuestReward& Reward)
 			if (Inventory && Reward.ItemId.IsValid())
 			{
 				// Note: You'll need to implement AddItem in inventory component
-				UE_LOG(LogTemp, Log, TEXT("Granted item %s x%d"), *Reward.ItemId.ToString(), Reward.ItemAmount);
+				UE_LOG(LogHarmoniaQuest, Log, TEXT("Granted item %s x%d"), *Reward.ItemId.ToString(), Reward.ItemAmount);
 			}
 			break;
 		}
@@ -874,7 +875,7 @@ void UHarmoniaQuestComponent::GrantReward(const FQuestReward& Reward)
 			if (Crafting && Reward.RecipeId.IsValid())
 			{
 				Crafting->LearnRecipe(Reward.RecipeId);
-				UE_LOG(LogTemp, Log, TEXT("Learned recipe %s"), *Reward.RecipeId.ToString());
+				UE_LOG(LogHarmoniaQuest, Log, TEXT("Learned recipe %s"), *Reward.RecipeId.ToString());
 			}
 			break;
 		}
@@ -883,7 +884,7 @@ void UHarmoniaQuestComponent::GrantReward(const FQuestReward& Reward)
 		{
 			// Grant gameplay tags
 			// Note: You'll need to implement tag granting system
-			UE_LOG(LogTemp, Log, TEXT("Granted gameplay tags"));
+			UE_LOG(LogHarmoniaQuest, Log, TEXT("Granted gameplay tags"));
 			break;
 		}
 
@@ -1018,14 +1019,14 @@ bool UHarmoniaQuestComponent::ServerUpdateObjective_Validate(FHarmoniaID QuestId
 	// Anti-cheat: Validate quest ID
 	if (!QuestId.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerUpdateObjective: Invalid QuestId"));
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("[ANTI-CHEAT] ServerUpdateObjective: Invalid QuestId"));
 		return false;
 	}
 
 	// Validate objective index lower bound
 	if (ObjectiveIndex < 0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerUpdateObjective: Negative objective index %d"), ObjectiveIndex);
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("[ANTI-CHEAT] ServerUpdateObjective: Negative objective index %d"), ObjectiveIndex);
 		return false;
 	}
 
@@ -1033,14 +1034,14 @@ bool UHarmoniaQuestComponent::ServerUpdateObjective_Validate(FHarmoniaID QuestId
 	const FActiveQuestProgress* QuestProgress = FindActiveQuest(QuestId);
 	if (!QuestProgress)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerUpdateObjective: Quest not active %s"), *QuestId.ToString());
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("[ANTI-CHEAT] ServerUpdateObjective: Quest not active %s"), *QuestId.ToString());
 		return false;
 	}
 
 	// Validate objective index upper bound
 	if (!QuestProgress->ObjectiveProgress.IsValidIndex(ObjectiveIndex))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerUpdateObjective: Invalid objective index %d (Max: %d)"),
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("[ANTI-CHEAT] ServerUpdateObjective: Invalid objective index %d (Max: %d)"),
 			ObjectiveIndex, QuestProgress->ObjectiveProgress.Num() - 1);
 		return false;
 	}
@@ -1048,7 +1049,7 @@ bool UHarmoniaQuestComponent::ServerUpdateObjective_Validate(FHarmoniaID QuestId
 	// Validate progress amount is reasonable
 	if (FMath::Abs(Progress) > 1000)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerUpdateObjective: Suspicious progress amount %d"), Progress);
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("[ANTI-CHEAT] ServerUpdateObjective: Suspicious progress amount %d"), Progress);
 		return false;
 	}
 
@@ -1234,14 +1235,14 @@ bool UHarmoniaQuestComponent::AdvanceToNextPhase(FHarmoniaID QuestId)
 	// Check if current phase objectives are complete
 	if (!ArePhaseObjectivesComplete(QuestId, Progress->CurrentPhase))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot advance phase: current phase objectives not complete"));
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("Cannot advance phase: current phase objectives not complete"));
 		return false;
 	}
 
 	int32 NextPhase = Progress->CurrentPhase + 1;
 	if (NextPhase >= QuestData.Phases.Num())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot advance: already at last phase"));
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("Cannot advance: already at last phase"));
 		return false;
 	}
 
@@ -1260,7 +1261,7 @@ bool UHarmoniaQuestComponent::AdvanceToNextPhase(FHarmoniaID QuestId)
 	// Trigger next phase start events
 	TriggerQuestEvents(QuestId, EQuestEventTrigger::OnPhaseChange);
 
-	UE_LOG(LogTemp, Log, TEXT("Quest %s advanced to phase %d"), *QuestId.ToString(), NextPhase);
+	UE_LOG(LogHarmoniaQuest, Log, TEXT("Quest %s advanced to phase %d"), *QuestId.ToString(), NextPhase);
 	return true;
 }
 
@@ -1371,7 +1372,7 @@ void UHarmoniaQuestComponent::UpdateMarkerActor(FHarmoniaID QuestId, int32 Marke
 {
 	// This would require storing marker runtime data in ActiveQuestProgress
 	// For now, this is a placeholder for runtime marker updates
-	UE_LOG(LogTemp, Log, TEXT("Marker actor updated for quest %s, marker %d"), *QuestId.ToString(), MarkerIndex);
+	UE_LOG(LogHarmoniaQuest, Log, TEXT("Marker actor updated for quest %s, marker %d"), *QuestId.ToString(), MarkerIndex);
 }
 
 //~==============================================
@@ -1442,7 +1443,7 @@ void UHarmoniaQuestComponent::MarkHintShown(FHarmoniaID QuestId, int32 HintIndex
 	// In production, you'd want to store shown hints in ActiveQuestProgress
 	if (QuestData.Hints.IsValidIndex(HintIndex))
 	{
-		UE_LOG(LogTemp, Log, TEXT("Hint %d marked as shown for quest %s"), HintIndex, *QuestId.ToString());
+		UE_LOG(LogHarmoniaQuest, Log, TEXT("Hint %d marked as shown for quest %s"), HintIndex, *QuestId.ToString());
 
 		// Show notification
 		ShowNotification(EQuestNotificationType::HintShown, QuestId, QuestData.Hints[HintIndex].HintText);
@@ -1462,7 +1463,7 @@ void UHarmoniaQuestComponent::UpdateHintSystem(float DeltaTime)
 			if (!Hints[i].bShown)
 			{
 				// In a real implementation, you'd notify UI to show the hint
-				UE_LOG(LogTemp, Verbose, TEXT("Hint available for quest %s: %s"),
+				UE_LOG(LogHarmoniaQuest, Verbose, TEXT("Hint available for quest %s: %s"),
 					*Progress.QuestId.ToString(), *Hints[i].HintText.ToString());
 			}
 		}
@@ -1503,7 +1504,7 @@ void UHarmoniaQuestComponent::AddPlayerNote(FHarmoniaID QuestId, const FString& 
 	if (Entry)
 	{
 		Entry->PlayerNotes = Note;
-		UE_LOG(LogTemp, Log, TEXT("Player note added to quest %s"), *QuestId.ToString());
+		UE_LOG(LogHarmoniaQuest, Log, TEXT("Player note added to quest %s"), *QuestId.ToString());
 	}
 }
 
@@ -1549,7 +1550,7 @@ void UHarmoniaQuestComponent::UpdateQuestStatistics(FHarmoniaID QuestId, const F
 		QuestStatistics.FastestCompletionTimes.Add(QuestId, CompletionTime);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Quest statistics updated: %d total, streak: %d"),
+	UE_LOG(LogHarmoniaQuest, Log, TEXT("Quest statistics updated: %d total, streak: %d"),
 		QuestStatistics.TotalQuestsCompleted, QuestStatistics.CurrentStreak);
 }
 
@@ -1605,7 +1606,7 @@ bool UHarmoniaQuestComponent::ShareQuestWithParty(FHarmoniaID QuestId)
 	// Check if quest can be shared
 	if (!QuestData.bCanShare)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Quest %s cannot be shared"), *QuestId.ToString());
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("Quest %s cannot be shared"), *QuestId.ToString());
 		return false;
 	}
 
@@ -1616,13 +1617,13 @@ bool UHarmoniaQuestComponent::ShareQuestWithParty(FHarmoniaID QuestId)
 	int32 PartySize = GetPartySize();
 	if (PartySize < QuestData.MinPartySize)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Party too small: %d (min: %d)"), PartySize, QuestData.MinPartySize);
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("Party too small: %d (min: %d)"), PartySize, QuestData.MinPartySize);
 		return false;
 	}
 
 	if (PartySize > QuestData.MaxPartySize)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Party too large: %d (max: %d)"), PartySize, QuestData.MaxPartySize);
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("Party too large: %d (max: %d)"), PartySize, QuestData.MaxPartySize);
 		return false;
 	}
 
@@ -1639,7 +1640,7 @@ bool UHarmoniaQuestComponent::ShareQuestWithParty(FHarmoniaID QuestId)
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Quest %s shared with party (%d members)"), *QuestId.ToString(), PartyMembers.Num());
+	UE_LOG(LogHarmoniaQuest, Log, TEXT("Quest %s shared with party (%d members)"), *QuestId.ToString(), PartyMembers.Num());
 	return true;
 }
 
@@ -1705,7 +1706,7 @@ void UHarmoniaQuestComponent::ExecuteQuestEvent(const FQuestEvent& Event, FHarmo
 				FActorSpawnParameters SpawnParams;
 				SpawnParams.Owner = GetOwner();
 				GetWorld()->SpawnActor<AActor>(Event.ActorToSpawn, Event.SpawnLocation, FRotator::ZeroRotator, SpawnParams);
-				UE_LOG(LogTemp, Log, TEXT("Quest event: Spawned actor for quest %s"), *QuestId.ToString());
+				UE_LOG(LogHarmoniaQuest, Log, TEXT("Quest event: Spawned actor for quest %s"), *QuestId.ToString());
 			}
 			break;
 		}
@@ -1713,7 +1714,7 @@ void UHarmoniaQuestComponent::ExecuteQuestEvent(const FQuestEvent& Event, FHarmo
 		case EQuestEventType::PlayCutscene:
 		{
 			// Trigger cutscene (implement based on your cutscene system)
-			UE_LOG(LogTemp, Log, TEXT("Quest event: Play cutscene for quest %s"), *QuestId.ToString());
+			UE_LOG(LogHarmoniaQuest, Log, TEXT("Quest event: Play cutscene for quest %s"), *QuestId.ToString());
 			break;
 		}
 
@@ -1723,7 +1724,7 @@ void UHarmoniaQuestComponent::ExecuteQuestEvent(const FQuestEvent& Event, FHarmo
 			if (Event.BonusReward.RewardType != EQuestRewardType::None)
 			{
 				GrantReward(Event.BonusReward);
-				UE_LOG(LogTemp, Log, TEXT("Quest event: Granted bonus reward for quest %s"), *QuestId.ToString());
+				UE_LOG(LogHarmoniaQuest, Log, TEXT("Quest event: Granted bonus reward for quest %s"), *QuestId.ToString());
 			}
 			break;
 		}
@@ -1731,7 +1732,7 @@ void UHarmoniaQuestComponent::ExecuteQuestEvent(const FQuestEvent& Event, FHarmo
 		case EQuestEventType::ModifyWorld:
 		{
 			// Trigger world state change (implement based on your world system)
-			UE_LOG(LogTemp, Log, TEXT("Quest event: Modify world for quest %s"), *QuestId.ToString());
+			UE_LOG(LogHarmoniaQuest, Log, TEXT("Quest event: Modify world for quest %s"), *QuestId.ToString());
 			break;
 		}
 
@@ -1740,7 +1741,7 @@ void UHarmoniaQuestComponent::ExecuteQuestEvent(const FQuestEvent& Event, FHarmo
 			if (Event.TargetQuestId.IsValid())
 			{
 				StartQuest(Event.TargetQuestId);
-				UE_LOG(LogTemp, Log, TEXT("Quest event: Started quest %s"), *Event.TargetQuestId.ToString());
+				UE_LOG(LogHarmoniaQuest, Log, TEXT("Quest event: Started quest %s"), *Event.TargetQuestId.ToString());
 			}
 			break;
 		}
@@ -1748,7 +1749,7 @@ void UHarmoniaQuestComponent::ExecuteQuestEvent(const FQuestEvent& Event, FHarmo
 		case EQuestEventType::Custom:
 		{
 			// Custom event handling (can be extended)
-			UE_LOG(LogTemp, Log, TEXT("Quest event: Custom event for quest %s"), *QuestId.ToString());
+			UE_LOG(LogHarmoniaQuest, Log, TEXT("Quest event: Custom event for quest %s"), *QuestId.ToString());
 			break;
 		}
 
@@ -1870,7 +1871,7 @@ bool UHarmoniaQuestComponent::CheckFailCondition(const FQuestFailCondition& Cond
 
 void UHarmoniaQuestComponent::OnFailConditionTriggered(FHarmoniaID QuestId, const FQuestFailCondition& Condition)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Fail condition triggered for quest %s: %s"),
+	UE_LOG(LogHarmoniaQuest, Warning, TEXT("Fail condition triggered for quest %s: %s"),
 		*QuestId.ToString(), *Condition.FailureMessage.ToString());
 
 	// Show notification
@@ -1916,7 +1917,7 @@ void UHarmoniaQuestComponent::Debug_CompleteQuestObjectives(FHarmoniaID QuestId)
 		}
 		Progress->State = EQuestState::ReadyToComplete;
 
-		UE_LOG(LogTemp, Warning, TEXT("[DEBUG] Quest %s objectives completed"), *QuestId.ToString());
+		UE_LOG(LogHarmoniaQuest, Warning, TEXT("[DEBUG] Quest %s objectives completed"), *QuestId.ToString());
 	}
 }
 
@@ -1926,7 +1927,7 @@ void UHarmoniaQuestComponent::Debug_UnlockAllQuests()
 	CompletedQuests.Empty();
 	FailedQuests.Empty();
 
-	UE_LOG(LogTemp, Warning, TEXT("[DEBUG] All quests unlocked"));
+	UE_LOG(LogHarmoniaQuest, Warning, TEXT("[DEBUG] All quests unlocked"));
 }
 
 void UHarmoniaQuestComponent::Debug_ResetAllQuests()
@@ -1936,6 +1937,6 @@ void UHarmoniaQuestComponent::Debug_ResetAllQuests()
 	FailedQuests.Empty();
 	TrackedQuest = FHarmoniaID();
 
-	UE_LOG(LogTemp, Warning, TEXT("[DEBUG] All quests reset"));
+	UE_LOG(LogHarmoniaQuest, Warning, TEXT("[DEBUG] All quests reset"));
 }
 #endif

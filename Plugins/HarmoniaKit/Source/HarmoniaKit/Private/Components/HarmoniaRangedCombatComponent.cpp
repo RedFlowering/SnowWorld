@@ -1,4 +1,5 @@
 // Copyright 2025 Snow Game Studio.
+#include "HarmoniaLogCategories.h"
 
 #include "Components/HarmoniaRangedCombatComponent.h"
 #include "Components/HarmoniaLockOnComponent.h"

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Components/HarmoniaBaseAIComponent.h"
 #include "System/HarmoniaCombatPowerCalculator.h"
 #include "HarmoniaEnvironmentAwarenessComponent.generated.h"
 

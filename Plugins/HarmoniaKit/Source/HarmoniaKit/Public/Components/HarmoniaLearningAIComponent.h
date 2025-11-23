@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Components/HarmoniaBaseAIComponent.h"
 #include "HarmoniaLearningAIComponent.generated.h"
 
 class AHarmoniaMonsterBase;
@@ -103,25 +103,27 @@ enum class EHarmoniaAdaptiveDifficulty : uint8
 /**
  * Learning AI Component
  * Learns player patterns and adapts difficulty accordingly
+ * Inherits common AI functionality from UHarmoniaBaseAIComponent
  */
 UCLASS(ClassGroup=(HarmoniaKit), meta=(BlueprintSpawnableComponent))
-class HARMONIAKIT_API UHarmoniaLearningAIComponent : public UActorComponent
+class HARMONIAKIT_API UHarmoniaLearningAIComponent : public UHarmoniaBaseAIComponent
 {
 	GENERATED_BODY()
 
 public:
 	UHarmoniaLearningAIComponent();
 
+protected:
+	//~UHarmoniaBaseAIComponent interface
+	virtual void InitializeAIComponent() override;
+	virtual void CleanupAIComponent() override;
+	virtual void UpdateAIComponent(float DeltaTime) override;
+	//~End of UHarmoniaBaseAIComponent interface
+
+public:
 	//~UActorComponent interface
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	//~End of UActorComponent interface
-
-protected:
-	virtual void BeginPlay() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
-public:
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	// ==================== Configuration ====================
 
