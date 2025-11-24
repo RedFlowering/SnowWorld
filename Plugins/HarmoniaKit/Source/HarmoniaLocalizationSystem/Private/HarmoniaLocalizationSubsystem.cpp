@@ -728,7 +728,7 @@ FString UHarmoniaLocalizationSubsystem::FormatNumberInternal(double Number, int3
 		{
 			FormattedInteger = Settings.ThousandsSeparator + FormattedInteger;
 		}
-		FormattedInteger = IntegerString[i] + FormattedInteger;
+		FormattedInteger = FString::Chr(IntegerString[i]) + FormattedInteger;
 		DigitCount++;
 	}
 

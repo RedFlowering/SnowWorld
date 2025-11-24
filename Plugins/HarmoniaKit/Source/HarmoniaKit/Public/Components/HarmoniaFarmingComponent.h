@@ -96,12 +96,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Farming")
 	int32 GetFarmingLevel() const { return FarmingLevel; }
 
-	/** 현재 경험치 */
-	virtual int32 GetCurrentExperience() const override { return CurrentExperience; }
-
-	/** 다음 레벨까지 필요한 경험치 */
-	virtual int32 GetExperienceForNextLevel() const override;
-
 	// ====================================
 	// 계절 시스템
 	// ====================================

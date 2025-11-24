@@ -6,6 +6,7 @@
 #include "Engine/DataTable.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Definitions/HarmoniaCoreDefinitions.h"
+#include "HarmoniaLogCategories.h"
 #include "HarmoniaDataTableUtils.generated.h"
 
 /**
@@ -82,7 +83,7 @@ public:
 			return false;
 		}
 
-		return GetDataTableRow<TRowType>(DataTable, ID.ToName(), OutRow, bLogError);
+		return GetDataTableRow<TRowType>(DataTable, ID.Id, OutRow, bLogError);
 	}
 
 	/**

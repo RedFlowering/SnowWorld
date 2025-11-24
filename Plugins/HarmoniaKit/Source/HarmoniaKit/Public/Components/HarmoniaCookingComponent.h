@@ -108,12 +108,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cooking")
 	int32 GetCookingLevel() const { return CookingLevel; }
 
-	/** 현재 경험치 */
-	virtual int32 GetCurrentExperience() const override { return CurrentExperience; }
-
-	/** 다음 레벨까지 필요한 경험치 */
-	virtual int32 GetExperienceForNextLevel() const override;
-
 	// ====================================
 	// 특성 시스템
 	// ====================================
