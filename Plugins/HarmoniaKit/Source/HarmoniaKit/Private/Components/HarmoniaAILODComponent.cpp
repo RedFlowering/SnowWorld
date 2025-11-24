@@ -1,7 +1,7 @@
 // Copyright 2025 Snow Game Studio.
 
-#include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaAILODComponent.h"
+#include "HarmoniaLogCategories.h"
 #include "Monsters/HarmoniaMonsterInterface.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"

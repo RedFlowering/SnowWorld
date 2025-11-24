@@ -1,7 +1,7 @@
 // Copyright 2025 Snow Game Studio.
 
-#include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaInventoryComponent.h"
+#include "HarmoniaLogCategories.h"
 #include "Definitions/HarmoniaInventorySystemDefinitions.h"
 #include "Definitions/HarmoniaCoreDefinitions.h"
 #include "Definitions/HarmoniaMacroDefinitions.h"

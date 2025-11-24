@@ -1,7 +1,7 @@
 // Copyright 2025 Snow Game Studio.
 
-#include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaEnhancementSystemComponent.h"
+#include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaInventoryComponent.h"
 #include "Interfaces/IRepairStation.h"
 #include "AbilitySystemComponent.h"
