@@ -70,7 +70,7 @@ enum class EDateFormat : uint8
  * Time Format Style
  */
 UENUM(BlueprintType)
-enum class ETimeFormat : uint8
+enum class EHarmoniaTimeFormat : uint8
 {
 	Hour12        UMETA(DisplayName = "12-Hour (AM/PM)"),
 	Hour24        UMETA(DisplayName = "24-Hour"),
@@ -216,7 +216,7 @@ struct FHarmoniaLanguageSettings
 
 	/** Time format */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Localization")
-	ETimeFormat TimeFormat = ETimeFormat::Hour12;
+	EHarmoniaTimeFormat TimeFormat = EHarmoniaTimeFormat::Hour12;
 
 	/** Custom date format string (if DateFormat is Custom) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Localization")
