@@ -9,6 +9,8 @@
 class AAIController;
 class AHarmoniaMonsterBase;
 class UBehaviorTree;
+class UBlackboardComponent;
+class UBehaviorTreeComponent;
 
 /**
  * Base class for all AI-related components in HarmoniaKit
@@ -79,6 +81,58 @@ public:
 	/** Get current target actor */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|AI")
 	AActor* GetCurrentTarget() const;
+
+	// ====================================
+	// Blackboard Integration
+	// ====================================
+
+	/** Get Blackboard component from AI Controller */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|AI|Blackboard")
+	class UBlackboardComponent* GetBlackboardComponent() const;
+
+	/** Set blackboard value as object */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|AI|Blackboard")
+	void SetBlackboardValueAsObject(FName KeyName, UObject* ObjectValue);
+
+	/** Get blackboard value as object */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|AI|Blackboard")
+	UObject* GetBlackboardValueAsObject(FName KeyName) const;
+
+	/** Set blackboard value as vector */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|AI|Blackboard")
+	void SetBlackboardValueAsVector(FName KeyName, FVector VectorValue);
+
+	/** Get blackboard value as vector */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|AI|Blackboard")
+	FVector GetBlackboardValueAsVector(FName KeyName) const;
+
+	/** Set blackboard value as bool */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|AI|Blackboard")
+	void SetBlackboardValueAsBool(FName KeyName, bool BoolValue);
+
+	/** Get blackboard value as bool */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|AI|Blackboard")
+	bool GetBlackboardValueAsBool(FName KeyName) const;
+
+	/** Set blackboard value as float */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|AI|Blackboard")
+	void SetBlackboardValueAsFloat(FName KeyName, float FloatValue);
+
+	/** Get blackboard value as float */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|AI|Blackboard")
+	float GetBlackboardValueAsFloat(FName KeyName) const;
+
+	// ====================================
+	// Behavior Tree Integration
+	// ====================================
+
+	/** Get behavior tree from AI Controller */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|AI|BehaviorTree")
+	class UBehaviorTreeComponent* GetBehaviorTreeComponent() const;
+
+	/** Check if behavior tree is running */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|AI|BehaviorTree")
+	bool IsBehaviorTreeRunning() const;
 
 	// ====================================
 	// Debug Visualization

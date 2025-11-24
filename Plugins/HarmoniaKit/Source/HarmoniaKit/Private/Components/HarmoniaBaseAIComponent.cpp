@@ -5,6 +5,8 @@
 #include "AIController.h"
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "DrawDebugHelpers.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "BehaviorTree/BehaviorTreeComponent.h"
 
 UHarmoniaBaseAIComponent::UHarmoniaBaseAIComponent()
 {
@@ -242,4 +244,107 @@ void UHarmoniaBaseAIComponent::InvalidateCachedReferences()
 {
 	CachedAIController = nullptr;
 	CachedMonster = nullptr;
+}
+
+// ====================================
+// Blackboard Integration
+// ====================================
+
+UBlackboardComponent* UHarmoniaBaseAIComponent::GetBlackboardComponent() const
+{
+	if (CachedAIController)
+	{
+		return CachedAIController->GetBlackboardComponent();
+	}
+	return nullptr;
+}
+
+void UHarmoniaBaseAIComponent::SetBlackboardValueAsObject(FName KeyName, UObject* ObjectValue)
+{
+	if (UBlackboardComponent* Blackboard = GetBlackboardComponent())
+	{
+		Blackboard->SetValueAsObject(KeyName, ObjectValue);
+	}
+}
+
+UObject* UHarmoniaBaseAIComponent::GetBlackboardValueAsObject(FName KeyName) const
+{
+	if (UBlackboardComponent* Blackboard = GetBlackboardComponent())
+	{
+		return Blackboard->GetValueAsObject(KeyName);
+	}
+	return nullptr;
+}
+
+void UHarmoniaBaseAIComponent::SetBlackboardValueAsVector(FName KeyName, FVector VectorValue)
+{
+	if (UBlackboardComponent* Blackboard = GetBlackboardComponent())
+	{
+		Blackboard->SetValueAsVector(KeyName, VectorValue);
+	}
+}
+
+FVector UHarmoniaBaseAIComponent::GetBlackboardValueAsVector(FName KeyName) const
+{
+	if (UBlackboardComponent* Blackboard = GetBlackboardComponent())
+	{
+		return Blackboard->GetValueAsVector(KeyName);
+	}
+	return FVector::ZeroVector;
+}
+
+void UHarmoniaBaseAIComponent::SetBlackboardValueAsBool(FName KeyName, bool BoolValue)
+{
+	if (UBlackboardComponent* Blackboard = GetBlackboardComponent())
+	{
+		Blackboard->SetValueAsBool(KeyName, BoolValue);
+	}
+}
+
+bool UHarmoniaBaseAIComponent::GetBlackboardValueAsBool(FName KeyName) const
+{
+	if (UBlackboardComponent* Blackboard = GetBlackboardComponent())
+	{
+		return Blackboard->GetValueAsBool(KeyName);
+	}
+	return false;
+}
+
+void UHarmoniaBaseAIComponent::SetBlackboardValueAsFloat(FName KeyName, float FloatValue)
+{
+	if (UBlackboardComponent* Blackboard = GetBlackboardComponent())
+	{
+		Blackboard->SetValueAsFloat(KeyName, FloatValue);
+	}
+}
+
+float UHarmoniaBaseAIComponent::GetBlackboardValueAsFloat(FName KeyName) const
+{
+	if (UBlackboardComponent* Blackboard = GetBlackboardComponent())
+	{
+		return Blackboard->GetValueAsFloat(KeyName);
+	}
+	return 0.0f;
+}
+
+// ====================================
+// Behavior Tree Integration
+// ====================================
+
+UBehaviorTreeComponent* UHarmoniaBaseAIComponent::GetBehaviorTreeComponent() const
+{
+	if (CachedAIController)
+	{
+		return Cast<UBehaviorTreeComponent>(CachedAIController->BrainComponent);
+	}
+	return nullptr;
+}
+
+bool UHarmoniaBaseAIComponent::IsBehaviorTreeRunning() const
+{
+	if (UBehaviorTreeComponent* BTComponent = GetBehaviorTreeComponent())
+	{
+		return BTComponent->IsRunning();
+	}
+	return false;
 }
