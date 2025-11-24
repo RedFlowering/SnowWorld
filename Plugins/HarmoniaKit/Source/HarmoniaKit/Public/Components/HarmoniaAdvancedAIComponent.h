@@ -37,15 +37,21 @@ public:
 	UHarmoniaAdvancedAIComponent();
 
 protected:
+	//~UActorComponent interface
+	virtual void BeginPlay() override;
+	//~End of UActorComponent interface
+
+public:
+	//~UActorComponent interface
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	//~End of UActorComponent interface
+
+protected:
 	//~UHarmoniaBaseAIComponent interface
 	virtual void InitializeAIComponent() override;
 	virtual void UpdateAIComponent(float DeltaTime) override;
 	//~End of UHarmoniaBaseAIComponent interface
-
-public:
-	//~UActorComponent interface
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	//~End of UActorComponent interface
 
 	// ============================================================================
 	// Configuration

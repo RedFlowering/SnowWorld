@@ -221,11 +221,6 @@ void UHarmoniaCookingComponent::AddCookingExperience(int32 Amount)
 	CheckAndProcessLevelUp();
 }
 
-int32 UHarmoniaCookingComponent::GetExperienceForNextLevel() const
-{
-	return BaseExperiencePerLevel * CookingLevel;
-}
-
 void UHarmoniaCookingComponent::AddTrait(const FCookingTrait& Trait)
 {
 	for (const FCookingTrait& ExistingTrait : ActiveTraits)

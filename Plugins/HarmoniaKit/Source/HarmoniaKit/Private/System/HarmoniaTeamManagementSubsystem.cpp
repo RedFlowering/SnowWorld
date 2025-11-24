@@ -353,7 +353,7 @@ TArray<AActor*> UHarmoniaTeamManagementSubsystem::GetActorsOnTeam(const FHarmoni
 
 	// Get all actors of specified class (or all actors if no class specified)
 	TArray<AActor*> AllActors;
-	TSubclassOf<AActor> SearchClass = ActorClass ? ActorClass : AActor::StaticClass();
+	TSubclassOf<AActor> SearchClass = ActorClass ? ActorClass : TSubclassOf<AActor>(AActor::StaticClass());
 	UGameplayStatics::GetAllActorsOfClass(World, SearchClass, AllActors);
 
 	// Filter by team
@@ -395,7 +395,7 @@ TArray<AActor*> UHarmoniaTeamManagementSubsystem::GetAlliesOf(AActor* Actor, flo
 	}
 
 	TArray<AActor*> AllActors;
-	TSubclassOf<AActor> SearchClass = ActorClass ? ActorClass : AActor::StaticClass();
+	TSubclassOf<AActor> SearchClass = ActorClass ? ActorClass : TSubclassOf<AActor>(AActor::StaticClass());
 	UGameplayStatics::GetAllActorsOfClass(World, SearchClass, AllActors);
 
 	FVector ActorLocation = Actor->GetActorLocation();
@@ -451,7 +451,7 @@ TArray<AActor*> UHarmoniaTeamManagementSubsystem::GetEnemiesOf(AActor* Actor, fl
 	}
 
 	TArray<AActor*> AllActors;
-	TSubclassOf<AActor> SearchClass = ActorClass ? ActorClass : AActor::StaticClass();
+	TSubclassOf<AActor> SearchClass = ActorClass ? ActorClass : TSubclassOf<AActor>(AActor::StaticClass());
 	UGameplayStatics::GetAllActorsOfClass(World, SearchClass, AllActors);
 
 	FVector ActorLocation = Actor->GetActorLocation();

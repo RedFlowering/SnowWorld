@@ -19,8 +19,6 @@ FString UHarmoniaLyraEquipmentAdapter::ConvertEquipmentSlotToString(EEquipmentSl
 	case EEquipmentSlot::Back: return TEXT("Back");
 	case EEquipmentSlot::Accessory1: return TEXT("Accessory1");
 	case EEquipmentSlot::Accessory2: return TEXT("Accessory2");
-	case EEquipmentSlot::Accessory3: return TEXT("Accessory3");
-	case EEquipmentSlot::Accessory4: return TEXT("Accessory4");
 	default: return TEXT("None");
 	}
 }
