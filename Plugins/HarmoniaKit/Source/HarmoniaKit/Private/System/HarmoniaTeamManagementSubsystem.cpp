@@ -353,7 +353,8 @@ TArray<AActor*> UHarmoniaTeamManagementSubsystem::GetActorsOnTeam(const FHarmoni
 
 	// Get all actors of specified class (or all actors if no class specified)
 	TArray<AActor*> AllActors;
-	UGameplayStatics::GetAllActorsOfClass(World, ActorClass ? ActorClass : AActor::StaticClass(), AllActors);
+	TSubclassOf<AActor> SearchClass = ActorClass ? ActorClass : AActor::StaticClass();
+	UGameplayStatics::GetAllActorsOfClass(World, SearchClass, AllActors);
 
 	// Filter by team
 	for (AActor* Actor : AllActors)
@@ -394,7 +395,8 @@ TArray<AActor*> UHarmoniaTeamManagementSubsystem::GetAlliesOf(AActor* Actor, flo
 	}
 
 	TArray<AActor*> AllActors;
-	UGameplayStatics::GetAllActorsOfClass(World, ActorClass ? ActorClass : AActor::StaticClass(), AllActors);
+	TSubclassOf<AActor> SearchClass = ActorClass ? ActorClass : AActor::StaticClass();
+	UGameplayStatics::GetAllActorsOfClass(World, SearchClass, AllActors);
 
 	FVector ActorLocation = Actor->GetActorLocation();
 	float SearchRadiusSqr = SearchRadius * SearchRadius;
@@ -449,7 +451,8 @@ TArray<AActor*> UHarmoniaTeamManagementSubsystem::GetEnemiesOf(AActor* Actor, fl
 	}
 
 	TArray<AActor*> AllActors;
-	UGameplayStatics::GetAllActorsOfClass(World, ActorClass ? ActorClass : AActor::StaticClass(), AllActors);
+	TSubclassOf<AActor> SearchClass = ActorClass ? ActorClass : AActor::StaticClass();
+	UGameplayStatics::GetAllActorsOfClass(World, SearchClass, AllActors);
 
 	FVector ActorLocation = Actor->GetActorLocation();
 	float SearchRadiusSqr = SearchRadius * SearchRadius;
