@@ -95,11 +95,9 @@ public:
 	int32 GetGatheringLevel(EGatheringResourceType ResourceType) const;
 
 	/** 현재 경험치 (per resource type) */
-	UFUNCTION(BlueprintPure, Category = "Harmonia|Gathering")
 	int32 GetCurrentExperience(EGatheringResourceType ResourceType) const;
 
 	/** 다음 레벨까지 필요한 경험치 (per resource type) */
-	UFUNCTION(BlueprintPure, Category = "Harmonia|Gathering")
 	int32 GetExperienceForNextLevel(EGatheringResourceType ResourceType) const;
 
 	// ====================================
