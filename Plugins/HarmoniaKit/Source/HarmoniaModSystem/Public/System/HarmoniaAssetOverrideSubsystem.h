@@ -10,6 +10,18 @@
 DECLARE_LOG_CATEGORY_EXTERN(LogHarmoniaAssetOverride, Log, All);
 
 /**
+ * Wrapper struct for TArray<FSoftObjectPath> to be used as TMap value
+ */
+USTRUCT()
+struct FHarmoniaSoftObjectPathArray
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TArray<FSoftObjectPath> Paths;
+};
+
+/**
  * Asset override subsystem
  * Handles runtime asset replacement (models, textures, sounds, etc.)
  */
@@ -123,7 +135,7 @@ private:
 
 	/** Overrides by mod (ModId -> OriginalPaths) */
 	UPROPERTY()
-	TMap<FName, TArray<FSoftObjectPath>> OverridesByMod;
+	TMap<FName, FHarmoniaSoftObjectPathArray> OverridesByMod;
 
 	/** Original asset cache for restoration */
 	UPROPERTY()

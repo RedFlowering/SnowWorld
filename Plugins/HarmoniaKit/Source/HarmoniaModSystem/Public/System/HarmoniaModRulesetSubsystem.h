@@ -10,6 +10,18 @@
 DECLARE_LOG_CATEGORY_EXTERN(LogHarmoniaModRuleset, Log, All);
 
 /**
+ * Wrapper struct for TArray<FName> to be used as TMap value
+ */
+USTRUCT()
+struct FHarmoniaRulesetIdArray
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TArray<FName> RulesetIds;
+};
+
+/**
  * Delegate fired when a ruleset is activated
  */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRulesetActivated, const FHarmoniaCustomRuleset&, Ruleset);
@@ -174,7 +186,7 @@ private:
 
 	/** Rulesets by mod (ModId -> RulesetIds) */
 	UPROPERTY()
-	TMap<FName, TArray<FName>> RulesetsByMod;
+	TMap<FName, FHarmoniaRulesetIdArray> RulesetsByMod;
 
 	/** Combined active rule tags */
 	UPROPERTY()

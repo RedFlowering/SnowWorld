@@ -108,7 +108,7 @@ void UHarmoniaTeamManagementSubsystem::UnregisterTeam(const FHarmoniaTeamIdentif
 	// Remove this team from other teams' relationship maps
 	for (auto& Pair : RelationshipMatrix)
 	{
-		Pair.Value.Remove(TeamID);
+		Pair.Value.Relationships.Remove(TeamID);
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("HarmoniaTeamManagementSubsystem: Unregistered team %s"),
@@ -168,11 +168,11 @@ void UHarmoniaTeamManagementSubsystem::SetTeamRelationship(const FHarmoniaTeamId
 	}
 
 	// Get or create source team's relationship map
-	TMap<FHarmoniaTeamIdentification, EHarmoniaTeamRelationship>& SourceRelationships =
+	FHarmoniaTeamRelationshipMap& SourceRelationshipMap =
 		RelationshipMatrix.FindOrAdd(SourceTeam);
 
 	// Set relationship
-	SourceRelationships.Add(TargetTeam, Relationship);
+	SourceRelationshipMap.Relationships.Add(TargetTeam, Relationship);
 
 	// Broadcast change
 	OnTeamRelationshipChanged.Broadcast(SourceTeam, TargetTeam, Relationship);
@@ -204,10 +204,10 @@ EHarmoniaTeamRelationship UHarmoniaTeamManagementSubsystem::GetTeamRelationship(
 	}
 
 	// Check explicit relationship
-	if (const TMap<FHarmoniaTeamIdentification, EHarmoniaTeamRelationship>* SourceRelationships =
+	if (const FHarmoniaTeamRelationshipMap* SourceRelationshipMap =
 		RelationshipMatrix.Find(SourceTeam))
 	{
-		if (const EHarmoniaTeamRelationship* RelationshipPtr = SourceRelationships->Find(TargetTeam))
+		if (const EHarmoniaTeamRelationship* RelationshipPtr = SourceRelationshipMap->Relationships.Find(TargetTeam))
 		{
 			return *RelationshipPtr;
 		}
@@ -547,7 +547,7 @@ void UHarmoniaTeamManagementSubsystem::DebugPrintRelationshipMatrix() const
 		const FHarmoniaTeamIdentification& SourceTeam = SourcePair.Key;
 		UE_LOG(LogTemp, Log, TEXT("Source Team: %s"), *SourceTeam.TeamName.ToString());
 
-		for (const auto& TargetPair : SourcePair.Value)
+		for (const auto& TargetPair : SourcePair.Value.Relationships)
 		{
 			const FHarmoniaTeamIdentification& TargetTeam = TargetPair.Key;
 			const EHarmoniaTeamRelationship& Relationship = TargetPair.Value;
@@ -643,10 +643,10 @@ TArray<FHarmoniaTeamIdentification> UHarmoniaTeamManagementSubsystem::GetEnemyFa
 {
 	TArray<FHarmoniaTeamIdentification> Enemies;
 
-	if (const TMap<FHarmoniaTeamIdentification, EHarmoniaTeamRelationship>* TeamRelationships =
+	if (const FHarmoniaTeamRelationshipMap* TeamRelationshipMap =
 		RelationshipMatrix.Find(Team))
 	{
-		for (const auto& Pair : *TeamRelationships)
+		for (const auto& Pair : TeamRelationshipMap->Relationships)
 		{
 			if (Pair.Value == EHarmoniaTeamRelationship::Enemy)
 			{
@@ -663,10 +663,10 @@ TArray<FHarmoniaTeamIdentification> UHarmoniaTeamManagementSubsystem::GetAlliedF
 {
 	TArray<FHarmoniaTeamIdentification> Allies;
 
-	if (const TMap<FHarmoniaTeamIdentification, EHarmoniaTeamRelationship>* TeamRelationships =
+	if (const FHarmoniaTeamRelationshipMap* TeamRelationshipMap =
 		RelationshipMatrix.Find(Team))
 	{
-		for (const auto& Pair : *TeamRelationships)
+		for (const auto& Pair : TeamRelationshipMap->Relationships)
 		{
 			if (Pair.Value == EHarmoniaTeamRelationship::Ally)
 			{

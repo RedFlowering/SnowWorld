@@ -108,9 +108,9 @@ bool UHarmoniaDataTablePatcher::ApplyPatch(const FHarmoniaDataTablePatch& Patch,
 	// Track by mod
 	if (!PatchesByMod.Contains(ModId))
 	{
-		PatchesByMod.Add(ModId, TArray<FString>());
+		PatchesByMod.Add(ModId, FHarmoniaPatchKeyArray());
 	}
-	PatchesByMod[ModId].AddUnique(PatchKey);
+	PatchesByMod[ModId].PatchKeys.AddUnique(PatchKey);
 
 	OutResult.bSuccess = true;
 	OutResult.NewValue = GetPropertyValueAsString(Property, RowData);
@@ -195,9 +195,9 @@ bool UHarmoniaDataTablePatcher::RevertPatch(const FHarmoniaDataTablePatch& Patch
 	// Remove from mod tracking
 	if (PatchesByMod.Contains(ModId))
 	{
-		PatchesByMod[ModId].Remove(PatchKey);
+		PatchesByMod[ModId].PatchKeys.Remove(PatchKey);
 
-		if (PatchesByMod[ModId].Num() == 0)
+		if (PatchesByMod[ModId].PatchKeys.Num() == 0)
 		{
 			PatchesByMod.Remove(ModId);
 		}
@@ -213,7 +213,7 @@ int32 UHarmoniaDataTablePatcher::RevertAllModPatches(FName ModId)
 		return 0;
 	}
 
-	TArray<FString> PatchKeys = PatchesByMod[ModId];
+	TArray<FString> PatchKeys = PatchesByMod[ModId].PatchKeys;
 	int32 RevertedCount = 0;
 
 	for (const FString& PatchKey : PatchKeys)
@@ -281,7 +281,7 @@ TArray<FHarmoniaDataTablePatch> UHarmoniaDataTablePatcher::GetModPatches(FName M
 
 	if (PatchesByMod.Contains(ModId))
 	{
-		const TArray<FString>& PatchKeys = PatchesByMod[ModId];
+		const TArray<FString>& PatchKeys = PatchesByMod[ModId].PatchKeys;
 
 		for (const FString& Key : PatchKeys)
 		{
