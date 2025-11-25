@@ -39,9 +39,9 @@ void UHarmoniaLearningAIComponent::GetLifetimeReplicatedProps(TArray<FLifetimePr
 	DOREPLIFETIME(UHarmoniaLearningAIComponent, CurrentDifficulty);
 }
 
-void UHarmoniaLearningAIComponent::BeginPlay()
+void UHarmoniaLearningAIComponent::InitializeAIComponent()
 {
-	Super::BeginPlay();
+	Super::InitializeAIComponent();
 
 	OwnerMonster = Cast<AHarmoniaMonsterBase>(GetOwner());
 	if (!OwnerMonster)
@@ -50,18 +50,18 @@ void UHarmoniaLearningAIComponent::BeginPlay()
 	}
 }
 
-void UHarmoniaLearningAIComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+void UHarmoniaLearningAIComponent::CleanupAIComponent()
 {
-	Super::EndPlay(EndPlayReason);
+	Super::CleanupAIComponent();
 
 	LearnedPatterns.Empty();
 	LastPlayerPositions.Empty();
 	LastAttackTimes.Empty();
 }
 
-void UHarmoniaLearningAIComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UHarmoniaLearningAIComponent::UpdateAIComponent(float DeltaTime)
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	Super::UpdateAIComponent(DeltaTime);
 
 	if (!bEnableLearning || !OwnerMonster)
 	{

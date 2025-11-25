@@ -17,9 +17,9 @@ UHarmoniaSquadComponent::UHarmoniaSquadComponent()
 	SetIsReplicatedByDefault(true);
 }
 
-void UHarmoniaSquadComponent::BeginPlay()
+void UHarmoniaSquadComponent::InitializeAIComponent()
 {
-	Super::BeginPlay();
+	Super::InitializeAIComponent();
 
 	// Auto-form squad if enabled
 	if (bSquadEnabled && GetOwner() && GetOwner()->HasAuthority())
@@ -38,9 +38,9 @@ void UHarmoniaSquadComponent::BeginPlay()
 	}
 }
 
-void UHarmoniaSquadComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UHarmoniaSquadComponent::UpdateAIComponent(float DeltaTime)
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	Super::UpdateAIComponent(DeltaTime);
 
 	if (!bSquadEnabled || !GetOwner() || !GetOwner()->HasAuthority())
 	{
@@ -56,6 +56,32 @@ void UHarmoniaSquadComponent::TickComponent(float DeltaTime, ELevelTick TickType
 		CheckSquadCohesion();
 		TimeSinceFormationUpdate = 0.0f;
 	}
+}
+
+bool UHarmoniaSquadComponent::IsInCombat() const
+{
+	// Squad is in combat if any member has a valid target
+	if (Super::IsInCombat())
+	{
+		return true;
+	}
+
+	// Check squad members
+	for (const FHarmoniaSquadMemberInfo& MemberInfo : SquadMembers)
+	{
+		if (MemberInfo.Monster)
+		{
+			if (const UHarmoniaSquadComponent* MemberSquad = MemberInfo.Monster->FindComponentByClass<UHarmoniaSquadComponent>())
+			{
+				if (MemberSquad->HasValidTarget())
+				{
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
 }
 
 void UHarmoniaSquadComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

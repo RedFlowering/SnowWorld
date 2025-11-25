@@ -20,9 +20,9 @@ UHarmoniaAdvancedAIComponent::UHarmoniaAdvancedAIComponent()
 	SetIsReplicatedByDefault(true);
 }
 
-void UHarmoniaAdvancedAIComponent::BeginPlay()
+void UHarmoniaAdvancedAIComponent::InitializeAIComponent()
 {
-	Super::BeginPlay();
+	Super::InitializeAIComponent();
 
 	// Cache owner monster
 	OwnerMonster = Cast<AHarmoniaMonsterBase>(GetOwner());
@@ -33,9 +33,9 @@ void UHarmoniaAdvancedAIComponent::BeginPlay()
 	EmotionState.Duration = 0.0f;
 }
 
-void UHarmoniaAdvancedAIComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UHarmoniaAdvancedAIComponent::UpdateAIComponent(float DeltaTime)
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	Super::UpdateAIComponent(DeltaTime);
 
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 	{

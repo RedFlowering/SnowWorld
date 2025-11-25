@@ -3,8 +3,8 @@
 #include "System/HarmoniaWorkshopIntegration.h"
 #include "System/HarmoniaModSubsystem.h"
 #include "Misc/Paths.h"
-#include "Online/OnlineSubsystem.h"
-#include "Interfaces/IOnlineExternalUIInterface.h"
+#include "OnlineSubsystem.h"
+#include "Interfaces/OnlineExternalUIInterface.h"
 #include "Engine/GameInstance.h"
 
 DEFINE_LOG_CATEGORY(LogHarmoniaWorkshop);

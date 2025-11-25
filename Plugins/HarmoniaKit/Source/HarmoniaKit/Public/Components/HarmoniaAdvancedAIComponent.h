@@ -36,14 +36,7 @@ class HARMONIAKIT_API UHarmoniaAdvancedAIComponent : public UHarmoniaBaseAICompo
 public:
 	UHarmoniaAdvancedAIComponent();
 
-protected:
 	//~UActorComponent interface
-	virtual void BeginPlay() override;
-	//~End of UActorComponent interface
-
-public:
-	//~UActorComponent interface
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	//~End of UActorComponent interface
 
@@ -53,6 +46,7 @@ protected:
 	virtual void UpdateAIComponent(float DeltaTime) override;
 	//~End of UHarmoniaBaseAIComponent interface
 
+public:
 	// ============================================================================
 	// Configuration
 	// ============================================================================
@@ -168,6 +162,7 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Advanced AI|Emotion")
 	float GetEmotionDefenseModifier() const { return EmotionState.DefenseModifier; }
 
+public:
 	// ============================================================================
 	// Combo System
 	// ============================================================================

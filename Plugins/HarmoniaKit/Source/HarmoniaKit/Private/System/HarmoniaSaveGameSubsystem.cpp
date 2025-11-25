@@ -14,7 +14,7 @@
 #include "AbilitySystem/Attributes/LyraCombatSet.h"
 #include "GameFramework/GameModeBase.h"
 #include "Kismet/GameplayStatics.h"
-#include "Online/OnlineSubsystem.h"
+#include "OnlineSubsystem.h"
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "Interfaces/OnlineUserCloudInterface.h"
 #include "Engine/World.h"

@@ -34,6 +34,22 @@ void UHarmoniaGatheringComponent::BeginPlay()
 	Super::BeginPlay();
 }
 
+void UHarmoniaGatheringComponent::OnActivityComplete()
+{
+	Super::OnActivityComplete();
+
+	// Gathering-specific completion logic
+	bIsGathering = false;
+}
+
+void UHarmoniaGatheringComponent::OnLevelUpInternal(int32 NewLevel)
+{
+	Super::OnLevelUpInternal(NewLevel);
+
+	// Gathering-specific level up logic
+	// Could add resource type-specific bonuses here
+}
+
 void UHarmoniaGatheringComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -196,9 +212,9 @@ void UHarmoniaGatheringComponent::AddGatheringExperience(int32 Amount, EGatherin
 
 int32 UHarmoniaGatheringComponent::GetGatheringLevel(EGatheringResourceType ResourceType) const
 {
-	if (const int32* Level = GatheringLevels.Find(ResourceType))
+	if (const int32* FoundLevel = GatheringLevels.Find(ResourceType))
 	{
-		return *Level;
+		return *FoundLevel;
 	}
 	return 1;
 }

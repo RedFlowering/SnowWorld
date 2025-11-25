@@ -467,8 +467,6 @@ bool UHarmoniaDataTablePatcher::SetPropertyValueFromString(FProperty* Property, 
 		Property->ImportText_Direct(*Value, DataPtr, nullptr, PPF_None);
 		return true;
 	}
-
-	return false;
 }
 
 FString UHarmoniaDataTablePatcher::GeneratePatchKey(const FSoftObjectPath& TablePath, FName RowName, FName PropertyName) const

@@ -4,8 +4,6 @@
 #include "HarmoniaKit.h"
 #include "Modules/ModuleManager.h"
 
-DEFINE_LOG_CATEGORY(LogHarmoniaKit);
-
 IMPLEMENT_MODULE(FHarmoniaKit, HarmoniaKit);
 
 void FHarmoniaKit::StartupModule()
