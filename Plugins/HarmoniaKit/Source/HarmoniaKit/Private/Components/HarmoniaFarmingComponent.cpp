@@ -225,11 +225,6 @@ void UHarmoniaFarmingComponent::AddFarmingExperience(int32 Amount)
 	CheckAndProcessLevelUp();
 }
 
-int32 UHarmoniaFarmingComponent::GetExperienceForNextLevel() const
-{
-	return BaseExperiencePerLevel * FarmingLevel;
-}
-
 void UHarmoniaFarmingComponent::SetCurrentSeason(ESeason Season)
 {
 	CurrentSeason = Season;

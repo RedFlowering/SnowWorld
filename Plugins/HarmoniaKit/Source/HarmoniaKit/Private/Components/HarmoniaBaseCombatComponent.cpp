@@ -1,7 +1,7 @@
 // Copyright 2025 Snow Game Studio.
-#include "HarmoniaLogCategories.h"
 
 #include "Components/HarmoniaBaseCombatComponent.h"
+#include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaSenseAttackComponent.h"
 #include "Components/HarmoniaEquipmentComponent.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"

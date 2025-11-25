@@ -1,7 +1,7 @@
 // Copyright 2025 Snow Game Studio.
 
-#include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaSquadComponent.h"
+#include "HarmoniaLogCategories.h"
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "Monsters/HarmoniaMonsterInterface.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"

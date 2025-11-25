@@ -10,6 +10,18 @@
 class UHarmoniaTeamConfigData;
 
 /**
+ * Wrapper struct for nested TMap value
+ */
+USTRUCT()
+struct FHarmoniaTeamRelationshipMap
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TMap<FHarmoniaTeamIdentification, EHarmoniaTeamRelationship> Relationships;
+};
+
+/**
  * Team Relationship Changed Delegate
  */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnTeamRelationshipChangedDelegate,
@@ -390,7 +402,7 @@ protected:
 
 	/** Team relationship matrix */
 	UPROPERTY()
-	TMap<FHarmoniaTeamIdentification, TMap<FHarmoniaTeamIdentification, EHarmoniaTeamRelationship>> RelationshipMatrix;
+	TMap<FHarmoniaTeamIdentification, FHarmoniaTeamRelationshipMap> RelationshipMatrix;
 
 	/** Next available numeric team ID */
 	int32 NextNumericTeamID = 1;

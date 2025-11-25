@@ -56,9 +56,9 @@ bool UHarmoniaAssetOverrideSubsystem::RegisterAssetOverride(const FHarmoniaAsset
 	// Track by mod
 	if (!OverridesByMod.Contains(ModId))
 	{
-		OverridesByMod.Add(ModId, TArray<FSoftObjectPath>());
+		OverridesByMod.Add(ModId, FHarmoniaSoftObjectPathArray());
 	}
-	OverridesByMod[ModId].AddUnique(Override.OriginalAssetPath);
+	OverridesByMod[ModId].Paths.AddUnique(Override.OriginalAssetPath);
 
 	UE_LOG(LogHarmoniaAssetOverride, Log, TEXT("Registered asset override: %s -> %s (Mod: %s)"),
 		*Override.OriginalAssetPath.ToString(),
@@ -83,9 +83,9 @@ bool UHarmoniaAssetOverrideSubsystem::UnregisterAssetOverride(const FSoftObjectP
 	// Remove from mod tracking
 	if (OverridesByMod.Contains(ModId))
 	{
-		OverridesByMod[ModId].Remove(OriginalAssetPath);
+		OverridesByMod[ModId].Paths.Remove(OriginalAssetPath);
 
-		if (OverridesByMod[ModId].Num() == 0)
+		if (OverridesByMod[ModId].Paths.Num() == 0)
 		{
 			OverridesByMod.Remove(ModId);
 		}
@@ -107,7 +107,7 @@ void UHarmoniaAssetOverrideSubsystem::UnregisterAllModOverrides(FName ModId)
 		return;
 	}
 
-	TArray<FSoftObjectPath> OverridePaths = OverridesByMod[ModId];
+	TArray<FSoftObjectPath> OverridePaths = OverridesByMod[ModId].Paths;
 
 	for (const FSoftObjectPath& Path : OverridePaths)
 	{

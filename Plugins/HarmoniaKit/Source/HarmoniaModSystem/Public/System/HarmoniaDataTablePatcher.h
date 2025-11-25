@@ -11,6 +11,18 @@
 DECLARE_LOG_CATEGORY_EXTERN(LogHarmoniaDataTablePatcher, Log, All);
 
 /**
+ * Wrapper struct for TArray<FString> to be used as TMap value
+ */
+USTRUCT()
+struct FHarmoniaPatchKeyArray
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TArray<FString> PatchKeys;
+};
+
+/**
  * Patch operation result
  */
 USTRUCT(BlueprintType)
@@ -180,7 +192,7 @@ private:
 
 	/** Patches by mod (ModId -> PatchKeys) */
 	UPROPERTY()
-	TMap<FName, TArray<FString>> PatchesByMod;
+	TMap<FName, FHarmoniaPatchKeyArray> PatchesByMod;
 
 	/** Loaded data table cache */
 	UPROPERTY()

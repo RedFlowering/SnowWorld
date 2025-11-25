@@ -96,14 +96,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Farming")
 	int32 GetFarmingLevel() const { return FarmingLevel; }
 
-	/** 현재 경험치 */
-	UFUNCTION(BlueprintPure, Category = "Harmonia|Farming")
-	int32 GetCurrentExperience() const { return CurrentExperience; }
-
-	/** 다음 레벨까지 필요한 경험치 */
-	UFUNCTION(BlueprintPure, Category = "Harmonia|Farming")
-	int32 GetExperienceForNextLevel() const;
-
 	// ====================================
 	// 계절 시스템
 	// ====================================
@@ -156,14 +148,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Farming Settings")
 	TMap<FName, FCropData> CropDatabase;
 
-	/** 레벨업 경험치 배율 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Farming Settings")
-	float ExperienceMultiplier = 1.0f;
-
-	/** 기본 레벨업 필요 경험치 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Farming Settings")
-	int32 BaseExperiencePerLevel = 100;
-
 	/** 물주기 수분 증가량 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Farming Settings")
 	float WaterMoistureIncrease = 30.0f;
@@ -184,10 +168,6 @@ private:
 	/** 농사 레벨 */
 	UPROPERTY()
 	int32 FarmingLevel = 1;
-
-	/** 현재 경험치 */
-	UPROPERTY()
-	int32 CurrentExperience = 0;
 
 	/** 밭 목록 (플롯 ID -> 작물 인스턴스) */
 	UPROPERTY()

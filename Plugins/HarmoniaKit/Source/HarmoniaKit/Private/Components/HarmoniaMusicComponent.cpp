@@ -264,11 +264,6 @@ void UHarmoniaMusicComponent::AddPerformanceExperience(int32 Amount)
 	CheckAndProcessLevelUp();
 }
 
-int32 UHarmoniaMusicComponent::GetExperienceForNextLevel() const
-{
-	return BaseExperiencePerLevel * PerformanceLevel;
-}
-
 void UHarmoniaMusicComponent::AddTrait(const FPerformanceTrait& Trait)
 {
 	for (const FPerformanceTrait& ExistingTrait : ActiveTraits)

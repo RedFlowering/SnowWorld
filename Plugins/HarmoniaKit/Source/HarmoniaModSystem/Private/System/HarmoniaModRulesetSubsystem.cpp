@@ -46,9 +46,9 @@ bool UHarmoniaModRulesetSubsystem::RegisterRuleset(const FHarmoniaCustomRuleset&
 	// Track by mod
 	if (!RulesetsByMod.Contains(ModId))
 	{
-		RulesetsByMod.Add(ModId, TArray<FName>());
+		RulesetsByMod.Add(ModId, FHarmoniaRulesetIdArray());
 	}
-	RulesetsByMod[ModId].AddUnique(Ruleset.RulesetId);
+	RulesetsByMod[ModId].RulesetIds.AddUnique(Ruleset.RulesetId);
 
 	UE_LOG(LogHarmoniaModRuleset, Log, TEXT("Registered ruleset: %s (%s) [Mod: %s]"),
 		*Ruleset.RulesetId.ToString(),
@@ -78,7 +78,7 @@ bool UHarmoniaModRulesetSubsystem::UnregisterRuleset(FName RulesetId)
 	// Remove from mod tracking
 	for (auto& Pair : RulesetsByMod)
 	{
-		Pair.Value.Remove(RulesetId);
+		Pair.Value.RulesetIds.Remove(RulesetId);
 	}
 
 	UE_LOG(LogHarmoniaModRuleset, Log, TEXT("Unregistered ruleset: %s"), *RulesetId.ToString());

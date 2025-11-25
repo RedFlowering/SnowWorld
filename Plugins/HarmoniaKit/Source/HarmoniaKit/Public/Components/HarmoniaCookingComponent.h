@@ -108,14 +108,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cooking")
 	int32 GetCookingLevel() const { return CookingLevel; }
 
-	/** 현재 경험치 */
-	UFUNCTION(BlueprintPure, Category = "Harmonia|Cooking")
-	int32 GetCurrentExperience() const { return CurrentExperience; }
-
-	/** 다음 레벨까지 필요한 경험치 */
-	UFUNCTION(BlueprintPure, Category = "Harmonia|Cooking")
-	int32 GetExperienceForNextLevel() const;
-
 	// ====================================
 	// 특성 시스템
 	// ====================================
@@ -180,14 +172,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooking Settings")
 	TMap<FName, FCookingRecipe> RecipeDatabase;
 
-	/** 레벨업 경험치 배율 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooking Settings")
-	float ExperienceMultiplier = 1.0f;
-
-	/** 기본 레벨업 필요 경험치 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooking Settings")
-	int32 BaseExperiencePerLevel = 100;
-
 	/** 기본 성공률 (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooking Settings")
 	float BaseSuccessRate = 70.0f;
@@ -212,10 +196,6 @@ private:
 	/** 요리 레벨 */
 	UPROPERTY()
 	int32 CookingLevel = 1;
-
-	/** 현재 경험치 */
-	UPROPERTY()
-	int32 CurrentExperience = 0;
 
 	/** 알려진 레시피 */
 	UPROPERTY()

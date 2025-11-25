@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "HarmoniaLogCategories.h"
 #include "HarmoniaComponentUtils.generated.h"
 
 /**
@@ -113,14 +114,8 @@ public:
 			return 0;
 		}
 
-		TArray<UActorComponent*> Components = Actor->GetComponentsByClass(TComponent::StaticClass());
-		for (UActorComponent* Component : Components)
-		{
-			if (TComponent* TypedComponent = Cast<TComponent>(Component))
-			{
-				OutComponents.Add(TypedComponent);
-			}
-		}
+		Actor->GetComponents<TComponent>(OutComponents);
+
 
 		return OutComponents.Num();
 	}

@@ -359,7 +359,7 @@ FString UHarmoniaLocalizationSubsystem::FormatTime(const FDateTime& DateTime) co
 {
 	FHarmoniaLanguageSettings Settings = GetLanguageSettings(CurrentLanguage);
 
-	if (Settings.TimeFormat == ETimeFormat::Hour12)
+	if (Settings.TimeFormat == EHarmoniaTimeFormat::Hour12)
 	{
 		int32 Hour12 = DateTime.GetHour12();
 		FString AMPM = DateTime.GetHour() < 12 ? TEXT("AM") : TEXT("PM");
@@ -499,7 +499,7 @@ void UHarmoniaLocalizationSubsystem::LoadDefaultLanguageSettings()
 		Settings.TextDirection = ETextDirection::LeftToRight;
 		Settings.NumberFormat = ENumberFormat::Default;
 		Settings.DateFormat = EDateFormat::MMDDYYYY;
-		Settings.TimeFormat = ETimeFormat::Hour12;
+		Settings.TimeFormat = EHarmoniaTimeFormat::Hour12;
 		Settings.DecimalSeparator = TEXT(".");
 		Settings.ThousandsSeparator = TEXT(",");
 		Settings.CurrencySymbol = TEXT("$");
@@ -514,7 +514,7 @@ void UHarmoniaLocalizationSubsystem::LoadDefaultLanguageSettings()
 		Settings.TextDirection = ETextDirection::LeftToRight;
 		Settings.NumberFormat = ENumberFormat::Default;
 		Settings.DateFormat = EDateFormat::YYYYMMDD;
-		Settings.TimeFormat = ETimeFormat::Hour24;
+		Settings.TimeFormat = EHarmoniaTimeFormat::Hour24;
 		Settings.DecimalSeparator = TEXT(".");
 		Settings.ThousandsSeparator = TEXT(",");
 		Settings.CurrencySymbol = TEXT("₩");
@@ -529,7 +529,7 @@ void UHarmoniaLocalizationSubsystem::LoadDefaultLanguageSettings()
 		Settings.TextDirection = ETextDirection::LeftToRight;
 		Settings.NumberFormat = ENumberFormat::Default;
 		Settings.DateFormat = EDateFormat::YYYYMMDD;
-		Settings.TimeFormat = ETimeFormat::Hour24;
+		Settings.TimeFormat = EHarmoniaTimeFormat::Hour24;
 		Settings.DecimalSeparator = TEXT(".");
 		Settings.ThousandsSeparator = TEXT(",");
 		Settings.CurrencySymbol = TEXT("¥");
@@ -544,7 +544,7 @@ void UHarmoniaLocalizationSubsystem::LoadDefaultLanguageSettings()
 		Settings.TextDirection = ETextDirection::LeftToRight;
 		Settings.NumberFormat = ENumberFormat::Default;
 		Settings.DateFormat = EDateFormat::YYYYMMDD;
-		Settings.TimeFormat = ETimeFormat::Hour24;
+		Settings.TimeFormat = EHarmoniaTimeFormat::Hour24;
 		Settings.DecimalSeparator = TEXT(".");
 		Settings.ThousandsSeparator = TEXT(",");
 		Settings.CurrencySymbol = TEXT("¥");
@@ -559,7 +559,7 @@ void UHarmoniaLocalizationSubsystem::LoadDefaultLanguageSettings()
 		Settings.TextDirection = ETextDirection::LeftToRight;
 		Settings.NumberFormat = ENumberFormat::European;
 		Settings.DateFormat = EDateFormat::DDMMYYYY;
-		Settings.TimeFormat = ETimeFormat::Hour24;
+		Settings.TimeFormat = EHarmoniaTimeFormat::Hour24;
 		Settings.DecimalSeparator = TEXT(",");
 		Settings.ThousandsSeparator = TEXT(".");
 		Settings.CurrencySymbol = TEXT("€");
@@ -574,7 +574,7 @@ void UHarmoniaLocalizationSubsystem::LoadDefaultLanguageSettings()
 		Settings.TextDirection = ETextDirection::RightToLeft;
 		Settings.NumberFormat = ENumberFormat::Arabic;
 		Settings.DateFormat = EDateFormat::DDMMYYYY;
-		Settings.TimeFormat = ETimeFormat::Hour24;
+		Settings.TimeFormat = EHarmoniaTimeFormat::Hour24;
 		Settings.DecimalSeparator = TEXT(".");
 		Settings.ThousandsSeparator = TEXT(",");
 		Settings.CurrencySymbol = TEXT("﷼");
@@ -728,7 +728,7 @@ FString UHarmoniaLocalizationSubsystem::FormatNumberInternal(double Number, int3
 		{
 			FormattedInteger = Settings.ThousandsSeparator + FormattedInteger;
 		}
-		FormattedInteger = IntegerString[i] + FormattedInteger;
+		FormattedInteger = FString::Chr(IntegerString[i]) + FormattedInteger;
 		DigitCount++;
 	}
 

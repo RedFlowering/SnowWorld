@@ -1,7 +1,7 @@
 // Copyright 2025 Snow Game Studio.
 
-#include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaCraftingComponent.h"
+#include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaInventoryComponent.h"
 #include "Interfaces/ICraftingStation.h"
 #include "Net/UnrealNetwork.h"

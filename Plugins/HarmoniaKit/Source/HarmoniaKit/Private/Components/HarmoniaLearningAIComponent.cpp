@@ -1,7 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaLearningAIComponent.h"
+#include "HarmoniaLogCategories.h"
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "AbilitySystemComponent.h"

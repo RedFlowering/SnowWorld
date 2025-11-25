@@ -313,7 +313,144 @@ void OnDiscoverNewContinent()
 
 ---
 
-## 6. 언리얼 표준 AI 시스템 통합
+## 6. 커스텀 액터에서 팀 인터페이스 구현
+
+### 6.1 개요
+
+UE 5.7부터 BlueprintNativeEvent 인터페이스는 기본 구현을 제공할 수 없습니다. 대신 **`UHarmoniaTeamAgentHelper`** 헬퍼 클래스를 사용하여 표준 구현을 쉽게 추가할 수 있습니다.
+
+### 6.2 기본 구현 (헬퍼 사용)
+
+가장 간단한 방법은 헬퍼 클래스의 static 메서드를 사용하는 것입니다:
+
+```cpp
+// MyCustomActor.h
+#include "Definitions/HarmoniaTeamSystemDefinitions.h"
+
+UCLASS()
+class AMyCustomActor : public AActor, public IHarmoniaTeamAgentInterface
+{
+    GENERATED_BODY()
+
+public:
+    // IHarmoniaTeamAgentInterface Implementation
+    virtual FHarmoniaTeamIdentification GetTeamID_Implementation() const override;
+    virtual void SetTeamID_Implementation(const FHarmoniaTeamIdentification& NewTeamID) override;
+    virtual EHarmoniaTeamRelationship GetRelationshipWith_Implementation(AActor* OtherActor) const override;
+    virtual bool CanAttackActor_Implementation(AActor* OtherActor) const override;
+    virtual bool ShouldHelpActor_Implementation(AActor* OtherActor) const override;
+    virtual bool IsSameTeamAs_Implementation(AActor* OtherActor) const override;
+    virtual bool IsAllyWith_Implementation(AActor* OtherActor) const override;
+    virtual bool IsEnemyWith_Implementation(AActor* OtherActor) const override;
+
+private:
+    UPROPERTY(Replicated)
+    FHarmoniaTeamIdentification MyTeamID;
+};
+
+// MyCustomActor.cpp
+#include "Utils/HarmoniaTeamAgentHelper.h"
+
+FHarmoniaTeamIdentification AMyCustomActor::GetTeamID_Implementation() const
+{
+    return MyTeamID;
+}
+
+void AMyCustomActor::SetTeamID_Implementation(const FHarmoniaTeamIdentification& NewTeamID)
+{
+    MyTeamID = NewTeamID;
+}
+
+// 나머지는 헬퍼 사용 - 한 줄로 간단하게!
+EHarmoniaTeamRelationship AMyCustomActor::GetRelationshipWith_Implementation(AActor* OtherActor) const
+{
+    return UHarmoniaTeamAgentHelper::GetRelationshipWith(this, OtherActor);
+}
+
+bool AMyCustomActor::CanAttackActor_Implementation(AActor* OtherActor) const
+{
+    return UHarmoniaTeamAgentHelper::CanAttackActor(this, OtherActor);
+}
+
+bool AMyCustomActor::ShouldHelpActor_Implementation(AActor* OtherActor) const
+{
+    return UHarmoniaTeamAgentHelper::ShouldHelpActor(this, OtherActor);
+}
+
+bool AMyCustomActor::IsSameTeamAs_Implementation(AActor* OtherActor) const
+{
+    return UHarmoniaTeamAgentHelper::IsSameTeamAs(this, OtherActor);
+}
+
+bool AMyCustomActor::IsAllyWith_Implementation(AActor* OtherActor) const
+{
+    return UHarmoniaTeamAgentHelper::IsAllyWith(this, OtherActor);
+}
+
+bool AMyCustomActor::IsEnemyWith_Implementation(AActor* OtherActor) const
+{
+    return UHarmoniaTeamAgentHelper::IsEnemyWith(this, OtherActor);
+}
+```
+
+### 6.3 커스텀 구현 (고급)
+
+더 복잡한 로직이 필요한 경우 직접 구현할 수 있습니다 (예: 서브시스템 통합):
+
+```cpp
+EHarmoniaTeamRelationship AMyCustomActor::GetRelationshipWith_Implementation(AActor* OtherActor) const
+{
+    if (!OtherActor)
+    {
+        return EHarmoniaTeamRelationship::Neutral;
+    }
+
+    // 서브시스템을 통한 고급 관계 조회
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return EHarmoniaTeamRelationship::Neutral;
+    }
+
+    UHarmoniaTeamManagementSubsystem* TeamSubsystem = World->GetSubsystem<UHarmoniaTeamManagementSubsystem>();
+    if (!TeamSubsystem)
+    {
+        return EHarmoniaTeamRelationship::Neutral;
+    }
+
+    return TeamSubsystem->GetActorRelationship(const_cast<AMyCustomActor*>(this), OtherActor);
+}
+```
+
+### 6.4 블루프린트 전용 구현
+
+C++ 없이 블루프린트만으로도 구현 가능합니다:
+
+```
+1. 블루프린트 클래스 생성
+2. Class Settings > Interfaces > Add > HarmoniaTeamAgentInterface
+3. 각 함수를 블루프린트에서 구현:
+   - GetTeamID: 저장된 TeamID 변수 리턴
+   - SetTeamID: TeamID 변수에 저장
+   - GetRelationshipWith: Call Function > HarmoniaTeamAgentHelper > GetRelationshipWith
+   - 나머지도 동일하게 헬퍼 함수 호출
+```
+
+### 6.5 헬퍼 클래스 유틸리티 함수
+
+`UHarmoniaTeamAgentHelper`는 다음 유틸리티 함수도 제공합니다:
+
+```cpp
+// 액터가 팀 인터페이스를 구현하는지 확인
+bool bImplements = UHarmoniaTeamAgentHelper::DoesActorImplementTeamInterface(SomeActor);
+
+// 액터에서 팀 ID 가져오기 (인터페이스 체크 포함)
+FHarmoniaTeamIdentification TeamID = UHarmoniaTeamAgentHelper::GetTeamIDFromActor(SomeActor);
+```
+
+---
+
+## 7. 언리얼 표준 AI 시스템 통합
 
 ### 6.1 Behavior Tree에서 사용
 
