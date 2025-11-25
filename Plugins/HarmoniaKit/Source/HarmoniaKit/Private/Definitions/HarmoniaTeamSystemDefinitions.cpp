@@ -66,3 +66,6 @@ bool UHarmoniaTeamConfigData::ShouldHelp(const FHarmoniaTeamIdentification& Othe
 // ============================================================================
 // NOTE: UE 5.7 doesn't support default implementations for BlueprintNativeEvent
 // in interfaces. Each implementing class must provide its own _Implementation methods.
+//
+// To get default behavior, use UHarmoniaTeamAgentHelper static methods in your implementations.
+// See Utils/HarmoniaTeamAgentHelper.h for usage examples.
