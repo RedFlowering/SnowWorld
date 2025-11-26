@@ -2,6 +2,17 @@
 
 #include "Data/HarmoniaClassData.h"
 
+bool UHarmoniaClassData::GetClassDefinitionBP(EHarmoniaCharacterClass ClassType, FHarmoniaClassDefinition& OutClassDef) const
+{
+	const FHarmoniaClassDefinition* Def = GetClassDefinition(ClassType);
+	if (Def)
+	{
+		OutClassDef = *Def;
+		return true;
+	}
+	return false;
+}
+
 const FHarmoniaClassDefinition* UHarmoniaClassData::GetClassDefinition(EHarmoniaCharacterClass ClassType) const
 {
 	for (const FHarmoniaClassDefinition& ClassDef : ClassDefinitions)
@@ -11,8 +22,18 @@ const FHarmoniaClassDefinition* UHarmoniaClassData::GetClassDefinition(EHarmonia
 			return &ClassDef;
 		}
 	}
-
 	return nullptr;
+}
+
+bool UHarmoniaClassData::GetAwakeningDefinitionBP(EHarmoniaAwakeningTier Tier, FHarmoniaAwakeningDefinition& OutAwakeningDef) const
+{
+	const FHarmoniaAwakeningDefinition* Def = GetAwakeningDefinition(Tier);
+	if (Def)
+	{
+		OutAwakeningDef = *Def;
+		return true;
+	}
+	return false;
 }
 
 const FHarmoniaAwakeningDefinition* UHarmoniaClassData::GetAwakeningDefinition(EHarmoniaAwakeningTier Tier) const
@@ -24,8 +45,18 @@ const FHarmoniaAwakeningDefinition* UHarmoniaClassData::GetAwakeningDefinition(E
 			return &AwakeningDef;
 		}
 	}
-
 	return nullptr;
+}
+
+bool UHarmoniaClassData::GetPrestigeDefinitionBP(int32 PrestigeLevel, FHarmoniaPrestigeDefinition& OutPrestigeDef) const
+{
+	const FHarmoniaPrestigeDefinition* Def = GetPrestigeDefinition(PrestigeLevel);
+	if (Def)
+	{
+		OutPrestigeDef = *Def;
+		return true;
+	}
+	return false;
 }
 
 const FHarmoniaPrestigeDefinition* UHarmoniaClassData::GetPrestigeDefinition(int32 PrestigeLevel) const
@@ -37,7 +68,6 @@ const FHarmoniaPrestigeDefinition* UHarmoniaClassData::GetPrestigeDefinition(int
 			return &PrestigeDef;
 		}
 	}
-
 	return nullptr;
 }
 
@@ -104,4 +134,27 @@ int32 UHarmoniaClassData::GetClassTier(EHarmoniaCharacterClass ClassType) const
 	}
 
 	return 0;
+}
+
+bool UHarmoniaClassData::CanAdvanceToClass(EHarmoniaCharacterClass CurrentClass, EHarmoniaCharacterClass TargetClass, int32 PlayerLevel) const
+{
+	const FHarmoniaClassDefinition* ClassDef = GetClassDefinition(CurrentClass);
+	if (!ClassDef)
+	{
+		return false;
+	}
+
+	// Check if target class is in advancement options
+	if (!ClassDef->AdvancementClasses.Contains(TargetClass))
+	{
+		return false;
+	}
+
+	// Check level requirement
+	if (PlayerLevel < ClassDef->RequiredLevelForAdvancement)
+	{
+		return false;
+	}
+
+	return true;
 }

@@ -2,6 +2,17 @@
 
 #include "Data/HarmoniaSkillTreeData.h"
 
+bool UHarmoniaSkillTreeData::FindSkillNodeBP(FName NodeID, FHarmoniaSkillNode& OutNode)
+{
+	FHarmoniaSkillNode* Node = FindSkillNode(NodeID);
+	if (Node)
+	{
+		OutNode = *Node;
+		return true;
+	}
+	return false;
+}
+
 FHarmoniaSkillNode* UHarmoniaSkillTreeData::FindSkillNode(FName NodeID)
 {
 	for (FHarmoniaSkillNode& Node : SkillNodes)

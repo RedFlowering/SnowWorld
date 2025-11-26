@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "Engine/DataTable.h"
 #include "HarmoniaMusicSystemDefinitions.generated.h"
 
 /**
@@ -326,4 +327,82 @@ struct FPerformanceTrait
 	/** 앙코르 확률 (%) - 버프가 2배 지속 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float EncoreChance = 0.0f;
+};
+
+/**
+ * 악보 데이터 테이블 Row
+ * 에디터에서 DataTable로 악보를 관리할 때 사용
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FMusicSheetDataTableRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** 악보 ID */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
+	FName MusicID;
+
+	/** 표시 이름 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
+	FText DisplayName;
+
+	/** 설명 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
+	FText Description;
+
+	/** 음악 장르 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
+	EMusicGenre Genre = EMusicGenre::Classical;
+
+	/** 호환 악기 타입 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Requirement")
+	TArray<EInstrumentType> CompatibleInstruments;
+
+	/** 난이도 (1-10) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Difficulty")
+	int32 Difficulty = 1;
+
+	/** 연주 시간 (초) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Difficulty")
+	float Duration = 30.0f;
+
+	/** 최소 음악 레벨 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Requirement")
+	int32 MinMusicLevel = 1;
+
+	/** BPM (분당 비트수, 리듬 게임용) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Rhythm")
+	int32 BPM = 120;
+
+	/** 노트 패턴 (초 단위 타임스탬프) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Rhythm")
+	TArray<float> NotePattern;
+
+	/** 버프 효과 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Buff")
+	FMusicBuffEffect BuffEffect;
+
+	/** 버프 지속시간 (초) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Buff")
+	float BuffDuration = 60.0f;
+
+	/** 버프 범위 (주변 플레이어/NPC에게 적용) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Buff")
+	float BuffRadius = 1000.0f;
+
+	/** 성공 연주당 획득 경험치 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Economy")
+	int32 ExperienceGain = 10;
+
+	/** 오디오 에셋 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Audio")
+	TSoftObjectPtr<USoundBase> AudioAsset;
+
+	/** 아이콘/악보 텍스처 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Visual")
+	TSoftObjectPtr<UTexture2D> Icon;
+
+	/** 희귀/전설 악보 여부 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
+	bool bIsRare = false;
 };

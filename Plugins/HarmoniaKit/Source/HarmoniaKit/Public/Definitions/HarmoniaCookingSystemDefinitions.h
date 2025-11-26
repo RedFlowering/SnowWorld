@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "Engine/DataTable.h"
 #include "HarmoniaCookingSystemDefinitions.generated.h"
 
 /**
@@ -277,4 +278,74 @@ struct FCookingTrait
 	/** 경험치 보너스 (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float ExperienceBonus = 0.0f;
+};
+
+/**
+ * 요리 레시피 데이터 테이블 Row
+ * 에디터에서 DataTable로 레시피를 관리할 때 사용
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FRecipeDataTableRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** 레시피 ID */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
+	FName RecipeID;
+
+	/** 표시 이름 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
+	FText DisplayName;
+
+	/** 설명 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
+	FText Description;
+
+	/** 음식 타입 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
+	EFoodType FoodType = EFoodType::Meal;
+
+	/** 요리 방법 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
+	ECookingMethod CookingMethod = ECookingMethod::Boiling;
+
+	/** 필요 재료 (아이템 ID -> 수량) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe|Ingredients")
+	TMap<FName, int32> Ingredients;
+
+	/** 요리 시간 (초) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe|Cooking")
+	float CookingTime = 5.0f;
+
+	/** 최소 요리 레벨 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe|Requirement")
+	int32 MinCookingLevel = 1;
+
+	/** 획득 경험치 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe|Economy")
+	int32 ExperienceGain = 10;
+
+	/** 난이도 (1-10, 품질 확률에 영향) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe|Cooking")
+	int32 Difficulty = 1;
+
+	/** 기본 버프 효과 (품질에 따라 배율 적용) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe|Buff")
+	FFoodBuffEffect BuffEffect;
+
+	/** 버프 지속시간 (초) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe|Buff")
+	float BuffDuration = 300.0f;
+
+	/** 숨겨진 레시피 여부 (실험을 통해 발견) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
+	bool bIsHidden = false;
+
+	/** 아이콘 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe|Visual")
+	TSoftObjectPtr<UTexture2D> Icon;
+
+	/** 기본 판매 가격 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe|Economy")
+	int32 BasePrice = 20;
 };

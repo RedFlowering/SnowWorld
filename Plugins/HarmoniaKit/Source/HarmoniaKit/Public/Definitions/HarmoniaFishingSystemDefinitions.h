@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "Engine/DataTable.h"
 #include "HarmoniaFishingSystemDefinitions.generated.h"
 
 /**
@@ -219,4 +220,86 @@ struct FCaughtFish
 	/** 품질 점수 (0-100) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caught Fish")
 	float QualityScore = 50.0f;
+};
+
+/**
+ * 물고기 데이터 테이블 Row
+ * 에디터에서 DataTable로 물고기 데이터를 관리할 때 사용
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FFishDataTableRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** 물고기 ID */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
+	FName FishID;
+
+	/** 표시 이름 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
+	FText DisplayName;
+
+	/** 설명 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
+	FText Description;
+
+	/** 희귀도 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
+	EFishRarity Rarity = EFishRarity::Common;
+
+	/** 최소 크기 (cm) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Size")
+	float MinSize = 10.0f;
+
+	/** 최대 크기 (cm) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Size")
+	float MaxSize = 50.0f;
+
+	/** 최소 무게 (kg) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Size")
+	float MinWeight = 0.5f;
+
+	/** 최대 무게 (kg) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Size")
+	float MaxWeight = 5.0f;
+
+	/** 기본 판매 가격 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Economy")
+	int32 BasePrice = 10;
+
+	/** 낚았을 때 획득 경험치 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Economy")
+	int32 ExperienceGain = 5;
+
+	/** 아이콘 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Visual")
+	TSoftObjectPtr<UTexture2D> Icon;
+
+	/** 3D 메시 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Visual")
+	TSoftObjectPtr<UStaticMesh> Mesh;
+
+	/** 출현 가능한 낚시터 타입 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Spawn")
+	TArray<EFishingSpotType> ValidSpotTypes;
+
+	/** 최소 낚시 레벨 요구사항 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Spawn")
+	int32 MinFishingLevel = 1;
+
+	/** 출현 시작 시간 (0-23, -1이면 항상) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Spawn")
+	int32 AppearStartHour = -1;
+
+	/** 출현 종료 시간 (0-23, -1이면 항상) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Spawn")
+	int32 AppearEndHour = -1;
+
+	/** 필요 날씨 조건 (비어있으면 모든 날씨) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Spawn")
+	TArray<FName> RequiredWeather;
+
+	/** 필요 계절 (비어있으면 모든 계절) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Spawn")
+	TArray<FName> RequiredSeasons;
 };

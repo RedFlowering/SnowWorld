@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "Engine/DataTable.h"
 #include "HarmoniaGatheringSystemDefinitions.generated.h"
 
 /**
@@ -251,4 +252,74 @@ struct FGatheringTrait
 	/** 희귀 자원 발견 확률 보너스 (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float RareResourceBonus = 0.0f;
+};
+
+/**
+ * 채집 자원 데이터 테이블 Row
+ * 에디터에서 DataTable로 채집 자원을 관리할 때 사용
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FGatheringResourceTableRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** 자원 ID */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
+	FName ResourceID;
+
+	/** 표시 이름 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
+	FText DisplayName;
+
+	/** 설명 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
+	FText Description;
+
+	/** 자원 타입 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
+	EGatheringResourceType ResourceType = EGatheringResourceType::Mineral;
+
+	/** 희귀도 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
+	EGatheringRarity Rarity = EGatheringRarity::Common;
+
+	/** 필요 도구 타입 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Requirement")
+	EGatheringToolType RequiredTool = EGatheringToolType::None;
+
+	/** 최소 도구 등급 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Requirement")
+	int32 MinToolTier = 1;
+
+	/** 최소 채집 레벨 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Requirement")
+	int32 MinGatheringLevel = 1;
+
+	/** 채집 시간 (초) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Gathering")
+	float GatheringTime = 3.0f;
+
+	/** 최소 획득량 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Gathering")
+	int32 MinYield = 1;
+
+	/** 최대 획득량 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Gathering")
+	int32 MaxYield = 3;
+
+	/** 획득 경험치 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Economy")
+	int32 ExperienceGain = 5;
+
+	/** 기본 판매 가격 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Economy")
+	int32 BasePrice = 5;
+
+	/** 아이콘 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Visual")
+	TSoftObjectPtr<UTexture2D> Icon;
+
+	/** 도구 내구도 소모량 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Gathering")
+	float ToolDurabilityConsume = 1.0f;
 };

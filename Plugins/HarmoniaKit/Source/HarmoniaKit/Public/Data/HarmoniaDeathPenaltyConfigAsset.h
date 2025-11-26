@@ -8,55 +8,58 @@
 #include "HarmoniaDeathPenaltyConfigAsset.generated.h"
 
 /**
- * Data asset defining death penalty rules and configuration
- * This allows designers to tune the death penalty system without code changes
+ * 사망 페널티 설정 데이터 에셋
+ * 사망 시 통화 드롭, 메모리 에코, 난이도 조절 등을 정의
  */
 UCLASS(BlueprintType)
-class HARMONIAKIT_API UHarmoniaDeathPenaltyConfigAsset : public UPrimaryDataAsset
+class HARMONIAKIT_API UHarmoniaDeathPenaltyConfigAsset : public UDataAsset
 {
 	GENERATED_BODY()
 
 public:
 	UHarmoniaDeathPenaltyConfigAsset();
 
-	/** Complete death penalty configuration */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Death Penalty")
-	FHarmoniaDeathPenaltyConfig Config;
-
-	/** Enable death penalty system globally */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Death Penalty")
+	//~ 기본 설정
+	/** 사망 페널티 활성화 여부 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty")
 	bool bEnableDeathPenalty;
 
-	/** Show UI markers for memory echo locations */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Death Penalty|UI")
+	/** 메모리 에코 마커 표시 여부 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty|Memory Echo")
 	bool bShowMemoryEchoMarker;
 
-	/** Show distance to memory echo */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Death Penalty|UI")
+	/** 메모리 에코까지의 거리 표시 여부 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty|Memory Echo")
 	bool bShowDistanceToMemoryEcho;
 
-	/** Memory echo marker color */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Death Penalty|UI", meta = (EditCondition = "bShowMemoryEchoMarker"))
+	/** 메모리 에코 마커 색상 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty|Memory Echo|Visual")
 	FLinearColor MemoryEchoMarkerColor;
 
-	/** Difficulty multiplier for penalties (1.0 = normal, 2.0 = double penalties) */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Death Penalty|Difficulty", meta = (ClampMin = "0.0", ClampMax = "5.0"))
+	/** 난이도 배율 (드롭/손실률에 적용) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty|Difficulty", meta = (ClampMin = "0.0", ClampMax = "5.0"))
 	float DifficultyMultiplier;
 
-	/** Get drop percentage for a specific currency type */
-	UFUNCTION(BlueprintCallable, Category = "Death Penalty")
+	//~ 상세 설정
+	/** 전체 사망 페널티 설정 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty|Config")
+	FHarmoniaDeathPenaltyConfig Config;
+
+	//~ 유틸리티 함수
+	/** 특정 통화의 드롭 비율 반환 */
+	UFUNCTION(BlueprintPure, Category = "Death Penalty")
 	float GetCurrencyDropPercentage(EHarmoniaCurrencyType CurrencyType) const;
 
-	/** Get permanent loss percentage for a specific currency type */
-	UFUNCTION(BlueprintCallable, Category = "Death Penalty")
+	/** 특정 통화의 영구 손실 비율 반환 */
+	UFUNCTION(BlueprintPure, Category = "Death Penalty")
 	float GetCurrencyPermanentLossPercentage(EHarmoniaCurrencyType CurrencyType) const;
 
-	/** Check if a currency type has drop configuration */
-	UFUNCTION(BlueprintCallable, Category = "Death Penalty")
+	/** 특정 통화에 대한 드롭 설정이 있는지 확인 */
+	UFUNCTION(BlueprintPure, Category = "Death Penalty")
 	bool HasCurrencyDropConfig(EHarmoniaCurrencyType CurrencyType) const;
 
 #if WITH_EDITOR
 	virtual EDataValidationResult IsDataValid(class FDataValidationContext& Context) const override;
-	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 };

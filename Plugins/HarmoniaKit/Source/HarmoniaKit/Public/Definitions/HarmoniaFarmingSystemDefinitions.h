@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "Engine/DataTable.h"
 #include "HarmoniaFarmingSystemDefinitions.generated.h"
 
 /**
@@ -287,4 +288,90 @@ struct FHarvestResult
 	/** 획득한 씨앗 수 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	int32 SeedCount = 0;
+};
+
+/**
+ * 작물 데이터 테이블 Row
+ * 에디터에서 DataTable로 작물을 관리할 때 사용
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FCropDataTableRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** 작물 ID */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop")
+	FName CropID;
+
+	/** 표시 이름 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop")
+	FText DisplayName;
+
+	/** 설명 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop")
+	FText Description;
+
+	/** 작물 타입 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop")
+	ECropType CropType = ECropType::Vegetable;
+
+	/** 필요 계절 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop|Growth")
+	ESeason RequiredSeason = ESeason::AllSeasons;
+
+	/** 성장 시간 (게임 시간 기준, 시간) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop|Growth")
+	float GrowthTimeHours = 24.0f;
+
+	/** 시간당 물 소모량 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop|Growth")
+	float WaterConsumptionRate = 0.05f;
+
+	/** 최소 농사 레벨 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop|Requirement")
+	int32 MinFarmingLevel = 1;
+
+	/** 최소 수확량 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop|Harvest")
+	int32 MinYield = 1;
+
+	/** 최대 수확량 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop|Harvest")
+	int32 MaxYield = 3;
+
+	/** 재수확 가능 여부 (다시 심지 않아도 됨) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop|Harvest")
+	bool bReharvestable = false;
+
+	/** 재수확까지 걸리는 시간 (재수확 가능할 경우) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop|Harvest")
+	float RegrowthTimeHours = 12.0f;
+
+	/** 최대 수확 횟수 (0 = 무제한) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop|Harvest")
+	int32 MaxHarvests = 0;
+
+	/** 수확 시 씨앗 획득 확률 (0-1) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop|Harvest")
+	float SeedDropChance = 0.3f;
+
+	/** 수확당 획득 경험치 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop|Economy")
+	int32 ExperienceGain = 5;
+
+	/** 씨앗 아이템 ID */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop|Item")
+	FName SeedItemID;
+
+	/** 수확 아이템 ID */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop|Item")
+	FName HarvestedItemID;
+
+	/** 기본 판매 가격 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop|Economy")
+	int32 BasePrice = 10;
+
+	/** 아이콘 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crop|Visual")
+	TSoftObjectPtr<UTexture2D> Icon;
 };
