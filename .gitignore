@@ -9,6 +9,10 @@
 .vs/
 .vsconfig
 
+# Visual Studio Code
+.vscode/
+.ignore
+
 # Compiled Object files
 *.slo
 *.lo
@@ -44,6 +48,7 @@
 *.xcodeproj
 *.xcworkspace
 *.sln
+*.code-workspace
 *.suo
 *.opensdf
 *.sdf
