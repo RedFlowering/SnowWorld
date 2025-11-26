@@ -55,10 +55,35 @@ struct FComboAttackData : public FTableRowBase
  * - Manages combo windows
  * - Resets combo on timeout
  *
- * Tag Configuration (use inherited containers):
- * - ActivationOwnedTags: Tags applied while attacking (e.g., State.Combat.Attacking)
- * - ActivationBlockedTags: Tags that prevent attack (e.g., State.Combat.Attacking)
- * - BlockAbilitiesWithTag: Abilities to block while attacking
+ * ============================================================================
+ * Required Tag Configuration (set in Blueprint or derived class):
+ * ============================================================================
+ *
+ * AbilityTags:
+ *   - Ability.Combat.Attack.Combo (identifies this ability)
+ *
+ * ActivationOwnedTags (tags applied while attacking):
+ *   - State.Combat.Attacking
+ *
+ * ActivationBlockedTags (tags that prevent initial attack):
+ *   - State.Combat.Attacking (only if NOT in combo window)
+ *   - State.Blocking
+ *   - State.Dodging
+ *   - State.HitReaction
+ *
+ * BlockAbilitiesWithTag (abilities to block while attacking):
+ *   - State.Blocking
+ *   - State.Dodging
+ *
+ * CancelAbilitiesWithTag (abilities to cancel when attack starts):
+ *   - (none by default)
+ *
+ * Related Tags:
+ *   - State.Combat.ComboWindow (checked to allow combo continuation)
+ *
+ * Related Gameplay Events:
+ *   - GameplayEvent.Attack.ComboNext (advance to next combo)
+ *   - GameplayEvent.Attack.ComboReset (reset combo sequence)
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_ComboAttack : public ULyraGameplayAbility

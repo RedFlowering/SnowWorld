@@ -9,6 +9,33 @@
 /**
  * Vault/Parkour Gameplay Ability
  * Allows character to vault over obstacles
+ *
+ * ============================================================================
+ * Required Tag Configuration (set in Blueprint or derived class):
+ * ============================================================================
+ *
+ * AbilityTags:
+ *   - Ability.Movement.Vault (identifies this ability)
+ *
+ * ActivationOwnedTags (tags applied while vaulting):
+ *   - State.Vaulting
+ *
+ * ActivationBlockedTags (tags that prevent vaulting):
+ *   - State.Combat.Attacking
+ *   - State.Blocking
+ *   - State.Dodging
+ *   - State.HitReaction
+ *   - State.Swimming
+ *
+ * BlockAbilitiesWithTag (abilities to block while vaulting):
+ *   - State.Combat.Attacking
+ *   - State.Blocking
+ *
+ * CancelAbilitiesWithTag (abilities to cancel when vault starts):
+ *   - (none by default)
+ *
+ * Related Gameplay Events:
+ *   - GameplayEvent.Parkour.Vault (sent on successful vault)
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_Vault : public ULyraGameplayAbility

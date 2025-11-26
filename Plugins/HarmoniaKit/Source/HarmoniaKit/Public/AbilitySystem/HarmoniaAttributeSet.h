@@ -4,21 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemComponent.h"
-#include "AttributeSet.h"
+#include "AbilitySystem/Attributes/LyraAttributeSet.h"
 #include "HarmoniaAttributeSet.generated.h"
 
 class UObject;
 struct FGameplayEffectSpec;
 
-/**
- * Attribute Accessor Macro
- * Creates getter/setter functions for attributes
- */
-#define ATTRIBUTE_ACCESSORS(ClassName, PropertyName) \
-	GAMEPLAYATTRIBUTE_PROPERTY_GETTER(ClassName, PropertyName) \
-	GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
-	GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
-	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
+// Note: ATTRIBUTE_ACCESSORS macro is already defined in LyraAttributeSet.h
+// We use it here for Harmonia-specific attributes
 
 /**
  * Delegate for attribute change events
@@ -41,12 +34,21 @@ DECLARE_MULTICAST_DELEGATE_SixParams(
 /**
  * UHarmoniaAttributeSet
  *
- * Attribute set for character attributes (health, stamina, damage, etc.)
- * Used in both combat and non-combat situations (eating, resting, etc.)
- * Based on Lyra's attribute set architecture
+ * Extended attribute set for Soul-like RPG gameplay.
+ * Inherits from ULyraAttributeSet to leverage Lyra's base functionality.
+ * 
+ * Adds Soul-like specific attributes:
+ * - Stamina system (for dodging, attacking, sprinting)
+ * - Mana system (for magic abilities)
+ * - Primary stats (Vitality, Endurance, Strength, Dexterity, Intelligence, Faith, Luck)
+ * - Combat stats (Poise, Critical chance/damage, Attack/Movement speed)
+ * - Equipment load system
+ *
+ * Note: Health and MaxHealth are inherited from LyraHealthSet.
+ * This class provides additional attributes specific to Soul-like gameplay.
  */
 UCLASS(BlueprintType)
-class HARMONIAKIT_API UHarmoniaAttributeSet : public UAttributeSet
+class HARMONIAKIT_API UHarmoniaAttributeSet : public ULyraAttributeSet
 {
 	GENERATED_BODY()
 

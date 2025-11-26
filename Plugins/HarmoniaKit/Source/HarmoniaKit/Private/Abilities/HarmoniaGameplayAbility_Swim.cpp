@@ -12,9 +12,16 @@ UHarmoniaGameplayAbility_Swim::UHarmoniaGameplayAbility_Swim(const FObjectInitia
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
-	ActivationOwnedTags.AddTag(HarmoniaGameplayTags::State_Swimming);
-	BlockAbilitiesWithTag.AddTag(HarmoniaGameplayTags::State_Mounted);
-	BlockAbilitiesWithTag.AddTag(HarmoniaGameplayTags::State_Climbing);
+	// ============================================================================
+	// Tag Configuration: Do NOT hardcode tags in constructor!
+	// Configure these in Blueprint or derived class CDO:
+	// ============================================================================
+	// ActivationOwnedTags:
+	//   - State.Swimming
+	// BlockAbilitiesWithTag:
+	//   - State.Mounted
+	//   - State.Climbing
+	// ============================================================================
 
 	bIsDiving = false;
 	CurrentOxygen = OxygenCapacity;

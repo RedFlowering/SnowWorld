@@ -9,15 +9,30 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/PlayerController.h"
 
-UHarmoniaGameplayAbility_RangedAttack::UHarmoniaGameplayAbility_RangedAttack()
+UHarmoniaGameplayAbility_RangedAttack::UHarmoniaGameplayAbility_RangedAttack(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
-	// Use inherited tag containers - configure these in Blueprint or derived classes:
-	// - ActivationOwnedTags: Tags applied while attacking (e.g., State.Attacking)
-	// - ActivationBlockedTags: Tags that prevent attack (e.g., State.Dead, State.Stunned)
-	// - CancelAbilitiesWithTag: Abilities to cancel (e.g., Ability.Attack.Melee)
+	// ============================================================================
+	// Tag Configuration: Do NOT hardcode tags in constructor!
+	// Configure these in Blueprint or derived class CDO:
+	// ============================================================================
+	// ActivationOwnedTags:
+	//   - State.Combat.Attacking
+	//   - State.Combat.Aiming
+	// ActivationBlockedTags:
+	//   - State.Dead
+	//   - State.Stunned
+	//   - State.HitReaction
+	//   - State.Dodging
+	// BlockAbilitiesWithTag:
+	//   - State.Blocking
+	//   - State.Dodging
+	// CancelAbilitiesWithTag:
+	//   - Ability.Attack.Melee
+	// ============================================================================
 }
 
 bool UHarmoniaGameplayAbility_RangedAttack::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const

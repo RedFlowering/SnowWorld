@@ -21,6 +21,35 @@ class UAnimMontage;
  * - Stamina consumption
  * - Hit detection via HarmoniaSenseAttackComponent
  * - Animation-driven combat
+ *
+ * ============================================================================
+ * Required Tag Configuration (set in Blueprint or derived class):
+ * ============================================================================
+ *
+ * AbilityTags:
+ *   - Ability.Combat.Attack.Melee (identifies this ability)
+ *   - Ability.Combat.Attack.Light (for light attacks)
+ *   - Ability.Combat.Attack.Heavy (for heavy attacks)
+ *
+ * ActivationOwnedTags (tags applied while attacking):
+ *   - State.Combat.Attacking
+ *   - Character.State.Attacking
+ *
+ * ActivationBlockedTags (tags that prevent attack):
+ *   - State.Combat.Attacking (for non-combo attacks)
+ *   - State.Blocking
+ *   - State.Dodging
+ *   - State.HitReaction
+ *
+ * BlockAbilitiesWithTag (abilities to block while attacking):
+ *   - State.Blocking
+ *   - State.Dodging
+ *
+ * CancelAbilitiesWithTag (abilities to cancel when attack starts):
+ *   - (none by default)
+ *
+ * Related Tags:
+ *   - State.Combat.ComboWindow (applied during combo input window)
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_MeleeAttack : public ULyraGameplayAbility

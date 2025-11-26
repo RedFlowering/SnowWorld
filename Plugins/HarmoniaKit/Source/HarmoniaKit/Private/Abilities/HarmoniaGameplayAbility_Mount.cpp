@@ -14,11 +14,17 @@ UHarmoniaGameplayAbility_Mount::UHarmoniaGameplayAbility_Mount(const FObjectInit
 
 	DefaultMountType = EHarmoniaMountType::Horse;
 
-	// Setup tags
-	ActivationOwnedTags.AddTag(HarmoniaGameplayTags::State_Mounting);
-	BlockAbilitiesWithTag.AddTag(HarmoniaGameplayTags::State_Combat_Attacking);
-	BlockAbilitiesWithTag.AddTag(HarmoniaGameplayTags::State_Dodging);
-	BlockAbilitiesWithTag.AddTag(HarmoniaGameplayTags::State_Mounted);
+	// ============================================================================
+	// Tag Configuration: Do NOT hardcode tags in constructor!
+	// Configure these in Blueprint or derived class CDO:
+	// ============================================================================
+	// ActivationOwnedTags:
+	//   - State.Mounting
+	// BlockAbilitiesWithTag:
+	//   - State.Combat.Attacking
+	//   - State.Dodging
+	//   - State.Mounted
+	// ============================================================================
 }
 
 void UHarmoniaGameplayAbility_Mount::ActivateAbility(

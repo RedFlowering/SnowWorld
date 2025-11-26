@@ -13,10 +13,17 @@ UHarmoniaGameplayAbility_Climb::UHarmoniaGameplayAbility_Climb(const FObjectInit
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
-	ActivationOwnedTags.AddTag(HarmoniaGameplayTags::State_Climbing);
-	BlockAbilitiesWithTag.AddTag(HarmoniaGameplayTags::State_Combat_Attacking);
-	BlockAbilitiesWithTag.AddTag(HarmoniaGameplayTags::State_Mounted);
-	BlockAbilitiesWithTag.AddTag(HarmoniaGameplayTags::State_Swimming);
+	// ============================================================================
+	// Tag Configuration: Do NOT hardcode tags in constructor!
+	// Configure these in Blueprint or derived class CDO:
+	// ============================================================================
+	// ActivationOwnedTags:
+	//   - State.Climbing
+	// BlockAbilitiesWithTag:
+	//   - State.Combat.Attacking
+	//   - State.Mounted
+	//   - State.Swimming
+	// ============================================================================
 }
 
 void UHarmoniaGameplayAbility_Climb::ActivateAbility(

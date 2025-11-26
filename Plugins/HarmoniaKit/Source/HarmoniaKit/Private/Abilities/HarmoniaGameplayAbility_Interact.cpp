@@ -7,15 +7,26 @@
 
 DEFINE_LOG_CATEGORY(LogHarmoniaInteraction);
 
-UHarmoniaGameplayAbility_Interact::UHarmoniaGameplayAbility_Interact()
+UHarmoniaGameplayAbility_Interact::UHarmoniaGameplayAbility_Interact(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
 	// Default to InstancedPerActor so we can have state if needed
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
+	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
-	// Use inherited tag containers - configure these in Blueprint or derived classes:
-	// - ActivationOwnedTags: Tags applied while interacting
-	// - ActivationBlockedTags: Tags that prevent interaction
-	// - AbilityTriggers: Configure trigger tag (e.g., Event.Interaction.TryInteract)
+	// ============================================================================
+	// Tag Configuration: Do NOT hardcode tags in constructor!
+	// Configure these in Blueprint or derived class CDO:
+	// ============================================================================
+	// ActivationOwnedTags:
+	//   - State.Interacting
+	// ActivationBlockedTags:
+	//   - State.Combat.Attacking
+	//   - State.HitReaction
+	//   - State.Dodging
+	// AbilityTriggers:
+	//   - TriggerTag: Event.Interaction.TryInteract
+	// ============================================================================
 }
 
 void UHarmoniaGameplayAbility_Interact::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)

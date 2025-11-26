@@ -12,6 +12,32 @@ class AHarmoniaBossMonster;
  *
  * Base class for boss-specific gameplay abilities.
  * Provides helper functions for accessing boss character and components.
+ *
+ * ============================================================================
+ * Required Tag Configuration (set in Blueprint or derived class):
+ * ============================================================================
+ *
+ * AbilityTags:
+ *   - Ability.Boss.[AbilityName] (identifies this ability)
+ *
+ * ActivationOwnedTags (tags applied during ability):
+ *   - State.Boss.Casting (during cast time)
+ *   - State.Boss.Enraged (for enrage abilities)
+ *
+ * ActivationBlockedTags (tags that prevent activation):
+ *   - State.Boss.PhaseTransition
+ *   - State.HitReaction (optional, some boss abilities ignore stagger)
+ *
+ * BlockAbilitiesWithTag (abilities to block):
+ *   - (depends on ability type)
+ *
+ * CancelAbilitiesWithTag (abilities to cancel):
+ *   - (depends on ability type)
+ *
+ * ValidPhases:
+ *   - Empty array = all phases
+ *   - [1, 2] = only phases 1 and 2
+ *   - [3] = only phase 3 (enraged phase)
  */
 UCLASS(Abstract)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_Boss : public ULyraGameplayAbility

@@ -10,6 +10,40 @@
 /**
  * Climbing Gameplay Ability
  * Allows character to climb walls and surfaces
+ *
+ * ============================================================================
+ * Required Tag Configuration (set in Blueprint or derived class):
+ * ============================================================================
+ *
+ * AbilityTags:
+ *   - Ability.Movement.Climb (identifies this ability)
+ *
+ * ActivationOwnedTags (tags applied while climbing):
+ *   - State.Climbing
+ *
+ * ActivationBlockedTags (tags that prevent climbing):
+ *   - State.Combat.Attacking
+ *   - State.Mounted
+ *   - State.Swimming
+ *   - State.HitReaction
+ *
+ * BlockAbilitiesWithTag (abilities to block while climbing):
+ *   - State.Combat.Attacking
+ *   - State.Mounted
+ *   - State.Swimming
+ *
+ * CancelAbilitiesWithTag (abilities to cancel when climbing starts):
+ *   - (none by default)
+ *
+ * ActivationRequiredTags (tags required to climb):
+ *   - (none by default, surface detection handles this)
+ *
+ * Related Gameplay Events:
+ *   - GameplayEvent.Climbing.Started (sent on activation)
+ *   - GameplayEvent.Climbing.Stopped (sent on end)
+ *
+ * Movement Restriction Check:
+ *   - Checks for Movement.Restricted.NoClimb tag
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_Climb : public ULyraGameplayAbility

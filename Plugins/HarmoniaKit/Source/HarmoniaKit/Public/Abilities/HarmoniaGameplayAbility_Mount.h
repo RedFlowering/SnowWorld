@@ -20,10 +20,37 @@ class UHarmoniaMountComponent;
  * - Sprint capability
  * - Flying mount support
  *
- * Tag Configuration (use inherited containers):
- * - ActivationOwnedTags: Tags applied while mounting (e.g., State.Mounting)
- * - ActivationBlockedTags: Tags that prevent mounting
- * - BlockAbilitiesWithTag: Abilities blocked while mounting (e.g., State.Combat.Attacking, State.Dodging, State.Mounted)
+ * ============================================================================
+ * Required Tag Configuration (set in Blueprint or derived class):
+ * ============================================================================
+ *
+ * AbilityTags:
+ *   - Ability.Movement.Mount (identifies this ability)
+ *
+ * ActivationOwnedTags (tags applied while mounting):
+ *   - State.Mounting
+ *
+ * ActivationBlockedTags (tags that prevent mounting):
+ *   - State.Combat.Attacking
+ *   - State.Dodging
+ *   - State.Mounted (already mounted)
+ *   - State.Swimming
+ *   - State.Climbing
+ *
+ * BlockAbilitiesWithTag (abilities to block while mounting):
+ *   - State.Combat.Attacking
+ *   - State.Dodging
+ *   - State.Mounted
+ *
+ * CancelAbilitiesWithTag (abilities to cancel when mounting starts):
+ *   - (none by default)
+ *
+ * Related Gameplay Events:
+ *   - GameplayEvent.Mount.Mounted (sent on successful mount)
+ *   - GameplayEvent.Mount.Dismounted (sent on dismount)
+ *
+ * Movement Restriction Check:
+ *   - Checks for Movement.Restricted.NoMount tag
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_Mount : public ULyraGameplayAbility

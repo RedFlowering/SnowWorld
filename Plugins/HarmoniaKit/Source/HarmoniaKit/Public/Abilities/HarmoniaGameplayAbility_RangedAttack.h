@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Abilities/GameplayAbility.h"
+#include "AbilitySystem/Abilities/LyraGameplayAbility.h"
 #include "Definitions/HarmoniaCombatSystemDefinitions.h"
 #include "HarmoniaGameplayAbility_RangedAttack.generated.h"
 
@@ -21,18 +21,38 @@ class AHarmoniaProjectile;
  * - Resource consumption (ammo, stamina, mana)
  * - Animation playback
  *
- * Tag Configuration (use inherited containers):
- * - ActivationOwnedTags: Tags applied while attacking (e.g., State.Attacking)
- * - ActivationBlockedTags: Tags that prevent attack (e.g., State.Dead, State.Stunned)
- * - CancelAbilitiesWithTag: Abilities to cancel (e.g., Ability.Attack.Melee)
+ * ============================================================================
+ * Required Tag Configuration (set in Blueprint or derived class):
+ * ============================================================================
+ *
+ * AbilityTags:
+ *   - Ability.Combat.Attack.Ranged (identifies this ability)
+ *
+ * ActivationOwnedTags (tags applied while attacking):
+ *   - State.Combat.Attacking
+ *   - State.Combat.Aiming (while drawing/charging)
+ *
+ * ActivationBlockedTags (tags that prevent attack):
+ *   - State.Dead
+ *   - State.Stunned
+ *   - State.HitReaction
+ *   - State.Dodging
+ *
+ * BlockAbilitiesWithTag (abilities to block while attacking):
+ *   - State.Blocking
+ *   - State.Dodging
+ *
+ * CancelAbilitiesWithTag (abilities to cancel on ranged attack):
+ *   - Ability.Attack.Melee
+ *
  */
-UCLASS()
-class HARMONIAKIT_API UHarmoniaGameplayAbility_RangedAttack : public UGameplayAbility
+UCLASS(BlueprintType)
+class HARMONIAKIT_API UHarmoniaGameplayAbility_RangedAttack : public ULyraGameplayAbility
 {
 	GENERATED_BODY()
 
 public:
-	UHarmoniaGameplayAbility_RangedAttack();
+	UHarmoniaGameplayAbility_RangedAttack(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	//~UGameplayAbility interface
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const override;
