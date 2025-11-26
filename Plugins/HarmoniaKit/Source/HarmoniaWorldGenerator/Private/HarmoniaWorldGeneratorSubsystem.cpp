@@ -1,15 +1,30 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "HarmoniaWorldGeneratorSubsystem.h"
-#include "WorldGeneratorTypes.h"
-#include "PerlinNoiseHelper.h"
-#include "Landscape.h"
-#include "LandscapeProxy.h"
+#include "PathfindingHelper.h"
 #include "LandscapeEdit.h"
+#include "LandscapeLayerInfoObject.h"
 #include "Serialization/BufferArchive.h"
-#include "Async/Async.h"
-#include "Async/AsyncWork.h"
+#include "Serialization/MemoryReader.h"
+#include "Misc/SecureHash.h"
+#include "PerlinNoiseHelper.h"
 
+void RegenerateWorldWithInvalidation(
+    UHarmoniaWorldGeneratorSubsystem* Subsystem,
+    const FWorldGeneratorConfig& NewConfig,
+    TMap<EWorldObjectType, TSoftClassPtr<AActor>> ActorClassMap)
+{
+    if (Subsystem)
+    {
+        // Clear existing cache
+        Subsystem->ClearChunkCache();
+
+        // Generate new world
+        TArray<int32> HeightData;
+        TArray<FWorldObjectData> Objects;
+        Subsystem->GenerateWorld(NewConfig, HeightData, Objects, ActorClassMap);
+    }
+}
 
 void UHarmoniaWorldGeneratorSubsystem::GenerateWorld(
     const FWorldGeneratorConfig& Config,
@@ -816,41 +831,131 @@ void UHarmoniaWorldGeneratorSubsystem::ProcessObjectTile(
     OutObjects.Add(ObjData);
 }
 
+static constexpr int32 SAVE_DATA_VERSION = 2;
+
 TArray<uint8> UHarmoniaWorldGeneratorSubsystem::GetSaveData_Implementation()
 {
-    // Serialize relevant data
-    // For now, we just save the seed as a proof of concept
-    // In a real implementation, we would save modified chunks
-    
-    // Note: We need to access the current config. 
-    // Assuming we store the last used config somewhere or can reconstruct it.
-    // For this example, we'll create a dummy buffer.
-    
     FBufferArchive Archive;
-    int32 Version = 1;
+
+    // Version header
+    int32 Version = SAVE_DATA_VERSION;
     Archive << Version;
-    
-    // TODO: Serialize modified chunks
-    
+
+    // Environment system state
+    Archive << bEnvironmentSystemActive;
+
+    int32 SeasonInt = static_cast<int32>(CurrentSeason);
+    Archive << SeasonInt;
+    Archive << SeasonProgress;
+    Archive << TotalSeasonTime;
+
+    int32 WeatherInt = static_cast<int32>(CurrentWeather);
+    Archive << WeatherInt;
+    Archive << WeatherTransitionProgress;
+    Archive << TimeSinceLastWeatherChange;
+
+    Archive << CurrentGameTime;
+    Archive << CurrentDay;
+    Archive << TimeSpeedMultiplier;
+
+    // Chunk cache metadata (not full data - too large)
+    int32 CachedChunkCount = ChunkCache.Num();
+    Archive << CachedChunkCount;
+
+    // Save chunk coordinates and hashes for validation
+    for (const auto& Pair : ChunkCache)
+    {
+        FIntPoint Coord = Pair.Key;
+        int32 Hash = Pair.Value.CacheHash;
+        Archive << Coord;
+        Archive << Hash;
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("HarmoniaWorldGenerator: Saved state (Version %d, %d cached chunks)"),
+        Version, CachedChunkCount);
+
     return Archive;
 }
 
 void UHarmoniaWorldGeneratorSubsystem::LoadSaveData_Implementation(const TArray<uint8>& Data)
 {
-    if (Data.Num() == 0) return;
+    if (Data.Num() == 0)
+    {
+        return;
+    }
 
     FMemoryReader Reader(Data);
+
     int32 Version;
     Reader << Version;
 
-    if (Version == 1)
+    if (Version < 1 || Version > SAVE_DATA_VERSION)
     {
-        // TODO: Deserialize modified chunks and apply them
-        UE_LOG(LogTemp, Log, TEXT("HarmoniaWorldGenerator: Loaded save data version %d"), Version);
+        UE_LOG(LogTemp, Warning, TEXT("HarmoniaWorldGenerator: Unsupported save data version %d"), Version);
+        return;
+    }
+
+    if (Version >= 2)
+    {
+        // Environment system state
+        Reader << bEnvironmentSystemActive;
+
+        int32 SeasonInt;
+        Reader << SeasonInt;
+        CurrentSeason = static_cast<ESeasonType>(SeasonInt);
+        Reader << SeasonProgress;
+        Reader << TotalSeasonTime;
+
+        int32 WeatherInt;
+        Reader << WeatherInt;
+        CurrentWeather = static_cast<EWeatherType>(WeatherInt);
+        Reader << WeatherTransitionProgress;
+        Reader << TimeSinceLastWeatherChange;
+
+        Reader << CurrentGameTime;
+        Reader << CurrentDay;
+        Reader << TimeSpeedMultiplier;
+
+        // Chunk cache metadata
+        int32 CachedChunkCount;
+        Reader << CachedChunkCount;
+
+        TArray<TPair<FIntPoint, int32>> LoadedChunkMeta;
+        LoadedChunkMeta.Reserve(CachedChunkCount);
+
+        for (int32 i = 0; i < CachedChunkCount; ++i)
+        {
+            FIntPoint Coord;
+            int32 Hash;
+            Reader << Coord;
+            Reader << Hash;
+            LoadedChunkMeta.Add(TPair<FIntPoint, int32>(Coord, Hash));
+        }
+
+        // Validate existing cache against saved metadata
+        // (chunks that don't match will be regenerated)
+        TArray<FIntPoint> InvalidChunks;
+        for (const auto& Meta : LoadedChunkMeta)
+        {
+            if (FWorldChunkData* CachedChunk = ChunkCache.Find(Meta.Key))
+            {
+                if (CachedChunk->CacheHash != Meta.Value)
+                {
+                    InvalidChunks.Add(Meta.Key);
+                }
+            }
+        }
+
+        for (const FIntPoint& Coord : InvalidChunks)
+        {
+            ChunkCache.Remove(Coord);
+            ChunkAccessOrder.Remove(Coord);
+        }
+
+        UE_LOG(LogTemp, Log, TEXT("HarmoniaWorldGenerator: Loaded save data version %d (Season: %d, Day: %d, Time: %.2f)"),
+            Version, SeasonInt, CurrentDay, CurrentGameTime);
     }
 }
-
-
 
 void UHarmoniaWorldGeneratorSubsystem::GenerateLakes(
     const FWorldGeneratorConfig& Config,
@@ -959,29 +1064,90 @@ void UHarmoniaWorldGeneratorSubsystem::GenerateRoads(
 
     OutRoadSegments.Empty();
 
-    // Connect each point to the next
+    // Connect each point to the next using A* pathfinding
     for (int32 i = 0; i < Config.RoadSettings.ConnectionPoints.Num() - 1; ++i)
     {
         const FVector Start = Config.RoadSettings.ConnectionPoints[i];
         const FVector End = Config.RoadSettings.ConnectionPoints[i + 1];
 
-        TArray<FVector> RoadPath;
-        FindPath(Start, End, HeightData, Config, RoadPath);
-
-        if (RoadPath.Num() >= 2)
+        FPathfindingResult PathResult;
+        if (PathfindingHelper::FindRoadPath(Start, End, HeightData, Config, 20, PathResult))
         {
-            FRoadSegmentData RoadSegment;
-            RoadSegment.SplinePoints = RoadPath;
-            RoadSegment.SegmentMesh = Config.RoadSettings.RoadSplineMesh;
-            RoadSegment.bIsBridge = false; // TODO: Detect water crossings
-            RoadSegment.Width = Config.RoadSettings.RoadWidth;
-            OutRoadSegments.Add(RoadSegment);
+            // 다리가 필요한 세그먼트들을 개별적으로 처리
+            TArray<TPair<int32, int32>> BridgeRanges;
+            PathfindingHelper::DetectWaterCrossings(PathResult.PathPoints, HeightData, Config, BridgeRanges);
+
+            int32 CurrentStart = 0;
+
+            for (const TPair<int32, int32>& Bridge : BridgeRanges)
+            {
+                // 다리 이전 일반 도로 세그먼트
+                if (Bridge.Key > CurrentStart)
+                {
+                    FRoadSegmentData RoadSegment;
+                    for (int32 j = CurrentStart; j <= Bridge.Key; ++j)
+                    {
+                        RoadSegment.SplinePoints.Add(PathResult.PathPoints[j]);
+                    }
+                    RoadSegment.SegmentMesh = Config.RoadSettings.RoadSplineMesh;
+                    RoadSegment.bIsBridge = false;
+                    RoadSegment.Width = Config.RoadSettings.RoadWidth;
+                    OutRoadSegments.Add(RoadSegment);
+                }
+
+                // 다리 세그먼트
+                FRoadSegmentData BridgeSegment;
+                for (int32 j = Bridge.Key; j <= Bridge.Value; ++j)
+                {
+                    BridgeSegment.SplinePoints.Add(PathResult.PathPoints[j]);
+                }
+                BridgeSegment.SegmentMesh = Config.RoadSettings.BridgeMesh;
+                BridgeSegment.bIsBridge = true;
+                BridgeSegment.Width = Config.RoadSettings.RoadWidth;
+                OutRoadSegments.Add(BridgeSegment);
+
+                CurrentStart = Bridge.Value;
+            }
+
+            // 마지막 다리 이후 남은 도로
+            if (CurrentStart < PathResult.PathPoints.Num() - 1)
+            {
+                FRoadSegmentData RoadSegment;
+                for (int32 j = CurrentStart; j < PathResult.PathPoints.Num(); ++j)
+                {
+                    RoadSegment.SplinePoints.Add(PathResult.PathPoints[j]);
+                }
+                RoadSegment.SegmentMesh = Config.RoadSettings.RoadSplineMesh;
+                RoadSegment.bIsBridge = false;
+                RoadSegment.Width = Config.RoadSettings.RoadWidth;
+                OutRoadSegments.Add(RoadSegment);
+            }
+
+            // 다리가 없는 경우 전체 경로를 하나의 세그먼트로
+            if (BridgeRanges.Num() == 0 && PathResult.PathPoints.Num() >= 2)
+            {
+                FRoadSegmentData RoadSegment;
+                RoadSegment.SplinePoints = PathResult.PathPoints;
+                RoadSegment.SegmentMesh = Config.RoadSettings.RoadSplineMesh;
+                RoadSegment.bIsBridge = false;
+                RoadSegment.Width = Config.RoadSettings.RoadWidth;
+                OutRoadSegments.Add(RoadSegment);
+            }
         }
     }
 
     if (Config.bEnableProgressLogging)
     {
-        UE_LOG(LogTemp, Log, TEXT("Generated %d road segments"), OutRoadSegments.Num());
+        int32 BridgeCount = 0;
+        for (const FRoadSegmentData& Segment : OutRoadSegments)
+        {
+            if (Segment.bIsBridge)
+            {
+                BridgeCount++;
+            }
+        }
+        UE_LOG(LogTemp, Log, TEXT("Generated %d road segments (%d bridges)"),
+            OutRoadSegments.Num(), BridgeCount);
     }
 }
 
@@ -994,39 +1160,53 @@ void UHarmoniaWorldGeneratorSubsystem::FindPath(
 {
     OutPath.Empty();
 
-    // Convert world positions to grid coordinates
-    const int32 StartX = FMath::RoundToInt(Start.X / 100.f);
-    const int32 StartY = FMath::RoundToInt(Start.Y / 100.f);
-    const int32 EndX = FMath::RoundToInt(End.X / 100.f);
-    const int32 EndY = FMath::RoundToInt(End.Y / 100.f);
-
-    // Simple straight line path for now (can be improved with A* later)
-    const int32 Steps = FMath::Max(FMath::Abs(EndX - StartX), FMath::Abs(EndY - StartY));
-
-    if (Steps == 0)
+    FPathfindingResult Result;
+    if (PathfindingHelper::FindPath(Start, End, HeightData, Config, Result))
     {
-        OutPath.Add(Start);
-        return;
+        OutPath = Result.PathPoints;
+
+        // 선택적: 경로 스무딩 적용
+        if (OutPath.Num() > 3)
+        {
+            TArray<FVector> SmoothedPath;
+            PathfindingHelper::SmoothPath(OutPath, 3, SmoothedPath);
+            OutPath = SmoothedPath;
+        }
     }
-
-    for (int32 i = 0; i <= Steps; ++i)
+    else
     {
-        const float T = (float)i / (float)Steps;
-        const int32 X = FMath::RoundToInt(FMath::Lerp((float)StartX, (float)EndX, T));
-        const int32 Y = FMath::RoundToInt(FMath::Lerp((float)StartY, (float)EndY, T));
+        // A* 실패 시 직선 경로 폴백
+        const int32 StartX = FMath::RoundToInt(Start.X / 100.f);
+        const int32 StartY = FMath::RoundToInt(Start.Y / 100.f);
+        const int32 EndX = FMath::RoundToInt(End.X / 100.f);
+        const int32 EndY = FMath::RoundToInt(End.Y / 100.f);
 
-        // Clamp to bounds
-        const int32 ClampedX = FMath::Clamp(X, 0, Config.SizeX - 1);
-        const int32 ClampedY = FMath::Clamp(Y, 0, Config.SizeY - 1);
+        const int32 Steps = FMath::Max(FMath::Abs(EndX - StartX), FMath::Abs(EndY - StartY));
 
-        const int32 Index = ClampedY * Config.SizeX + ClampedX;
-        const float Height = (float)HeightData[Index] / 65535.f;
+        if (Steps == 0)
+        {
+            OutPath.Add(Start);
+            return;
+        }
 
-        OutPath.Add(FVector(
-            ClampedX * 100.f,
-            ClampedY * 100.f,
-            Height * Config.MaxHeight + 10.f // Slightly above terrain
-        ));
+        for (int32 i = 0; i <= Steps; ++i)
+        {
+            const float T = static_cast<float>(i) / static_cast<float>(Steps);
+            const int32 X = FMath::RoundToInt(FMath::Lerp(static_cast<float>(StartX), static_cast<float>(EndX), T));
+            const int32 Y = FMath::RoundToInt(FMath::Lerp(static_cast<float>(StartY), static_cast<float>(EndY), T));
+
+            const int32 ClampedX = FMath::Clamp(X, 0, Config.SizeX - 1);
+            const int32 ClampedY = FMath::Clamp(Y, 0, Config.SizeY - 1);
+
+            const int32 Index = ClampedY * Config.SizeX + ClampedX;
+            const float Height = static_cast<float>(HeightData[Index]) / 65535.f;
+
+            OutPath.Add(FVector(
+                ClampedX * 100.f,
+                ClampedY * 100.f,
+                Height * Config.MaxHeight + 10.f
+            ));
+        }
     }
 }
 
@@ -3006,7 +3186,100 @@ FTerrainModificationResult UHarmoniaWorldGeneratorSubsystem::PaintLandscapeLayer
 {
     FTerrainModificationResult Result;
     Result.bSuccess = false;
-    Result.ErrorMessage = TEXT("Landscape painting not yet fully implemented - requires layer info access");
+
+    if (!Landscape)
+    {
+        Result.ErrorMessage = TEXT("Landscape is null");
+        return Result;
+    }
+
+    ULandscapeInfo* LandscapeInfo = Landscape->GetLandscapeInfo();
+    if (!LandscapeInfo)
+    {
+        Result.ErrorMessage = TEXT("LandscapeInfo is null");
+        return Result;
+    }
+
+    // Find layer info by name
+    ULandscapeLayerInfoObject* TargetLayerInfo = nullptr;
+    int32 TargetLayerIndex = INDEX_NONE;
+
+    for (int32 LayerIndex = 0; LayerIndex < LandscapeInfo->Layers.Num(); ++LayerIndex)
+    {
+        const FLandscapeInfoLayerSettings& LayerSettings = LandscapeInfo->Layers[LayerIndex];
+        if (LayerSettings.LayerInfoObj && LayerSettings.LayerName == LayerName)
+        {
+            TargetLayerInfo = LayerSettings.LayerInfoObj;
+            TargetLayerIndex = LayerIndex;
+            break;
+        }
+    }
+
+    if (!TargetLayerInfo)
+    {
+        Result.ErrorMessage = FString::Printf(TEXT("Layer '%s' not found"), *LayerName.ToString());
+        return Result;
+    }
+
+    // Convert world location to landscape coordinates
+    const FVector2D LandscapeCoord = WorldToLandscapeCoordinates(Landscape, Location);
+
+    // Calculate bounds (non-const for GetWeightData API)
+    int32 MinX = FMath::FloorToInt(LandscapeCoord.X - Radius);
+    int32 MinY = FMath::FloorToInt(LandscapeCoord.Y - Radius);
+    int32 MaxX = FMath::CeilToInt(LandscapeCoord.X + Radius);
+    int32 MaxY = FMath::CeilToInt(LandscapeCoord.Y + Radius);
+    const int32 SizeX = MaxX - MinX + 1;
+    const int32 SizeY = MaxY - MinY + 1;
+
+    // Get existing weight data
+    FLandscapeEditDataInterface LandscapeEdit(LandscapeInfo, false);
+
+    TArray<uint8> CurrentWeights;
+    CurrentWeights.SetNumZeroed(SizeX * SizeY);
+
+    // Read current weights for target layer (parameters are int32& references)
+    LandscapeEdit.GetWeightData(TargetLayerInfo, MinX, MinY, MaxX, MaxY, CurrentWeights.GetData(), 0);
+
+    // Apply painting
+    const int32 OriginalMinX = MinX;
+    const int32 OriginalMinY = MinY;
+
+    for (int32 Y = 0; Y < SizeY; ++Y)
+    {
+        for (int32 X = 0; X < SizeX; ++X)
+        {
+            const FVector2D CurrentCoord(OriginalMinX + X, OriginalMinY + Y);
+            const float Distance = FVector2D::Distance(CurrentCoord, LandscapeCoord);
+
+            if (Distance <= Radius)
+            {
+                const float Falloff = CalculateFalloff(Distance, Radius, FalloffType);
+                const int32 Index = Y * SizeX + X;
+
+                // Calculate new weight
+                const float CurrentWeight = static_cast<float>(CurrentWeights[Index]) / 255.f;
+                const float TargetWeight = FMath::Lerp(CurrentWeight, Strength, Falloff);
+
+                CurrentWeights[Index] = static_cast<uint8>(FMath::Clamp(TargetWeight * 255.f, 0.f, 255.f));
+                Result.ModifiedVertices++;
+            }
+        }
+    }
+
+    // Reset bounds for SetWeightData (they may have been modified by GetWeightData)
+    MinX = OriginalMinX;
+    MinY = OriginalMinY;
+    MaxX = OriginalMinX + SizeX - 1;
+    MaxY = OriginalMinY + SizeY - 1;
+
+    // Set new weights using the non-deprecated API
+    LandscapeEdit.SetAlphaData(TargetLayerInfo, MinX, MinY, MaxX, MaxY, CurrentWeights.GetData(), 0, ELandscapeLayerPaintingRestriction::None);
+    LandscapeEdit.Flush();
+
+    Result.bSuccess = true;
+    Result.AffectedComponents = 1;
+
     return Result;
 }
 
@@ -3639,3 +3912,4 @@ int32 UHarmoniaWorldGeneratorSubsystem::CalculateCacheMemoryUsage() const
 
     return TotalSize;
 }
+
