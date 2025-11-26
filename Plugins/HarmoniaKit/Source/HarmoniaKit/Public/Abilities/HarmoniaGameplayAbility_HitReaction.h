@@ -27,6 +27,12 @@ class UAnimMontage;
  * 2. Configure animations for each direction (Front/Back/Left/Right)
  * 3. Set stun duration and other parameters
  * 4. Bind to damage received event to trigger automatically
+ *
+ * Tag Configuration (use inherited containers):
+ * - ActivationOwnedTags: Tags applied during hit reaction (e.g., State.HitReaction, State.HitStunned)
+ * - ActivationBlockedTags: Tags that prevent this ability from activating (e.g., State.Combat.Attacking, State.HitReaction)
+ * - BlockAbilitiesWithTag: Tags of abilities to block while this is active
+ * - CancelAbilitiesWithTag: Tags of abilities to cancel when this activates
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_HitReaction : public ULyraGameplayAbility
@@ -94,7 +100,7 @@ protected:
 	 * DataTable containing hit reaction data
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Hit Reaction")
-	TObjectPtr<UDataTable> HitReactionDataTable;
+	TObjectPtr<UDataTable> HitReactionDataTable = nullptr;
 
 	/**
 	 * Default hit reaction type when no specific type is provided
@@ -138,18 +144,6 @@ protected:
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Hit Reaction", meta = (EditCondition = "bApplyInvincibilityFrames"))
 	float InvincibilityDuration = 0.5f;
-
-	/**
-	 * Tags to apply during hit reaction
-	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Hit Reaction")
-	FGameplayTagContainer HitReactionTags;
-
-	/**
-	 * Tags to block during hit reaction
-	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Hit Reaction")
-	FGameplayTagContainer BlockedTags;
 
 	// ============================================================================
 	// Runtime State

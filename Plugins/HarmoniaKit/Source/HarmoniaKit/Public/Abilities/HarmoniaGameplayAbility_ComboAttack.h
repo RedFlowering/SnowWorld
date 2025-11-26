@@ -24,7 +24,7 @@ struct FComboAttackData : public FTableRowBase
 
 	// Animation montage to play for this combo attack
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
-	TObjectPtr<UAnimMontage> AttackMontage;
+	TObjectPtr<UAnimMontage> AttackMontage = nullptr;
 
 	// Damage multiplier for this combo attack
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
@@ -54,6 +54,11 @@ struct FComboAttackData : public FTableRowBase
  * - Tracks current combo step
  * - Manages combo windows
  * - Resets combo on timeout
+ *
+ * Tag Configuration (use inherited containers):
+ * - ActivationOwnedTags: Tags applied while attacking (e.g., State.Combat.Attacking)
+ * - ActivationBlockedTags: Tags that prevent attack (e.g., State.Combat.Attacking)
+ * - BlockAbilitiesWithTag: Abilities to block while attacking
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_ComboAttack : public ULyraGameplayAbility
@@ -113,7 +118,7 @@ protected:
 protected:
 	// DataTable containing combo attack data
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combo")
-	TObjectPtr<UDataTable> ComboDataTable;
+	TObjectPtr<UDataTable> ComboDataTable = nullptr;
 
 	// Ordered list of row names from the DataTable that defines the combo sequence
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combo")

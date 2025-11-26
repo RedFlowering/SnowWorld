@@ -17,6 +17,11 @@ class UHarmoniaMeleeCombatComponent;
  * - Reduces incoming damage
  * - Consumes stamina on block
  * - Guard break on insufficient stamina
+ *
+ * Tag Configuration (use inherited containers):
+ * - ActivationOwnedTags: Tags applied while blocking (e.g., Character.State.Blocking)
+ * - ActivationBlockedTags: Tags that prevent blocking (e.g., Character.State.Attacking)
+ * - BlockAbilitiesWithTag: Abilities to block while this is active
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_Block : public ULyraGameplayAbility
@@ -36,19 +41,19 @@ protected:
 protected:
 	/** Block start animation */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block|Animation")
-	TObjectPtr<UAnimMontage> BlockStartMontage;
+	TObjectPtr<UAnimMontage> BlockStartMontage = nullptr;
 
 	/** Block loop animation */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block|Animation")
-	TObjectPtr<UAnimMontage> BlockLoopMontage;
+	TObjectPtr<UAnimMontage> BlockLoopMontage = nullptr;
 
 	/** Block end animation */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block|Animation")
-	TObjectPtr<UAnimMontage> BlockEndMontage;
+	TObjectPtr<UAnimMontage> BlockEndMontage = nullptr;
 
 	/** Cached melee combat component */
 	UPROPERTY()
-	TObjectPtr<UHarmoniaMeleeCombatComponent> MeleeCombatComponent;
+	TObjectPtr<UHarmoniaMeleeCombatComponent> MeleeCombatComponent = nullptr;
 
 private:
 	UHarmoniaMeleeCombatComponent* GetMeleeCombatComponent() const;

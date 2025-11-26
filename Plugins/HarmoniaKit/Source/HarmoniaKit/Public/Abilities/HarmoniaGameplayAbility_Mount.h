@@ -19,6 +19,11 @@ class UHarmoniaMountComponent;
  * - Stamina-based riding
  * - Sprint capability
  * - Flying mount support
+ *
+ * Tag Configuration (use inherited containers):
+ * - ActivationOwnedTags: Tags applied while mounting (e.g., State.Mounting)
+ * - ActivationBlockedTags: Tags that prevent mounting
+ * - BlockAbilitiesWithTag: Abilities blocked while mounting (e.g., State.Combat.Attacking, State.Dodging, State.Mounted)
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_Mount : public ULyraGameplayAbility
@@ -46,25 +51,17 @@ protected:
 	void OnMontageInterrupted(UAnimMontage* Montage, bool bInterrupted);
 
 protected:
-	/** Tags to apply while mounting */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mount")
-	FGameplayTagContainer MountingTags;
-
-	/** Tags to block while mounting */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mount")
-	FGameplayTagContainer BlockedTags;
-
 	/** Mount type to use (can be overridden by event data) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mount")
-	EHarmoniaMountType DefaultMountType;
+	EHarmoniaMountType DefaultMountType = EHarmoniaMountType::Horse;
 
 	/** Mounting animation */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mount|Animation")
-	TObjectPtr<UAnimMontage> MountMontage;
+	TObjectPtr<UAnimMontage> MountMontage = nullptr;
 
 	/** Cached mount component */
 	UPROPERTY()
-	mutable TObjectPtr<UHarmoniaMountComponent> MountComponent;
+	mutable TObjectPtr<UHarmoniaMountComponent> MountComponent = nullptr;
 
 private:
 	UHarmoniaMountComponent* GetMountComponent() const;

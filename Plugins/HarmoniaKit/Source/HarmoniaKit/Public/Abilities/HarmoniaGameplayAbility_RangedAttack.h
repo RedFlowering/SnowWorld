@@ -20,6 +20,11 @@ class AHarmoniaProjectile;
  * - Firearms
  * - Resource consumption (ammo, stamina, mana)
  * - Animation playback
+ *
+ * Tag Configuration (use inherited containers):
+ * - ActivationOwnedTags: Tags applied while attacking (e.g., State.Attacking)
+ * - ActivationBlockedTags: Tags that prevent attack (e.g., State.Dead, State.Stunned)
+ * - CancelAbilitiesWithTag: Abilities to cancel (e.g., Ability.Attack.Melee)
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaGameplayAbility_RangedAttack : public UGameplayAbility
@@ -78,23 +83,15 @@ protected:
 
 	/** Fire animation montage */
 	UPROPERTY(EditDefaultsOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> FireMontage;
+	TObjectPtr<UAnimMontage> FireMontage = nullptr;
 
 	/** Reload animation montage */
 	UPROPERTY(EditDefaultsOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> ReloadMontage;
+	TObjectPtr<UAnimMontage> ReloadMontage = nullptr;
 
 	/** Draw/charge animation montage (for bows) */
 	UPROPERTY(EditDefaultsOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> DrawMontage;
-
-	/** Gameplay tags to apply while attacking */
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTagContainer AttackingTags;
-
-	/** Gameplay tags that block this ability */
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTagContainer BlockedTags;
+	TObjectPtr<UAnimMontage> DrawMontage = nullptr;
 
 	/** Stamina cost */
 	UPROPERTY(EditDefaultsOnly, Category = "Costs")
@@ -110,7 +107,7 @@ protected:
 
 	/** Camera shake on fire */
 	UPROPERTY(EditDefaultsOnly, Category = "Effects")
-	TSubclassOf<UCameraShakeBase> FireCameraShakeClass;
+	TSubclassOf<UCameraShakeBase> FireCameraShakeClass = nullptr;
 
 	/** Camera shake scale */
 	UPROPERTY(EditDefaultsOnly, Category = "Effects")
