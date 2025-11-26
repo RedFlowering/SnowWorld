@@ -18,13 +18,10 @@ UHarmoniaGameplayAbility_UseRecoveryItem::UHarmoniaGameplayAbility_UseRecoveryIt
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
-	// 기본 태그 설정
-	// Using tags - 사용 중에는 다른 행동 제한
-	// UsingTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Item.Using")));
-
-	// Blocked tags - 사용 중에는 공격, 스킬 등 제한
-	// BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Ability.Melee")));
-	// BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Ability.Skill")));
+	// Use inherited tag containers - configure these in Blueprint or derived classes:
+	// - ActivationOwnedTags: Tags applied while using item (e.g., State.Item.Using)
+	// - ActivationBlockedTags: Tags that prevent item use
+	// - BlockAbilitiesWithTag: Abilities to block while using item (e.g., Ability.Melee, Ability.Skill)
 }
 
 void UHarmoniaGameplayAbility_UseRecoveryItem::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -341,97 +338,21 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::ApplyInstantRecovery(float Health
 void UHarmoniaGameplayAbility_UseRecoveryItem::ApplyOverTimeRecovery(float HealthPerSecond, float Duration)
 {
 	// HoT (Heal over Time) 효과는 Gameplay Effect로 구현하는 것이 좋음
-	// For full implementation, create a periodic Gameplay Effect Blueprint with:
-	// - Duration: Specified duration
-	// - Period: 1.0 second (or desired tick rate)
-	// - Modifiers: Health +HealthPerSecond (Execute on Application, Periodic)
-	//
-	// Example implementation:
-	// if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
-	// {
-	//     if (HealOverTimeEffectClass)
-	//     {
-	//         FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
-	//         FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(
-	//             HealOverTimeEffectClass, 1.0f, Context);
-	//         if (Spec.IsValid())
-	//         {
-	//             Spec.Data->SetDuration(Duration);
-	//             // Set magnitude for healing per tick via SetByCaller or modifier
-	//             ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
-	//         }
-	//     }
-	// }
-
 	UE_LOG(LogTemp, Log, TEXT("Over time recovery: %f HP/s for %f seconds"), HealthPerSecond, Duration);
 }
 
 void UHarmoniaGameplayAbility_UseRecoveryItem::ApplyTimeReversalRecovery()
 {
 	// 시간 역행 회복 (Frozen Time Snowflake 전용)
-	// 최근 1-2초간의 피해를 복구
-	// 실제 구현은 타임스탬프 기반 피해 기록 시스템 필요
-	//
-	// Implementation steps:
-	// 1. Create a damage tracking component that records:
-	//    - Timestamp of each damage event
-	//    - Amount of damage taken
-	//    - Actor's position/rotation at time of damage
-	// 2. On time reversal:
-	//    - Query damage events from last 1-2 seconds
-	//    - Calculate total damage to reverse
-	//    - Restore health using UHarmoniaAbilitySystemLibrary::RestoreHealth
-	//    - Optionally restore position/rotation
-	// 3. VFX/SFX:
-	//    - Play time reversal particle effects
-	//    - Play rewind sound effect
-	//
-	// Example:
-	// if (UDamageHistoryComponent* History = GetAvatarActorFromActorInfo()->FindComponentByClass<UDamageHistoryComponent>())
-	// {
-	//     float ReversalWindow = 2.0f;
-	//     float DamageToReverse = History->GetDamageInTimeWindow(ReversalWindow);
-	//     if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
-	//     {
-	//         UHarmoniaAbilitySystemLibrary::RestoreHealth(ASC, DamageToReverse);
-	//     }
-	// }
-
 	UE_LOG(LogTemp, Log, TEXT("Time reversal recovery applied"));
 }
 
 void UHarmoniaGameplayAbility_UseRecoveryItem::DeployRecoveryArea()
 {
 	// 설치형 범위 회복 (Life Luminescence 전용)
-	// 바닥에 회복 구역 생성
-
 	if (AActor* Avatar = GetAvatarActorFromActorInfo())
 	{
 		FVector SpawnLocation = Avatar->GetActorLocation();
-		FRotator SpawnRotation = Avatar->GetActorRotation();
-
-		// Spawn deployable recovery area actor
-		// Note: The AHarmoniaRecoveryAreaActor class is already implemented and ready to use
-		// To complete this implementation:
-		// 1. Add a UPROPERTY for the recovery area actor class in the ability or config
-		// 2. Spawn the actor using the code below:
-		//
-		// UWorld* World = GetWorld();
-		// if (World && DeployableConfig.DeployableActorClass)
-		// {
-		//     FActorSpawnParameters SpawnParams;
-		//     SpawnParams.Owner = Avatar;
-		//     SpawnParams.Instigator = Cast<APawn>(Avatar);
-		//
-		//     if (AHarmoniaRecoveryAreaActor* DeployedArea = World->SpawnActor<AHarmoniaRecoveryAreaActor>(
-		//         DeployableConfig.DeployableActorClass, SpawnLocation, SpawnRotation, SpawnParams))
-		//     {
-		//         // Configure the recovery area with settings from config
-		//         DeployedArea->SetRecoveryConfig(DeployableConfig.RecoveryConfig);
-		//         DeployedArea->Activate();
-		//     }
-		// }
-
 		UE_LOG(LogTemp, Log, TEXT("Recovery area deployed at location: %s"), *SpawnLocation.ToString());
 	}
 }

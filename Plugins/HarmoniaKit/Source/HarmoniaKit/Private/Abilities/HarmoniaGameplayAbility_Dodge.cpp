@@ -15,10 +15,10 @@ UHarmoniaGameplayAbility_Dodge::UHarmoniaGameplayAbility_Dodge(const FObjectInit
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
-	// Setup default tags - Commented out to avoid callstack issues. Configure in header or Blueprint instead.
-	// DodgingTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Dodging")));
-	// BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Attacking")));
-	// BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Blocking")));
+	// Use inherited tag containers - configure these in Blueprint or derived classes:
+	// - ActivationOwnedTags: Tags applied while dodging (e.g., Character.State.Dodging)
+	// - ActivationBlockedTags: Tags that prevent dodging (e.g., Character.State.Attacking, Character.State.Blocking)
+	// - BlockAbilitiesWithTag: Abilities to block while dodging
 }
 
 bool UHarmoniaGameplayAbility_Dodge::CanActivateAbility(

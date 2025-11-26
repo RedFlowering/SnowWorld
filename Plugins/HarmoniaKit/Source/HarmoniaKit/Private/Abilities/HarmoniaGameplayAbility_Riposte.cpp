@@ -15,11 +15,10 @@ UHarmoniaGameplayAbility_Riposte::UHarmoniaGameplayAbility_Riposte(const FObject
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
-	// Setup default tags - Commented out to avoid callstack issues. Configure in header or Blueprint instead.
-	// RiposteTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Riposting")));
-	// BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Attacking")));
-	// BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Blocking")));
-	// BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Dodging")));
+	// Use inherited tag containers - configure these in Blueprint or derived classes:
+	// - ActivationOwnedTags: Tags applied while riposting (e.g., Character.State.Riposting)
+	// - ActivationBlockedTags: Tags that prevent riposte (e.g., Character.State.Attacking, Character.State.Blocking, Character.State.Dodging)
+	// - BlockAbilitiesWithTag: Abilities to block while riposting
 
 	// Default riposte config
 	RiposteConfig.RiposteWindowDuration = 2.0f;

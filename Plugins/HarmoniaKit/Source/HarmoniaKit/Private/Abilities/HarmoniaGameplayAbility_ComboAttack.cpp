@@ -21,10 +21,10 @@ UHarmoniaGameplayAbility_ComboAttack::UHarmoniaGameplayAbility_ComboAttack(const
 	ActivationPolicy = ELyraAbilityActivationPolicy::OnInputTriggered;
 	ActivationGroup = ELyraAbilityActivationGroup::Exclusive_Replaceable;
 
-	// Setup default tags - Commented out to avoid callstack issues. Configure in header or Blueprint instead.
-	// AttackingTags.AddTag(HarmoniaGameplayTags::State_Combat_Attacking);
-
-	// BlockedTags.AddTag(HarmoniaGameplayTags::State_Combat_Attacking);
+	// Use inherited tag containers - configure these in Blueprint or derived classes:
+	// - ActivationOwnedTags: Tags applied while attacking (e.g., State.Combat.Attacking)
+	// - ActivationBlockedTags: Tags that prevent attack (e.g., State.Combat.Attacking)
+	// - BlockAbilitiesWithTag: Abilities to block while attacking
 }
 
 bool UHarmoniaGameplayAbility_ComboAttack::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const

@@ -21,12 +21,11 @@ UHarmoniaGameplayAbility_HitReaction::UHarmoniaGameplayAbility_HitReaction(const
 	ActivationPolicy = ELyraAbilityActivationPolicy::OnSpawn;
 	ActivationGroup = ELyraAbilityActivationGroup::Exclusive_Blocking;
 
-	// Setup default tags
-	HitReactionTags.AddTag(HarmoniaGameplayTags::State_HitReaction);
-	HitReactionTags.AddTag(HarmoniaGameplayTags::State_HitStunned);
-
-	BlockedTags.AddTag(HarmoniaGameplayTags::State_Combat_Attacking);
-	BlockedTags.AddTag(HarmoniaGameplayTags::State_HitReaction);
+	// Use inherited tag containers - configure these in Blueprint or derived classes
+	// ActivationOwnedTags: Tags applied during hit reaction (State.HitReaction, State.HitStunned)
+	// ActivationBlockedTags: Tags that prevent activation (State.Combat.Attacking, State.HitReaction)
+	// BlockAbilitiesWithTag: Abilities to block while active
+	// CancelAbilitiesWithTag: Abilities to cancel on activation
 
 	// Trigger on hit reaction event
 	FAbilityTriggerData TriggerData;
@@ -88,11 +87,7 @@ void UHarmoniaGameplayAbility_HitReaction::ActivateAbility(
 		HitReactionStartTime = World->GetTimeSeconds();
 	}
 
-	// Apply hit reaction tags
-	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		ASC->AddLooseGameplayTags(HitReactionTags);
-	}
+	// Note: ActivationOwnedTags are automatically applied by the base class
 
 	// Apply invincibility if enabled
 	if (bApplyInvincibilityFrames)
@@ -344,10 +339,11 @@ void UHarmoniaGameplayAbility_HitReaction::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	// Remove hit reaction tags
+	// Note: ActivationOwnedTags are automatically removed by the base class
+
+	// Remove additional tags from reaction data
 	if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
 	{
-		ASC->RemoveLooseGameplayTags(HitReactionTags);
 		ASC->RemoveLooseGameplayTags(CurrentReactionData.AppliedTags);
 		ASC->UnBlockAbilitiesWithTags(CurrentReactionData.BlockedTags);
 	}

@@ -13,9 +13,10 @@ UHarmoniaGameplayAbility_Parry::UHarmoniaGameplayAbility_Parry(const FObjectInit
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
-	// Setup default tags - Commented out to avoid callstack issues. Configure in header or Blueprint instead.
-	// ParryingTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Parrying")));
-	// BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.State.Attacking")));
+	// Use inherited tag containers - configure these in Blueprint or derived classes:
+	// - ActivationOwnedTags: Tags applied while parrying (e.g., Character.State.Parrying)
+	// - ActivationBlockedTags: Tags that prevent parry (e.g., Character.State.Attacking)
+	// - BlockAbilitiesWithTag: Abilities to block while parrying
 }
 
 bool UHarmoniaGameplayAbility_Parry::CanActivateAbility(

@@ -12,13 +12,10 @@ UHarmoniaGameplayAbility_Interact::UHarmoniaGameplayAbility_Interact()
 	// Default to InstancedPerActor so we can have state if needed
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 
-	// Trigger on event - Commented out to avoid callstack issues. Configure in header or Blueprint instead.
-	// InteractionEventTag = FGameplayTag::RequestGameplayTag(FName("Event.Interaction.TryInteract"));
-
-	// FAbilityTriggerData TriggerData;
-	// TriggerData.TriggerTag = InteractionEventTag;
-	// TriggerData.TriggerSource = EGameplayAbilityTriggerSource::GameplayEvent;
-	// AbilityTriggers.Add(TriggerData);
+	// Use inherited tag containers - configure these in Blueprint or derived classes:
+	// - ActivationOwnedTags: Tags applied while interacting
+	// - ActivationBlockedTags: Tags that prevent interaction
+	// - AbilityTriggers: Configure trigger tag (e.g., Event.Interaction.TryInteract)
 }
 
 void UHarmoniaGameplayAbility_Interact::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -104,30 +101,8 @@ EHarmoniaInteractionType UHarmoniaGameplayAbility_Interact::DeriveInteractionTyp
 	}
 
 	// Parse interaction type from event tag
-	const FGameplayTag& EventTag = EventData->EventTag;
-
-	// Commented out to avoid callstack issues. Configure tags in Blueprint or use alternative approach.
-	// static const FGameplayTag PickupTag = FGameplayTag::RequestGameplayTag(FName("Event.Interaction.Type.Pickup"), false);
-	// static const FGameplayTag GatherTag = FGameplayTag::RequestGameplayTag(FName("Event.Interaction.Type.Gather"), false);
-	// static const FGameplayTag ChopTag = FGameplayTag::RequestGameplayTag(FName("Event.Interaction.Type.Chop"), false);
-	// static const FGameplayTag OpenTag = FGameplayTag::RequestGameplayTag(FName("Event.Interaction.Type.Open"), false);
-
-	// if (PickupTag.IsValid() && EventTag.MatchesTag(PickupTag))
-	// {
-	// 	return EHarmoniaInteractionType::Pickup;
-	// }
-	// else if (GatherTag.IsValid() && EventTag.MatchesTag(GatherTag))
-	// {
-	// 	return EHarmoniaInteractionType::Gather;
-	// }
-	// else if (ChopTag.IsValid() && EventTag.MatchesTag(ChopTag))
-	// {
-	// 	return EHarmoniaInteractionType::Chop;
-	// }
-	// else if (OpenTag.IsValid() && EventTag.MatchesTag(OpenTag))
-	// {
-	// 	return EHarmoniaInteractionType::Open;
-	// }
+	// Configure specific interaction type tags in Blueprint or derived classes
+	// Example tags: Event.Interaction.Type.Pickup, Event.Interaction.Type.Gather, etc.
 
 	return EHarmoniaInteractionType::Custom;
 }
