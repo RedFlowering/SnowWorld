@@ -52,28 +52,7 @@ struct FHarmoniaSummonConfig
  * - Can summon multiple types
  * - Summoned monsters can be temporary or permanent
  *
- * ============================================================================
- * Required Tag Configuration (set in Blueprint or derived class):
- * ============================================================================
- *
- * AbilityTags:
- *   - Ability.Combat.Summon (identifies this ability)
- *
- * ActivationOwnedTags (tags applied while summoning):
- *   - State.Summoning
- *   - State.Casting
- *
- * ActivationBlockedTags (tags that prevent summoning):
- *   - State.HitReaction
- *   - State.Dodging
- *   - State.Summoning
- *
- * BlockAbilitiesWithTag (abilities to block while summoning):
- *   - State.Combat.Attacking
- *   - State.Dodging
- *
- * CancelAbilitiesWithTag (abilities to cancel on summon):
- *   - (none by default)
+ * @see Docs/HarmoniaKit_Complete_Documentation.md Section 17.6.3 for tag configuration
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaGameplayAbility_Summon : public ULyraGameplayAbility

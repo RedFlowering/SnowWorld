@@ -15,10 +15,7 @@ UHarmoniaGameplayAbility_Dodge::UHarmoniaGameplayAbility_Dodge(const FObjectInit
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
-	// Use inherited tag containers - configure these in Blueprint or derived classes:
-	// - ActivationOwnedTags: Tags applied while dodging (e.g., Character.State.Dodging)
-	// - ActivationBlockedTags: Tags that prevent dodging (e.g., Character.State.Attacking, Character.State.Blocking)
-	// - BlockAbilitiesWithTag: Abilities to block while dodging
+	// Tag configuration: See Docs/HarmoniaKit_Complete_Documentation.md Section 17.3.1
 }
 
 bool UHarmoniaGameplayAbility_Dodge::CanActivateAbility(

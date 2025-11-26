@@ -11,6 +11,9 @@
 1. [소개](#1-소개)
 2. [빠른 시작](#2-빠른-시작)
 3. [전투 시스템](#3-전투-시스템)
+   - 3.6 [락온 타게팅 시스템](#36-락온-타게팅-시스템-lock-on-targeting)
+   - 3.7 [회피 구르기 시스템](#37-회피-구르기-시스템-dodge-roll)
+   - 3.8 [관련 GameplayTag 정의](#38-관련-gameplaytag-정의)
 4. [캐릭터 시스템](#4-캐릭터-시스템)
 5. [생활 컨텐츠 시스템](#5-생활-컨텐츠-시스템)
 6. [온라인 및 팀 시스템](#6-온라인-및-팀-시스템)
@@ -24,6 +27,7 @@
 14. [리팩토링 히스토리](#14-리팩토링-히스토리)
 15. [API 레퍼런스](#15-api-레퍼런스)
 16. [데이터 드리븐 태그 시스템](#16-데이터-드리븐-태그-시스템)
+17. [Gameplay Ability 태그 설정 가이드](#17-gameplay-ability-태그-설정-가이드)
 
 ---
 
@@ -278,6 +282,243 @@ struct FBossPhaseData
     UAnimMontage* PhaseTransitionMontage;
 };
 ```
+
+### 3.6 락온 타게팅 시스템 (Lock-On Targeting)
+
+소울라이크 전투 시스템의 핵심 기능인 락온 타게팅 시스템입니다.
+
+#### 3.6.1 주요 기능
+
+| 기능 | 설명 |
+|------|------|
+| **자동 타겟 찾기** | 카메라 중심에서 가장 가까운 적을 자동으로 찾아 락온 |
+| **타겟 전환** | 좌우로 타겟을 전환할 수 있는 기능 |
+| **자동 카메라 회전** | 락온된 적을 향해 카메라가 자동으로 회전 |
+| **거리 기반 해제** | 적이 너무 멀어지면 자동으로 락온 해제 |
+| **Sense System 통합** | 장애물에 가려진 적은 타겟팅 불가 |
+
+#### 3.6.2 핵심 클래스
+
+```cpp
+// 락온 컴포넌트 사용
+UPROPERTY(VisibleAnywhere)
+UHarmoniaLockOnComponent* LockOnComp;
+
+// 생성자에서
+LockOnComp = CreateDefaultSubobject<UHarmoniaLockOnComponent>(TEXT("LockOnComp"));
+
+// 입력 바인딩
+void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+    PlayerInputComponent->BindAction("LockOn", IE_Pressed, this, &AMyCharacter::ToggleLockOn);
+    PlayerInputComponent->BindAction("SwitchTargetLeft", IE_Pressed, LockOnComp, &UHarmoniaLockOnComponent::SwitchTargetLeft);
+    PlayerInputComponent->BindAction("SwitchTargetRight", IE_Pressed, LockOnComp, &UHarmoniaLockOnComponent::SwitchTargetRight);
+}
+
+void AMyCharacter::ToggleLockOn()
+{
+    LockOnComp->ToggleLockOn();
+}
+```
+
+#### 3.6.3 설정 가능한 파라미터
+
+| 파라미터 | 타입 | 기본값 | 설명 |
+|---------|------|--------|------|
+| `MaxLockOnDistance` | float | 1500.0 | 락온 가능한 최대 거리 |
+| `MaxLockOnAngle` | float | 60.0 | 초기 락온 가능한 최대 각도 (도) |
+| `LockOnBreakDistance` | float | 2000.0 | 락온 자동 해제 거리 |
+| `CameraRotationSpeed` | float | 10.0 | 카메라 회전 속도 |
+| `TargetHeightOffset` | float | 100.0 | 타겟 높이 오프셋 |
+| `TargetSocketName` | FName | None | 정밀 락온용 소켓 이름 |
+| `bUseSenseSystem` | bool | true | Sense System 사용 여부 |
+| `TargetableTag` | FGameplayTag | - | 타겟팅 가능 액터 태그 |
+| `bBreakLockOnTargetDeath` | bool | true | 타겟 사망 시 락온 해제 |
+| `bSmoothCameraRotation` | bool | true | 부드러운 카메라 회전 |
+
+#### 3.6.4 이벤트 델리게이트
+
+```cpp
+// 타겟 변경 이벤트
+UPROPERTY(BlueprintAssignable)
+FOnLockOnTargetChangedDelegate OnLockOnTargetChanged;
+
+// 락온 상태 변경 이벤트
+UPROPERTY(BlueprintAssignable)
+FOnLockOnStateChangedDelegate OnLockOnStateChanged;
+
+// 사용 예
+LockOnComp->OnLockOnTargetChanged.AddDynamic(this, &AMyCharacter::OnLockOnTargetChanged);
+LockOnComp->OnLockOnStateChanged.AddDynamic(this, &AMyCharacter::OnLockOnStateChanged);
+
+void AMyCharacter::OnLockOnTargetChanged(AActor* OldTarget, AActor* NewTarget)
+{
+    // UI 업데이트 등
+}
+
+void AMyCharacter::OnLockOnStateChanged(bool bIsLockedOn)
+{
+    // 카메라 모드 전환 등
+}
+```
+
+#### 3.6.5 블루프린트에서 사용
+
+```cpp
+// 락온 컴포넌트 접근
+UHarmoniaLockOnComponent* LockOn = Character->FindComponentByClass<UHarmoniaLockOnComponent>();
+
+// 락온 상태 확인
+bool bIsLocked = LockOn->IsLockedOn();
+
+// 현재 타겟 가져오기
+AActor* Target = LockOn->GetCurrentTarget();
+
+// 타겟까지의 거리
+float Distance = LockOn->GetDistanceToTarget();
+
+// 락온 토글
+LockOn->ToggleLockOn();
+
+// 타겟 전환
+LockOn->SwitchTargetLeft();
+LockOn->SwitchTargetRight();
+
+// 수동 타겟 설정
+LockOn->SetLockOnTarget(SpecificEnemy);
+```
+
+### 3.7 회피 구르기 시스템 (Dodge Roll)
+
+타이밍 기반 회피 메커니즘과 무적 프레임(I-Frame)이 구현된 회피 시스템입니다.
+
+#### 3.7.1 주요 기능
+
+| 기능 | 설명 |
+|------|------|
+| **방향 기반 회피** | 입력 방향으로 구르기 (입력 없으면 후방) |
+| **무적 프레임 (I-frames)** | 회피 중 일정 시간 동안 무적 상태 |
+| **장비 무게 시스템** | 장비 무게에 따라 롤 타입 변경 (Light/Medium/Heavy) |
+| **스태미나 소모** | 롤 타입별 스태미나 소모량 차이 |
+| **네트워크 지원** | 멀티플레이어 환경에서 작동 |
+
+#### 3.7.2 롤 타입별 파라미터
+
+| 롤 타입 | 장비 무게 | 거리 | 지속시간 | I-Frame 시작 | I-Frame 지속 | 스태미나 |
+|--------|----------|------|----------|--------------|--------------|----------|
+| **Light** | 0-30% | 500 | 0.5초 | 0.1초 | 0.4초 | 15 |
+| **Medium** | 30-70% | 400 | 0.6초 | 0.1초 | 0.3초 | 20 |
+| **Heavy** | 70%+ | 300 | 0.8초 | 0.15초 | 0.2초 | 30 |
+
+#### 3.7.3 핵심 클래스
+
+```cpp
+// EDodgeRollType 열거형
+enum class EDodgeRollType : uint8
+{
+    Light,   // 0-30% 장비 무게
+    Medium,  // 30-70% 장비 무게
+    Heavy    // 70%+ 장비 무게
+};
+
+// UHarmoniaGameplayAbility_Dodge 주요 속성
+UPROPERTY(EditDefaultsOnly)
+TObjectPtr<UAnimMontage> DodgeMontage;
+
+// Light Roll 설정
+UPROPERTY(EditDefaultsOnly, Category = "Dodge|Light Roll")
+float LightRollDistance = 500.0f;
+float LightRollDuration = 0.5f;
+float LightRollIFrameStartTime = 0.1f;
+float LightRollIFrameDuration = 0.4f;
+float LightRollStaminaCost = 15.0f;
+
+// Medium Roll 설정
+UPROPERTY(EditDefaultsOnly, Category = "Dodge|Medium Roll")
+float MediumRollDistance = 400.0f;
+float MediumRollDuration = 0.6f;
+float MediumRollIFrameStartTime = 0.1f;
+float MediumRollIFrameDuration = 0.3f;
+float MediumRollStaminaCost = 20.0f;
+
+// Heavy Roll 설정
+UPROPERTY(EditDefaultsOnly, Category = "Dodge|Heavy Roll")
+float HeavyRollDistance = 300.0f;
+float HeavyRollDuration = 0.8f;
+float HeavyRollIFrameStartTime = 0.15f;
+float HeavyRollIFrameDuration = 0.2f;
+float HeavyRollStaminaCost = 30.0f;
+```
+
+#### 3.7.4 Gameplay Ability 블루프린트 생성
+
+1. **블루프린트 생성**: `UHarmoniaGameplayAbility_Dodge`를 부모로 하는 블루프린트 생성
+2. **애니메이션 설정**: `DodgeMontage`에 회피 애니메이션 할당
+3. **파라미터 조정**: 롤 타입별 거리/지속시간/I-Frame 설정
+4. **태그 설정**: 아래 태그 설정 참고
+
+#### 3.7.5 회피 어빌리티 태그 설정
+
+```
+AbilityTags:
+  - Ability.Dodge
+  - Ability.Combat.Dodge
+
+ActivationOwnedTags:
+  - State.Dodging
+
+ActivationBlockedTags:
+  - State.Combat.Attacking
+  - State.Blocking
+  - State.Dodging
+  - State.HitReaction
+
+BlockAbilitiesWithTag:
+  - State.Combat.Attacking
+  - State.Blocking
+
+Related Tags (I-Frame 중 자동 적용):
+  - State.Invincible
+```
+
+#### 3.7.6 캐릭터에 Ability 부여
+
+Experience 또는 AbilitySet에서 Dodge Ability를 캐릭터에 부여:
+
+1. 해당 Experience/AbilitySet 열기
+2. Abilities 배열에 GA_Dodge 블루프린트 추가
+3. Input Tag를 `InputTag.Dodge`로 설정
+
+### 3.8 관련 GameplayTag 정의
+
+Lock-On과 Dodge 시스템에서 사용하는 GameplayTag들입니다.
+
+#### 3.8.1 Lock-On 시스템 태그
+
+| 태그 | 설명 |
+|------|------|
+| `Ability.LockOn` | 락온 어빌리티 |
+| `InputTag.LockOn` | 락온 입력 태그 |
+| `InputTag.SwitchTargetLeft` | 왼쪽 타겟 전환 |
+| `InputTag.SwitchTargetRight` | 오른쪽 타겟 전환 |
+| `State.LockOn.Active` | 락온 활성 상태 |
+| `State.LockOn.HasTarget` | 타겟 존재 상태 |
+| `Status.LockedOn` | 락온 상태 (레거시) |
+| `Character.Type.Enemy` | 적 캐릭터 |
+| `Character.Type.Ally` | 아군 캐릭터 |
+| `Character.Type.Neutral` | 중립 캐릭터 |
+
+#### 3.8.2 Dodge 시스템 태그
+
+| 태그 | 설명 |
+|------|------|
+| `Ability.Dodge` | 회피 어빌리티 |
+| `InputTag.Dodge` | 회피 입력 태그 |
+| `State.Dodging` | 회피 중 상태 |
+| `State.Invincible` | 무적 상태 |
+| `Character.State.Dodging` | 캐릭터 회피 상태 |
+| `Character.State.Attacking` | 캐릭터 공격 상태 |
+| `Character.State.Blocking` | 캐릭터 방어 상태 |
 
 ---
 
@@ -1413,6 +1654,558 @@ UE_DEFINE_GAMEPLAY_TAG(MyNewTag, "Custom.MyNewTag")
 // 3. INI에도 문서화용으로 추가
 +GameplayTags=(Tag="Custom.MyNewTag",DevComment="내 커스텀 태그")
 ```
+
+---
+
+## 17. Gameplay Ability 태그 설정 가이드
+
+### 17.1 개요
+
+HarmoniaKit의 모든 Gameplay Ability 클래스는 **블루프린트 또는 파생 클래스에서 태그를 설정**하도록 설계되었습니다. 
+이를 통해 태그 설정의 유연성을 확보하고, 프로젝트별 커스터마이징이 가능합니다.
+
+> ⚠️ **중요**: 태그 추가 전 반드시 `Config/DefaultGameplayTags.ini`에서 중복 여부를 확인하세요!
+
+### 17.2 태그 컨테이너 설명
+
+| 컨테이너 | 용도 | 예시 |
+|---------|------|------|
+| **AbilityTags** | 어빌리티를 식별하는 태그 | `Ability.Combat.Dodge` |
+| **ActivationOwnedTags** | 어빌리티 활성화 중 소유자에게 적용되는 태그 | `State.Dodging` |
+| **ActivationRequiredTags** | 어빌리티 활성화에 필요한 태그 | `State.Combat.RiposteWindow` |
+| **ActivationBlockedTags** | 이 태그가 있으면 어빌리티 활성화 불가 | `State.HitReaction` |
+| **BlockAbilitiesWithTag** | 어빌리티 활성화 중 이 태그를 가진 다른 어빌리티 차단 | `State.Combat.Attacking` |
+| **CancelAbilitiesWithTag** | 어빌리티 활성화 시 이 태그를 가진 다른 어빌리티 취소 | `State.Blocking` |
+
+### 17.3 전투 어빌리티 태그 설정
+
+#### 17.3.1 UHarmoniaGameplayAbility_Dodge (회피)
+
+```
+AbilityTags:
+  - Ability.Combat.Dodge
+
+ActivationOwnedTags:
+  - State.Dodging
+
+ActivationBlockedTags:
+  - State.Combat.Attacking
+  - State.Blocking
+  - State.Dodging
+  - State.HitReaction
+
+BlockAbilitiesWithTag:
+  - State.Combat.Attacking
+  - State.Blocking
+
+Related Tags (I-Frame 중 MeleeCombatComponent에서 적용):
+  - State.Invincible
+```
+
+#### 17.3.2 UHarmoniaGameplayAbility_MeleeAttack (근접 공격)
+
+```
+AbilityTags:
+  - Ability.Combat.Attack.Melee
+  - Ability.Combat.Attack.Light (경공격용)
+  - Ability.Combat.Attack.Heavy (강공격용)
+
+ActivationOwnedTags:
+  - State.Combat.Attacking
+
+ActivationBlockedTags:
+  - State.Combat.Attacking (콤보가 아닌 경우)
+  - State.Blocking
+  - State.Dodging
+  - State.HitReaction
+
+BlockAbilitiesWithTag:
+  - State.Blocking
+  - State.Dodging
+
+Related Tags:
+  - State.Combat.ComboWindow (콤보 입력 윈도우 중 적용)
+```
+
+#### 17.3.3 UHarmoniaGameplayAbility_Block (방어)
+
+```
+AbilityTags:
+  - Ability.Combat.Block
+
+ActivationOwnedTags:
+  - State.Blocking
+
+ActivationBlockedTags:
+  - State.Combat.Attacking
+  - State.Dodging
+  - State.HitReaction
+
+BlockAbilitiesWithTag:
+  - State.Combat.Attacking
+  - State.Dodging
+```
+
+#### 17.3.4 UHarmoniaGameplayAbility_Parry (패리)
+
+```
+AbilityTags:
+  - Ability.Combat.Parry
+
+ActivationOwnedTags:
+  - State.Parrying
+
+ActivationBlockedTags:
+  - State.Combat.Attacking
+  - State.Blocking
+  - State.Dodging
+  - State.HitReaction
+
+BlockAbilitiesWithTag:
+  - State.Combat.Attacking
+  - State.Blocking
+  - State.Dodging
+```
+
+#### 17.3.5 UHarmoniaGameplayAbility_Riposte (리포스트)
+
+```
+AbilityTags:
+  - Ability.Combat.Riposte
+
+ActivationOwnedTags:
+  - State.Combat.Riposting
+  - State.Invincible
+
+ActivationRequiredTags:
+  - State.Combat.RiposteWindow (패리 성공 후 적용됨)
+
+ActivationBlockedTags:
+  - State.HitReaction
+  - State.Dodging
+
+BlockAbilitiesWithTag:
+  - State.Combat.Attacking
+  - State.Blocking
+  - State.Dodging
+
+CancelAbilitiesWithTag:
+  - State.Blocking
+```
+
+#### 17.3.6 UHarmoniaGameplayAbility_HitReaction (피격 반응)
+
+```
+AbilityTags:
+  - Ability.Combat.HitReaction
+
+AbilityTriggers:
+  - TriggerTag: GameplayEvent.HitReaction
+  - TriggerSource: GameplayEvent
+
+ActivationOwnedTags:
+  - State.HitReaction
+  - State.HitStunned
+
+ActivationBlockedTags:
+  - State.Invincible
+
+BlockAbilitiesWithTag:
+  - State.Combat.Attacking
+  - State.Blocking
+  - State.Dodging
+
+CancelAbilitiesWithTag:
+  - State.Combat.Attacking
+  - State.Blocking
+```
+
+#### 17.3.7 UHarmoniaGameplayAbility_ComboAttack (콤보 공격)
+
+```
+AbilityTags:
+  - Ability.Combat.Attack.Combo
+
+ActivationOwnedTags:
+  - State.Combat.Attacking
+
+ActivationBlockedTags:
+  - State.Combat.Attacking (콤보 윈도우가 아닐 때만)
+  - State.Blocking
+  - State.Dodging
+  - State.HitReaction
+
+BlockAbilitiesWithTag:
+  - State.Blocking
+  - State.Dodging
+
+Related Tags:
+  - State.Combat.ComboWindow (콤보 연속 허용)
+
+Related Gameplay Events:
+  - GameplayEvent.Attack.ComboNext
+  - GameplayEvent.Attack.ComboReset
+```
+
+#### 17.3.8 UHarmoniaGameplayAbility_RangedAttack (원거리 공격)
+
+```
+AbilityTags:
+  - Ability.Combat.Attack.Ranged
+
+ActivationOwnedTags:
+  - State.Combat.Attacking
+  - State.Combat.Aiming (조준/차징 중)
+
+ActivationBlockedTags:
+  - State.Dead
+  - State.Stunned
+  - State.HitReaction
+  - State.Dodging
+
+BlockAbilitiesWithTag:
+  - State.Blocking
+  - State.Dodging
+
+CancelAbilitiesWithTag:
+  - Ability.Attack.Melee
+```
+
+### 17.4 이동 어빌리티 태그 설정
+
+#### 17.4.1 UHarmoniaGameplayAbility_Climb (등반)
+
+```
+AbilityTags:
+  - Ability.Movement.Climb
+
+ActivationOwnedTags:
+  - State.Climbing
+
+ActivationBlockedTags:
+  - State.Combat.Attacking
+  - State.Mounted
+  - State.Swimming
+  - State.HitReaction
+
+BlockAbilitiesWithTag:
+  - State.Combat.Attacking
+  - State.Mounted
+  - State.Swimming
+
+Movement Restriction Check:
+  - Movement.Restricted.NoClimb
+
+Related Gameplay Events:
+  - GameplayEvent.Climbing.Started
+  - GameplayEvent.Climbing.Stopped
+```
+
+#### 17.4.2 UHarmoniaGameplayAbility_Swim (수영)
+
+```
+AbilityTags:
+  - Ability.Movement.Swim
+
+ActivationOwnedTags:
+  - State.Swimming
+
+ActivationBlockedTags:
+  - State.Mounted
+  - State.Climbing
+  - State.HitReaction
+
+BlockAbilitiesWithTag:
+  - State.Mounted
+  - State.Climbing
+
+Movement Restriction Check:
+  - Movement.Restricted.NoSwim
+
+Related Gameplay Events:
+  - GameplayEvent.Swimming.Started
+  - GameplayEvent.Swimming.Stopped
+  - GameplayEvent.Diving.Started
+  - GameplayEvent.Oxygen.Depleted
+```
+
+#### 17.4.3 UHarmoniaGameplayAbility_Vault (볼트/파쿠르)
+
+```
+AbilityTags:
+  - Ability.Movement.Vault
+
+ActivationOwnedTags:
+  - State.Vaulting
+
+ActivationBlockedTags:
+  - State.Combat.Attacking
+  - State.Blocking
+  - State.Dodging
+  - State.HitReaction
+  - State.Swimming
+
+BlockAbilitiesWithTag:
+  - State.Combat.Attacking
+  - State.Blocking
+
+Related Gameplay Events:
+  - GameplayEvent.Parkour.Vault
+```
+
+#### 17.4.4 UHarmoniaGameplayAbility_Mount (탈것)
+
+```
+AbilityTags:
+  - Ability.Movement.Mount
+
+ActivationOwnedTags:
+  - State.Mounting
+
+ActivationBlockedTags:
+  - State.Combat.Attacking
+  - State.Dodging
+  - State.Mounted
+  - State.Swimming
+  - State.Climbing
+
+BlockAbilitiesWithTag:
+  - State.Combat.Attacking
+  - State.Dodging
+  - State.Mounted
+
+Movement Restriction Check:
+  - Movement.Restricted.NoMount
+
+Related Gameplay Events:
+  - GameplayEvent.Mount.Mounted
+  - GameplayEvent.Mount.Dismounted
+```
+
+#### 17.4.5 UHarmoniaGameplayAbility_FastTravel (빠른 이동)
+
+```
+AbilityTags:
+  - Ability.Movement.FastTravel
+
+ActivationOwnedTags:
+  - State.FastTraveling
+
+ActivationRequiredTags:
+  - State.CanFastTravel (또는 Waypoint.Discovered)
+
+ActivationBlockedTags:
+  - State.Combat.Attacking
+  - State.HitReaction
+  - State.Swimming
+  - State.Climbing
+
+BlockAbilitiesWithTag:
+  - State.Combat.Attacking
+  - State.Movement.Sprint
+
+CancelAbilitiesWithTag:
+  - State.Combat.Attacking
+  - State.Blocking
+
+Movement Restriction Check:
+  - Movement.Restricted.NoFastTravel
+
+Related Gameplay Events:
+  - GameplayEvent.FastTravel.Started
+  - GameplayEvent.FastTravel.Completed
+```
+
+### 17.5 아이템/상호작용 어빌리티 태그 설정
+
+#### 17.5.1 UHarmoniaGameplayAbility_UseRecoveryItem (회복 아이템 사용)
+
+```
+AbilityTags:
+  - Ability.Item.UseRecovery
+
+ActivationOwnedTags:
+  - State.UsingItem
+  - State.Casting (시전 중)
+
+ActivationBlockedTags:
+  - State.Combat.Attacking
+  - State.Dodging
+  - State.HitReaction
+  - State.UsingItem
+
+BlockAbilitiesWithTag:
+  - State.Combat.Attacking
+  - State.Dodging
+
+Note: 아이템 사용은 다음 상황에서 취소됨:
+  - 시전 중 이동
+  - 시전 중 피격
+```
+
+#### 17.5.2 UHarmoniaGameplayAbility_Interact (상호작용)
+
+```
+AbilityTags:
+  - Ability.Interaction
+
+AbilityTriggers:
+  - TriggerTag: Event.Interaction.TryInteract
+  - TriggerSource: GameplayEvent
+
+ActivationOwnedTags:
+  - State.Interacting
+
+ActivationBlockedTags:
+  - State.Combat.Attacking
+  - State.HitReaction
+  - State.Dodging
+
+BlockAbilitiesWithTag:
+  - State.Combat.Attacking
+```
+
+### 17.6 몬스터 전용 어빌리티 태그 설정
+
+#### 17.6.1 UHarmoniaGameplayAbility_Boss (보스 기본)
+
+```
+AbilityTags:
+  - Ability.Boss.[AbilityName]
+
+ActivationOwnedTags:
+  - State.Boss.Casting (시전 중)
+  - State.Boss.Enraged (분노 어빌리티용)
+
+ActivationBlockedTags:
+  - State.Boss.PhaseTransition
+  - State.HitReaction (일부 보스는 무시 가능)
+
+ValidPhases:
+  - 빈 배열 = 모든 페이즈
+  - [1, 2] = 1, 2 페이즈만
+  - [3] = 3 페이즈(분노 페이즈)만
+```
+
+#### 17.6.2 UHarmoniaGameplayAbility_Stealth (은신)
+
+```
+AbilityTags:
+  - Ability.Combat.Stealth
+
+ActivationOwnedTags:
+  - State.Stealthed
+
+ActivationBlockedTags:
+  - State.Combat.Attacking
+  - State.HitReaction
+  - State.Stealthed
+
+Note: 은신 해제 조건:
+  - 공격 시 (기습 데미지 적용 후)
+  - 피격 시
+  - 지속 시간 만료 시 (무한이 아닌 경우)
+```
+
+#### 17.6.3 UHarmoniaGameplayAbility_Summon (소환)
+
+```
+AbilityTags:
+  - Ability.Combat.Summon
+
+ActivationOwnedTags:
+  - State.Summoning
+  - State.Casting
+
+ActivationBlockedTags:
+  - State.HitReaction
+  - State.Dodging
+  - State.Summoning
+
+BlockAbilitiesWithTag:
+  - State.Combat.Attacking
+  - State.Dodging
+```
+
+#### 17.6.4 UHarmoniaGameplayAbility_ElitePassive (엘리트 패시브)
+
+```
+AbilityTags:
+  - Ability.Monster.Elite.Passive
+
+ActivationPolicy: OnSpawn (자동 활성화)
+ActivationGroup: Exclusive_Blocking
+
+ActivationOwnedTags:
+  - State.Elite
+
+Note: 패시브 어빌리티로 항상 활성 상태
+```
+
+#### 17.6.5 UHarmoniaGameplayAbility_SwarmBehavior (군집 행동)
+
+```
+AbilityTags:
+  - Ability.Monster.Swarm.Passive
+
+ActivationPolicy: OnSpawn (자동 활성화)
+ActivationGroup: Independent (다른 어빌리티와 병행 가능)
+
+ActivationOwnedTags:
+  - State.Swarm.Active (활성 중 항상)
+  - State.Swarm.Empowered (군집 보너스 활성 시)
+  - State.Swarm.Fearful (인근 아군 사망 시)
+
+Note: 패시브 어빌리티로 항상 활성 상태
+```
+
+### 17.7 태그 네이밍 규칙
+
+#### 17.7.1 권장 패턴
+
+| 패턴 | 용도 | 예시 |
+|------|------|------|
+| `Ability.[Category].[Name]` | 어빌리티 식별 | `Ability.Combat.Dodge` |
+| `State.[StateName]` | 상태 태그 | `State.Dodging`, `State.HitReaction` |
+| `State.Combat.[StateName]` | 전투 관련 상태 | `State.Combat.Attacking` |
+| `State.Movement.[StateName]` | 이동 관련 상태 | `State.Movement.Sprint` |
+| `GameplayEvent.[EventName]` | 이벤트 트리거 | `GameplayEvent.HitReaction` |
+| `Movement.Restricted.[Type]` | 이동 제한 | `Movement.Restricted.NoClimb` |
+
+#### 17.7.2 태그 통일 권장사항
+
+현재 일부 어빌리티에서 `State.X`와 `Character.State.X` 패턴이 혼용되고 있습니다.
+
+**권장**: `State.X` 패턴으로 통일
+- ✅ `State.Dodging`
+- ❌ `Character.State.Dodging`
+
+### 17.8 블루프린트에서 태그 설정 방법
+
+1. **어빌리티 블루프린트 생성**: C++ 클래스를 부모로 블루프린트 생성
+2. **Class Defaults 열기**: 블루프린트 에디터에서 Class Defaults 선택
+3. **Tags 섹션 찾기**: Details 패널에서 "Tags" 검색
+4. **각 컨테이너에 태그 추가**:
+   - Ability Tags
+   - Activation Owned Tags
+   - Activation Required Tags
+   - Activation Blocked Tags
+   - Block Abilities With Tag
+   - Cancel Abilities With Tag
+
+### 17.9 태그 중복 방지
+
+> ⚠️ **경고**: 태그 추가 전 반드시 확인!
+
+#### 확인 순서
+1. `Config/DefaultGameplayTags.ini` 검색
+2. DataTable 태그 정의 확인 (예: `DT_HarmoniaCharacterTypes`)
+3. 기존 어빌리티의 태그 설정 확인
+
+#### 중복 발생 시
+- 동일한 태그가 여러 곳에서 정의되면 경고 발생 가능
+- INI 파일에서 정의된 태그가 우선권을 가짐
+- 태그 정의는 한 곳에서만 관리 권장
 
 ---
 

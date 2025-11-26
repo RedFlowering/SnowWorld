@@ -12,24 +12,7 @@
  * - Special visual effects
  * - Enhanced abilities
  *
- * ============================================================================
- * Required Tag Configuration (set in Blueprint or derived class):
- * ============================================================================
- *
- * AbilityTags:
- *   - Ability.Monster.Elite.Passive (identifies this ability)
- *
- * ActivationPolicy: OnSpawn (auto-activates when granted)
- * ActivationGroup: Exclusive_Blocking
- *
- * ActivationOwnedTags (tags applied while elite):
- *   - State.Elite (permanent while ability is active)
- *
- * ActivationBlockedTags:
- *   - (none - passive always active)
- *
- * Note: This is a passive ability that applies stat modifiers
- * via GameplayEffect and spawns visual effects.
+ * @see Docs/HarmoniaKit_Complete_Documentation.md Section 17.6.4 for tag configuration
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaGameplayAbility_ElitePassive : public ULyraGameplayAbility

@@ -81,9 +81,13 @@ namespace HarmoniaGameplayTags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_SwitchTargetLeft);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_SwitchTargetRight);
 
+	// Ability Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_LockOn);
+
 	// State Tags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_LockOn_Active);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_LockOn_HasTarget);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Status_LockedOn);
 
 	// Character Type Tags (for target filtering)
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_Type_Enemy);
@@ -96,6 +100,9 @@ namespace HarmoniaGameplayTags
 
 	// Input Tags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Dodge);
+
+	// Ability Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Dodge);
 
 	// State Tags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Dodging);

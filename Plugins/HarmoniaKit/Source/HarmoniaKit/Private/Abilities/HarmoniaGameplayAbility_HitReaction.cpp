@@ -21,11 +21,7 @@ UHarmoniaGameplayAbility_HitReaction::UHarmoniaGameplayAbility_HitReaction(const
 	ActivationPolicy = ELyraAbilityActivationPolicy::OnSpawn;
 	ActivationGroup = ELyraAbilityActivationGroup::Exclusive_Blocking;
 
-	// Use inherited tag containers - configure these in Blueprint or derived classes
-	// ActivationOwnedTags: Tags applied during hit reaction (State.HitReaction, State.HitStunned)
-	// ActivationBlockedTags: Tags that prevent activation (State.Combat.Attacking, State.HitReaction)
-	// BlockAbilitiesWithTag: Abilities to block while active
-	// CancelAbilitiesWithTag: Abilities to cancel on activation
+	// Tag configuration: See Docs/HarmoniaKit_Complete_Documentation.md Section 17.3.6
 
 	// Trigger on hit reaction event
 	FAbilityTriggerData TriggerData;

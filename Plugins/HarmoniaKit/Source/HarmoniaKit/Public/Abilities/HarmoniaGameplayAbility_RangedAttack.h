@@ -21,30 +21,7 @@ class AHarmoniaProjectile;
  * - Resource consumption (ammo, stamina, mana)
  * - Animation playback
  *
- * ============================================================================
- * Required Tag Configuration (set in Blueprint or derived class):
- * ============================================================================
- *
- * AbilityTags:
- *   - Ability.Combat.Attack.Ranged (identifies this ability)
- *
- * ActivationOwnedTags (tags applied while attacking):
- *   - State.Combat.Attacking
- *   - State.Combat.Aiming (while drawing/charging)
- *
- * ActivationBlockedTags (tags that prevent attack):
- *   - State.Dead
- *   - State.Stunned
- *   - State.HitReaction
- *   - State.Dodging
- *
- * BlockAbilitiesWithTag (abilities to block while attacking):
- *   - State.Blocking
- *   - State.Dodging
- *
- * CancelAbilitiesWithTag (abilities to cancel on ranged attack):
- *   - Ability.Attack.Melee
- *
+ * @see Docs/HarmoniaKit_Complete_Documentation.md Section 17.3.8 for tag configuration
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_RangedAttack : public ULyraGameplayAbility

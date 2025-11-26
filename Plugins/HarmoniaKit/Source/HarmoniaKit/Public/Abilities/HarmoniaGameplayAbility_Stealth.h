@@ -12,31 +12,7 @@
  * - Ambush attack with bonus damage
  * - Break stealth on attack or when damaged
  *
- * ============================================================================
- * Required Tag Configuration (set in Blueprint or derived class):
- * ============================================================================
- *
- * AbilityTags:
- *   - Ability.Combat.Stealth (identifies this ability)
- *
- * ActivationOwnedTags (tags applied while stealthed):
- *   - State.Stealthed
- *
- * ActivationBlockedTags (tags that prevent stealth):
- *   - State.Combat.Attacking
- *   - State.HitReaction
- *   - State.Stealthed (already stealthed)
- *
- * BlockAbilitiesWithTag (abilities to block while stealthed):
- *   - (none by default - can attack from stealth)
- *
- * CancelAbilitiesWithTag (abilities to cancel on stealth):
- *   - (none by default)
- *
- * Note: Stealth breaks when:
- *   - Attacking (after ambush damage is applied)
- *   - Receiving damage
- *   - Duration expires (if not infinite)
+ * @see Docs/HarmoniaKit_Complete_Documentation.md Section 17.6.2 for tag configuration
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaGameplayAbility_Stealth : public ULyraGameplayAbility

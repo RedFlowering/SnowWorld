@@ -12,26 +12,7 @@
  * - Attack/Defense scales with nearby swarm members
  * - Fear state when allies die
  *
- * ============================================================================
- * Required Tag Configuration (set in Blueprint or derived class):
- * ============================================================================
- *
- * AbilityTags:
- *   - Ability.Monster.Swarm.Passive (identifies this ability)
- *
- * ActivationPolicy: OnSpawn (auto-activates when granted)
- * ActivationGroup: Independent (can run alongside other abilities)
- *
- * ActivationOwnedTags (tags applied while in swarm):
- *   - State.Swarm.Active (permanent while ability is active)
- *   - State.Swarm.Empowered (when swarm bonus is active)
- *   - State.Swarm.Fearful (when ally dies nearby)
- *
- * ActivationBlockedTags:
- *   - (none - passive always active)
- *
- * Note: This is a passive ability that continuously monitors
- * nearby swarm members and applies dynamic stat modifiers.
+ * @see Docs/HarmoniaKit_Complete_Documentation.md Section 17.6.5 for tag configuration
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaGameplayAbility_SwarmBehavior : public ULyraGameplayAbility

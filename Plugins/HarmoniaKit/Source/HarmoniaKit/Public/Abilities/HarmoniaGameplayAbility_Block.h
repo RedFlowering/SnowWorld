@@ -18,28 +18,7 @@ class UHarmoniaMeleeCombatComponent;
  * - Consumes stamina on block
  * - Guard break on insufficient stamina
  *
- * ============================================================================
- * Required Tag Configuration (set in Blueprint or derived class):
- * ============================================================================
- *
- * AbilityTags:
- *   - Ability.Combat.Block (identifies this ability)
- *
- * ActivationOwnedTags (tags applied while blocking):
- *   - State.Blocking
- *   - Character.State.Blocking
- *
- * ActivationBlockedTags (tags that prevent blocking):
- *   - State.Combat.Attacking
- *   - State.Dodging
- *   - State.HitReaction
- *
- * BlockAbilitiesWithTag (abilities to block while blocking):
- *   - State.Combat.Attacking
- *   - State.Dodging
- *
- * CancelAbilitiesWithTag (abilities to cancel when block starts):
- *   - (none by default)
+ * @see Docs/HarmoniaKit_Complete_Documentation.md Section 17.3.3 for tag configuration
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_Block : public ULyraGameplayAbility

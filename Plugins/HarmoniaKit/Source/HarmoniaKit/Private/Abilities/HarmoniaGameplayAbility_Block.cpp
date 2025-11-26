@@ -12,10 +12,7 @@ UHarmoniaGameplayAbility_Block::UHarmoniaGameplayAbility_Block(const FObjectInit
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
-	// Use inherited tag containers - configure these in Blueprint or derived classes:
-	// - ActivationOwnedTags: Tags applied while blocking (e.g., Character.State.Blocking)
-	// - ActivationBlockedTags: Tags that prevent blocking (e.g., Character.State.Attacking)
-	// - BlockAbilitiesWithTag: Abilities to block while this is active
+	// Tag configuration: See Docs/HarmoniaKit_Complete_Documentation.md Section 17.3.3
 }
 
 bool UHarmoniaGameplayAbility_Block::CanActivateAbility(

@@ -83,9 +83,13 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_SwitchTargetLeft, "InputTag.SwitchTargetLeft", "Switch lock-on target left");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_SwitchTargetRight, "InputTag.SwitchTargetRight", "Switch lock-on target right");
 
+	// Ability Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_LockOn, "Ability.LockOn", "Lock-on targeting ability");
+
 	// State Tags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_LockOn_Active, "State.LockOn.Active", "Lock-on is currently active");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_LockOn_HasTarget, "State.LockOn.HasTarget", "Lock-on has a valid target");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Status_LockedOn, "Status.LockedOn", "Character is locked on to a target");
 
 	// Character Type Tags (for target filtering)
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_Type_Enemy, "Character.Type.Enemy", "Character is an enemy");
@@ -98,6 +102,9 @@ namespace HarmoniaGameplayTags
 
 	// Input Tags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Dodge, "InputTag.Dodge", "Dodge input");
+
+	// Ability Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Dodge, "Ability.Dodge", "Dodge roll ability");
 
 	// State Tags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Dodging, "State.Dodging", "Character is dodging");

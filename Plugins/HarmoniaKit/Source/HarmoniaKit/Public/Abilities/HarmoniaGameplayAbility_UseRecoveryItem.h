@@ -30,33 +30,7 @@ class UGameplayEffect;
  * - 설정 기반으로 동작 (데이터 드리븐)
  * - 다른 소모성 아이템에도 확장 가능
  *
- * ============================================================================
- * Required Tag Configuration (set in Blueprint or derived class):
- * ============================================================================
- *
- * AbilityTags:
- *   - Ability.Item.UseRecovery (identifies this ability)
- *
- * ActivationOwnedTags (tags applied while using item):
- *   - State.UsingItem
- *   - State.Casting (during cast time)
- *
- * ActivationBlockedTags (tags that prevent item use):
- *   - State.Combat.Attacking
- *   - State.Dodging
- *   - State.HitReaction
- *   - State.UsingItem (already using item)
- *
- * BlockAbilitiesWithTag (abilities to block while using item):
- *   - State.Combat.Attacking
- *   - State.Dodging
- *
- * CancelAbilitiesWithTag (abilities to cancel when using item):
- *   - (none by default)
- *
- * Note: Item use is cancelled by:
- *   - Movement during cast time
- *   - Receiving damage during cast time
+ * @see Docs/HarmoniaKit_Complete_Documentation.md Section 17.5.1 for tag configuration
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_UseRecoveryItem : public ULyraGameplayAbility

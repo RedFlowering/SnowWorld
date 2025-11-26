@@ -18,30 +18,7 @@ class UHarmoniaMeleeCombatComponent;
  * - On failure: treated as normal hit
  * - Consumes less stamina than blocking
  *
- * ============================================================================
- * Required Tag Configuration (set in Blueprint or derived class):
- * ============================================================================
- *
- * AbilityTags:
- *   - Ability.Combat.Parry (identifies this ability)
- *
- * ActivationOwnedTags (tags applied while parrying):
- *   - State.Parrying
- *   - Character.State.Parrying
- *
- * ActivationBlockedTags (tags that prevent parrying):
- *   - State.Combat.Attacking
- *   - State.Blocking
- *   - State.Dodging
- *   - State.HitReaction
- *
- * BlockAbilitiesWithTag (abilities to block while parrying):
- *   - State.Combat.Attacking
- *   - State.Blocking
- *   - State.Dodging
- *
- * CancelAbilitiesWithTag (abilities to cancel when parry starts):
- *   - (none by default)
+ * @see Docs/HarmoniaKit_Complete_Documentation.md Section 17.3.4 for tag configuration
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_Parry : public ULyraGameplayAbility

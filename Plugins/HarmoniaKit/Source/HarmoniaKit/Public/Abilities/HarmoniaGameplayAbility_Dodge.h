@@ -30,32 +30,7 @@ enum class EDodgeRollType : uint8
  * - Equipment load affects roll type (Light/Medium/Heavy)
  * - Can attack after dodge
  *
- * ============================================================================
- * Required Tag Configuration (set in Blueprint or derived class):
- * ============================================================================
- *
- * AbilityTags:
- *   - Ability.Combat.Dodge (identifies this ability)
- *
- * ActivationOwnedTags (tags applied while dodging):
- *   - State.Dodging
- *   - Character.State.Dodging
- *
- * ActivationBlockedTags (tags that prevent dodging):
- *   - State.Combat.Attacking
- *   - State.Blocking
- *   - State.Dodging
- *   - State.HitReaction
- *
- * BlockAbilitiesWithTag (abilities to block while dodging):
- *   - State.Combat.Attacking
- *   - State.Blocking
- *
- * CancelAbilitiesWithTag (abilities to cancel when dodge starts):
- *   - (none by default)
- *
- * Related Tags:
- *   - State.Invincible (applied during I-frames via MeleeCombatComponent)
+ * @see Docs/HarmoniaKit_Complete_Documentation.md Section 17.3.1 for tag configuration
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_Dodge : public ULyraGameplayAbility

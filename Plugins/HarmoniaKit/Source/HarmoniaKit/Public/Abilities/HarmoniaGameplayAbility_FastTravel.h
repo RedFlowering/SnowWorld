@@ -12,39 +12,7 @@ class AHarmoniaWaypointActor;
  * Fast Travel Gameplay Ability
  * Allows instant travel to discovered waypoints
  *
- * ============================================================================
- * Required Tag Configuration (set in Blueprint or derived class):
- * ============================================================================
- *
- * AbilityTags:
- *   - Ability.Movement.FastTravel (identifies this ability)
- *
- * ActivationOwnedTags (tags applied while traveling):
- *   - State.FastTraveling
- *
- * ActivationBlockedTags (tags that prevent fast travel):
- *   - State.Combat.Attacking
- *   - State.HitReaction
- *   - State.Swimming
- *   - State.Climbing
- *
- * ActivationRequiredTags (tags required to fast travel):
- *   - State.CanFastTravel (or check Waypoint.Discovered)
- *
- * BlockAbilitiesWithTag (abilities to block while traveling):
- *   - State.Combat.Attacking
- *   - State.Movement.Sprint
- *
- * CancelAbilitiesWithTag (abilities to cancel when travel starts):
- *   - State.Combat.Attacking
- *   - State.Blocking
- *
- * Related Gameplay Events:
- *   - GameplayEvent.FastTravel.Started (sent on activation)
- *   - GameplayEvent.FastTravel.Completed (sent on teleport complete)
- *
- * Movement Restriction Check:
- *   - Checks for Movement.Restricted.NoFastTravel tag
+ * @see Docs/HarmoniaKit_Complete_Documentation.md Section 17.4.5 for tag configuration
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_FastTravel : public ULyraGameplayAbility

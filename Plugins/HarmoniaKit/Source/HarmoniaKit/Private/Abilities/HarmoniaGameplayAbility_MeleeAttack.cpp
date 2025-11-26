@@ -18,10 +18,7 @@ UHarmoniaGameplayAbility_MeleeAttack::UHarmoniaGameplayAbility_MeleeAttack(const
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
-	// Use inherited tag containers - configure these in Blueprint or derived classes:
-	// - ActivationOwnedTags: Tags applied while attacking (e.g., Character.State.Attacking)
-	// - ActivationBlockedTags: Tags that prevent attack (e.g., Character.State.Attacking, Character.State.Blocking, Character.State.Dodging)
-	// - BlockAbilitiesWithTag: Abilities to block while attacking
+	// Tag configuration: See Docs/HarmoniaKit_Complete_Documentation.md Section 17.3.2
 }
 
 bool UHarmoniaGameplayAbility_MeleeAttack::CanActivateAbility(

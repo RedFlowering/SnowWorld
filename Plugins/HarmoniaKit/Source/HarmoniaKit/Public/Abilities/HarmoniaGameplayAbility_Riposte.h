@@ -22,31 +22,7 @@ class UAnimMontage;
  * - Targets are stunned during the animation
  * - Consumes stamina
  *
- * ============================================================================
- * Required Tag Configuration (set in Blueprint or derived class):
- * ============================================================================
- *
- * AbilityTags:
- *   - Ability.Combat.Riposte (identifies this ability)
- *
- * ActivationOwnedTags (tags applied during riposte):
- *   - State.Combat.Riposting
- *   - State.Invincible (during animation)
- *
- * ActivationRequiredTags (tags required to activate):
- *   - State.Combat.RiposteWindow (applied after successful parry)
- *
- * ActivationBlockedTags (tags that prevent riposte):
- *   - State.HitReaction
- *   - State.Dodging
- *
- * BlockAbilitiesWithTag (abilities to block during riposte):
- *   - State.Combat.Attacking
- *   - State.Blocking
- *   - State.Dodging
- *
- * CancelAbilitiesWithTag (abilities to cancel on riposte):
- *   - State.Blocking
+ * @see Docs/HarmoniaKit_Complete_Documentation.md Section 17.3.5 for tag configuration
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_Riposte : public ULyraGameplayAbility

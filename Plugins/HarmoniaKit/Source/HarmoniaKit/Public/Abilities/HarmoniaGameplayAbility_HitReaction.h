@@ -28,32 +28,7 @@ class UAnimMontage;
  * 3. Set stun duration and other parameters
  * 4. Bind to damage received event to trigger automatically
  *
- * ============================================================================
- * Required Tag Configuration (set in Blueprint or derived class):
- * ============================================================================
- *
- * AbilityTags:
- *   - Ability.Combat.HitReaction (identifies this ability)
- *
- * AbilityTriggers:
- *   - TriggerTag: GameplayEvent.HitReaction
- *   - TriggerSource: GameplayEvent
- *
- * ActivationOwnedTags (tags applied during hit reaction):
- *   - State.HitReaction
- *   - State.HitStunned
- *
- * ActivationBlockedTags (tags that prevent hit reaction):
- *   - State.Invincible
- *
- * BlockAbilitiesWithTag (abilities to block during hit reaction):
- *   - State.Combat.Attacking
- *   - State.Blocking
- *   - State.Dodging
- *
- * CancelAbilitiesWithTag (abilities to cancel on hit reaction):
- *   - State.Combat.Attacking
- *   - State.Blocking
+ * @see Docs/HarmoniaKit_Complete_Documentation.md Section 17.3.6 for tag configuration
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_HitReaction : public ULyraGameplayAbility

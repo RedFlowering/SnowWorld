@@ -11,36 +11,7 @@
  * Swimming and Diving Gameplay Ability
  * Handles underwater movement and oxygen management
  *
- * ============================================================================
- * Required Tag Configuration (set in Blueprint or derived class):
- * ============================================================================
- *
- * AbilityTags:
- *   - Ability.Movement.Swim (identifies this ability)
- *
- * ActivationOwnedTags (tags applied while swimming):
- *   - State.Swimming
- *
- * ActivationBlockedTags (tags that prevent swimming):
- *   - State.Mounted
- *   - State.Climbing
- *   - State.HitReaction
- *
- * BlockAbilitiesWithTag (abilities to block while swimming):
- *   - State.Mounted
- *   - State.Climbing
- *
- * CancelAbilitiesWithTag (abilities to cancel when swimming starts):
- *   - (none by default)
- *
- * Related Gameplay Events:
- *   - GameplayEvent.Swimming.Started (sent on activation)
- *   - GameplayEvent.Swimming.Stopped (sent on end)
- *   - GameplayEvent.Diving.Started (sent when diving)
- *   - GameplayEvent.Oxygen.Depleted (sent when oxygen runs out)
- *
- * Movement Restriction Check:
- *   - Checks for Movement.Restricted.NoSwim tag
+ * @see Docs/HarmoniaKit_Complete_Documentation.md Section 17.4.2 for tag configuration
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_Swim : public ULyraGameplayAbility
