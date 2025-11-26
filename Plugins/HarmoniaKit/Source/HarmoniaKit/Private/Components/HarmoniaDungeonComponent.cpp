@@ -1,6 +1,9 @@
 // Copyright (c) 2025 RedFlowering. All Rights Reserved.
 
 #include "Components/HarmoniaDungeonComponent.h"
+#include "Components/HarmoniaProgressionComponent.h"
+#include "Components/HarmoniaInventoryComponent.h"
+#include "Definitions/HarmoniaCoreDefinitions.h"
 #include "GameFramework/PlayerState.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
@@ -24,6 +27,13 @@ UHarmoniaDungeonComponent::UHarmoniaDungeonComponent()
 void UHarmoniaDungeonComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// 컴포넌트 참조 찾기
+	if (AActor* Owner = GetOwner())
+	{
+		ProgressionComponent = Owner->FindComponentByClass<UHarmoniaProgressionComponent>();
+		InventoryComponent = Owner->FindComponentByClass<UHarmoniaInventoryComponent>();
+	}
 }
 
 void UHarmoniaDungeonComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -341,7 +351,12 @@ bool UHarmoniaDungeonComponent::ValidateRequirements(const UDungeonDataAsset* Du
 	const FDungeonRequirement& Req = DungeonData->Requirements;
 
 	// 레벨 확인
-	// TODO: 플레이어 레벨 시스템과 연동
+	int32 PlayerLevel = GetPlayerLevel();
+	if (PlayerLevel < Req.MinLevel)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ValidateRequirements: Player level %d is below minimum %d"), PlayerLevel, Req.MinLevel);
+		return false;
+	}
 	
 	// 파티 크기 확인
 	int32 PartySize = GetPartySize();
@@ -351,10 +366,20 @@ bool UHarmoniaDungeonComponent::ValidateRequirements(const UDungeonDataAsset* Du
 	}
 
 	// 필요 아이템 확인
-	// TODO: 인벤토리 시스템과 연동
+	if (!HasRequiredItems(Req.RequiredItemIDs))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ValidateRequirements: Missing required items"));
+		return false;
+	}
 
 	// 필요 퀘스트 확인
-	// TODO: 퀘스트 시스템과 연동
+	// Note: 퀘스트 시스템이 구현되면 여기서 확인
+	// 현재는 RequiredQuestIDs가 비어있으면 통과
+	if (Req.RequiredQuestIDs.Num() > 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ValidateRequirements: Quest validation not yet implemented"));
+		// TODO: 퀘스트 시스템 구현 후 연동
+	}
 
 	return true;
 }
@@ -408,4 +433,72 @@ int32 UHarmoniaDungeonComponent::CalculateScore() const
 	}
 
 	return Score;
+}
+
+int32 UHarmoniaDungeonComponent::GetPlayerLevel() const
+{
+	if (ProgressionComponent)
+	{
+		return ProgressionComponent->CurrentLevel;
+	}
+	
+	// 프로그레션 컴포넌트가 없으면 기본값 1 반환
+	return 1;
+}
+
+bool UHarmoniaDungeonComponent::HasRequiredItems(const TArray<FName>& ItemIDs) const
+{
+	if (ItemIDs.Num() == 0)
+	{
+		return true; // 필요 아이템이 없으면 통과
+	}
+
+	if (!InventoryComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("HasRequiredItems: No inventory component found"));
+		return false;
+	}
+
+	for (const FName& ItemID : ItemIDs)
+	{
+		FHarmoniaID HarmoniaID(ItemID);
+		if (InventoryComponent->GetTotalCount(HarmoniaID) < 1)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool UHarmoniaDungeonComponent::ConsumeRequiredItems(const TArray<FName>& ItemIDs)
+{
+	if (ItemIDs.Num() == 0)
+	{
+		return true;
+	}
+
+	if (!InventoryComponent)
+	{
+		return false;
+	}
+
+	// 먼저 모든 아이템이 있는지 확인
+	if (!HasRequiredItems(ItemIDs))
+	{
+		return false;
+	}
+
+	// 아이템 소비
+	for (const FName& ItemID : ItemIDs)
+	{
+		FHarmoniaID HarmoniaID(ItemID);
+		if (!InventoryComponent->RemoveItem(HarmoniaID, 1, -1.0f))
+		{
+			UE_LOG(LogTemp, Error, TEXT("ConsumeRequiredItems: Failed to remove item %s"), *ItemID.ToString());
+			return false;
+		}
+	}
+
+	return true;
 }

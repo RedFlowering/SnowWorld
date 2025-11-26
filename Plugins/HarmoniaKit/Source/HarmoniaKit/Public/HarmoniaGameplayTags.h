@@ -367,4 +367,38 @@ namespace HarmoniaGameplayTags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Movement_Restricted_NoClimb);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Movement_Restricted_NoSwim);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Movement_Restricted_NoFastTravel);
+
+	// ============================================================
+	// Stat System Tags (for SetByCaller and Stat Allocation)
+	// ============================================================
+
+	// Primary Stats
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Primary_Vitality);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Primary_Endurance);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Primary_Strength);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Primary_Dexterity);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Primary_Intelligence);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Primary_Faith);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Primary_Luck);
+
+	// Combat Stats
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Combat_AttackPower);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Combat_Defense);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Combat_CriticalChance);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Combat_CriticalDamage);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Combat_Poise);
+
+	// Resource Stats
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Resource_MaxHealth);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Resource_MaxStamina);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Resource_MaxMana);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Resource_StaminaRegen);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Resource_ManaRegen);
+
+	// Movement Stats
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Movement_Speed);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Movement_AttackSpeed);
+
+	// Equipment Stats
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Equipment_MaxLoad);
 }

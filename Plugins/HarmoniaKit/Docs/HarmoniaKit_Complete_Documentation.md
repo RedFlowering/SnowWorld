@@ -23,6 +23,7 @@
 13. [언리얼 엔진 통합](#13-언리얼-엔진-통합)
 14. [리팩토링 히스토리](#14-리팩토링-히스토리)
 15. [API 레퍼런스](#15-api-레퍼런스)
+16. [데이터 드리븐 태그 시스템](#16-데이터-드리븐-태그-시스템)
 
 ---
 
@@ -1276,6 +1277,142 @@ class UHarmoniaLyraEquipmentAdapter : public UObject
 | `FHarmoniaDungeonData` | 던전 정의 |
 | `FRechargeableItemData` | 회복 아이템 정의 |
 | `FHarmoniaTeamIdentification` | 팀 식별자 |
+
+---
+
+## 16. 데이터 드리븐 태그 시스템
+
+### 16.1 개요
+
+HarmoniaKit은 GameplayTag를 **데이터 드리븐 방식**으로 관리합니다. 코드 수정 없이 INI 파일이나 DataTable을 통해 새 태그를 추가할 수 있습니다.
+
+### 16.2 태그 정의 방식
+
+#### 방식 1: INI 파일 (Config/HarmoniaGameplayTags.ini)
+```ini
+; 전투 상태 태그
++GameplayTags=(Tag="State.Combat.Attacking",DevComment="공격 중")
++GameplayTags=(Tag="State.Combat.Blocking",DevComment="방어 중")
++GameplayTags=(Tag="State.Combat.Dodging",DevComment="회피 중")
+
+; 속성 태그
++GameplayTags=(Tag="Stat.Primary.Strength",DevComment="힘")
++GameplayTags=(Tag="Stat.Combat.AttackPower",DevComment="공격력")
+```
+
+#### 방식 2: DataTable (FHarmoniaTagDefinition)
+| TagName | Category | DisplayName | DevComment |
+|---------|----------|-------------|------------|
+| State.Combat.Attacking | State | 공격 중 | 캐릭터가 공격 중 |
+| Damage.Type.Physical | Damage | 물리 피해 | 물리 속성 피해 |
+
+### 16.3 주요 태그 카테고리
+
+| 카테고리 | 패턴 | 용도 | 예시 |
+|----------|------|------|------|
+| **InputTag** | `InputTag.*` | Enhanced Input 입력 매핑 | `InputTag.Attack.Light`, `InputTag.Mount` |
+| **Ability** | `Ability.*` | 어빌리티 클래스 식별 | `Ability.Melee.Slash`, `Ability.Magic.Fireball` |
+| **State** | `State.*` | 캐릭터/시스템 상태 | `State.Combat.Attacking`, `State.Mounted` |
+| **GameplayEvent** | `GameplayEvent.*` | 이벤트 트리거 | `GameplayEvent.HitReaction`, `GameplayEvent.Death` |
+| **Damage** | `Damage.Type.*` | 데미지 타입 | `Damage.Type.Physical`, `Damage.Type.Fire` |
+| **Effect** | `Effect.*` | 시각/사운드 효과 | `Effect.Hit.Slash`, `Effect.Trail.Sword` |
+| **Stat** | `Stat.*` | 어트리뷰트 매핑 | `Stat.Primary.Strength`, `Stat.Combat.AttackPower` |
+| **StatusEffect** | `StatusEffect.*` | 상태이상 | `StatusEffect.Burn`, `StatusEffect.Stun` |
+| **Mount** | `Mount.*` | 탈것 시스템 | `Mount.Type.Ground`, `Mount.Type.Flying` |
+| **Waypoint** | `Waypoint.*` | 패스트 트래블 | `Waypoint.Discovered`, `Waypoint.Active` |
+| **Surface** | `Surface.*` | 등반/파쿠르 | `Surface.Climbable.Ladder`, `Surface.Climbable.Rough` |
+| **Water** | `Water.*` | 수영 시스템 | `Water.Environment.Fresh`, `Water.Environment.Toxic` |
+| **Anim** | `Anim.*` | 애니메이션 트리거 | `Anim.Player.Attack.Sword.Light` |
+| **Sound** | `Sound.*` | 사운드 트리거 | `Sound.SFX.Hit.Metal`, `Sound.Music.Combat` |
+| **Item** | `Item.*` | 아이템 분류 | `Item.Type.Weapon`, `Item.Rarity.Legendary` |
+| **AI** | `AI.*` | AI 행동 | `AI.State.Alert`, `AI.Behavior.Patrol` |
+| **Quest** | `Quest.*` | 퀘스트 분류 | `Quest.Type.Main`, `Quest.State.Active` |
+
+### 16.4 HarmoniaTagRegistrySubsystem
+
+런타임에 태그를 등록하고 조회하는 엔진 서브시스템입니다.
+
+```cpp
+// 서브시스템 접근
+UHarmoniaTagRegistrySubsystem* TagRegistry = GEngine->GetEngineSubsystem<UHarmoniaTagRegistrySubsystem>();
+
+// 태그 검색
+FGameplayTag AttackTag = TagRegistry->FindTagByName(TEXT("State.Combat.Attacking"));
+
+// 카테고리별 태그 조회
+TArray<FGameplayTag> StateTags = TagRegistry->GetTagsByCategory(TEXT("State"));
+
+// 모든 태그 가져오기
+const TMap<FName, FGameplayTag>& AllTags = TagRegistry->GetAllTags();
+```
+
+### 16.5 태그-어트리뷰트 매핑
+
+`FAttributeNameMap` 싱글톤을 통해 태그와 GAS 어트리뷰트를 매핑합니다.
+
+```cpp
+// 태그로 어트리뷰트 조회
+FGameplayAttribute Attr = UHarmoniaAbilitySystemLibrary::GetAttributeByName(TEXT("Stat.Primary.Strength"));
+if (Attr.IsValid())
+{
+    float Value = AbilitySystemComponent->GetNumericAttribute(Attr);
+}
+
+// 매핑된 어트리뷰트 목록
+// Stat.Primary.*: Strength, Dexterity, Intelligence, Constitution, Wisdom, Luck
+// Stat.Combat.*: AttackPower, Defense, CriticalRate, CriticalDamage, AttackSpeed, CooldownReduction
+// Stat.Survival.*: MaxHealth, MaxMana, MaxStamina, HealthRegen, ManaRegen, StaminaRegen
+// Stat.Resistance.*: FireResistance, IceResistance, LightningResistance, PoisonResistance
+```
+
+### 16.6 INI 파일 구조
+
+`Config/HarmoniaGameplayTags.ini` 파일의 전체 구조:
+
+```ini
+[/Script/GameplayTags.GameplayTagsSettings]
+ImportTagsFromConfig=True
+
+; ============================================================================
+; Input Tags (Enhanced Input 연동)
+; ============================================================================
++GameplayTags=(Tag="InputTag.Attack.Light",DevComment="경 공격 입력")
++GameplayTags=(Tag="InputTag.Attack.Heavy",DevComment="강 공격 입력")
+...
+
+; ============================================================================
+; State Tags (캐릭터/시스템 상태)
+; ============================================================================
++GameplayTags=(Tag="State.Combat.Attacking",DevComment="공격 중")
++GameplayTags=(Tag="State.Mounted",DevComment="탈것 탑승 중")
+...
+
+; ============================================================================
+; Stat Tags (어트리뷰트 매핑)
+; ============================================================================
++GameplayTags=(Tag="Stat.Primary.Strength",DevComment="힘")
++GameplayTags=(Tag="Stat.Combat.AttackPower",DevComment="공격력")
+...
+```
+
+### 16.7 새 태그 추가 방법
+
+#### 즉시 적용 (Hot Reload 지원)
+1. `Config/HarmoniaGameplayTags.ini` 파일 열기
+2. 적절한 섹션에 새 태그 추가
+3. 에디터 재시작 (또는 프로젝트 세팅에서 Reload)
+
+#### C++ 코드에서 사용
+```cpp
+// 1. HarmoniaGameplayTags.h에 선언 추가
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(MyNewTag)
+
+// 2. HarmoniaGameplayTags.cpp에 정의 추가
+UE_DEFINE_GAMEPLAY_TAG(MyNewTag, "Custom.MyNewTag")
+
+// 3. INI에도 문서화용으로 추가
++GameplayTags=(Tag="Custom.MyNewTag",DevComment="내 커스텀 태그")
+```
 
 ---
 

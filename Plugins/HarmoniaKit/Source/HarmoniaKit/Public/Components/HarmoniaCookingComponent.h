@@ -7,6 +7,8 @@
 #include "Definitions/HarmoniaCookingSystemDefinitions.h"
 #include "HarmoniaCookingComponent.generated.h"
 
+class UHarmoniaInventoryComponent;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCookingStarted, FName, RecipeID, float, CookingTime);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCookingCancelled);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCookingCompleted, const FCookingResult&, Result);
@@ -177,6 +179,10 @@ public:
 	float BaseSuccessRate = 70.0f;
 
 private:
+	/** 인벤토리 컴포넌트 참조 */
+	UPROPERTY()
+	TObjectPtr<UHarmoniaInventoryComponent> InventoryComponent;
+
 	/** 요리 중 플래그 */
 	UPROPERTY()
 	bool bIsCooking = false;
@@ -233,4 +239,10 @@ private:
 
 	/** 요리 시간 계산 (보너스 적용) */
 	float CalculateCookingTime(float BaseTime) const;
+
+	/** 재료 보유 체크 */
+	bool HasRequiredIngredients(const FCookingRecipe& Recipe) const;
+
+	/** 재료 소비 */
+	bool ConsumeIngredients(const FCookingRecipe& Recipe);
 };

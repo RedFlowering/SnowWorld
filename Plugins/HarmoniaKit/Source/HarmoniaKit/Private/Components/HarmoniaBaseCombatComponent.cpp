@@ -157,10 +157,16 @@ bool UHarmoniaBaseCombatComponent::ConsumeMana(float ManaCost)
 		return false;
 	}
 
-	// Use the HarmoniaAbilitySystemLibrary to consume mana if available
-	// Otherwise, apply a gameplay effect to consume mana
-	// TODO: Implement mana consumption via gameplay effect
-	return true;
+	// Apply mana cost by directly modifying the attribute
+	UHarmoniaAttributeSet* Attributes = GetAttributeSet();
+	if (Attributes)
+	{
+		float CurrentMana = Attributes->GetMana();
+		Attributes->SetMana(FMath::Max(0.0f, CurrentMana - ManaCost));
+		return true;
+	}
+	
+	return false;
 }
 
 float UHarmoniaBaseCombatComponent::GetCurrentMana() const

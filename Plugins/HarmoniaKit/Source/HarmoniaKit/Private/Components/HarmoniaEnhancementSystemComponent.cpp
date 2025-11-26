@@ -3,11 +3,13 @@
 #include "Components/HarmoniaEnhancementSystemComponent.h"
 #include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaInventoryComponent.h"
+#include "Components/HarmoniaBaseAIComponent.h"
 #include "Interfaces/IRepairStation.h"
 #include "AbilitySystemComponent.h"
+#include "AbilitySystem/HarmoniaAttributeSet.h"
+#include "AbilitySystem/HarmoniaAbilitySystemLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/DataTable.h"
-#include "GenericTeamAgentInterface.h"
 
 UHarmoniaEnhancementSystemComponent::UHarmoniaEnhancementSystemComponent()
 {
@@ -452,7 +454,15 @@ void UHarmoniaEnhancementSystemComponent::ServerInsertGem_Implementation(FGuid I
 		return;
 	}
 
-	// TODO: Remove gem from inventory
+	// 인벤토리에서 젬 제거
+	if (InventoryComponent)
+	{
+		if (!InventoryComponent->RemoveItem(GemId, 1, -1.0f))
+		{
+			UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("Failed to remove gem from inventory: %s"), *GemId.ToString());
+			return;
+		}
+	}
 
 	ItemData->Sockets[SocketIndex].InsertedGemId = GemId;
 	OnGemInserted.Broadcast(ItemGUID, SocketIndex, GemId);
@@ -489,9 +499,9 @@ void UHarmoniaEnhancementSystemComponent::ServerRemoveGem_Implementation(FGuid I
 	FHarmoniaID RemovedGemId = Socket.InsertedGemId;
 
 	// Return gem to inventory if not destroying
-	if (!bDestroyGem)
+	if (!bDestroyGem && InventoryComponent)
 	{
-		// TODO: Add gem back to inventory
+		InventoryComponent->AddItem(RemovedGemId.Id, 1, 1.0f);
 	}
 
 	Socket.InsertedGemId = FHarmoniaID();
@@ -667,8 +677,19 @@ bool UHarmoniaEnhancementSystemComponent::GetReforgeConfig(EItemGrade ItemGrade,
 
 bool UHarmoniaEnhancementSystemComponent::LockReforgeStat(FGuid ItemGUID, int32 StatIndex, bool bLocked)
 {
-	// TODO: Implement stat locking system
-	return false;
+	FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
+	if (!ItemData)
+	{
+		return false;
+	}
+
+	if (!ItemData->ReforgedStats.IsValidIndex(StatIndex))
+	{
+		return false;
+	}
+
+	ItemData->ReforgedStats[StatIndex].bIsLocked = bLocked;
+	return true;
 }
 
 // ============================================================================
@@ -1155,10 +1176,17 @@ bool UHarmoniaEnhancementSystemComponent::CanUseRepairKit(FGuid ItemGUID, FHarmo
 	}
 
 	// Check combat restriction
-	if (!KitData.bCanUseInCombat && GetOwner() && GetOwner()->Implements<UGenericTeamAgentInterface>())
+	if (!KitData.bCanUseInCombat && GetOwner())
 	{
-		// TODO: Check if in combat
-		// For now, always allow
+		// Check if owner has AI component with combat state
+		if (UHarmoniaBaseAIComponent* AIComp = GetOwner()->FindComponentByClass<UHarmoniaBaseAIComponent>())
+		{
+			if (AIComp->IsInCombat())
+			{
+				OutReason = TEXT("Cannot use repair kit while in combat");
+				return false;
+			}
+		}
 	}
 
 	return true;
@@ -1200,7 +1228,10 @@ void UHarmoniaEnhancementSystemComponent::ServerRepairItemWithKit_Implementation
 	}
 
 	// Consume repair kit from inventory
-	// TODO: Implement inventory consumption
+	if (InventoryComponent)
+	{
+		InventoryComponent->RemoveItem(RepairKitId.Id, 1, 1.0f);
+	}
 
 	// Calculate repair amount
 	float RepairAmount = ItemData->MaxDurability * KitData.DurabilityRestored;
@@ -1519,13 +1550,30 @@ bool UHarmoniaEnhancementSystemComponent::ConsumeMaterials(const TMap<FHarmoniaI
 		return false;
 	}
 
-	// TODO: Implement material consumption via inventory component
+	// 먼저 모든 재료가 있는지 확인
+	if (!HasMaterials(Materials))
+	{
+		return false;
+	}
+
+	// 재료 소비
+	for (const auto& Pair : Materials)
+	{
+		if (!InventoryComponent->RemoveItem(Pair.Key, Pair.Value, -1.0f))
+		{
+			UE_LOG(LogHarmoniaEnhancement, Error, TEXT("ConsumeMaterials: Failed to remove material %s"), *Pair.Key.ToString());
+			return false;
+		}
+	}
+
 	return true;
 }
 
 bool UHarmoniaEnhancementSystemComponent::ConsumeCurrency(int32 Amount)
 {
-	// TODO: Implement currency consumption
+	// 통화 시스템은 별도의 Economy 시스템으로 구현 필요
+	// 현재는 항상 성공 반환 (테스트용)
+	UE_LOG(LogHarmoniaEnhancement, Log, TEXT("ConsumeCurrency: Would consume %d currency"), Amount);
 	return true;
 }
 
@@ -1536,24 +1584,115 @@ bool UHarmoniaEnhancementSystemComponent::HasMaterials(const TMap<FHarmoniaID, i
 		return false;
 	}
 
-	// TODO: Implement material check via inventory component
+	for (const auto& Pair : Materials)
+	{
+		int32 TotalCount = InventoryComponent->GetTotalCount(Pair.Key);
+		if (TotalCount < Pair.Value)
+		{
+			return false;
+		}
+	}
+
 	return true;
 }
 
 bool UHarmoniaEnhancementSystemComponent::HasCurrency(int32 Amount) const
 {
-	// TODO: Implement currency check
+	// 통화 시스템은 별도의 Economy 시스템으로 구현 필요
+	// 현재는 항상 true 반환 (테스트용)
 	return true;
 }
 
 void UHarmoniaEnhancementSystemComponent::ApplyStatModifiers(const TArray<FEquipmentStatModifier>& Modifiers)
 {
-	// TODO: Apply stat modifiers to ability system component
+	if (!AbilitySystemComponent)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("ApplyStatModifiers: No AbilitySystemComponent found"));
+		return;
+	}
+
+	const UHarmoniaAttributeSet* AttributeSet = AbilitySystemComponent->GetSet<UHarmoniaAttributeSet>();
+	if (!AttributeSet)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("ApplyStatModifiers: No HarmoniaAttributeSet found"));
+		return;
+	}
+
+	for (const FEquipmentStatModifier& Modifier : Modifiers)
+	{
+		FGameplayAttribute Attribute = UHarmoniaAbilitySystemLibrary::GetAttributeByName(Modifier.AttributeName);
+
+		if (!Attribute.IsValid())
+		{
+			UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("ApplyStatModifiers: Unknown attribute name: %s"), *Modifier.AttributeName);
+			continue;
+		}
+
+		float CurrentBase = AbilitySystemComponent->GetNumericAttributeBase(Attribute);
+		float ModifiedValue = CurrentBase;
+
+		switch (Modifier.ModifierType)
+		{
+		case EStatModifierType::Flat:
+			ModifiedValue = CurrentBase + Modifier.Value;
+			break;
+		case EStatModifierType::Percentage:
+			ModifiedValue = CurrentBase * (1.0f + Modifier.Value / 100.0f);
+			break;
+		case EStatModifierType::Override:
+			ModifiedValue = Modifier.Value;
+			break;
+		}
+
+		AbilitySystemComponent->SetNumericAttributeBase(Attribute, ModifiedValue);
+	}
 }
 
 void UHarmoniaEnhancementSystemComponent::RemoveStatModifiers(const TArray<FEquipmentStatModifier>& Modifiers)
 {
-	// TODO: Remove stat modifiers from ability system component
+	if (!AbilitySystemComponent)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("RemoveStatModifiers: No AbilitySystemComponent found"));
+		return;
+	}
+
+	const UHarmoniaAttributeSet* AttributeSet = AbilitySystemComponent->GetSet<UHarmoniaAttributeSet>();
+	if (!AttributeSet)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("RemoveStatModifiers: No HarmoniaAttributeSet found"));
+		return;
+	}
+
+	for (const FEquipmentStatModifier& Modifier : Modifiers)
+	{
+		FGameplayAttribute Attribute = UHarmoniaAbilitySystemLibrary::GetAttributeByName(Modifier.AttributeName);
+
+		if (!Attribute.IsValid())
+		{
+			UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("RemoveStatModifiers: Unknown attribute name: %s"), *Modifier.AttributeName);
+			continue;
+		}
+
+		float CurrentBase = AbilitySystemComponent->GetNumericAttributeBase(Attribute);
+		float ModifiedValue = CurrentBase;
+
+		switch (Modifier.ModifierType)
+		{
+		case EStatModifierType::Flat:
+			ModifiedValue = CurrentBase - Modifier.Value;
+			break;
+		case EStatModifierType::Percentage:
+			// Reverse percentage: divide by the multiplier
+			ModifiedValue = CurrentBase / (1.0f + Modifier.Value / 100.0f);
+			break;
+		case EStatModifierType::Override:
+			// Override can't be easily reversed - need to track original value
+			UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("RemoveStatModifiers: Cannot reverse Override modifier for %s"), *Modifier.AttributeName);
+			continue;
+		}
+
+		AbilitySystemComponent->SetNumericAttributeBase(Attribute, ModifiedValue);
+	}
 }
 
 void UHarmoniaEnhancementSystemComponent::OnRep_EnhancedItems()
@@ -1579,10 +1718,34 @@ void UHarmoniaEnhancementSystemComponent::TryAutoRepair(FGuid ItemGUID)
 	}
 
 	// Try repair kits first if preferred
-	if (bAutoRepairPreferKits)
+	if (bAutoRepairPreferKits && RepairKitDataTable && InventoryComponent)
 	{
-		// TODO: Search inventory for appropriate repair kit
-		// For now, skip to currency repair
+		// Get item base data to check compatibility
+		FEquipmentData BaseData;
+		if (GetItemBaseData(ItemData->ItemId, BaseData))
+		{
+			// Search through all repair kits and find one we have in inventory
+			FString ContextString(TEXT("AutoRepairSearch"));
+			TArray<FName> RowNames = RepairKitDataTable->GetRowNames();
+			
+			for (const FName& RowName : RowNames)
+			{
+				FRepairKitData* KitData = RepairKitDataTable->FindRow<FRepairKitData>(RowName, ContextString);
+				if (KitData && KitData->CanRepairGrade(BaseData.Grade) && KitData->CanRepairSlot(BaseData.EquipmentSlot))
+				{
+					// Check if we have this repair kit in inventory
+					if (InventoryComponent->GetTotalCount(KitData->RepairKitId.Id) > 0)
+					{
+						FString Reason;
+						if (CanUseRepairKit(ItemGUID, KitData->RepairKitId, Reason))
+						{
+							RepairItemWithKit(ItemGUID, KitData->RepairKitId);
+							return;
+						}
+					}
+				}
+			}
+		}
 	}
 
 	// Fall back to currency repair

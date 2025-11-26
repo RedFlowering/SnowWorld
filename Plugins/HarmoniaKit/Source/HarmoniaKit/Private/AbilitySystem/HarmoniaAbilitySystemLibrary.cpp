@@ -350,6 +350,65 @@ FString UHarmoniaAbilitySystemLibrary::GetEquipLoadRollType(UAbilitySystemCompon
 // Utility Functions
 // ============================================================================
 
+// Static attribute map - initialized once on first use
+namespace HarmoniaAttributeMapping
+{
+	static TMap<FString, TFunction<FGameplayAttribute()>> AttributeNameMap;
+	static bool bInitialized = false;
+
+	void InitializeAttributeMap()
+	{
+		if (bInitialized)
+		{
+			return;
+		}
+
+		// Core Attributes
+		AttributeNameMap.Add(TEXT("Health"), []() { return UHarmoniaAttributeSet::GetHealthAttribute(); });
+		AttributeNameMap.Add(TEXT("MaxHealth"), []() { return UHarmoniaAttributeSet::GetMaxHealthAttribute(); });
+		AttributeNameMap.Add(TEXT("Stamina"), []() { return UHarmoniaAttributeSet::GetStaminaAttribute(); });
+		AttributeNameMap.Add(TEXT("MaxStamina"), []() { return UHarmoniaAttributeSet::GetMaxStaminaAttribute(); });
+		AttributeNameMap.Add(TEXT("Mana"), []() { return UHarmoniaAttributeSet::GetManaAttribute(); });
+		AttributeNameMap.Add(TEXT("MaxMana"), []() { return UHarmoniaAttributeSet::GetMaxManaAttribute(); });
+		AttributeNameMap.Add(TEXT("StaminaRegenRate"), []() { return UHarmoniaAttributeSet::GetStaminaRegenRateAttribute(); });
+		AttributeNameMap.Add(TEXT("ManaRegenRate"), []() { return UHarmoniaAttributeSet::GetManaRegenRateAttribute(); });
+
+		// Combat Attributes
+		AttributeNameMap.Add(TEXT("AttackPower"), []() { return UHarmoniaAttributeSet::GetAttackPowerAttribute(); });
+		AttributeNameMap.Add(TEXT("Defense"), []() { return UHarmoniaAttributeSet::GetDefenseAttribute(); });
+		AttributeNameMap.Add(TEXT("CriticalChance"), []() { return UHarmoniaAttributeSet::GetCriticalChanceAttribute(); });
+		AttributeNameMap.Add(TEXT("CriticalDamage"), []() { return UHarmoniaAttributeSet::GetCriticalDamageAttribute(); });
+		AttributeNameMap.Add(TEXT("AttackSpeed"), []() { return UHarmoniaAttributeSet::GetAttackSpeedAttribute(); });
+		AttributeNameMap.Add(TEXT("MovementSpeed"), []() { return UHarmoniaAttributeSet::GetMovementSpeedAttribute(); });
+		AttributeNameMap.Add(TEXT("Poise"), []() { return UHarmoniaAttributeSet::GetMaxPoiseAttribute(); });
+		AttributeNameMap.Add(TEXT("MaxPoise"), []() { return UHarmoniaAttributeSet::GetMaxPoiseAttribute(); });
+		AttributeNameMap.Add(TEXT("EquipLoad"), []() { return UHarmoniaAttributeSet::GetMaxEquipLoadAttribute(); });
+		AttributeNameMap.Add(TEXT("MaxEquipLoad"), []() { return UHarmoniaAttributeSet::GetMaxEquipLoadAttribute(); });
+
+		// Primary Stats
+		AttributeNameMap.Add(TEXT("Vitality"), []() { return UHarmoniaAttributeSet::GetVitalityAttribute(); });
+		AttributeNameMap.Add(TEXT("Endurance"), []() { return UHarmoniaAttributeSet::GetEnduranceAttribute(); });
+		AttributeNameMap.Add(TEXT("Strength"), []() { return UHarmoniaAttributeSet::GetStrengthAttribute(); });
+		AttributeNameMap.Add(TEXT("Dexterity"), []() { return UHarmoniaAttributeSet::GetDexterityAttribute(); });
+		AttributeNameMap.Add(TEXT("Intelligence"), []() { return UHarmoniaAttributeSet::GetIntelligenceAttribute(); });
+		AttributeNameMap.Add(TEXT("Faith"), []() { return UHarmoniaAttributeSet::GetFaithAttribute(); });
+		AttributeNameMap.Add(TEXT("Luck"), []() { return UHarmoniaAttributeSet::GetLuckAttribute(); });
+
+		bInitialized = true;
+	}
+
+	FGameplayAttribute FindAttribute(const FString& AttributeName)
+	{
+		InitializeAttributeMap();
+
+		if (const TFunction<FGameplayAttribute()>* Getter = AttributeNameMap.Find(AttributeName))
+		{
+			return (*Getter)();
+		}
+		return FGameplayAttribute();
+	}
+}
+
 UHarmoniaAttributeSet* UHarmoniaAbilitySystemLibrary::GetHarmoniaAttributeSet(UAbilitySystemComponent* AbilitySystemComponent)
 {
 	if (!AbilitySystemComponent)
@@ -360,6 +419,21 @@ UHarmoniaAttributeSet* UHarmoniaAbilitySystemLibrary::GetHarmoniaAttributeSet(UA
 	return const_cast<UHarmoniaAttributeSet*>(
 		AbilitySystemComponent->GetSet<UHarmoniaAttributeSet>()
 	);
+}
+
+FGameplayAttribute UHarmoniaAbilitySystemLibrary::GetAttributeByName(const FString& AttributeName)
+{
+	return HarmoniaAttributeMapping::FindAttribute(AttributeName);
+}
+
+FGameplayAttribute UHarmoniaAbilitySystemLibrary::GetAttributeByTag(const FGameplayTag& StatTag)
+{
+	// Extract the last part of the tag (e.g., "Stat.Primary.Vitality" -> "Vitality")
+	FString TagString = StatTag.ToString();
+	FString AttributeName;
+	TagString.Split(TEXT("."), nullptr, &AttributeName, ESearchCase::IgnoreCase, ESearchDir::FromEnd);
+	
+	return HarmoniaAttributeMapping::FindAttribute(AttributeName);
 }
 
 const UHarmoniaAttributeSet* UHarmoniaAbilitySystemLibrary::GetAttributeSetChecked(UAbilitySystemComponent* AbilitySystemComponent)

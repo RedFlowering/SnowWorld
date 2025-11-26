@@ -370,6 +370,40 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Movement_Restricted_NoSwim, "Movement.Restricted.NoSwim", "Cannot swim in this area");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Movement_Restricted_NoFastTravel, "Movement.Restricted.NoFastTravel", "Cannot fast travel from this area");
 
+	// ============================================================
+	// Stat System Tags
+	// ============================================================
+
+	// Primary Stats
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Primary_Vitality, "Stat.Primary.Vitality", "Vitality stat - increases MaxHealth and defense");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Primary_Endurance, "Stat.Primary.Endurance", "Endurance stat - increases MaxStamina and equipment load");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Primary_Strength, "Stat.Primary.Strength", "Strength stat - increases physical damage");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Primary_Dexterity, "Stat.Primary.Dexterity", "Dexterity stat - increases attack speed and critical chance");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Primary_Intelligence, "Stat.Primary.Intelligence", "Intelligence stat - increases magic damage and max mana");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Primary_Faith, "Stat.Primary.Faith", "Faith stat - increases healing and miracle power");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Primary_Luck, "Stat.Primary.Luck", "Luck stat - increases critical chance and item discovery");
+
+	// Combat Stats
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Combat_AttackPower, "Stat.Combat.AttackPower", "Attack power stat");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Combat_Defense, "Stat.Combat.Defense", "Defense stat");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Combat_CriticalChance, "Stat.Combat.CriticalChance", "Critical hit chance stat");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Combat_CriticalDamage, "Stat.Combat.CriticalDamage", "Critical hit damage multiplier stat");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Combat_Poise, "Stat.Combat.Poise", "Poise stat - resistance to stagger");
+
+	// Resource Stats
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Resource_MaxHealth, "Stat.Resource.MaxHealth", "Maximum health stat");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Resource_MaxStamina, "Stat.Resource.MaxStamina", "Maximum stamina stat");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Resource_MaxMana, "Stat.Resource.MaxMana", "Maximum mana stat");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Resource_StaminaRegen, "Stat.Resource.StaminaRegen", "Stamina regeneration rate stat");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Resource_ManaRegen, "Stat.Resource.ManaRegen", "Mana regeneration rate stat");
+
+	// Movement Stats
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Movement_Speed, "Stat.Movement.Speed", "Movement speed stat");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Movement_AttackSpeed, "Stat.Movement.AttackSpeed", "Attack speed stat");
+
+	// Equipment Stats
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Equipment_MaxLoad, "Stat.Equipment.MaxLoad", "Maximum equipment load stat");
+
 	FGameplayTag FindTagByString(const FString& TagString, bool bMatchPartialString)
 	{
 		const UGameplayTagsManager& Manager = UGameplayTagsManager::Get();

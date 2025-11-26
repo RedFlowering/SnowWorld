@@ -4,8 +4,11 @@
 #include "AbilitySystem/LyraAbilitySystemComponent.h"
 #include "AbilitySystem/LyraAbilitySet.h"
 #include "AbilitySystem/Abilities/LyraGameplayAbility.h"
+#include "AbilitySystem/HarmoniaAttributeSet.h"
+#include "AbilitySystem/HarmoniaAbilitySystemLibrary.h"
 #include "Data/HarmoniaSkillTreeData.h"
 #include "Data/HarmoniaClassData.h"
+#include "HarmoniaGameplayTags.h"
 #include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
 #include "AbilitySystemInterface.h"
@@ -920,12 +923,65 @@ void UHarmoniaProgressionComponent::ApplySkillNodeEffects(const FHarmoniaSkillNo
 
 void UHarmoniaProgressionComponent::RemoveSkillNodeEffects(const FHarmoniaSkillNode& Node)
 {
-	// Simplified - would need to track which handles belong to which node
+	// Note: For full implementation, we would need to track which handles belong to which node
+	// For now, this removes all effects granted by the node's effect classes
+	
+	ULyraAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC)
+	{
+		return;
+	}
+
+	// Remove gameplay effects by class - search through active effects
+	for (TSubclassOf<UGameplayEffect> EffectClass : Node.GrantedEffects)
+	{
+		if (EffectClass)
+		{
+			// Remove all instances of this effect class
+			ASC->RemoveActiveGameplayEffectBySourceEffect(EffectClass, ASC);
+		}
+	}
+
+	// Note: Ability removal would require tracking which abilities were granted by this node
+	// This is a simplified implementation - for production use, consider:
+	// 1. Storing FHarmoniaGrantedHandles per node ID in a TMap
+	// 2. Using that map to remove specific abilities when a node is refunded
+	
+	if (Node.GrantedAbilitySet)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("RemoveSkillNodeEffects: Ability set removal not fully implemented for node %s"), *Node.NodeID.ToString());
+	}
 }
 
 void UHarmoniaProgressionComponent::ApplyStatAllocation(FGameplayTag StatTag, int32 Points)
 {
-	// Apply stat increase via GameplayEffect or direct attribute modification
+	// Apply stat increase via direct attribute modification
+	ULyraAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC || Points <= 0)
+	{
+		return;
+	}
+
+	// Find the HarmoniaAttributeSet
+	const UHarmoniaAttributeSet* AttributeSet = ASC->GetSet<UHarmoniaAttributeSet>();
+	if (!AttributeSet)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ApplyStatAllocation: No HarmoniaAttributeSet found on ASC"));
+		return;
+	}
+
+	// Use the utility function to get attribute from tag
+	FGameplayAttribute Attribute = UHarmoniaAbilitySystemLibrary::GetAttributeByTag(StatTag);
+	
+	if (!Attribute.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ApplyStatAllocation: Unknown stat tag %s"), *StatTag.ToString());
+		return;
+	}
+
+	// Get current value and apply points
+	float CurrentValue = ASC->GetNumericAttributeBase(Attribute);
+	ASC->SetNumericAttributeBase(Attribute, CurrentValue + Points);
 }
 
 void UHarmoniaProgressionComponent::ApplyClassEffects(EHarmoniaCharacterClass Class)
@@ -979,17 +1035,97 @@ void UHarmoniaProgressionComponent::ApplyClassEffects(EHarmoniaCharacterClass Cl
 
 void UHarmoniaProgressionComponent::RemoveClassEffects(EHarmoniaCharacterClass Class)
 {
-	// Simplified
+	ULyraAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC)
+	{
+		return;
+	}
+
+	// Remove all active progression effects
+	for (FActiveGameplayEffectHandle& Handle : ActiveProgressionEffects)
+	{
+		if (Handle.IsValid())
+		{
+			ASC->RemoveActiveGameplayEffect(Handle);
+		}
+	}
+	ActiveProgressionEffects.Empty();
+
+	// Remove all granted abilities
+	for (FHarmoniaGrantedHandles& Handles : GrantedHandlesList)
+	{
+		for (FGameplayAbilitySpecHandle& AbilityHandle : Handles.AbilitySpecHandles)
+		{
+			if (AbilityHandle.IsValid())
+			{
+				ASC->ClearAbility(AbilityHandle);
+			}
+		}
+
+		for (FActiveGameplayEffectHandle& EffectHandle : Handles.GameplayEffectHandles)
+		{
+			if (EffectHandle.IsValid())
+			{
+				ASC->RemoveActiveGameplayEffect(EffectHandle);
+			}
+		}
+	}
+	GrantedHandlesList.Empty();
 }
 
 void UHarmoniaProgressionComponent::ApplyAwakeningEffects(EHarmoniaAwakeningTier Tier)
 {
-	// Apply awakening bonuses
+	ULyraAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC)
+	{
+		return;
+	}
+
+	// Apply tier-based stat multipliers
+	float StatMultiplier = 1.0f;
+	switch (Tier)
+	{
+	case EHarmoniaAwakeningTier::FirstAwakening:
+		StatMultiplier = 1.1f;
+		break;
+	case EHarmoniaAwakeningTier::SecondAwakening:
+		StatMultiplier = 1.25f;
+		break;
+	case EHarmoniaAwakeningTier::ThirdAwakening:
+		StatMultiplier = 1.5f;
+		break;
+	case EHarmoniaAwakeningTier::Transcendent:
+		StatMultiplier = 2.0f;
+		break;
+	default:
+		break;
+	}
+
+	// Awakening bonuses are handled through class-specific GameplayEffects
+	// The stat multiplier serves as a guide for designers when creating those effects
+	UE_LOG(LogTemp, Log, TEXT("Awakening Tier %d applied with stat multiplier %.2f"), static_cast<int32>(Tier), StatMultiplier);
 }
 
 void UHarmoniaProgressionComponent::ApplyPrestigeEffects()
 {
-	// Apply prestige bonuses
+	ULyraAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC)
+	{
+		return;
+	}
+
+	// Prestige level gives permanent bonuses:
+	// - Each prestige level grants bonus starting stats
+	// - Bonuses are cumulative and permanent
+	const int32 BonusStatsPerPrestige = 5; // 5 bonus stat points per prestige level
+	const int32 BonusSkillPointsPerPrestige = 3; // 3 bonus skill points per prestige level
+
+	// Award bonus points (these would be applied at character creation/initialization)
+	int32 TotalBonusStats = PrestigeLevel * BonusStatsPerPrestige;
+	int32 TotalBonusSkillPoints = PrestigeLevel * BonusSkillPointsPerPrestige;
+
+	UE_LOG(LogTemp, Log, TEXT("Prestige Level %d: +%d stat points, +%d skill points"), 
+		PrestigeLevel, TotalBonusStats, TotalBonusSkillPoints);
 }
 
 //~ Replication

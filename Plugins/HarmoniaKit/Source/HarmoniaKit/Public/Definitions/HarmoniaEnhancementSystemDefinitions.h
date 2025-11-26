@@ -281,16 +281,22 @@ struct FReforgeStatEntry
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Reforge")
 	bool bIsPercentage = false;
 
+	/** Is this stat locked from reforge changes? */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Reforge")
+	bool bIsLocked = false;
+
 	FReforgeStatEntry()
 		: StatType(EReforgeStatType::Attack)
 		, Value(0.0f)
 		, bIsPercentage(false)
+		, bIsLocked(false)
 	{}
 
 	FReforgeStatEntry(EReforgeStatType InType, float InValue, bool bPercentage = false)
 		: StatType(InType)
 		, Value(InValue)
 		, bIsPercentage(bPercentage)
+		, bIsLocked(false)
 	{}
 };
 

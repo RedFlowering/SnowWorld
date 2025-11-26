@@ -82,6 +82,39 @@ void AHarmoniaProjectile::Tick(float DeltaTime)
 		MovementComponent->HomingTargetComponent = HomingTarget->GetRootComponent();
 		MovementComponent->HomingAccelerationMagnitude = ProjectileData.HomingAcceleration;
 	}
+
+	// Update boomerang
+	if (ProjectileData.MovementType == EHarmoniaProjectileMovement::Boomerang && ProjectileOwner)
+	{
+		BoomerangElapsedTime += DeltaTime;
+		
+		// Calculate return time as half of total lifetime (outward then back)
+		float OutwardTime = ProjectileData.Lifetime * 0.5f;
+		
+		if (!bBoomerangReturning && BoomerangElapsedTime >= OutwardTime)
+		{
+			// Start returning
+			bBoomerangReturning = true;
+		}
+		
+		if (bBoomerangReturning)
+		{
+			// Calculate direction to owner
+			FVector ToOwner = ProjectileOwner->GetActorLocation() - GetActorLocation();
+			float DistanceToOwner = ToOwner.Size();
+			
+			if (DistanceToOwner < 100.0f)
+			{
+				// Close enough to owner, destroy
+				DestroyProjectile();
+				return;
+			}
+			
+			// Set velocity towards owner
+			FVector ReturnDirection = ToOwner.GetSafeNormal();
+			MovementComponent->Velocity = ReturnDirection * ProjectileData.InitialSpeed;
+		}
+	}
 }
 
 void AHarmoniaProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -127,7 +160,11 @@ void AHarmoniaProjectile::InitializeProjectile(const FHarmoniaProjectileData& In
 		break;
 
 	case EHarmoniaProjectileMovement::Boomerang:
-		// TODO: Implement boomerang behavior
+		// Boomerang flies straight out, then returns to owner
+		MovementComponent->ProjectileGravityScale = 0.0f;
+		BoomerangStartLocation = GetActorLocation();
+		BoomerangElapsedTime = 0.0f;
+		bBoomerangReturning = false;
 		break;
 
 	case EHarmoniaProjectileMovement::Hitscan:

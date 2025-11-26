@@ -8,6 +8,9 @@
 #include "GameplayTagContainer.h"
 #include "HarmoniaDungeonComponent.generated.h"
 
+class UHarmoniaProgressionComponent;
+class UHarmoniaInventoryComponent;
+
 /**
  * 던전 진행 상태 델리게이트
  */
@@ -204,6 +207,14 @@ protected:
 	int32 CurrentScore;
 
 private:
+	/** 프로그레션 컴포넌트 참조 (레벨 확인용) */
+	UPROPERTY()
+	TObjectPtr<UHarmoniaProgressionComponent> ProgressionComponent;
+
+	/** 인벤토리 컴포넌트 참조 (아이템 확인용) */
+	UPROPERTY()
+	TObjectPtr<UHarmoniaInventoryComponent> InventoryComponent;
+
 	/** 타이머 업데이트 */
 	void UpdateTimer(float DeltaTime);
 
@@ -212,4 +223,13 @@ private:
 
 	/** 점수 계산 */
 	int32 CalculateScore() const;
+
+	/** 플레이어 레벨 가져오기 */
+	int32 GetPlayerLevel() const;
+
+	/** 필요 아이템 보유 확인 */
+	bool HasRequiredItems(const TArray<FName>& ItemIDs) const;
+
+	/** 필요 아이템 소비 */
+	bool ConsumeRequiredItems(const TArray<FName>& ItemIDs);
 };

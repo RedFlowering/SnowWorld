@@ -212,4 +212,13 @@ protected:
 
 	/** Lifetime timer handle */
 	FTimerHandle LifetimeTimerHandle;
+
+	/** Boomerang state - whether returning to owner */
+	bool bBoomerangReturning = false;
+
+	/** Boomerang elapsed time */
+	float BoomerangElapsedTime = 0.0f;
+
+	/** Start location for boomerang */
+	FVector BoomerangStartLocation = FVector::ZeroVector;
 };

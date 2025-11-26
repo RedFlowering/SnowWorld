@@ -199,6 +199,22 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Harmonia|Utility")
 	static UHarmoniaAttributeSet* GetHarmoniaAttributeSet(UAbilitySystemComponent* AbilitySystemComponent);
 
+	/**
+	 * Get a GameplayAttribute from an attribute name string
+	 * @param AttributeName The name of the attribute (e.g., "MaxHealth", "AttackPower", "Vitality")
+	 * @return The corresponding GameplayAttribute, or invalid if not found
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Harmonia|Utility")
+	static FGameplayAttribute GetAttributeByName(const FString& AttributeName);
+
+	/**
+	 * Get a GameplayAttribute from a stat tag
+	 * @param StatTag The gameplay tag representing the stat
+	 * @return The corresponding GameplayAttribute, or invalid if not found
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Harmonia|Utility")
+	static FGameplayAttribute GetAttributeByTag(const FGameplayTag& StatTag);
+
 private:
 	/**
 	 * Helper function to get attribute set

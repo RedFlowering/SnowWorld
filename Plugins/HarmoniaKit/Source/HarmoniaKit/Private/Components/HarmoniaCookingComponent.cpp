@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Components/HarmoniaCookingComponent.h"
+#include "Components/HarmoniaInventoryComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "TimerManager.h"
 
@@ -13,6 +14,12 @@ UHarmoniaCookingComponent::UHarmoniaCookingComponent()
 void UHarmoniaCookingComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// 인벤토리 컴포넌트 찾기
+	if (AActor* Owner = GetOwner())
+	{
+		InventoryComponent = Owner->FindComponentByClass<UHarmoniaInventoryComponent>();
+	}
 }
 
 void UHarmoniaCookingComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -50,7 +57,17 @@ bool UHarmoniaCookingComponent::StartCooking(FName RecipeID)
 		return false;
 	}
 
-	// TODO: 재료 체크 (인벤토리 시스템과 연동 필요)
+	// 재료 체크
+	if (!HasRequiredIngredients(Recipe))
+	{
+		return false;
+	}
+
+	// 재료 소비
+	if (!ConsumeIngredients(Recipe))
+	{
+		return false;
+	}
 
 	CurrentRecipeID = RecipeID;
 	bIsCooking = true;
@@ -110,7 +127,11 @@ bool UHarmoniaCookingComponent::CanCookRecipe(FName RecipeID) const
 		return false;
 	}
 
-	// TODO: 재료 체크
+	// 재료 체크
+	if (!HasRequiredIngredients(Recipe))
+	{
+		return false;
+	}
 
 	return true;
 }
@@ -441,4 +462,67 @@ float UHarmoniaCookingComponent::CalculateCookingTime(float BaseTime) const
 	float TimeMultiplier = 1.0f / (1.0f + SpeedBonus / 100.0f);
 
 	return BaseTime * TimeMultiplier;
+}
+
+bool UHarmoniaCookingComponent::HasRequiredIngredients(const FCookingRecipe& Recipe) const
+{
+	if (!InventoryComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("HasRequiredIngredients: No inventory component found"));
+		return false;
+	}
+
+	for (const FCookingIngredient& Ingredient : Recipe.RequiredIngredients)
+	{
+		// 선택적 재료는 건너뜀
+		if (Ingredient.bOptional)
+		{
+			continue;
+		}
+
+		// FName을 FHarmoniaID로 변환 (IngredientID가 아이템 ID와 동일하다고 가정)
+		FHarmoniaID ItemID(Ingredient.IngredientID);
+
+		int32 TotalCount = InventoryComponent->GetTotalCount(ItemID);
+		if (TotalCount < Ingredient.Quantity)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool UHarmoniaCookingComponent::ConsumeIngredients(const FCookingRecipe& Recipe)
+{
+	if (!InventoryComponent)
+	{
+		return false;
+	}
+
+	// 먼저 모든 재료가 있는지 다시 확인 (동시성 문제 방지)
+	if (!HasRequiredIngredients(Recipe))
+	{
+		return false;
+	}
+
+	// 재료 소비
+	for (const FCookingIngredient& Ingredient : Recipe.RequiredIngredients)
+	{
+		if (Ingredient.bOptional)
+		{
+			continue;
+		}
+
+		FHarmoniaID ItemID(Ingredient.IngredientID);
+
+		// 인벤토리에서 재료 제거
+		if (!InventoryComponent->RemoveItem(ItemID, Ingredient.Quantity, -1.0f))
+		{
+			UE_LOG(LogTemp, Error, TEXT("ConsumeIngredients: Failed to remove ingredient %s"), *Ingredient.IngredientID.ToString());
+			return false;
+		}
+	}
+
+	return true;
 }
