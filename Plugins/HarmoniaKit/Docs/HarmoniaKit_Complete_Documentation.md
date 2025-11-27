@@ -1,7 +1,7 @@
 # HarmoniaKit 플러그인 - 통합 문서
 
 **Version:** 1.0  
-**Last Updated:** 2025-11-26  
+**Last Updated:** 2025-11-27  
 **Unreal Engine:** 5.7  
 **Framework:** Lyra Starter Game
 
@@ -30,6 +30,14 @@
 16. [API 레퍼런스](#16-api-레퍼런스)
 17. [데이터 드리븐 태그 시스템](#17-데이터-드리븐-태그-시스템)
 18. [Gameplay Ability 태그 설정 가이드](#18-gameplay-ability-태그-설정-가이드)
+19. [오브젝트 풀링 시스템](#19-오브젝트-풀링-시스템)
+20. [스킬 트리 시스템](#20-스킬-트리-시스템)
+21. [동적 난이도 조절 (DDA) 시스템](#21-동적-난이도-조절-dda-시스템)
+22. [미니맵 및 월드 마커 시스템](#22-미니맵-및-월드-마커-시스템)
+23. [버프/디버프 UI 시스템](#23-버프디버프-ui-시스템)
+24. [업데이트 레이트 최적화 시스템](#24-업데이트-레이트-최적화-시스템)
+25. [AI 스로틀링 시스템](#25-ai-스로틀링-시스템)
+26. [네트워크 최적화 시스템](#26-네트워크-최적화-시스템)
 
 ---
 
@@ -2282,6 +2290,967 @@ Note: 패시브 어빌리티로 항상 활성 상태
 
 ---
 
+## 19. 오브젝트 풀링 시스템
+
+고성능 Actor 풀링 시스템으로 메모리 할당/해제 오버헤드를 최소화합니다.
+
+### 19.1 주요 클래스
+
+| 클래스 | 설명 |
+|--------|------|
+| `UHarmoniaObjectPoolSubsystem` | WorldSubsystem으로 풀 관리 |
+| `IHarmoniaPoolableInterface` | 풀링 대상 Actor 인터페이스 |
+| `UHarmoniaObjectPoolConfigDataAsset` | 풀 설정 데이터 에셋 |
+
+### 19.2 빠른 시작
+
+#### Step 1: 데이터 에셋 생성
+Content Browser → 우클릭 → Miscellaneous → Data Asset → `HarmoniaObjectPoolConfigDataAsset` 선택
+
+#### Step 2: 풀 등록 (C++)
+```cpp
+UHarmoniaObjectPoolSubsystem* PoolSubsystem = GetWorld()->GetSubsystem<UHarmoniaObjectPoolSubsystem>();
+
+FHarmoniaPoolConfig Config;
+Config.ActorClass = AMyProjectile::StaticClass();
+Config.InitialSize = 50;
+Config.MaxSize = 200;
+Config.bCanGrow = true;
+Config.GrowthAmount = 10;
+Config.ShrinkTimeout = 60.0f;
+
+PoolSubsystem->RegisterPool(Config);
+```
+
+#### Step 3: Actor 획득/반환
+```cpp
+// 풀에서 가져오기
+AActor* Projectile = PoolSubsystem->AcquireActor(AMyProjectile::StaticClass(), SpawnTransform);
+
+// 사용 후 반환
+PoolSubsystem->ReleaseActor(Projectile);
+```
+
+#### Step 4: Poolable Interface 구현 (선택)
+```cpp
+class AMyProjectile : public AActor, public IHarmoniaPoolableInterface
+{
+    virtual void OnAcquiredFromPool_Implementation() override
+    {
+        // 활성화 시 초기화
+        SetActorEnableCollision(true);
+    }
+
+    virtual void OnReleasedToPool_Implementation() override
+    {
+        // 비활성화 시 정리
+        SetActorEnableCollision(false);
+        StopAllParticles();
+    }
+};
+```
+
+### 19.3 데이터 에셋 설정
+
+| 설정 | 설명 | 기본값 |
+|------|------|--------|
+| `bEnablePooling` | 전역 풀링 활성화 | true |
+| `bCollectStatistics` | 통계 수집 (디버그) | true |
+| `ShrinkCheckInterval` | 축소 검사 주기 (초) | 30.0 |
+| `bWarmUpOnStart` | 시작 시 예열 | true |
+| `HiddenLocation` | 비활성 Actor 위치 | (0, 0, -100000) |
+
+---
+
+## 20. 스킬 트리 시스템
+
+노드 기반 스킬 포인트 할당 시스템입니다.
+
+### 20.1 주요 클래스
+
+| 클래스 | 설명 |
+|--------|------|
+| `UHarmoniaSkillTreeSubsystem` | GameInstanceSubsystem으로 스킬 트리 관리 |
+| `UHarmoniaSkillTreeData` | 스킬 트리 구조 데이터 에셋 |
+
+### 20.2 노드 타입
+
+| 타입 | 설명 |
+|------|------|
+| `Passive` | 패시브 능력치 보너스 |
+| `Active` | 새로운 어빌리티 언락 |
+| `Upgrade` | 기존 어빌리티 강화 |
+| `Keystone` | 강력한 고유 효과 (트리당 1개만 선택 가능) |
+
+### 20.3 빠른 시작
+
+```cpp
+UHarmoniaSkillTreeSubsystem* SkillTreeSubsystem = 
+    GetGameInstance()->GetSubsystem<UHarmoniaSkillTreeSubsystem>();
+
+// 스킬 트리 데이터 로드
+SkillTreeSubsystem->LoadSkillTree(SkillTreeDataAsset);
+
+// 노드 언락
+if (SkillTreeSubsystem->CanUnlockNode(PlayerID, NodeID))
+{
+    SkillTreeSubsystem->UnlockNode(PlayerID, NodeID);
+}
+
+// 스킬 포인트 추가
+SkillTreeSubsystem->AddSkillPoints(PlayerID, 5);
+
+// 리스펙 (비용 지불)
+SkillTreeSubsystem->RespecSkillTree(PlayerID, RespecCost);
+```
+
+---
+
+## 21. 동적 난이도 조절 (DDA) 시스템
+
+플레이어 성능을 분석하여 자동으로 게임 난이도를 조절합니다.
+
+### 21.1 주요 클래스
+
+| 클래스 | 설명 |
+|--------|------|
+| `UHarmoniaDynamicDifficultySubsystem` | DDA 메인 서브시스템 |
+| `UHarmoniaDDAConfigDataAsset` | DDA 설정 데이터 에셋 |
+
+### 21.2 추적 메트릭
+
+| 메트릭 | 설명 |
+|--------|------|
+| 사망 횟수 | 총/시간당/연속 사망 |
+| 승리 시 체력 | 전투 종료 시 남은 HP% |
+| 패링/회피 성공률 | 방어 기술 숙련도 |
+| 명중률 | 공격 정확도 |
+| 피해 비율 | 준 피해 / 받은 피해 |
+
+### 21.3 DDA 프로필
+
+| 프로필 | 스킬 레이팅 | 설명 |
+|--------|-------------|------|
+| **Beginner** | 0-25 | 가장 쉬움, 높은 보조 |
+| **Learning** | 26-45 | 쉬움, 적당한 보조 |
+| **Standard** | 46-65 | 기본 (1.0x 배율) |
+| **Skilled** | 66-85 | 어려움, 적 강화 |
+| **Master** | 86-100 | 가장 어려움, 최대 도전 |
+
+### 21.4 빠른 시작
+
+#### Step 1: 데이터 에셋 생성
+Content Browser → 우클릭 → Data Asset → `HarmoniaDDAConfigDataAsset` 선택
+
+#### Step 2: 프로필 설정
+```cpp
+// 데이터 에셋에서 프로필 커스터마이즈
+DDAConfig->BeginnerProfile.Parameters.EnemyDamageMultiplier = 0.5f;
+DDAConfig->BeginnerProfile.Parameters.PlayerDefenseMultiplier = 1.5f;
+```
+
+#### Step 3: 서브시스템 초기화
+```cpp
+UHarmoniaDynamicDifficultySubsystem* DDASubsystem = 
+    GetGameInstance()->GetSubsystem<UHarmoniaDynamicDifficultySubsystem>();
+
+DDASubsystem->SetConfigDataAsset(DDAConfigAsset);
+```
+
+#### Step 4: 이벤트 기록
+```cpp
+// 플레이어 사망 시
+DDASubsystem->RecordPlayerDeath(PlayerID);
+
+// 전투 승리 시
+DDASubsystem->RecordVictory(PlayerID, RemainingHealthPercent, CombatDuration);
+
+// 패링 시도
+DDASubsystem->RecordParryAttempt(PlayerID, bSuccess, bPerfect);
+```
+
+#### Step 5: 현재 파라미터 적용
+```cpp
+FHarmoniaDDAParameters Params = DDASubsystem->GetCurrentParameters(PlayerID);
+
+// 적 스폰 시 적용
+Enemy->SetHealthMultiplier(Params.EnemyHealthMultiplier);
+Enemy->SetDamageMultiplier(Params.EnemyDamageMultiplier);
+```
+
+---
+
+## 22. 미니맵 및 월드 마커 시스템
+
+실시간 미니맵 렌더링과 3D 월드 마커를 제공합니다.
+
+### 22.1 주요 클래스
+
+| 클래스 | 설명 |
+|--------|------|
+| `UHarmoniaMinimapComponent` | Scene Capture 기반 미니맵 |
+| `UHarmoniaWorldMarkerComponent` | 3D→2D 월드 마커 |
+| `UHarmoniaUIConfigDataAsset` | UI 색상/설정 데이터 에셋 |
+
+### 22.2 미니맵 설정
+
+#### Step 1: 컴포넌트 추가
+```cpp
+UPROPERTY(VisibleAnywhere)
+UHarmoniaMinimapComponent* MinimapComp;
+
+// 생성자
+MinimapComp = CreateDefaultSubobject<UHarmoniaMinimapComponent>(TEXT("Minimap"));
+```
+
+#### Step 2: 아이콘 추가
+```cpp
+// Actor 추적 아이콘
+FGuid IconID = MinimapComp->AddActorIcon(Enemy, EnemyIconTexture, FLinearColor::Red, true);
+
+// 정적 위치 아이콘
+MinimapComp->AddLocationIcon(TreasureLocation, TreasureIcon, FLinearColor::Yellow);
+```
+
+#### Step 3: 줌 제어
+```cpp
+MinimapComp->ZoomIn(0.5f);
+MinimapComp->ZoomOut(0.5f);
+MinimapComp->SetZoomLevel(2.0f);
+```
+
+### 22.3 월드 마커 설정
+
+```cpp
+UPROPERTY(VisibleAnywhere)
+UHarmoniaWorldMarkerComponent* WorldMarkerComp;
+
+// 퀘스트 마커 추가
+FGuid MarkerID = WorldMarkerComp->AddQuestMarker(ObjectiveLocation, 
+    NSLOCTEXT("Quest", "Obj1", "마을로 이동"), true);
+
+// 액터 추적 마커
+WorldMarkerComp->AddActorMarker(TargetNPC, 
+    NSLOCTEXT("NPC", "Name", "상인"), ShopIcon, FLinearColor::Green);
+```
+
+### 22.4 데이터 에셋 색상 설정
+
+| 설정 그룹 | 항목 | 설명 |
+|-----------|------|------|
+| **MinimapColors** | `PlayerIconColor` | 플레이어 아이콘 |
+| | `AllyIconColor` | 아군 아이콘 |
+| | `EnemyIconColor` | 적 아이콘 |
+| | `QuestObjectiveColor` | 퀘스트 목표 |
+| **WorldMarkerColors** | `PrimaryQuestColor` | 주요 퀘스트 (골드) |
+| | `SecondaryQuestColor` | 보조 퀘스트 (실버) |
+| | `DangerColor` | 위험 지역 |
+
+---
+
+## 23. 버프/디버프 UI 시스템
+
+GAS(Gameplay Ability System)와 통합된 상태 효과 UI 컴포넌트입니다.
+
+### 23.1 주요 클래스
+
+| 클래스 | 설명 |
+|--------|------|
+| `UHarmoniaStatusEffectComponent` | 상태 효과 추적 컴포넌트 |
+| `UHarmoniaUIConfigDataAsset` | UI 색상/타이밍 설정 |
+
+### 23.2 효과 타입
+
+| 타입 | 색상 (기본) | 설명 |
+|------|------------|------|
+| `Buff` | 초록 | 긍정적 효과 |
+| `Debuff` | 빨강 | 부정적 효과 |
+| `Neutral` | 회색 | 중립 효과 |
+
+### 23.3 효과 카테고리
+
+| 카테고리 | 설명 |
+|----------|------|
+| `Combat` | 공격력, 방어력 등 |
+| `Movement` | 이동 속도, 점프 등 |
+| `Resource` | HP/MP 재생 등 |
+| `Control` | 스턴, 슬로우 등 |
+| `Elemental` | 화상, 빙결 등 |
+| `Special` | 특수 효과 |
+
+### 23.4 빠른 시작
+
+#### Step 1: 데이터 에셋 설정
+```cpp
+// UHarmoniaUIConfigDataAsset 생성 후 설정
+UIConfig->StatusEffectColors.BuffBorderColor = FLinearColor::Green;
+UIConfig->StatusEffectColors.DebuffBorderColor = FLinearColor::Red;
+UIConfig->StatusEffectTiming.ExpiringSoonThreshold = 5.0f;
+```
+
+#### Step 2: 컴포넌트 초기화
+```cpp
+UHarmoniaStatusEffectComponent* StatusComp = 
+    Character->FindComponentByClass<UHarmoniaStatusEffectComponent>();
+
+// 데이터 에셋 적용
+StatusComp->SetUIConfigDataAsset(UIConfigAsset);
+
+// GAS 연동 (자동으로 BeginPlay에서 시도)
+StatusComp->InitializeWithASC(AbilitySystemComponent);
+```
+
+#### Step 3: 효과 설정 등록
+```cpp
+FHarmoniaStatusEffectConfig PoisonConfig;
+PoisonConfig.EffectTag = FGameplayTag::RequestGameplayTag("Effect.Debuff.Poison");
+PoisonConfig.DisplayName = NSLOCTEXT("Effect", "Poison", "중독");
+PoisonConfig.EffectType = EHarmoniaStatusEffectType::Debuff;
+PoisonConfig.Category = EHarmoniaStatusEffectCategory::Elemental;
+PoisonConfig.Icon = PoisonIconTexture;
+
+StatusComp->RegisterEffectConfig(PoisonConfig);
+```
+
+#### Step 4: UI에서 효과 표시
+```cpp
+// 모든 버프 가져오기
+TArray<FHarmoniaStatusEffectUIData> Buffs = StatusComp->GetBuffs();
+
+// 모든 디버프 가져오기
+TArray<FHarmoniaStatusEffectUIData> Debuffs = StatusComp->GetDebuffs();
+
+// UI 위젯에서 렌더링
+for (const FHarmoniaStatusEffectUIData& Effect : Buffs)
+{
+    // Effect.IconTexture, Effect.RemainingDuration, Effect.StackCount 사용
+}
+```
+
+#### Step 5: 이벤트 바인딩
+```cpp
+StatusComp->OnEffectAdded.AddDynamic(this, &UMyWidget::HandleEffectAdded);
+StatusComp->OnEffectRemoved.AddDynamic(this, &UMyWidget::HandleEffectRemoved);
+StatusComp->OnEffectExpiring.AddDynamic(this, &UMyWidget::HandleEffectExpiring);
+```
+
+---
+
+## 24. 업데이트 레이트 최적화 시스템
+
+거리 및 가시성 기반 업데이트 주기 관리 시스템입니다.
+
+### 24.1 주요 클래스
+
+| 클래스 | 설명 |
+|--------|------|
+| `UHarmoniaUpdateRateSubsystem` | 월드 서브시스템 |
+| `FHarmoniaUpdateRateConfig` | 액터별 설정 |
+| `EHarmoniaUpdateTier` | 업데이트 티어 |
+
+### 24.2 업데이트 티어
+
+| 티어 | 거리 | Tick 간격 | 설명 |
+|------|------|----------|------|
+| `Critical` | 0-10m | 매 프레임 | 플레이어, 전투 중 |
+| `High` | 10-25m | 0.016s | 근거리 |
+| `Medium` | 25-50m | 0.033s | 중거리 |
+| `Low` | 50-100m | 0.1s | 원거리 |
+| `Minimal` | 100-200m | 0.5s | 최소 업데이트 |
+| `Dormant` | 200m+ | 중지 | 화면 밖 |
+
+### 24.3 빠른 시작
+
+```cpp
+// 액터 등록
+UHarmoniaUpdateRateSubsystem* Subsystem = GetWorld()->GetSubsystem<UHarmoniaUpdateRateSubsystem>();
+
+FHarmoniaUpdateRateConfig Config;
+Config.BasePriority = 5;
+Config.bUseVisibilityCheck = true;
+Config.bUseCombatBoost = true;
+
+Subsystem->RegisterActor(MyActor, Config);
+
+// 전투 상태 설정
+Subsystem->SetActorCombatState(MyActor, true);
+
+// 티어 변경 이벤트
+Subsystem->OnActorTierChanged.AddDynamic(this, &UMyClass::OnTierChanged);
+```
+
+---
+
+## 25. AI 스로틀링 시스템
+
+AI 업데이트 주기를 거리와 중요도에 따라 관리하여 CPU 사용량을 최적화합니다.
+
+### 25.1 주요 클래스
+
+| 클래스 | 설명 |
+|--------|------|
+| `UHarmoniaAIThrottleComponent` | AI 스로틀 컴포넌트 |
+| `FHarmoniaAIThrottleConfig` | 스로틀 설정 |
+| `EHarmoniaAIThrottleState` | 스로틀 상태 |
+
+### 25.2 스로틀 상태
+
+| 상태 | 설명 |
+|------|------|
+| `FullUpdate` | 모든 AI 시스템 활성 |
+| `ReducedUpdate` | 인지 간격 증가, 동작 정상 |
+| `MinimalUpdate` | 최소 인지, 단순화된 동작 |
+| `Suspended` | AI 일시 정지 |
+
+### 25.3 스로틀링 적용 대상
+
+| 시스템 | FullUpdate | ReducedUpdate | MinimalUpdate | Suspended |
+|--------|-----------|---------------|---------------|-----------|
+| **인지** | 0.1초 | 0.5초 | 2.0초 | 비활성 |
+| **행동 트리** | 매 프레임 | 0.1초 | 0.5초 | 일시 정지 |
+| **경로 탐색** | 0.2초 | 1.0초 | 1.0초 | 정지 |
+| **애니메이션** | 전체 | 렌더 시 | 몽타주만 | 비활성 |
+
+### 25.4 빠른 시작
+
+```cpp
+// 컴포넌트 추가 (블루프린트 또는 C++)
+UHarmoniaAIThrottleComponent* ThrottleComp = NewObject<UHarmoniaAIThrottleComponent>(AICharacter);
+AICharacter->AddOwnedComponent(ThrottleComp);
+
+// 설정
+ThrottleComp->Config.bAutoRegisterWithUpdateRate = true;
+ThrottleComp->Config.ReducedPerceptionInterval = 0.5f;
+ThrottleComp->Config.bPauseBTWhenSuspended = true;
+
+// 전투 상태 설정
+ThrottleComp->SetInCombat(true);
+
+// 일시적 부스트
+ThrottleComp->BoostUpdateRate(5.0f); // 5초간 FullUpdate
+
+// 상태 변경 이벤트
+ThrottleComp->OnThrottleStateChanged.AddDynamic(this, &UMyClass::OnStateChanged);
+```
+
+### 25.5 UpdateRateSubsystem 연동
+
+AI Throttle 컴포넌트는 자동으로 UpdateRateSubsystem과 연동됩니다:
+
+```cpp
+// 연동 설정
+ThrottleComp->Config.bAutoRegisterWithUpdateRate = true;
+ThrottleComp->Config.UpdateRateConfig.BasePriority = 3;
+ThrottleComp->Config.UpdateRateConfig.bUseVisibilityCheck = true;
+
+// UpdateRateSubsystem의 티어 변경이 자동으로 스로틀 상태에 반영됩니다.
+// Critical/High → FullUpdate
+// Medium → ReducedUpdate  
+// Low/Minimal → MinimalUpdate
+// Dormant → Suspended
+```
+
+---
+
+## 26. 네트워크 최적화 시스템
+
+거리 기반 네트워크 복제 주파수 관리 및 Dormancy 시스템입니다.
+
+### 26.1 주요 클래스
+
+| 클래스 | 설명 |
+|--------|------|
+| `UHarmoniaNetworkOptimizationComponent` | 네트워크 최적화 컴포넌트 |
+| `FHarmoniaNetOptConfig` | 최적화 설정 |
+| `EHarmoniaNetOptLevel` | 최적화 레벨 |
+
+### 26.2 최적화 레벨
+
+| 레벨 | 거리 | NetUpdateFrequency | 설명 |
+|------|------|-------------------|------|
+| `Critical` | 0-5m | 100Hz | 항상 복제 |
+| `High` | 5-15m | 60Hz | 고주파 업데이트 |
+| `Medium` | 15-30m | 30Hz | 중주파 업데이트 |
+| `Low` | 30-60m | 10Hz | 저주파 업데이트 |
+| `Minimal` | 60-100m | 5Hz | 최소 업데이트 |
+| `Dormant` | 100m+ | Dormancy | 휴면 상태 |
+
+### 26.3 기능
+
+| 기능 | 설명 |
+|------|------|
+| **NetUpdateFrequency 조절** | 거리에 따른 자동 조정 |
+| **Dormancy 관리** | 원거리 액터 휴면 처리 |
+| **전투 상태 인식** | 전투 시 업데이트 우선순위 상승 |
+| **Net Relevancy** | 커스텀 관련성 거리 설정 |
+
+### 26.4 빠른 시작
+
+```cpp
+// 컴포넌트 추가
+UHarmoniaNetworkOptimizationComponent* NetOptComp = 
+    NewObject<UHarmoniaNetworkOptimizationComponent>(Actor);
+Actor->AddOwnedComponent(NetOptComp);
+
+// 설정
+NetOptComp->Config.CriticalDistance = 500.0f;
+NetOptComp->Config.HighDistance = 1500.0f;
+NetOptComp->Config.bEnableDormancy = true;
+NetOptComp->Config.DormancyDelay = 2.0f;
+
+// 전투 상태 설정
+NetOptComp->SetInCombat(true);
+
+// 강제 네트워크 업데이트
+NetOptComp->ForceNetUpdate();
+
+// Dormancy 플러시
+NetOptComp->FlushNetDormancy();
+
+// 레벨 변경 이벤트
+NetOptComp->OnLevelChanged.AddDynamic(this, &UMyClass::OnNetOptLevelChanged);
+```
+
+### 26.5 Dormancy 설정
+
+```cpp
+// Dormancy 설정
+NetOptComp->Config.bEnableDormancy = true;
+NetOptComp->Config.DormancyMode = DORM_DormantPartial;
+NetOptComp->Config.DormancyDelay = 2.0f; // 조건 충족 후 2초 대기
+
+// Dormancy 모드 옵션:
+// - DORM_Awake: 항상 깨어 있음
+// - DORM_DormantAll: 모든 연결에 대해 휴면
+// - DORM_DormantPartial: 일부 연결에 대해 휴면
+// - DORM_Initial: 초기 휴면 상태
+```
+
+### 26.6 Net Relevancy 최적화
+
+```cpp
+// 커스텀 관련성 거리 설정
+NetOptComp->Config.bUseCustomRelevancy = true;
+NetOptComp->Config.NetCullDistanceSquared = 225000000.0f; // 15000 units squared
+
+// 이는 액터가 해당 거리 이상에서 클라이언트에 복제되지 않음을 의미합니다.
+```
+
+---
+
+## 27. 제작 시스템
+
+아이템 제작 및 레시피 관리 시스템입니다.
+
+### 27.1 주요 클래스
+
+| 클래스 | 설명 |
+|--------|------|
+| `UHarmoniaCraftingSubsystem` | 제작 시스템 서브시스템 |
+| `UHarmoniaCraftingConfigDataAsset` | 제작 설정 데이터 에셋 |
+| `FHarmoniaCraftingRecipe` | 제작 레시피 정의 |
+| `FHarmoniaCraftingIngredient` | 재료 정의 |
+| `EHarmoniaCraftingResult` | 제작 결과 열거형 |
+| `EHarmoniaCraftingStation` | 제작대 타입 |
+
+### 27.2 제작 결과
+
+| 결과 | 설명 |
+|------|------|
+| `Success` | 제작 성공 |
+| `HighQuality` | 고품질 제작 성공 |
+| `Failure` | 제작 실패 |
+| `InsufficientMaterials` | 재료 부족 |
+| `InsufficientCurrency` | 통화 부족 |
+| `InvalidRecipe` | 잘못된 레시피 |
+| `StationNotAvailable` | 제작대 없음 |
+
+### 27.3 기본 사용법
+
+```cpp
+// 서브시스템 가져오기
+UHarmoniaCraftingSubsystem* CraftingSystem = 
+    GameInstance->GetSubsystem<UHarmoniaCraftingSubsystem>();
+
+// 설정 적용
+UHarmoniaCraftingConfigDataAsset* Config = LoadObject<UHarmoniaCraftingConfigDataAsset>(...);
+CraftingSystem->SetConfigDataAsset(Config);
+
+// 레시피 등록
+FHarmoniaCraftingRecipe Recipe;
+Recipe.RecipeID = FName("IronSword");
+Recipe.DisplayName = NSLOCTEXT("Crafting", "IronSword", "철 검");
+Recipe.ResultItem = IronSwordClass;
+Recipe.BaseSuccessRate = 0.9f;
+Recipe.RequiredStation = EHarmoniaCraftingStation::Anvil;
+CraftingSystem->RegisterRecipe(Recipe);
+
+// 제작 시도
+FHarmoniaCraftingResult Result = CraftingSystem->AttemptCraft(PlayerController, FName("IronSword"));
+if (Result.ResultType == EHarmoniaCraftingResult::Success)
+{
+    // 제작 성공
+}
+```
+
+### 27.4 제작 요구사항 확인
+
+```cpp
+// 제작 가능 여부 확인
+FText FailReason;
+if (CraftingSystem->CanCraft(PlayerController, RecipeID, FailReason))
+{
+    // 제작 가능
+}
+
+// 특정 제작대에서 가능한 레시피 목록
+TArray<FHarmoniaCraftingRecipe> Recipes = 
+    CraftingSystem->GetRecipesForStation(EHarmoniaCraftingStation::Anvil);
+
+// 재료 확인
+TArray<FHarmoniaCraftingIngredient> Required = 
+    CraftingSystem->GetRequiredMaterials(RecipeID);
+```
+
+---
+
+## 28. 상점 및 거래 시스템
+
+NPC 상점, 구매/판매, 가격 시스템입니다.
+
+### 28.1 주요 클래스
+
+| 클래스 | 설명 |
+|--------|------|
+| `UHarmoniaShopSubsystem` | 상점 시스템 서브시스템 |
+| `UHarmoniaShopConfigDataAsset` | 상점 설정 데이터 에셋 |
+| `FHarmoniaShopDefinition` | 상점 정의 |
+| `FHarmoniaShopItem` | 상점 아이템 |
+| `EHarmoniaCurrencyType` | 통화 타입 |
+
+### 28.2 통화 타입
+
+| 타입 | 설명 |
+|------|------|
+| `Gold` | 기본 골드 |
+| `Premium` | 프리미엄 재화 |
+| `Honor` | 명예 포인트 |
+| `Guild` | 길드 포인트 |
+| `Event` | 이벤트 재화 |
+| `Custom` | 커스텀 재화 |
+
+### 28.3 기본 사용법
+
+```cpp
+// 서브시스템 가져오기
+UHarmoniaShopSubsystem* ShopSystem = 
+    GameInstance->GetSubsystem<UHarmoniaShopSubsystem>();
+
+// 상점 등록
+FHarmoniaShopDefinition Shop;
+Shop.ShopID = FName("BlacksmithShop");
+Shop.DisplayName = NSLOCTEXT("Shop", "Blacksmith", "대장장이");
+Shop.BuyPriceModifier = 1.0f;  // 100% 가격
+Shop.SellPriceModifier = 0.5f; // 50% 판매가
+ShopSystem->RegisterShop(Shop);
+
+// 상점 열기
+ShopSystem->OpenShop(PlayerController, FName("BlacksmithShop"));
+
+// 구매
+FHarmoniaTransactionResult BuyResult = 
+    ShopSystem->BuyItem(PlayerController, FName("BlacksmithShop"), ItemIndex, Quantity);
+
+// 판매
+FHarmoniaTransactionResult SellResult = 
+    ShopSystem->SellItem(PlayerController, FName("BlacksmithShop"), ItemID, Quantity);
+```
+
+### 28.4 가격 시스템
+
+```cpp
+// 기본 가격 조회
+int64 BasePrice = ShopSystem->GetItemPrice(ShopID, ItemIndex);
+
+// 수정된 구매가 조회 (상점 배율 적용)
+int64 BuyPrice = ShopSystem->GetBuyPrice(ShopID, ItemIndex);
+
+// 판매가 조회
+int64 SellPrice = ShopSystem->GetSellPrice(ShopID, ItemID);
+
+// 통화 잔액 확인
+int64 Gold = ShopSystem->GetCurrencyBalance(PlayerController, EHarmoniaCurrencyType::Gold);
+```
+
+---
+
+## 29. 업적 시스템
+
+업적 추적, 완료, 보상 시스템입니다.
+
+### 29.1 주요 클래스
+
+| 클래스 | 설명 |
+|--------|------|
+| `UHarmoniaAchievementSubsystem` | 업적 시스템 서브시스템 |
+| `UHarmoniaAchievementConfigDataAsset` | 업적 설정 데이터 에셋 |
+| `FHarmoniaAchievementDefinition` | 업적 정의 |
+| `FHarmoniaAchievementProgress` | 업적 진행도 |
+| `FHarmoniaAchievementMilestone` | 마일스톤 정의 |
+
+### 29.2 업적 타입
+
+| 타입 | 설명 |
+|------|------|
+| `Counter` | 카운터 기반 (몬스터 100마리 처치) |
+| `Flag` | 플래그 기반 (보스 처치 여부) |
+| `Collection` | 수집 기반 (아이템 세트 완성) |
+| `Progression` | 진행 기반 (스토리 진행) |
+
+### 29.3 기본 사용법
+
+```cpp
+// 서브시스템 가져오기
+UHarmoniaAchievementSubsystem* AchievementSystem = 
+    GameInstance->GetSubsystem<UHarmoniaAchievementSubsystem>();
+
+// 업적 정의 등록
+FHarmoniaAchievementDefinition Achievement;
+Achievement.AchievementID = FName("MonsterSlayer100");
+Achievement.DisplayName = NSLOCTEXT("Achievement", "MonsterSlayer100", "몬스터 슬레이어");
+Achievement.Description = NSLOCTEXT("Achievement", "MonsterSlayer100Desc", "몬스터 100마리 처치");
+Achievement.TargetValue = 100;
+Achievement.Type = EHarmoniaAchievementType::Counter;
+AchievementSystem->RegisterAchievement(Achievement);
+
+// 진행도 업데이트
+AchievementSystem->AddProgress(PlayerController, FName("MonsterSlayer100"), 1);
+
+// 진행도 확인
+FHarmoniaAchievementProgress Progress = 
+    AchievementSystem->GetProgress(PlayerController, FName("MonsterSlayer100"));
+
+// 완료 여부 확인
+bool bCompleted = AchievementSystem->IsCompleted(PlayerController, FName("MonsterSlayer100"));
+```
+
+### 29.4 이벤트
+
+```cpp
+// 업적 완료 이벤트
+AchievementSystem->OnAchievementUnlocked.AddDynamic(this, &UMyClass::OnAchievementCompleted);
+
+// 진행도 변경 이벤트
+AchievementSystem->OnProgressUpdated.AddDynamic(this, &UMyClass::OnProgressChanged);
+
+void UMyClass::OnAchievementCompleted(APlayerController* Player, FName AchievementID)
+{
+    // 업적 완료 처리
+}
+```
+
+---
+
+## 30. 랜덤 아이템 생성 시스템
+
+접두사/접미사, 희귀도, 스탯 롤링 시스템입니다.
+
+### 30.1 주요 클래스
+
+| 클래스 | 설명 |
+|--------|------|
+| `UHarmoniaRandomItemSubsystem` | 랜덤 아이템 생성 서브시스템 |
+| `UHarmoniaRandomItemConfigDataAsset` | 설정 데이터 에셋 |
+| `FHarmoniaGeneratedItem` | 생성된 아이템 |
+| `FHarmoniaAffixDefinition` | 접사 정의 |
+| `EHarmoniaItemRarity` | 아이템 희귀도 |
+
+### 30.2 희귀도
+
+| 희귀도 | 기본 가중치 | 접사 수 | 스탯 배율 |
+|--------|------------|---------|----------|
+| `Common` | 60 | 0-1 | 1.0x |
+| `Uncommon` | 25 | 1-2 | 1.1x |
+| `Rare` | 10 | 2-3 | 1.25x |
+| `Epic` | 4 | 3-4 | 1.5x |
+| `Legendary` | 1 | 4-5 | 2.0x |
+
+### 30.3 기본 사용법
+
+```cpp
+// 서브시스템 가져오기
+UHarmoniaRandomItemSubsystem* ItemGenSystem = 
+    GameInstance->GetSubsystem<UHarmoniaRandomItemSubsystem>();
+
+// 아이템 생성
+FHarmoniaItemGenerationParams Params;
+Params.ItemLevel = 50;
+Params.MinRarity = EHarmoniaItemRarity::Uncommon;
+Params.MagicFindBonus = 0.2f; // 20% 희귀 아이템 확률 증가
+
+FHarmoniaGeneratedItem Item = ItemGenSystem->GenerateItem(Params);
+
+// 특정 희귀도로 생성
+FHarmoniaGeneratedItem RareItem = 
+    ItemGenSystem->GenerateItemWithRarity(Params, EHarmoniaItemRarity::Rare);
+
+// 스탯 재롤링
+ItemGenSystem->RerollAffixes(Item);
+```
+
+### 30.4 접사 시스템
+
+```cpp
+// 접두사 등록
+FHarmoniaAffixDefinition Prefix;
+Prefix.AffixID = FName("Flaming");
+Prefix.DisplayName = NSLOCTEXT("Affix", "Flaming", "불타는");
+Prefix.bIsPrefix = true;
+Prefix.AttributeBonuses.Add(FGameplayTag::RequestGameplayTag("Attribute.Fire"), 50.0f);
+ItemGenSystem->RegisterAffix(Prefix);
+
+// 접미사 등록
+FHarmoniaAffixDefinition Suffix;
+Suffix.AffixID = FName("OfTheGiant");
+Suffix.DisplayName = NSLOCTEXT("Affix", "OfTheGiant", "거인의");
+Suffix.bIsPrefix = false;
+Suffix.AttributeBonuses.Add(FGameplayTag::RequestGameplayTag("Attribute.Strength"), 30.0f);
+ItemGenSystem->RegisterAffix(Suffix);
+```
+
+---
+
+## 31. 강화 및 마법부여 시스템
+
+아이템 강화, 마법부여, 소켓 시스템입니다.
+
+### 31.1 주요 클래스
+
+| 클래스 | 설명 |
+|--------|------|
+| `UHarmoniaEnhancementSubsystem` | 강화 시스템 서브시스템 |
+| `UHarmoniaEnhancementConfigDataAsset` | 설정 데이터 에셋 |
+| `FHarmoniaEnhancementLevel` | 강화 레벨 정의 |
+| `FHarmoniaEnchantmentDefinition` | 마법부여 정의 |
+| `FHarmoniaItemEnhancementState` | 아이템 강화 상태 |
+| `EHarmoniaEnhancementResult` | 강화 결과 열거형 |
+
+### 31.2 강화 결과
+
+| 결과 | 설명 |
+|------|------|
+| `Success` | 강화 성공 (+1 레벨) |
+| `GreatSuccess` | 대성공 (+2 레벨) |
+| `Failure` | 실패 (레벨 유지) |
+| `Downgrade` | 하락 (-1 레벨) |
+| `Destruction` | 파괴 (아이템 삭제) |
+| `Protected` | 보호됨 (보호권 소모) |
+
+### 31.3 강화 레벨별 확률 (기본값)
+
+| 레벨 | 성공률 | 대성공 | 하락 | 파괴 | 스탯 배율 |
+|------|--------|--------|------|------|----------|
+| +1~+5 | 95%~75% | 10% | 0% | 0% | +3%/레벨 |
+| +6~+10 | 70%~50% | 5% | 10%~30% | 0% | +5%/레벨 |
+| +11~+15 | 45%~25% | 2% | 30% | 5%~13% | +7%/레벨 |
+
+### 31.4 기본 사용법
+
+```cpp
+// 서브시스템 가져오기
+UHarmoniaEnhancementSubsystem* EnhanceSystem = 
+    GameInstance->GetSubsystem<UHarmoniaEnhancementSubsystem>();
+
+// 아이템 상태 초기화
+FGuid ItemID = FGuid::NewGuid();
+FHarmoniaItemEnhancementState State = EnhanceSystem->InitializeItemState(2); // 2개 소켓
+
+// 강화 시도
+FHarmoniaEnhancementSessionResult Result = 
+    EnhanceSystem->AttemptEnhance(PlayerController, ItemID, bUseProtection);
+
+switch (Result.Result)
+{
+    case EHarmoniaEnhancementResult::Success:
+        // 성공: +1 레벨
+        break;
+    case EHarmoniaEnhancementResult::Destruction:
+        // 파괴: 아이템 삭제 처리
+        break;
+}
+
+// 성공률 확인
+float SuccessRate = EnhanceSystem->GetSuccessRate(ItemID);
+
+// 필요 재료 확인
+TArray<FHarmoniaEnhancementMaterial> Materials = 
+    EnhanceSystem->GetRequiredMaterials(ItemID);
+```
+
+### 31.5 마법부여
+
+```cpp
+// 마법부여 등록
+FHarmoniaEnchantmentDefinition Enchant;
+Enchant.EnchantmentID = FName("FireEnchant");
+Enchant.DisplayName = NSLOCTEXT("Enchant", "Fire", "화염 부여");
+Enchant.Slot = EHarmoniaEnchantSlot::Primary;
+Enchant.AttributeBonuses.Add(FGameplayTag::RequestGameplayTag("Damage.Fire"), 25.0f);
+EnhanceSystem->RegisterEnchantment(Enchant);
+
+// 마법부여 적용
+EnhanceSystem->ApplyEnchantment(PlayerController, ItemID, FName("FireEnchant"), EHarmoniaEnchantSlot::Primary);
+
+// 마법부여 제거
+EnhanceSystem->RemoveEnchantment(PlayerController, ItemID, EHarmoniaEnchantSlot::Primary);
+
+// 적용된 마법부여 확인
+TMap<EHarmoniaEnchantSlot, FName> Applied = EnhanceSystem->GetAppliedEnchantments(ItemID);
+```
+
+### 31.6 소켓 및 보석
+
+```cpp
+// 소켓 추가
+EnhanceSystem->AddSocket(PlayerController, ItemID);
+
+// 보석 삽입
+FGameplayTag GemTag = FGameplayTag::RequestGameplayTag("Gem.Ruby");
+EnhanceSystem->InsertGem(PlayerController, ItemID, 0, GemTag); // 소켓 인덱스 0
+
+// 보석 제거
+EnhanceSystem->RemoveGem(PlayerController, ItemID, 0);
+```
+
+### 31.7 천장(Pity) 시스템
+
+```cpp
+// 천장 카운터 확인
+int32 PityCounter = EnhanceSystem->GetPityCounter(ItemID);
+
+// 천장 임계값 확인
+int32 Threshold = EnhanceSystem->GetPityThreshold(CurrentLevel);
+
+// 천장 활성화 여부
+bool bPityActive = EnhanceSystem->IsPityActive(ItemID);
+// 천장 활성화 시 100% 성공 보장
+```
+
+### 31.8 보호권
+
+```cpp
+// 보호권 적용
+EnhanceSystem->ApplyProtection(PlayerController, ItemID, EHarmoniaProtectionType::AntiDowngrade);
+
+// 보호권 개수 확인
+int32 ProtectionCount = EnhanceSystem->GetProtectionCount(ItemID);
+
+// 강화 시도 (보호권 사용)
+EnhanceSystem->AttemptEnhance(PlayerController, ItemID, true); // bUseProtection = true
+```
+
+---
+
 ## 📝 라이선스
 
 Copyright © 2025 Snow Game Studio.  
@@ -2290,4 +3259,4 @@ All rights reserved.
 ---
 
 **제작:** Snow Game Studio  
-**최종 업데이트:** 2025-11-26
+**최종 업데이트:** 2025-01-15

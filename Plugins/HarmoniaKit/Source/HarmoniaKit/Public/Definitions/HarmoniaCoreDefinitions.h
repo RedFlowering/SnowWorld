@@ -36,6 +36,16 @@ struct HARMONIAKIT_API FHarmoniaID
         return Id.ToString();
     }
 
+    FORCEINLINE FName GetID() const
+    {
+        return Id;
+    }
+
+    FORCEINLINE bool IsNone() const
+    {
+        return Id == NAME_None;
+    }
+
     friend inline uint32 GetTypeHash(const FHarmoniaID& Key)
     {
         return GetTypeHash(Key.Id);

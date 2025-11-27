@@ -66,10 +66,11 @@ struct FHarmoniaLeaderboardDefinition : public FTableRowBase
 };
 
 /**
- * Leaderboard entry structure
+ * Leaderboard entry structure (local version)
+ * Note: For cross-platform entries, use FHarmoniaLeaderboardEntry in HarmoniaGameServiceDefinitions
  */
 USTRUCT(BlueprintType)
-struct FHarmoniaLeaderboardEntry
+struct FHarmoniaLocalLeaderboardEntry
 {
 	GENERATED_BODY()
 
@@ -89,10 +90,11 @@ struct FHarmoniaLeaderboardEntry
 	UPROPERTY(BlueprintReadOnly, Category = "Leaderboard")
 	FString ExtraData;
 
-	FHarmoniaLeaderboardEntry()
+	FHarmoniaLocalLeaderboardEntry()
 		: Rank(0)
 		, PlayerName()
 		, Score(0)
 		, ExtraData()
 	{}
 };
+

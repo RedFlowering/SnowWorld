@@ -25,7 +25,41 @@ enum class EEnhancementResult : uint8
 	GreatSuccess		UMETA(DisplayName = "Great Success"),		// Enhancement succeeded with bonus
 	Destruction			UMETA(DisplayName = "Destruction"),			// Enhancement failed, item destroyed
 	LevelDown			UMETA(DisplayName = "Level Down"),			// Enhancement failed, level decreased
+	Downgrade			UMETA(DisplayName = "Downgrade"),			// Alias for LevelDown
+	Protected			UMETA(DisplayName = "Protected"),			// Failed but protected
+	InvalidItem			UMETA(DisplayName = "Invalid Item"),		// Item invalid or not found
+	InsufficientMaterials	UMETA(DisplayName = "Insufficient Materials"),	// Not enough materials
+	InsufficientCurrency	UMETA(DisplayName = "Insufficient Currency"),	// Not enough currency
 	Cancelled			UMETA(DisplayName = "Cancelled")			// Enhancement cancelled by user
+};
+
+/**
+ * Enchant slot type
+ */
+UENUM(BlueprintType)
+enum class EEnchantSlot : uint8
+{
+	None				UMETA(DisplayName = "None"),
+	Weapon				UMETA(DisplayName = "Weapon"),
+	Armor				UMETA(DisplayName = "Armor"),
+	Accessory			UMETA(DisplayName = "Accessory"),
+	Universal			UMETA(DisplayName = "Universal"),
+	Socket1				UMETA(DisplayName = "Socket 1"),
+	Socket2				UMETA(DisplayName = "Socket 2"),
+	Socket3				UMETA(DisplayName = "Socket 3")
+};
+
+/**
+ * Protection type (for enhancement failure protection)
+ */
+UENUM(BlueprintType)
+enum class EProtectionType : uint8
+{
+	None				UMETA(DisplayName = "None"),
+	PreventDestruction	UMETA(DisplayName = "Prevent Destruction"),
+	PreventLevelDown	UMETA(DisplayName = "Prevent Level Down"),
+	IncreaseSuccess		UMETA(DisplayName = "Increase Success Rate"),
+	GuaranteeSuccess	UMETA(DisplayName = "Guarantee Success")
 };
 
 /**
@@ -593,6 +627,22 @@ struct FEnhancedItemData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enhancement|Durability")
 	float MaxDurability = 100.0f;
 
+	/** Applied enchantments by slot */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enhancement|Enchantments")
+	TMap<EEnchantSlot, FName> AppliedEnchantments;
+
+	/** Protection count */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enhancement|Protection")
+	int32 ProtectionCount = 0;
+
+	/** Pity counter for enhancement */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enhancement|Pity")
+	int32 PityCounter = 0;
+
+	/** Failed enhancement attempts */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enhancement|Stats")
+	int32 FailedAttempts = 0;
+
 	FEnhancedItemData()
 		: ItemGUID()
 		, ItemId()
@@ -600,6 +650,9 @@ struct FEnhancedItemData
 		, TranscendenceTier(ETranscendenceTier::None)
 		, CurrentDurability(100.0f)
 		, MaxDurability(100.0f)
+		, ProtectionCount(0)
+		, PityCounter(0)
+		, FailedAttempts(0)
 	{}
 
 	/** Get socket count */
@@ -665,6 +718,155 @@ struct FEnhancementSession
 		, TargetLevel(0)
 		, StartTime(FDateTime::Now())
 	{}
+};
+
+/**
+ * Enchantment definition (for adding magical properties)
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FEnchantmentDefinition : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** Enchantment ID */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enchantment")
+	FName EnchantmentID;
+
+	/** Display name */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enchantment")
+	FText DisplayName;
+
+	/** Description */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enchantment")
+	FText Description;
+
+	/** Applicable slot */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enchantment")
+	EEnchantSlot Slot = EEnchantSlot::Universal;
+
+	/** Stat modifiers granted */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enchantment")
+	TArray<FEquipmentStatModifier> StatModifiers;
+
+	/** Exclusive with (cannot be combined with these enchantments) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enchantment")
+	TArray<FName> ExclusiveWith;
+
+	/** Required item level */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enchantment")
+	int32 RequiredItemLevel = 1;
+
+	/** Application cost */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enchantment")
+	int64 ApplicationCost = 100;
+
+	/** Is this a permanent enchantment? */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enchantment")
+	bool bPermanent = false;
+
+	FEnchantmentDefinition()
+		: EnchantmentID(NAME_None)
+		, Slot(EEnchantSlot::Universal)
+		, RequiredItemLevel(1)
+		, ApplicationCost(100)
+		, bPermanent(false)
+	{}
+
+	/** Get attribute bonuses (alias for StatModifiers) */
+	const TArray<FEquipmentStatModifier>& GetAttributeBonuses() const { return StatModifiers; }
+};
+
+/**
+ * Enhancement material requirement
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FEnhancementMaterial
+{
+	GENERATED_BODY()
+
+	/** Item ID required */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Material")
+	FHarmoniaID ItemId;
+
+	/** Quantity required */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Material")
+	int32 Quantity = 1;
+
+	/** Is this optional (increases success rate)? */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Material")
+	bool bOptional = false;
+
+	/** Success rate bonus if used (for optional materials) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Material", meta = (EditCondition = "bOptional"))
+	float SuccessRateBonus = 0.0f;
+
+	FEnhancementMaterial()
+		: ItemId()
+		, Quantity(1)
+		, bOptional(false)
+		, SuccessRateBonus(0.0f)
+	{}
+};
+
+/**
+ * Enhancement session result (for subsystem callbacks)
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaEnhancementSessionResult
+{
+	GENERATED_BODY()
+
+	/** The item that was enhanced */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	FGuid ItemGUID;
+
+	/** Previous enhancement level */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	int32 PreviousLevel = 0;
+
+	/** Target enhancement level */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	int32 TargetLevel = 0;
+
+	/** Resulting enhancement level / New level after attempt */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	int32 ResultingLevel = 0;
+
+	/** Alias for ResultingLevel */
+	int32 NewLevel = 0;
+
+	/** Result of enhancement attempt */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	EEnhancementResult Result = EEnhancementResult::Failure;
+
+	/** Was protection item used? */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	bool bUsedProtection = false;
+
+	/** Alias for bUsedProtection */
+	bool bProtectionUsed = false;
+
+	/** Was item destroyed? */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	bool bItemDestroyed = false;
+
+	/** Cost paid for enhancement */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	int64 CostPaid = 0;
+
+	/** Currency spent */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	int64 CurrencySpent = 0;
+
+	/** Error message if failed */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	FText ErrorMessage;
+
+	/** Consumed materials */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	TMap<FHarmoniaID, int32> ConsumedMaterials;
+
+	FHarmoniaEnhancementSessionResult() = default;
 };
 
 // ============================================================================

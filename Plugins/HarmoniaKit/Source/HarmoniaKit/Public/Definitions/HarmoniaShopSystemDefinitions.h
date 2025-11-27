@@ -1,0 +1,393 @@
+// Copyright 2025 Snow Game Studio.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Engine/DataTable.h"
+#include "GameplayTagContainer.h"
+#include "GameFramework/PlayerController.h"
+#include "Definitions/HarmoniaCoreDefinitions.h"
+#include "Definitions/HarmoniaItemSystemDefinitions.h"
+#include "HarmoniaShopSystemDefinitions.generated.h"
+
+/**
+ * Currency type
+ */
+UENUM(BlueprintType)
+enum class ECurrencyType : uint8
+{
+	Gold			UMETA(DisplayName = "Gold"),			// 기본 골드
+	Premium			UMETA(DisplayName = "Premium"),			// 프리미엄 재화 (캐시)
+	Honor			UMETA(DisplayName = "Honor"),			// 명예 포인트
+	Arena			UMETA(DisplayName = "Arena"),			// 아레나 포인트
+	Guild			UMETA(DisplayName = "Guild"),			// 길드 포인트
+	Event			UMETA(DisplayName = "Event"),			// 이벤트 재화
+	Reputation		UMETA(DisplayName = "Reputation"),		// 평판 포인트
+	Custom			UMETA(DisplayName = "Custom"),			// 커스텀 (태그로 지정)
+	MAX				UMETA(Hidden)
+};
+
+// Alias for naming consistency with subsystems
+using EHarmoniaCurrencyType = ECurrencyType;
+
+/**
+ * Shop type
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaShopType : uint8
+{
+	General			UMETA(DisplayName = "General"),			// 잡화점
+	Weapon			UMETA(DisplayName = "Weapon"),			// 무기상점
+	Armor			UMETA(DisplayName = "Armor"),			// 방어구상점
+	Consumable		UMETA(DisplayName = "Consumable"),		// 소비품
+	Material		UMETA(DisplayName = "Material"),		// 재료상점
+	Premium			UMETA(DisplayName = "Premium"),			// 프리미엄 샵
+	Guild			UMETA(DisplayName = "Guild"),			// 길드 상점
+	Event			UMETA(DisplayName = "Event"),			// 이벤트 상점
+	Auction			UMETA(DisplayName = "Auction"),			// 경매장
+	MAX				UMETA(Hidden)
+};
+
+/**
+ * Shop item availability
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaShopItemAvailability : uint8
+{
+	Available			UMETA(DisplayName = "Available"),
+	SoldOut				UMETA(DisplayName = "Sold Out"),
+	LevelLocked			UMETA(DisplayName = "Level Locked"),
+	ReputationLocked	UMETA(DisplayName = "Reputation Locked"),
+	QuestLocked			UMETA(DisplayName = "Quest Locked"),
+	TimeLocked			UMETA(DisplayName = "Time Locked"),
+	PurchaseLimitReached	UMETA(DisplayName = "Purchase Limit Reached"),
+	NotUnlocked			UMETA(DisplayName = "Not Unlocked"),
+	NotEnoughCurrency	UMETA(DisplayName = "Not Enough Currency"),
+	MAX					UMETA(Hidden)
+};
+
+/**
+ * Transaction type
+ */
+UENUM(BlueprintType)
+enum class ETransactionType : uint8
+{
+	Buy				UMETA(DisplayName = "Buy"),				// 구매
+	Sell			UMETA(DisplayName = "Sell"),			// 판매
+	Trade			UMETA(DisplayName = "Trade"),			// 교환
+	Refund			UMETA(DisplayName = "Refund"),			// 환불
+	MAX				UMETA(Hidden)
+};
+
+/**
+ * Transaction result
+ */
+UENUM(BlueprintType)
+enum class ETransactionResult : uint8
+{
+	Success			UMETA(DisplayName = "Success"),
+	InsufficientFunds	UMETA(DisplayName = "Insufficient Funds"),
+	InsufficientStock	UMETA(DisplayName = "Insufficient Stock"),
+	InventoryFull	UMETA(DisplayName = "Inventory Full"),
+	ItemNotFound	UMETA(DisplayName = "Item Not Found"),
+	ShopNotFound	UMETA(DisplayName = "Shop Not Found"),
+	Cancelled		UMETA(DisplayName = "Cancelled"),
+	Failed			UMETA(DisplayName = "Failed"),
+	MAX				UMETA(Hidden)
+};
+
+/**
+ * Currency cost structure
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaCurrencyCost
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cost")
+	ECurrencyType CurrencyType = ECurrencyType::Gold;
+
+	// Alias for compatibility - returns CurrencyType
+	ECurrencyType GetType() const { return CurrencyType; }
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cost")
+	int64 Amount = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cost")
+	FGameplayTag CustomCurrencyTag;
+
+	FHarmoniaCurrencyCost() = default;
+	FHarmoniaCurrencyCost(ECurrencyType InType, int64 InAmount)
+		: CurrencyType(InType), Amount(InAmount) {}
+};
+
+/**
+ * Currency definition
+ */
+USTRUCT(BlueprintType)
+struct FCurrencyDefinition : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Currency")
+	ECurrencyType Type = ECurrencyType::Gold;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Currency")
+	FText DisplayName = FText();
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Currency")
+	TSoftObjectPtr<UTexture2D> Icon = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Currency")
+	int64 MaxAmount = 999999999;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Currency")
+	FGameplayTag CurrencyTag;
+};
+
+/**
+ * Shop item data
+ */
+USTRUCT(BlueprintType)
+struct FShopItemData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
+	FName ShopItemID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
+	FHarmoniaID ItemId = FHarmoniaID();
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
+	FGameplayTag ItemTag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pricing")
+	ECurrencyType Currency = ECurrencyType::Gold;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pricing")
+	int64 BasePrice = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pricing")
+	float BuyPriceModifier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pricing")
+	float SellPriceModifier = 0.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pricing")
+	TArray<FHarmoniaCurrencyCost> BuyPrice;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pricing")
+	TArray<FHarmoniaCurrencyCost> SellPrice;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stock")
+	int32 Stock = -1;  // -1 = unlimited
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stock")
+	int32 MaxStock = -1;  // -1 = unlimited, used for restock
+
+	UPROPERTY(BlueprintReadWrite, Category = "Stock")
+	int32 CurrentStock = -1;  // Runtime current stock
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stock")
+	bool bRestockable = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stock")
+	float RestockIntervalSeconds = 3600.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stock")
+	float RestockTime = 3600.0f;  // Alias for RestockIntervalSeconds
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Requirements")
+	int32 RequiredPlayerLevel = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Requirements")
+	int32 PurchaseLimitPerPlayer = -1;  // -1 = unlimited
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Requirements")
+	FGameplayTagContainer RequiredTags;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sale")
+	bool bIsOnSale = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sale", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float SaleDiscount = 0.0f;
+};
+
+/**
+ * Shop definition
+ */
+USTRUCT(BlueprintType)
+struct FShopDefinition : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop")
+	FName ShopID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop")
+	EHarmoniaShopType ShopType = EHarmoniaShopType::General;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop")
+	FText DisplayName = FText();
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop")
+	FText Description = FText();
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop")
+	TSoftObjectPtr<UTexture2D> ShopIcon = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop")
+	FGameplayTagContainer ShopTags;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop|Modifiers")
+	float GlobalBuyModifier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop|Modifiers")
+	float GlobalSellModifier = 0.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop|Modifiers")
+	float BuyPriceModifier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop|Modifiers")
+	float SellPriceModifier = 0.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop|Items")
+	TArray<FShopItemData> Items;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop|Requirements")
+	int32 RequiredPlayerLevel = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop|Requirements")
+	FGameplayTagContainer RequiredTags;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop|State")
+	bool bIsOpen = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop|State")
+	bool bCanSellItems = true;
+};
+
+/**
+ * Trade offer item
+ */
+USTRUCT(BlueprintType)
+struct FTradeOfferItem
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trade")
+	FHarmoniaID ItemId = FHarmoniaID();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trade")
+	int32 Quantity = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trade")
+	ECurrencyType Currency = ECurrencyType::Gold;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trade")
+	int64 CurrencyAmount = 0;
+};
+
+/**
+ * Player-to-player trade offer
+ */
+USTRUCT(BlueprintType)
+struct FTradeOffer
+{
+	GENERATED_BODY()
+
+	FTradeOffer()
+	{
+		TradeID = FGuid::NewGuid();
+	}
+
+	UPROPERTY(BlueprintReadOnly, Category = "Trade")
+	FGuid TradeID;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Trade")
+	FGuid InitiatorPlayerId;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Trade")
+	FGuid TargetPlayerId;
+
+	// Player controller weak references for runtime use
+	TWeakObjectPtr<APlayerController> Initiator;
+	TWeakObjectPtr<APlayerController> Target;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trade")
+	TArray<FTradeOfferItem> InitiatorItems;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trade")
+	TArray<FTradeOfferItem> TargetItems;
+
+	// Currency arrays for trade
+	TArray<FHarmoniaCurrencyCost> InitiatorCurrency;
+	TArray<FHarmoniaCurrencyCost> TargetCurrency;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Trade")
+	bool bInitiatorConfirmed = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Trade")
+	bool bTargetConfirmed = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Trade")
+	float ExpirationTime = 0.0f;
+};
+
+/**
+ * Transaction record
+ */
+USTRUCT(BlueprintType)
+struct FTransactionRecord
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "Transaction")
+	FGuid TransactionId;
+
+	// Player unique ID (runtime only, not exposed to blueprint)
+	int32 PlayerID = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Transaction")
+	FName ShopID;  // Shop identifier
+
+	UPROPERTY(BlueprintReadOnly, Category = "Transaction")
+	FGameplayTag ItemTag;  // Item tag for transaction
+
+	UPROPERTY(BlueprintReadOnly, Category = "Transaction")
+	ETransactionType Type = ETransactionType::Buy;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Transaction")
+	ETransactionResult Result = ETransactionResult::Success;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Transaction")
+	FHarmoniaID ItemId = FHarmoniaID();
+
+	UPROPERTY(BlueprintReadOnly, Category = "Transaction")
+	int32 Quantity = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Transaction")
+	ECurrencyType CurrencyType = ECurrencyType::Gold;
+
+	// Multi-currency support (runtime only)
+	TArray<FHarmoniaCurrencyCost> Currency;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Transaction")
+	int64 Amount = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Transaction")
+	bool bWasPurchase = true;  // true = buy, false = sell
+
+	UPROPERTY(BlueprintReadOnly, Category = "Transaction")
+	FDateTime Timestamp;
+};
+
+// ============================================================================
+// Type aliases for consistent naming with subsystems
+// ============================================================================
+
+using FHarmoniaShopItem = FShopItemData;
+using FHarmoniaShopDefinition = FShopDefinition;
+using FHarmoniaTradeOffer = FTradeOffer;
+using FHarmoniaTransactionRecord = FTransactionRecord;

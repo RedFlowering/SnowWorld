@@ -58,6 +58,37 @@ enum class ECraftingStationType : uint8
 };
 
 /**
+ * Recipe difficulty level
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaRecipeDifficulty : uint8
+{
+	Trivial			UMETA(DisplayName = "Trivial"),			// 매우 쉬움
+	Easy			UMETA(DisplayName = "Easy"),			// 쉬움
+	Normal			UMETA(DisplayName = "Normal"),			// 보통
+	Hard			UMETA(DisplayName = "Hard"),			// 어려움
+	Expert			UMETA(DisplayName = "Expert"),			// 전문가
+	Master			UMETA(DisplayName = "Master"),			// 마스터
+	Legendary		UMETA(DisplayName = "Legendary"),		// 전설
+	MAX				UMETA(Hidden)
+};
+
+/**
+ * Crafting result type (renamed for consistency with subsystem)
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaCraftingResult : uint8
+{
+	Success				UMETA(DisplayName = "Success"),				// 제작 성공
+	Failure				UMETA(DisplayName = "Failure"),				// 제작 실패
+	CriticalSuccess		UMETA(DisplayName = "Critical Success"),	// 대성공 (추가 보상 등)
+	Cancelled			UMETA(DisplayName = "Cancelled"),			// 취소됨
+	InvalidRecipe		UMETA(DisplayName = "Invalid Recipe"),		// 잘못된 레시피
+	InsufficientMaterials	UMETA(DisplayName = "Insufficient Materials"),	// 재료 부족
+	MAX					UMETA(Hidden)
+};
+
+/**
  * Item grade configuration (DataTable row)
  * Configures grade properties like color, stat multipliers, etc.
  */
@@ -159,6 +190,38 @@ struct FCraftingMaterial
 };
 
 /**
+ * Crafting output item (for subsystem use)
+ */
+USTRUCT(BlueprintType)
+struct FHarmoniaCraftingOutput
+{
+	GENERATED_BODY()
+
+	// Output item ID
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crafting")
+	FHarmoniaID ItemId = FHarmoniaID();
+
+	// Base quantity
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crafting")
+	int32 BaseQuantity = 1;
+
+	// Chance to produce this output (0.0 - 1.0)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crafting", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float Chance = 1.0f;
+
+	// Item grade (if applicable)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crafting")
+	EItemGrade Grade = EItemGrade::Common;
+
+	FHarmoniaCraftingOutput()
+		: ItemId()
+		, BaseQuantity(1)
+		, Chance(1.0f)
+		, Grade(EItemGrade::Common)
+	{}
+};
+
+/**
  * Crafting result item with probability
  */
 USTRUCT(BlueprintType)
@@ -235,6 +298,10 @@ struct FCraftingRecipeData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Recipe|Success", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float BaseSuccessChance = 1.0f;
 
+	// Base success rate alias
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Recipe|Success", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float BaseSuccessRate = 1.0f;
+
 	// Critical success probability (for bonus rewards) (0.0 - 1.0)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Recipe|Success", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float CriticalSuccessChance = 0.0f;
@@ -271,9 +338,37 @@ struct FCraftingRecipeData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Recipe|Rewards")
 	int32 ExperienceReward = 0;
 
+	// Alias for ExperienceReward for consistency
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Recipe|Rewards")
+	float ExperienceGain = 0.0f;
+
 	// Whether player needs to learn this recipe first
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Recipe|Requirements")
 	bool bRequiresLearning = false;
+
+	// Whether this recipe is unlocked by default
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Recipe|Requirements")
+	bool bUnlockedByDefault = true;
+
+	// Prerequisite recipes that must be unlocked first
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Recipe|Requirements")
+	TArray<FName> PrerequisiteRecipes;
+
+	// Single category tag (for simpler categorization)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Recipe")
+	FGameplayTag CategoryTag;
+
+	// Crafting time alias for CastingTime
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Recipe|Crafting", meta = (ClampMin = "0.0"))
+	float CraftingTime = 3.0f;
+
+	// Recipe difficulty
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Recipe|Crafting")
+	EHarmoniaRecipeDifficulty Difficulty = EHarmoniaRecipeDifficulty::Normal;
+
+	// Output items (alias for SuccessResults with different structure)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Recipe|Results")
+	TArray<FHarmoniaCraftingOutput> Outputs;
 };
 
 /**
@@ -300,6 +395,46 @@ struct FCraftingCategoryData : public FTableRowBase
 	// Sort order
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Category")
 	int32 SortOrder = 0;
+
+	// Skill level (for player skill tracking)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Category")
+	int32 Level = 1;
+
+	// Current experience points
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Category")
+	float Experience = 0.0f;
+
+	// Current experience for level up tracking
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Category")
+	float CurrentExperience = 0.0f;
+
+	// Experience needed for next level
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Category")
+	float ExperienceToNextLevel = 100.0f;
+
+	// Crafting station type
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Category")
+	ECraftingStationType Station = ECraftingStationType::None;
+
+	// Crafting speed multiplier based on skill
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Category")
+	float SpeedMultiplier = 1.0f;
+
+	// Success rate bonus based on skill
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Category")
+	float SuccessRateBonus = 0.0f;
+
+	// Bonus success rate alias
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Category")
+	float BonusSuccessRate = 0.0f;
+
+	// Quality bonus based on skill
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Category")
+	float QualityBonus = 0.0f;
+
+	// Bonus quality alias
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Category")
+	float BonusQuality = 0.0f;
 };
 
 /**
@@ -365,4 +500,50 @@ struct FLearnedRecipeSaveData
 	FLearnedRecipeSaveData()
 		: LearnedRecipes()
 	{}
+};
+
+/**
+ * Crafting session result (for subsystem callbacks)
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaCraftingSessionResult
+{
+	GENERATED_BODY()
+
+	/** Recipe that was crafted */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	FHarmoniaID RecipeId;
+
+	/** Result of crafting attempt */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	EHarmoniaCraftingResult Result = EHarmoniaCraftingResult::Failure;
+
+	/** Output item IDs (if successful) */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	TArray<FHarmoniaID> OutputItems;
+
+	/** Produced items (alias) */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	TArray<FCraftingResultItem> ProducedItems;
+
+	/** Crafting quality (0.0 - 1.0) */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	float Quality = 1.0f;
+
+	/** Experience gained */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	int32 ExperienceGained = 0;
+
+	/** Error message if failed */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	FText ErrorMessage;
+
+	/** Crafting time taken */
+	UPROPERTY(BlueprintReadOnly, Category = "Result")
+	float CraftingTime = 0.0f;
+
+	// Helper function to get RecipeID as FName
+	FName GetRecipeID() const { return RecipeId.GetID(); }
+
+	FHarmoniaCraftingSessionResult() = default;
 };

@@ -16,9 +16,9 @@ class UAnimMontage;
 /**
  * Delegate for crafting events
  */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCraftingStarted, FHarmoniaID, RecipeId, float, CastingTime);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnComponentCraftingStarted, FHarmoniaID, RecipeId, float, CastingTime);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnCraftingProgress, FHarmoniaID, RecipeId, float, Progress, float, RemainingTime);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnCraftingCompleted, FHarmoniaID, RecipeId, ECraftingResult, Result, const TArray<FCraftingResultItem>&, ResultItems);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnComponentCraftingCompleted, FHarmoniaID, RecipeId, ECraftingResult, Result, const TArray<FCraftingResultItem>&, ResultItems);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCraftingCancelled, FHarmoniaID, RecipeId, float, ProgressLost);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnRecipeLearned, FHarmoniaID, RecipeId, FText, RecipeName);
 
@@ -387,7 +387,7 @@ protected:
 public:
 	/** Called when crafting starts */
 	UPROPERTY(BlueprintAssignable, Category = "Crafting|Events")
-	FOnCraftingStarted OnCraftingStarted;
+	FOnComponentCraftingStarted OnCraftingStarted;
 
 	/** Called during crafting progress (can be used for UI updates) */
 	UPROPERTY(BlueprintAssignable, Category = "Crafting|Events")
@@ -395,7 +395,7 @@ public:
 
 	/** Called when crafting completes (success or failure) */
 	UPROPERTY(BlueprintAssignable, Category = "Crafting|Events")
-	FOnCraftingCompleted OnCraftingCompleted;
+	FOnComponentCraftingCompleted OnCraftingCompleted;
 
 	/** Called when crafting is cancelled */
 	UPROPERTY(BlueprintAssignable, Category = "Crafting|Events")

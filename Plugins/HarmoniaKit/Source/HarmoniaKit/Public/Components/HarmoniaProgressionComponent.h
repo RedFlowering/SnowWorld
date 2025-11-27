@@ -44,7 +44,7 @@ struct FHarmoniaGrantedHandles
  */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnExperienceGained, int32, Amount, int32, CurrentExp, int32, RequiredExp);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnLevelUp, int32, NewLevel, int32, SkillPointsGained);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSkillPointsChanged, int32, NewAmount, int32, DeltaAmount);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProgressionSkillPointsChanged, int32, NewAmount, int32, DeltaAmount);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStatPointsChanged, int32, NewAmount, int32, DeltaAmount);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnSkillNodeUnlocked, FName, NodeID, int32, InvestedPoints, int32, TotalInvested);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnClassChanged, EHarmoniaCharacterClass, OldClass, EHarmoniaCharacterClass, NewClass);
@@ -138,7 +138,7 @@ public:
 	FOnLevelUp OnLevelUp;
 
 	UPROPERTY(BlueprintAssignable, Category = "Progression|Events")
-	FOnSkillPointsChanged OnSkillPointsChanged;
+	FOnProgressionSkillPointsChanged OnSkillPointsChanged;
 
 	UPROPERTY(BlueprintAssignable, Category = "Progression|Events")
 	FOnStatPointsChanged OnStatPointsChanged;
