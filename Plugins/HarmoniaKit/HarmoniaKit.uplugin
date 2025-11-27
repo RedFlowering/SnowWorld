@@ -58,6 +58,11 @@
       "Name": "HarmoniaLocalizationSystem",
       "Type": "Runtime",
       "LoadingPhase": "Default"
+    },
+    {
+      "Name": "HarmoniaGameService",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
     }
   ],
   "Plugins": [

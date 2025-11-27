@@ -2,32 +2,34 @@
 
 **Version:** 1.0  
 **Last Updated:** 2025-11-26  
-**Unreal Engine:** 5.3+
+**Unreal Engine:** 5.7  
+**Framework:** Lyra Starter Game
 
 ---
 
 ## 📖 목차
 
 1. [소개](#1-소개)
-2. [빠른 시작](#2-빠른-시작)
-3. [전투 시스템](#3-전투-시스템)
-   - 3.6 [락온 타게팅 시스템](#36-락온-타게팅-시스템-lock-on-targeting)
-   - 3.7 [회피 구르기 시스템](#37-회피-구르기-시스템-dodge-roll)
-   - 3.8 [관련 GameplayTag 정의](#38-관련-gameplaytag-정의)
-4. [캐릭터 시스템](#4-캐릭터-시스템)
-5. [생활 컨텐츠 시스템](#5-생활-컨텐츠-시스템)
-6. [온라인 및 팀 시스템](#6-온라인-및-팀-시스템)
-7. [던전 및 월드 시스템](#7-던전-및-월드-시스템)
-8. [퀘스트 시스템](#8-퀘스트-시스템)
-9. [인벤토리 및 제작 시스템](#9-인벤토리-및-제작-시스템)
-10. [저장 시스템](#10-저장-시스템)
-11. [모드 시스템](#11-모드-시스템)
-12. [개발 도구](#12-개발-도구)
-13. [언리얼 엔진 통합](#13-언리얼-엔진-통합)
-14. [리팩토링 히스토리](#14-리팩토링-히스토리)
-15. [API 레퍼런스](#15-api-레퍼런스)
-16. [데이터 드리븐 태그 시스템](#16-데이터-드리븐-태그-시스템)
-17. [Gameplay Ability 태그 설정 가이드](#17-gameplay-ability-태그-설정-가이드)
+2. [플러그인 아키텍처](#2-플러그인-아키텍처)
+3. [빠른 시작](#3-빠른-시작)
+4. [전투 시스템](#4-전투-시스템)
+   - 4.6 [락온 타게팅 시스템](#46-락온-타게팅-시스템-lock-on-targeting)
+   - 4.7 [회피 구르기 시스템](#47-회피-구르기-시스템-dodge-roll)
+   - 4.8 [관련 GameplayTag 정의](#48-관련-gameplaytag-정의)
+5. [캐릭터 시스템](#5-캐릭터-시스템)
+6. [생활 컨텐츠 시스템](#6-생활-컨텐츠-시스템)
+7. [온라인 및 팀 시스템](#7-온라인-및-팀-시스템)
+8. [던전 및 월드 시스템](#8-던전-및-월드-시스템)
+9. [퀘스트 시스템](#9-퀘스트-시스템)
+10. [인벤토리 및 제작 시스템](#10-인벤토리-및-제작-시스템)
+11. [저장 시스템](#11-저장-시스템)
+12. [모드 시스템](#12-모드-시스템)
+13. [개발 도구](#13-개발-도구)
+14. [언리얼 엔진 통합](#14-언리얼-엔진-통합)
+15. [리팩토링 히스토리](#15-리팩토링-히스토리)
+16. [API 레퍼런스](#16-api-레퍼런스)
+17. [데이터 드리븐 태그 시스템](#17-데이터-드리븐-태그-시스템)
+18. [Gameplay Ability 태그 설정 가이드](#18-gameplay-ability-태그-설정-가이드)
 
 ---
 
@@ -59,9 +61,80 @@ HarmoniaKit은 Unreal Engine 5용 **고성능 멀티플레이어 RPG 플러그�
 
 ---
 
-## 2. 빠른 시작
+## 2. 플러그인 아키텍처
 
-### 2.1 근접 전투 시스템 (5분 설정)
+### 2.1 Lyra 프레임워크 기반
+
+HarmoniaKit은 **Lyra Starter Game** 프레임워크를 기반으로 확장되었습니다.
+
+| 항목 | 설명 |
+|------|------|
+| **핵심 모듈** | LyraGame |
+| **소스 경로** | `Engine/Plugins/Runtime/Lyra/Source/LyraGame/` |
+
+#### Lyra 통합 클래스
+
+| HarmoniaKit 클래스 | Lyra 부모 클래스 | 설명 |
+|-------------------|------------------|------|
+| `UHarmoniaAttributeSet` | `ULyraAttributeSet` | 확장된 RPG 어트리뷰트 |
+| `UHarmoniaGameplayAbility` | `ULyraGameplayAbility` | 커스텀 어빌리티 기반 |
+| `UHarmoniaInventoryFragment_*` | `ULyraInventoryItemFragment` | 인벤토리 프래그먼트 |
+
+### 2.2 플러그인 종속성
+
+#### 엔진 모듈
+```
+Core, CoreUObject, Engine, Slate, SlateCore, UMG,
+GameplayAbilities, GameplayTags, GameplayTasks,
+EnhancedInput, InputCore, CommonUI, NavigationSystem,
+AIModule, Niagara, LevelSequence, MovieScene
+```
+
+#### 외부 플러그인 (필수)
+| 플러그인 | 버전 | 용도 |
+|----------|------|------|
+| **SenseSystem** | 최신 | 멀티스레드 히트 감지 |
+| **ALS (Advanced Locomotion System)** | 최신 | 캐릭터 이동/애니메이션 |
+
+#### 온라인 서브시스템 (선택)
+| 플러그인 | 용도 |
+|----------|------|
+| **OnlineSubsystem** | 온라인 기능 기본 |
+| **OnlineSubsystemSteam** | Steam 통합 |
+| **OnlineSubsystemEOS** | Epic Online Services |
+
+### 2.3 모듈 구조
+
+HarmoniaKit 플러그인은 **10개의 모듈**로 구성됩니다.
+
+| 모듈 | 타입 | 로드 시점 | 설명 |
+|------|------|----------|------|
+| **HarmoniaKit** | Runtime | Default | 핵심 런타임 모듈 |
+| **HarmoniaEditor** | Editor | Default | 에디터 전용 도구 |
+| **HarmoniaLoadManager** | Runtime | Default | 비동기 로딩 관리 |
+| **HarmoniaLoadManagerEditor** | Editor | Default | 로드 매니저 에디터 |
+| **HarmoniaOnlineSubsystem** | Runtime | Default | 온라인 서브시스템 |
+| **HarmoniaStory** | Runtime | Default | 스토리/다이얼로그 시스템 |
+| **HarmoniaWorldGenerator** | Runtime | Default | 절차적 월드 생성 |
+| **HarmoniaModSystem** | Runtime | Default | 모드 지원 시스템 |
+| **HarmoniaLocalizationSystem** | Runtime | Default | 로컬라이제이션 |
+| **HarmoniaGameService** | Runtime | Default | 게임 서비스 통합 |
+
+### 2.4 개발 환경
+
+| 항목 | 경로/값 |
+|------|--------|
+| **엔진 경로** | `C:\Epic\UE_5.7` |
+| **프로젝트 경로** | `C:\Projects\SnowWorld` |
+| **플러그인 경로** | `C:\Projects\SnowWorld\Plugins\HarmoniaKit` |
+| **빌드 시스템** | UnrealBuildTool (UBT) |
+| **IDE** | Visual Studio 2022 / Rider 권장 |
+
+---
+
+## 3. 빠른 시작
+
+### 3.1 근접 전투 시스템 (5분 설정)
 
 #### Step 1: 무기 데이터 정의
 ```cpp
@@ -93,7 +166,7 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 }
 ```
 
-### 2.2 회복 아이템 시스템
+### 3.2 회복 아이템 시스템
 
 #### Step 1: 회복 아이템 데이터 정의
 ```cpp
@@ -112,7 +185,7 @@ RecoveryComp->AddItem(EstusData);
 RecoveryComp->UseItem(0); // 슬롯 0번 사용
 ```
 
-### 2.3 사망 패널티 시스템 (다크소울 스타일)
+### 3.3 사망 패널티 시스템 (다크소울 스타일)
 
 #### Step 1: 통화 관리자 설정
 ```cpp
@@ -129,13 +202,13 @@ DeathPenaltyComp->SetRecoveryTimeLimit(300.0f); // 5분 내 회수
 
 ---
 
-## 3. 전투 시스템
+## 4. 전투 시스템
 
-### 3.1 개요
+### 4.1 개요
 
 HarmoniaKit의 전투 시스템은 **Gameplay Ability System(GAS)**과 **SenseSystem**을 기반으로 한 고성능 멀티스레드 히트 감지 시스템입니다.
 
-### 3.2 핵심 컴포넌트
+### 4.2 핵심 컴포넌트
 
 | 컴포넌트 | 역할 |
 |---------|------|
@@ -144,9 +217,9 @@ HarmoniaKit의 전투 시스템은 **Gameplay Ability System(GAS)**과 **SenseSy
 | `UHarmoniaSenseAttackComponent` | Sense 기반 히트 감지 |
 | `UHarmoniaGameplayAbility_ComboAttack` | 콤보 어빌리티 |
 
-### 3.3 근접 전투 시스템
+### 4.3 근접 전투 시스템
 
-#### 3.3.1 지원 무기 타입 (11종)
+#### 4.3.1 지원 무기 타입 (11종)
 
 ```cpp
 enum class EHarmoniaWeaponType : uint8
@@ -165,7 +238,7 @@ enum class EHarmoniaWeaponType : uint8
 };
 ```
 
-#### 3.3.2 전투 액션
+#### 4.3.2 전투 액션
 
 | 액션 | 함수 | 설명 |
 |------|------|------|
@@ -177,7 +250,7 @@ enum class EHarmoniaWeaponType : uint8
 | 리포스트 | `TryRiposte()` | 패리 성공 후 반격 |
 | 백스탭 | `TryBackstab()` | 후방 기습 공격 |
 
-#### 3.3.3 콤보 시스템
+#### 4.3.3 콤보 시스템
 
 DataTable 기반 콤보 정의:
 
@@ -211,9 +284,9 @@ struct FComboAttackStep
 };
 ```
 
-### 3.4 데미지 시스템
+### 4.4 데미지 시스템
 
-#### 3.4.1 데미지 타입
+#### 4.4.1 데미지 타입
 
 ```cpp
 enum class EHarmoniaDamageType : uint8
@@ -226,7 +299,7 @@ enum class EHarmoniaDamageType : uint8
 };
 ```
 
-#### 3.4.2 Attribute Set
+#### 4.4.2 Attribute Set
 
 ```cpp
 // UHarmoniaAttributeSet의 주요 속성
@@ -241,9 +314,9 @@ UPROPERTY() FGameplayAttributeData AttackPower;
 UPROPERTY() FGameplayAttributeData DefensePower;
 ```
 
-### 3.5 보스 전투 설정
+### 4.5 보스 전투 설정
 
-#### 3.5.1 보스 몬스터 클래스
+#### 4.5.1 보스 몬스터 클래스
 
 ```cpp
 UCLASS()
@@ -263,7 +336,7 @@ class AHarmoniaBossMonster : public AHarmoniaMonsterBase
 };
 ```
 
-#### 3.5.2 Boss Phase 데이터
+#### 4.5.2 Boss Phase 데이터
 
 ```cpp
 USTRUCT(BlueprintType)
@@ -283,11 +356,11 @@ struct FBossPhaseData
 };
 ```
 
-### 3.6 락온 타게팅 시스템 (Lock-On Targeting)
+### 4.6 락온 타게팅 시스템 (Lock-On Targeting)
 
 소울라이크 전투 시스템의 핵심 기능인 락온 타게팅 시스템입니다.
 
-#### 3.6.1 주요 기능
+#### 4.6.1 주요 기능
 
 | 기능 | 설명 |
 |------|------|
@@ -297,7 +370,7 @@ struct FBossPhaseData
 | **거리 기반 해제** | 적이 너무 멀어지면 자동으로 락온 해제 |
 | **Sense System 통합** | 장애물에 가려진 적은 타겟팅 불가 |
 
-#### 3.6.2 핵심 클래스
+#### 4.6.2 핵심 클래스
 
 ```cpp
 // 락온 컴포넌트 사용
@@ -321,7 +394,7 @@ void AMyCharacter::ToggleLockOn()
 }
 ```
 
-#### 3.6.3 설정 가능한 파라미터
+#### 4.6.3 설정 가능한 파라미터
 
 | 파라미터 | 타입 | 기본값 | 설명 |
 |---------|------|--------|------|
@@ -336,7 +409,7 @@ void AMyCharacter::ToggleLockOn()
 | `bBreakLockOnTargetDeath` | bool | true | 타겟 사망 시 락온 해제 |
 | `bSmoothCameraRotation` | bool | true | 부드러운 카메라 회전 |
 
-#### 3.6.4 이벤트 델리게이트
+#### 4.6.4 이벤트 델리게이트
 
 ```cpp
 // 타겟 변경 이벤트
@@ -362,7 +435,7 @@ void AMyCharacter::OnLockOnStateChanged(bool bIsLockedOn)
 }
 ```
 
-#### 3.6.5 블루프린트에서 사용
+#### 4.6.5 블루프린트에서 사용
 
 ```cpp
 // 락온 컴포넌트 접근
@@ -388,11 +461,11 @@ LockOn->SwitchTargetRight();
 LockOn->SetLockOnTarget(SpecificEnemy);
 ```
 
-### 3.7 회피 구르기 시스템 (Dodge Roll)
+### 4.7 회피 구르기 시스템 (Dodge Roll)
 
 타이밍 기반 회피 메커니즘과 무적 프레임(I-Frame)이 구현된 회피 시스템입니다.
 
-#### 3.7.1 주요 기능
+#### 4.7.1 주요 기능
 
 | 기능 | 설명 |
 |------|------|
@@ -402,7 +475,7 @@ LockOn->SetLockOnTarget(SpecificEnemy);
 | **스태미나 소모** | 롤 타입별 스태미나 소모량 차이 |
 | **네트워크 지원** | 멀티플레이어 환경에서 작동 |
 
-#### 3.7.2 롤 타입별 파라미터
+#### 4.7.2 롤 타입별 파라미터
 
 | 롤 타입 | 장비 무게 | 거리 | 지속시간 | I-Frame 시작 | I-Frame 지속 | 스태미나 |
 |--------|----------|------|----------|--------------|--------------|----------|
@@ -410,7 +483,7 @@ LockOn->SetLockOnTarget(SpecificEnemy);
 | **Medium** | 30-70% | 400 | 0.6초 | 0.1초 | 0.3초 | 20 |
 | **Heavy** | 70%+ | 300 | 0.8초 | 0.15초 | 0.2초 | 30 |
 
-#### 3.7.3 핵심 클래스
+#### 4.7.3 핵심 클래스
 
 ```cpp
 // EDodgeRollType 열거형
@@ -450,14 +523,14 @@ float HeavyRollIFrameDuration = 0.2f;
 float HeavyRollStaminaCost = 30.0f;
 ```
 
-#### 3.7.4 Gameplay Ability 블루프린트 생성
+#### 4.7.4 Gameplay Ability 블루프린트 생성
 
 1. **블루프린트 생성**: `UHarmoniaGameplayAbility_Dodge`를 부모로 하는 블루프린트 생성
 2. **애니메이션 설정**: `DodgeMontage`에 회피 애니메이션 할당
 3. **파라미터 조정**: 롤 타입별 거리/지속시간/I-Frame 설정
 4. **태그 설정**: 아래 태그 설정 참고
 
-#### 3.7.5 회피 어빌리티 태그 설정
+#### 4.7.5 회피 어빌리티 태그 설정
 
 ```
 AbilityTags:
@@ -481,7 +554,7 @@ Related Tags (I-Frame 중 자동 적용):
   - State.Invincible
 ```
 
-#### 3.7.6 캐릭터에 Ability 부여
+#### 4.7.6 캐릭터에 Ability 부여
 
 Experience 또는 AbilitySet에서 Dodge Ability를 캐릭터에 부여:
 
@@ -489,11 +562,11 @@ Experience 또는 AbilitySet에서 Dodge Ability를 캐릭터에 부여:
 2. Abilities 배열에 GA_Dodge 블루프린트 추가
 3. Input Tag를 `InputTag.Dodge`로 설정
 
-### 3.8 관련 GameplayTag 정의
+### 4.8 관련 GameplayTag 정의
 
 Lock-On과 Dodge 시스템에서 사용하는 GameplayTag들입니다.
 
-#### 3.8.1 Lock-On 시스템 태그
+#### 4.8.1 Lock-On 시스템 태그
 
 | 태그 | 설명 |
 |------|------|
@@ -508,7 +581,7 @@ Lock-On과 Dodge 시스템에서 사용하는 GameplayTag들입니다.
 | `Character.Type.Ally` | 아군 캐릭터 |
 | `Character.Type.Neutral` | 중립 캐릭터 |
 
-#### 3.8.2 Dodge 시스템 태그
+#### 4.8.2 Dodge 시스템 태그
 
 | 태그 | 설명 |
 |------|------|
@@ -522,11 +595,11 @@ Lock-On과 Dodge 시스템에서 사용하는 GameplayTag들입니다.
 
 ---
 
-## 4. 캐릭터 시스템
+## 5. 캐릭터 시스템
 
-### 4.1 스태미나 시스템
+### 5.1 스태미나 시스템
 
-#### 4.1.1 행동별 스태미나 소비
+#### 5.1.1 행동별 스태미나 소비
 
 | 행동 | 기본 소비량 |
 |------|------------|
@@ -537,7 +610,7 @@ Lock-On과 Dodge 시스템에서 사용하는 GameplayTag들입니다.
 | 구르기 | 20 |
 | 점프 | 10 |
 
-#### 4.1.2 스태미나 회복
+#### 5.1.2 스태미나 회복
 
 ```cpp
 // 자동 회복 설정
@@ -548,9 +621,9 @@ UPROPERTY(EditAnywhere)
 float StaminaRegenDelay = 1.5f; // 소비 후 회복 시작 딜레이
 ```
 
-### 4.2 회복 아이템 시스템 (에스투스 스타일)
+### 5.2 회복 아이템 시스템 (에스투스 스타일)
 
-#### 4.2.1 핵심 클래스
+#### 5.2.1 핵심 클래스
 
 ```cpp
 // 충전식 회복 아이템 컴포넌트
@@ -568,7 +641,7 @@ class UHarmoniaRechargeableItemComponent : public UActorComponent
 };
 ```
 
-#### 4.2.2 Resonance Shard (충전 아이템)
+#### 5.2.2 Resonance Shard (충전 아이템)
 
 ```cpp
 // 체크포인트 또는 특정 조건에서 회복 아이템 충전
@@ -584,9 +657,9 @@ void ACheckpointActor::OnPlayerOverlap(ACharacter* Player)
 }
 ```
 
-### 4.3 사망 패널티 시스템
+### 5.3 사망 패널티 시스템
 
-#### 4.3.1 핵심 흐름
+#### 5.3.1 핵심 흐름
 
 ```
 [플레이어 사망]
@@ -602,7 +675,7 @@ void ACheckpointActor::OnPlayerOverlap(ACharacter* Player)
 [성공: 통화 회수] / [실패: 영구 손실]
 ```
 
-#### 4.3.2 Memory Echo 액터
+#### 5.3.2 Memory Echo 액터
 
 ```cpp
 UCLASS()
@@ -624,11 +697,11 @@ class AHarmoniaMemoryEchoActor : public AActor
 
 ---
 
-## 5. 생활 컨텐츠 시스템
+## 6. 생활 컨텐츠 시스템
 
-### 5.1 낚시 시스템
+### 6.1 낚시 시스템
 
-#### 5.1.1 핵심 컴포넌트
+#### 6.1.1 핵심 컴포넌트
 
 ```cpp
 UCLASS()
@@ -649,7 +722,7 @@ class UHarmoniaFishingComponent : public UActorComponent
 };
 ```
 
-#### 5.1.2 물고기 희귀도
+#### 6.1.2 물고기 희귀도
 
 | 희귀도 | 설명 |
 |--------|------|
@@ -659,7 +732,7 @@ class UHarmoniaFishingComponent : public UActorComponent
 | Epic | 영웅 |
 | Legendary | 전설 |
 
-#### 5.1.3 미니게임 타입
+#### 6.1.3 미니게임 타입
 
 ```cpp
 enum class EFishingMinigameType : uint8
@@ -671,9 +744,9 @@ enum class EFishingMinigameType : uint8
 };
 ```
 
-### 5.2 채집 시스템
+### 6.2 채집 시스템
 
-#### 5.2.1 자원 타입
+#### 6.2.1 자원 타입
 
 ```cpp
 enum class EGatheringResourceType : uint8
@@ -689,7 +762,7 @@ enum class EGatheringResourceType : uint8
 };
 ```
 
-#### 5.2.2 도구 시스템
+#### 6.2.2 도구 시스템
 
 ```cpp
 // 도구 데이터
@@ -710,7 +783,7 @@ struct FGatheringToolData
 };
 ```
 
-#### 5.2.3 사용 예시
+#### 6.2.3 사용 예시
 
 ```cpp
 UHarmoniaGatheringComponent* GatherComp = Character->FindComponentByClass<UHarmoniaGatheringComponent>();
@@ -719,9 +792,9 @@ GatherComp->StartGathering(MineralResourceID);
 // 채집 완료 시 OnGatheringComplete 델리게이트 발생
 ```
 
-### 5.3 요리 시스템
+### 6.3 요리 시스템
 
-#### 5.3.1 조리 방법
+#### 6.3.1 조리 방법
 
 ```cpp
 enum class ECookingMethod : uint8
@@ -735,7 +808,7 @@ enum class ECookingMethod : uint8
 };
 ```
 
-#### 5.3.2 요리 품질 및 버프
+#### 6.3.2 요리 품질 및 버프
 
 ```cpp
 enum class ECookingQuality : uint8
@@ -763,7 +836,7 @@ struct FCookingBuffEffect
 };
 ```
 
-#### 5.3.3 사용 예시
+#### 6.3.3 사용 예시
 
 ```cpp
 UHarmoniaCookingComponent* CookingComp = Character->FindComponentByClass<UHarmoniaCookingComponent>();
@@ -773,9 +846,9 @@ CookingComp->StartCooking(RecipeID);
 CookingComp->ConsumeFood(FoodID, Quality);
 ```
 
-### 5.4 농사 시스템
+### 6.4 농사 시스템
 
-#### 5.4.1 작물 성장 단계
+#### 6.4.1 작물 성장 단계
 
 ```cpp
 enum class ECropGrowthStage : uint8
@@ -789,7 +862,7 @@ enum class ECropGrowthStage : uint8
 };
 ```
 
-#### 5.4.2 농사 시스템 흐름
+#### 6.4.2 농사 시스템 흐름
 
 ```
 [밭 생성] → [씨앗 심기] → [물주기] → [비료 주기(선택)]
@@ -797,7 +870,7 @@ enum class ECropGrowthStage : uint8
 [성장 (시간 경과)] → [수확] → [재수확 가능 작물은 반복]
 ```
 
-#### 5.4.3 비료 효과
+#### 6.4.3 비료 효과
 
 ```cpp
 USTRUCT(BlueprintType)
@@ -814,9 +887,9 @@ struct FFertilizerData
 };
 ```
 
-### 5.5 음악/연주 시스템
+### 6.5 음악/연주 시스템
 
-#### 5.5.1 악기 타입
+#### 6.5.1 악기 타입
 
 ```cpp
 enum class EInstrumentType : uint8
@@ -832,7 +905,7 @@ enum class EInstrumentType : uint8
 };
 ```
 
-#### 5.5.2 리듬 미니게임
+#### 6.5.2 리듬 미니게임
 
 ```cpp
 // 노트 입력 처리
@@ -856,7 +929,7 @@ void UHarmoniaMusicComponent::HitRhythmNote(int32 NoteIndex, float InputTime, bo
 }
 ```
 
-#### 5.5.3 범위 버프 적용
+#### 6.5.3 범위 버프 적용
 
 ```cpp
 // 연주 품질에 따른 범위 버프
@@ -881,18 +954,18 @@ void UHarmoniaMusicComponent::ApplyPerformanceBuff()
 
 ---
 
-## 6. 온라인 및 팀 시스템
+## 7. 온라인 및 팀 시스템
 
-### 6.1 온라인 서브시스템
+### 7.1 온라인 서브시스템
 
-#### 6.1.1 지원 플랫폼
+#### 7.1.1 지원 플랫폼
 
 | 플랫폼 | 기능 |
 |--------|------|
 | Steam | 친구, 매치메이킹, 업적, 클라우드 저장 |
 | Epic Online Services (EOS) | 크로스 플랫폼, 세션 관리 |
 
-#### 6.1.2 핵심 기능
+#### 7.1.2 핵심 기능
 
 ```cpp
 UCLASS()
@@ -915,15 +988,15 @@ class UHarmoniaOnlineSubsystem : public UGameInstanceSubsystem
 };
 ```
 
-### 6.2 팀 시스템
+### 7.2 팀 시스템
 
-#### 6.2.1 핵심 특징
+#### 7.2.1 핵심 특징
 
 - **무제한 팀 생성**: 런타임에 동적으로 팀 추가
 - **유동적 관계 관리**: 게임 중 동맹↔적대 관계 변경
 - **언리얼 표준 통합**: `IGenericTeamAgentInterface` 완벽 지원
 
-#### 6.2.2 팀 생성
+#### 7.2.2 팀 생성
 
 ```cpp
 UHarmoniaTeamManagementSubsystem* TeamSubsystem = GetWorld()->GetSubsystem<UHarmoniaTeamManagementSubsystem>();
@@ -942,7 +1015,7 @@ FHarmoniaTeamIdentification PlayerTeam = TeamSubsystem->CreateFaction(
 );
 ```
 
-#### 6.2.3 관계 설정
+#### 7.2.3 관계 설정
 
 ```cpp
 // 동맹 설정
@@ -960,7 +1033,7 @@ TeamSubsystem->ChangeFactionRelationship(
 );
 ```
 
-#### 6.2.4 피아식별 쿼리
+#### 7.2.4 피아식별 쿼리
 
 ```cpp
 // 두 액터가 적인지 확인
@@ -972,11 +1045,11 @@ bool bCanAttack = TeamSubsystem->CanActorAttack(Source, Target);
 
 ---
 
-## 7. 던전 및 월드 시스템
+## 8. 던전 및 월드 시스템
 
-### 7.1 던전 레이드 시스템
+### 8.1 던전 레이드 시스템
 
-#### 7.1.1 핵심 클래스
+#### 8.1.1 핵심 클래스
 
 ```cpp
 UCLASS()
@@ -996,7 +1069,7 @@ class UHarmoniaDungeonComponent : public UActorComponent
 };
 ```
 
-#### 7.1.2 던전 데이터
+#### 8.1.2 던전 데이터
 
 ```cpp
 USTRUCT(BlueprintType)
@@ -1019,9 +1092,9 @@ struct FHarmoniaDungeonData : public FTableRowBase
 };
 ```
 
-### 7.2 월드 생성 시스템
+### 8.2 월드 생성 시스템
 
-#### 7.2.1 절차적 생성
+#### 8.2.1 절차적 생성
 
 ```cpp
 UCLASS()
@@ -1041,7 +1114,7 @@ class UHarmoniaWorldGeneratorSubsystem : public UWorldSubsystem
 };
 ```
 
-#### 7.2.2 바이옴 시스템
+#### 8.2.2 바이옴 시스템
 
 ```cpp
 enum class EBiomeType : uint8
@@ -1058,9 +1131,9 @@ enum class EBiomeType : uint8
 
 ---
 
-## 8. 퀘스트 시스템
+## 9. 퀘스트 시스템
 
-### 8.1 핵심 컴포넌트
+### 9.1 핵심 컴포넌트
 
 ```cpp
 UCLASS()
@@ -1080,7 +1153,7 @@ class UHarmoniaQuestComponent : public UActorComponent
 };
 ```
 
-### 8.2 퀘스트 데이터 구조
+### 9.2 퀘스트 데이터 구조
 
 ```cpp
 USTRUCT(BlueprintType)
@@ -1106,7 +1179,7 @@ struct FQuestData : public FTableRowBase
 };
 ```
 
-### 8.3 다단계 퀘스트 (Phase)
+### 9.3 다단계 퀘스트 (Phase)
 
 ```cpp
 USTRUCT(BlueprintType)
@@ -1128,11 +1201,11 @@ struct FQuestPhase
 
 ---
 
-## 9. 인벤토리 및 제작 시스템
+## 10. 인벤토리 및 제작 시스템
 
-### 9.1 제작 시스템
+### 10.1 제작 시스템
 
-#### 9.1.1 핵심 컴포넌트
+#### 10.1.1 핵심 컴포넌트
 
 ```cpp
 UCLASS()
@@ -1152,7 +1225,7 @@ class UHarmoniaCraftingComponent : public UActorComponent
 };
 ```
 
-#### 9.1.2 레시피 데이터
+#### 10.1.2 레시피 데이터
 
 ```cpp
 USTRUCT(BlueprintType)
@@ -1178,9 +1251,9 @@ struct FCraftingRecipeData : public FTableRowBase
 };
 ```
 
-### 9.2 Lyra 인벤토리 통합
+### 10.2 Lyra 인벤토리 통합
 
-#### 9.2.1 커스텀 인벤토리 Fragment
+#### 10.2.1 커스텀 인벤토리 Fragment
 
 ```cpp
 // 내구도 Fragment
@@ -1205,9 +1278,9 @@ class UHarmoniaInventoryFragment_StatModifiers : public ULyraInventoryItemFragme
 
 ---
 
-## 10. 저장 시스템
+## 11. 저장 시스템
 
-### 10.1 핵심 서브시스템
+### 11.1 핵심 서브시스템
 
 ```cpp
 UCLASS()
@@ -1231,7 +1304,7 @@ class UHarmoniaSaveGameSubsystem : public UGameInstanceSubsystem
 };
 ```
 
-### 10.2 Saveable 인터페이스
+### 11.2 Saveable 인터페이스
 
 ```cpp
 UINTERFACE()
@@ -1255,9 +1328,9 @@ public:
 
 ---
 
-## 11. 모드 시스템
+## 12. 모드 시스템
 
-### 11.1 핵심 서브시스템
+### 12.1 핵심 서브시스템
 
 ```cpp
 UCLASS()
@@ -1277,7 +1350,7 @@ class UHarmoniaModSubsystem : public UGameInstanceSubsystem
 };
 ```
 
-### 11.2 에셋 오버라이드
+### 12.2 에셋 오버라이드
 
 ```cpp
 UCLASS()
@@ -1289,7 +1362,7 @@ class UHarmoniaAssetOverrideSubsystem : public UGameInstanceSubsystem
 };
 ```
 
-### 11.3 DataTable 패칭
+### 12.3 DataTable 패칭
 
 ```cpp
 UCLASS()
@@ -1307,13 +1380,13 @@ class UHarmoniaDataTablePatcher : public UObject
 
 ---
 
-## 12. 개발 도구
+## 13. 개발 도구
 
-### 12.1 치트 시스템
+### 13.1 치트 시스템
 
 > ⚠️ **주의**: Editor/Development 빌드에서만 사용 가능. Shipping 빌드에서는 자동 비활성화됨.
 
-#### 12.1.1 콘솔 명령어
+#### 13.1.1 콘솔 명령어
 
 | 명령어 | 설명 |
 |--------|------|
@@ -1326,7 +1399,7 @@ class UHarmoniaDataTablePatcher : public UObject
 | `Harmonia.SpawnMonster <MonsterID>` | 몬스터 스폰 |
 | `Harmonia.CompleteQuest <QuestID>` | 퀘스트 완료 |
 
-#### 12.1.2 치트 라이브러리 (블루프린트)
+#### 13.1.2 치트 라이브러리 (블루프린트)
 
 ```cpp
 UCLASS()
@@ -1343,9 +1416,9 @@ class UHarmoniaCheatLibrary : public UBlueprintFunctionLibrary
 };
 ```
 
-### 12.2 애니메이션 이펙트 시스템
+### 13.2 애니메이션 이펙트 시스템
 
-#### 12.2.1 GameplayTag 기반 VFX/SFX 관리
+#### 13.2.1 GameplayTag 기반 VFX/SFX 관리
 
 ```cpp
 // DataTable에 이펙트 정의
@@ -1366,7 +1439,7 @@ struct FAnimationEffectEntry : public FTableRowBase
 };
 ```
 
-#### 12.2.2 AnimNotify로 이펙트 재생
+#### 13.2.2 AnimNotify로 이펙트 재생
 
 ```cpp
 // AnimNotify_PlayTaggedEffect
@@ -1384,11 +1457,11 @@ class UAnimNotify_PlayTaggedEffect : public UAnimNotify
 
 ---
 
-## 13. 언리얼 엔진 통합
+## 14. 언리얼 엔진 통합
 
-### 13.1 AI 시스템 통합
+### 14.1 AI 시스템 통합
 
-#### 13.1.1 Blackboard 헬퍼
+#### 14.1.1 Blackboard 헬퍼
 
 ```cpp
 // UHarmoniaBaseAIComponent에 추가된 헬퍼
@@ -1400,7 +1473,7 @@ void SetBlackboardValueAsBool(FName KeyName, bool BoolValue);
 void SetBlackboardValueAsFloat(FName KeyName, float FloatValue);
 ```
 
-#### 13.1.2 Behavior Tree Task/Service
+#### 14.1.2 Behavior Tree Task/Service
 
 ```cpp
 // BT Task로 AI 컴포넌트 활성화/비활성화
@@ -1426,9 +1499,9 @@ class UBTService_SyncAIComponentToBlackboard : public UBTService
 };
 ```
 
-### 13.2 Lyra 호환성
+### 14.2 Lyra 호환성
 
-#### 13.2.1 Equipment 어댑터
+#### 14.2.1 Equipment 어댑터
 
 ```cpp
 UCLASS()
@@ -1446,9 +1519,9 @@ class UHarmoniaLyraEquipmentAdapter : public UObject
 
 ---
 
-## 14. 리팩토링 히스토리
+## 15. 리팩토링 히스토리
 
-### 14.1 2025-11-22: Combat System 리팩토링
+### 15.1 2025-11-22: Combat System 리팩토링
 
 **목적**: 전투 시스템 코드 중복 제거 및 유지보수성 향상
 
@@ -1461,7 +1534,7 @@ class UHarmoniaLyraEquipmentAdapter : public UObject
 - 코드 중복: 400줄+ → 200줄
 - 파일 크기: 43KB → 분할된 작은 파일들
 
-### 14.2 2025-11-22: 치트 시스템 빌드 제한
+### 15.2 2025-11-22: 치트 시스템 빌드 제한
 
 **목적**: Shipping 빌드에서 치트 기능 완전 제거
 
@@ -1475,9 +1548,9 @@ class UHarmoniaLyraEquipmentAdapter : public UObject
 
 ---
 
-## 15. API 레퍼런스
+## 16. API 레퍼런스
 
-### 15.1 주요 컴포넌트 목록
+### 16.1 주요 컴포넌트 목록
 
 | 카테고리 | 컴포넌트 | 헤더 파일 |
 |----------|---------|----------|
@@ -1496,7 +1569,7 @@ class UHarmoniaLyraEquipmentAdapter : public UObject
 | 던전 | `UHarmoniaDungeonComponent` | `HarmoniaDungeonComponent.h` |
 | 제작 | `UHarmoniaCraftingComponent` | `HarmoniaCraftingComponent.h` |
 
-### 15.2 주요 서브시스템 목록
+### 16.2 주요 서브시스템 목록
 
 | 서브시스템 | 범위 | 역할 |
 |-----------|------|------|
@@ -1507,7 +1580,7 @@ class UHarmoniaLyraEquipmentAdapter : public UObject
 | `UHarmoniaSaveGameSubsystem` | GameInstance | 저장/불러오기 |
 | `UHarmoniaModSubsystem` | GameInstance | 모드 관리 |
 
-### 15.3 주요 데이터 구조체
+### 16.3 주요 데이터 구조체
 
 | 구조체 | 용도 |
 |--------|------|
@@ -1521,13 +1594,13 @@ class UHarmoniaLyraEquipmentAdapter : public UObject
 
 ---
 
-## 16. 데이터 드리븐 태그 시스템
+## 17. 데이터 드리븐 태그 시스템
 
-### 16.1 개요
+### 17.1 개요
 
 HarmoniaKit은 GameplayTag를 **데이터 드리븐 방식**으로 관리합니다. 코드 수정 없이 INI 파일이나 DataTable을 통해 새 태그를 추가할 수 있습니다.
 
-### 16.2 태그 정의 방식
+### 17.2 태그 정의 방식
 
 #### 방식 1: INI 파일 (Config/HarmoniaGameplayTags.ini)
 ```ini
@@ -1547,7 +1620,7 @@ HarmoniaKit은 GameplayTag를 **데이터 드리븐 방식**으로 관리합니�
 | State.Combat.Attacking | State | 공격 중 | 캐릭터가 공격 중 |
 | Damage.Type.Physical | Damage | 물리 피해 | 물리 속성 피해 |
 
-### 16.3 주요 태그 카테고리
+### 17.3 주요 태그 카테고리
 
 | 카테고리 | 패턴 | 용도 | 예시 |
 |----------|------|------|------|
@@ -1569,7 +1642,7 @@ HarmoniaKit은 GameplayTag를 **데이터 드리븐 방식**으로 관리합니�
 | **AI** | `AI.*` | AI 행동 | `AI.State.Alert`, `AI.Behavior.Patrol` |
 | **Quest** | `Quest.*` | 퀘스트 분류 | `Quest.Type.Main`, `Quest.State.Active` |
 
-### 16.4 HarmoniaTagRegistrySubsystem
+### 17.4 HarmoniaTagRegistrySubsystem
 
 런타임에 태그를 등록하고 조회하는 엔진 서브시스템입니다.
 
@@ -1587,7 +1660,7 @@ TArray<FGameplayTag> StateTags = TagRegistry->GetTagsByCategory(TEXT("State"));
 const TMap<FName, FGameplayTag>& AllTags = TagRegistry->GetAllTags();
 ```
 
-### 16.5 태그-어트리뷰트 매핑
+### 17.5 태그-어트리뷰트 매핑
 
 `FAttributeNameMap` 싱글톤을 통해 태그와 GAS 어트리뷰트를 매핑합니다.
 
@@ -1606,7 +1679,7 @@ if (Attr.IsValid())
 // Stat.Resistance.*: FireResistance, IceResistance, LightningResistance, PoisonResistance
 ```
 
-### 16.6 INI 파일 구조
+### 17.6 INI 파일 구조
 
 `Config/HarmoniaGameplayTags.ini` 파일의 전체 구조:
 
@@ -1636,7 +1709,7 @@ ImportTagsFromConfig=True
 ...
 ```
 
-### 16.7 새 태그 추가 방법
+### 17.7 새 태그 추가 방법
 
 #### 즉시 적용 (Hot Reload 지원)
 1. `Config/HarmoniaGameplayTags.ini` 파일 열기
@@ -1657,16 +1730,16 @@ UE_DEFINE_GAMEPLAY_TAG(MyNewTag, "Custom.MyNewTag")
 
 ---
 
-## 17. Gameplay Ability 태그 설정 가이드
+## 18. Gameplay Ability 태그 설정 가이드
 
-### 17.1 개요
+### 18.1 개요
 
 HarmoniaKit의 모든 Gameplay Ability 클래스는 **블루프린트 또는 파생 클래스에서 태그를 설정**하도록 설계되었습니다. 
 이를 통해 태그 설정의 유연성을 확보하고, 프로젝트별 커스터마이징이 가능합니다.
 
 > ⚠️ **중요**: 태그 추가 전 반드시 `Config/DefaultGameplayTags.ini`에서 중복 여부를 확인하세요!
 
-### 17.2 태그 컨테이너 설명
+### 18.2 태그 컨테이너 설명
 
 | 컨테이너 | 용도 | 예시 |
 |---------|------|------|
@@ -1677,9 +1750,9 @@ HarmoniaKit의 모든 Gameplay Ability 클래스는 **블루프린트 또는 파
 | **BlockAbilitiesWithTag** | 어빌리티 활성화 중 이 태그를 가진 다른 어빌리티 차단 | `State.Combat.Attacking` |
 | **CancelAbilitiesWithTag** | 어빌리티 활성화 시 이 태그를 가진 다른 어빌리티 취소 | `State.Blocking` |
 
-### 17.3 전투 어빌리티 태그 설정
+### 18.3 전투 어빌리티 태그 설정
 
-#### 17.3.1 UHarmoniaGameplayAbility_Dodge (회피)
+#### 18.3.1 UHarmoniaGameplayAbility_Dodge (회피)
 
 ```
 AbilityTags:
@@ -1702,7 +1775,7 @@ Related Tags (I-Frame 중 MeleeCombatComponent에서 적용):
   - State.Invincible
 ```
 
-#### 17.3.2 UHarmoniaGameplayAbility_MeleeAttack (근접 공격)
+#### 18.3.2 UHarmoniaGameplayAbility_MeleeAttack (근접 공격)
 
 ```
 AbilityTags:
@@ -1727,7 +1800,7 @@ Related Tags:
   - State.Combat.ComboWindow (콤보 입력 윈도우 중 적용)
 ```
 
-#### 17.3.3 UHarmoniaGameplayAbility_Block (방어)
+#### 18.3.3 UHarmoniaGameplayAbility_Block (방어)
 
 ```
 AbilityTags:
@@ -1746,7 +1819,7 @@ BlockAbilitiesWithTag:
   - State.Dodging
 ```
 
-#### 17.3.4 UHarmoniaGameplayAbility_Parry (패리)
+#### 18.3.4 UHarmoniaGameplayAbility_Parry (패리)
 
 ```
 AbilityTags:
@@ -1767,7 +1840,7 @@ BlockAbilitiesWithTag:
   - State.Dodging
 ```
 
-#### 17.3.5 UHarmoniaGameplayAbility_Riposte (리포스트)
+#### 18.3.5 UHarmoniaGameplayAbility_Riposte (리포스트)
 
 ```
 AbilityTags:
@@ -1793,7 +1866,7 @@ CancelAbilitiesWithTag:
   - State.Blocking
 ```
 
-#### 17.3.6 UHarmoniaGameplayAbility_HitReaction (피격 반응)
+#### 18.3.6 UHarmoniaGameplayAbility_HitReaction (피격 반응)
 
 ```
 AbilityTags:
@@ -1820,7 +1893,7 @@ CancelAbilitiesWithTag:
   - State.Blocking
 ```
 
-#### 17.3.7 UHarmoniaGameplayAbility_ComboAttack (콤보 공격)
+#### 18.3.7 UHarmoniaGameplayAbility_ComboAttack (콤보 공격)
 
 ```
 AbilityTags:
@@ -1847,7 +1920,7 @@ Related Gameplay Events:
   - GameplayEvent.Attack.ComboReset
 ```
 
-#### 17.3.8 UHarmoniaGameplayAbility_RangedAttack (원거리 공격)
+#### 18.3.8 UHarmoniaGameplayAbility_RangedAttack (원거리 공격)
 
 ```
 AbilityTags:
@@ -1871,9 +1944,9 @@ CancelAbilitiesWithTag:
   - Ability.Attack.Melee
 ```
 
-### 17.4 이동 어빌리티 태그 설정
+### 18.4 이동 어빌리티 태그 설정
 
-#### 17.4.1 UHarmoniaGameplayAbility_Climb (등반)
+#### 18.4.1 UHarmoniaGameplayAbility_Climb (등반)
 
 ```
 AbilityTags:
@@ -1901,7 +1974,7 @@ Related Gameplay Events:
   - GameplayEvent.Climbing.Stopped
 ```
 
-#### 17.4.2 UHarmoniaGameplayAbility_Swim (수영)
+#### 18.4.2 UHarmoniaGameplayAbility_Swim (수영)
 
 ```
 AbilityTags:
@@ -1929,7 +2002,7 @@ Related Gameplay Events:
   - GameplayEvent.Oxygen.Depleted
 ```
 
-#### 17.4.3 UHarmoniaGameplayAbility_Vault (볼트/파쿠르)
+#### 18.4.3 UHarmoniaGameplayAbility_Vault (볼트/파쿠르)
 
 ```
 AbilityTags:
@@ -1953,7 +2026,7 @@ Related Gameplay Events:
   - GameplayEvent.Parkour.Vault
 ```
 
-#### 17.4.4 UHarmoniaGameplayAbility_Mount (탈것)
+#### 18.4.4 UHarmoniaGameplayAbility_Mount (탈것)
 
 ```
 AbilityTags:
@@ -1982,7 +2055,7 @@ Related Gameplay Events:
   - GameplayEvent.Mount.Dismounted
 ```
 
-#### 17.4.5 UHarmoniaGameplayAbility_FastTravel (빠른 이동)
+#### 18.4.5 UHarmoniaGameplayAbility_FastTravel (빠른 이동)
 
 ```
 AbilityTags:
@@ -2016,9 +2089,9 @@ Related Gameplay Events:
   - GameplayEvent.FastTravel.Completed
 ```
 
-### 17.5 아이템/상호작용 어빌리티 태그 설정
+### 18.5 아이템/상호작용 어빌리티 태그 설정
 
-#### 17.5.1 UHarmoniaGameplayAbility_UseRecoveryItem (회복 아이템 사용)
+#### 18.5.1 UHarmoniaGameplayAbility_UseRecoveryItem (회복 아이템 사용)
 
 ```
 AbilityTags:
@@ -2043,7 +2116,7 @@ Note: 아이템 사용은 다음 상황에서 취소됨:
   - 시전 중 피격
 ```
 
-#### 17.5.2 UHarmoniaGameplayAbility_Interact (상호작용)
+#### 18.5.2 UHarmoniaGameplayAbility_Interact (상호작용)
 
 ```
 AbilityTags:
@@ -2065,9 +2138,9 @@ BlockAbilitiesWithTag:
   - State.Combat.Attacking
 ```
 
-### 17.6 몬스터 전용 어빌리티 태그 설정
+### 18.6 몬스터 전용 어빌리티 태그 설정
 
-#### 17.6.1 UHarmoniaGameplayAbility_Boss (보스 기본)
+#### 18.6.1 UHarmoniaGameplayAbility_Boss (보스 기본)
 
 ```
 AbilityTags:
@@ -2087,7 +2160,7 @@ ValidPhases:
   - [3] = 3 페이즈(분노 페이즈)만
 ```
 
-#### 17.6.2 UHarmoniaGameplayAbility_Stealth (은신)
+#### 18.6.2 UHarmoniaGameplayAbility_Stealth (은신)
 
 ```
 AbilityTags:
@@ -2107,7 +2180,7 @@ Note: 은신 해제 조건:
   - 지속 시간 만료 시 (무한이 아닌 경우)
 ```
 
-#### 17.6.3 UHarmoniaGameplayAbility_Summon (소환)
+#### 18.6.3 UHarmoniaGameplayAbility_Summon (소환)
 
 ```
 AbilityTags:
@@ -2127,7 +2200,7 @@ BlockAbilitiesWithTag:
   - State.Dodging
 ```
 
-#### 17.6.4 UHarmoniaGameplayAbility_ElitePassive (엘리트 패시브)
+#### 18.6.4 UHarmoniaGameplayAbility_ElitePassive (엘리트 패시브)
 
 ```
 AbilityTags:
@@ -2142,7 +2215,7 @@ ActivationOwnedTags:
 Note: 패시브 어빌리티로 항상 활성 상태
 ```
 
-#### 17.6.5 UHarmoniaGameplayAbility_SwarmBehavior (군집 행동)
+#### 18.6.5 UHarmoniaGameplayAbility_SwarmBehavior (군집 행동)
 
 ```
 AbilityTags:
@@ -2159,9 +2232,9 @@ ActivationOwnedTags:
 Note: 패시브 어빌리티로 항상 활성 상태
 ```
 
-### 17.7 태그 네이밍 규칙
+### 18.7 태그 네이밍 규칙
 
-#### 17.7.1 권장 패턴
+#### 18.7.1 권장 패턴
 
 | 패턴 | 용도 | 예시 |
 |------|------|------|
@@ -2172,7 +2245,7 @@ Note: 패시브 어빌리티로 항상 활성 상태
 | `GameplayEvent.[EventName]` | 이벤트 트리거 | `GameplayEvent.HitReaction` |
 | `Movement.Restricted.[Type]` | 이동 제한 | `Movement.Restricted.NoClimb` |
 
-#### 17.7.2 태그 통일 권장사항
+#### 18.7.2 태그 통일 권장사항
 
 현재 일부 어빌리티에서 `State.X`와 `Character.State.X` 패턴이 혼용되고 있습니다.
 
@@ -2180,7 +2253,7 @@ Note: 패시브 어빌리티로 항상 활성 상태
 - ✅ `State.Dodging`
 - ❌ `Character.State.Dodging`
 
-### 17.8 블루프린트에서 태그 설정 방법
+### 18.8 블루프린트에서 태그 설정 방법
 
 1. **어빌리티 블루프린트 생성**: C++ 클래스를 부모로 블루프린트 생성
 2. **Class Defaults 열기**: 블루프린트 에디터에서 Class Defaults 선택
@@ -2193,7 +2266,7 @@ Note: 패시브 어빌리티로 항상 활성 상태
    - Block Abilities With Tag
    - Cancel Abilities With Tag
 
-### 17.9 태그 중복 방지
+### 18.9 태그 중복 방지
 
 > ⚠️ **경고**: 태그 추가 전 반드시 확인!
 
@@ -2216,5 +2289,5 @@ All rights reserved.
 
 ---
 
-**제작:** Antigravity AI & Snow Game Studio  
+**제작:** Snow Game Studio  
 **최종 업데이트:** 2025-11-26
