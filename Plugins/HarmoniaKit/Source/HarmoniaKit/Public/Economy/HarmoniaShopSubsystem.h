@@ -156,15 +156,15 @@ public:
 
 	/** Get player's currency amount */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Shop")
-	int64 GetPlayerCurrency(APlayerController* Player, ECurrencyType Type) const;
+	int64 GetPlayerCurrency(APlayerController* Player, EHarmoniaCurrencyType Type) const;
 
 	/** Add currency to player */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Shop")
-	void AddPlayerCurrency(APlayerController* Player, ECurrencyType Type, int64 Amount);
+	void AddPlayerCurrency(APlayerController* Player, EHarmoniaCurrencyType Type, int64 Amount);
 
 	/** Remove currency from player */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Shop")
-	bool RemovePlayerCurrency(APlayerController* Player, ECurrencyType Type, int64 Amount);
+	bool RemovePlayerCurrency(APlayerController* Player, EHarmoniaCurrencyType Type, int64 Amount);
 
 	// ============================================================================
 	// Transaction History
@@ -218,7 +218,7 @@ private:
 	TMap<uint32, TArray<FTransactionRecord>> TransactionHistory;
 
 	/** Player currencies (PlayerID -> CurrencyType -> Amount) */
-	TMap<uint32, TMap<ECurrencyType, int64>> PlayerCurrencies;
+	TMap<uint32, TMap<EHarmoniaCurrencyType, int64>> PlayerCurrencies;
 
 	/** Player purchase counts (PlayerID -> ShopItemID -> Count) */
 	TMap<uint32, TMap<FName, int32>> PlayerPurchaseCounts;

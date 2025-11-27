@@ -4,25 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "Definitions/HarmoniaShopSystemDefinitions.h"
 #include "HarmoniaDeathPenaltyDefinitions.generated.h"
 
-/**
- * Types of currencies that can be lost on death
- */
-UENUM(BlueprintType)
-enum class EHarmoniaCurrencyType : uint8
-{
-	None UMETA(DisplayName = "None"),
-
-	MemoryEssence UMETA(DisplayName = "Memory Essence"),
-	SoulCrystals UMETA(DisplayName = "Soul Crystals"),
-	ForgottenKnowledge UMETA(DisplayName = "Forgotten Knowledge"),
-	TimeFragments UMETA(DisplayName = "Time Fragments"),
-
-	Gold UMETA(DisplayName = "Gold"),
-
-	Custom UMETA(DisplayName = "Custom")
-};
+// EHarmoniaCurrencyType is defined as an alias for ECurrencyType in HarmoniaShopSystemDefinitions.h
 
 /**
  * Death penalty severity levels

@@ -272,7 +272,7 @@ TArray<FHarmoniaCurrencyCost> UHarmoniaShopSubsystem::GetFinalSellPrice(APlayerC
 	// Default sell price if not in shop inventory
 	if (ConfigAsset)
 	{
-		FHarmoniaCurrencyCost DefaultCost(ECurrencyType::Gold, ConfigAsset->DefaultSellPrice * Quantity);
+		FHarmoniaCurrencyCost DefaultCost(EHarmoniaCurrencyType::Gold, ConfigAsset->DefaultSellPrice * Quantity);
 		Result.Add(DefaultCost);
 	}
 
@@ -586,7 +586,7 @@ bool UHarmoniaShopSubsystem::GetActiveTrade(FGuid TradeID, FTradeOffer& OutTrade
 	return false;
 }
 
-int64 UHarmoniaShopSubsystem::GetPlayerCurrency(APlayerController* Player, ECurrencyType Type) const
+int64 UHarmoniaShopSubsystem::GetPlayerCurrency(APlayerController* Player, EHarmoniaCurrencyType Type) const
 {
 	if (!Player)
 	{
@@ -594,7 +594,7 @@ int64 UHarmoniaShopSubsystem::GetPlayerCurrency(APlayerController* Player, ECurr
 	}
 
 	uint32 PlayerID = GetPlayerID(Player);
-	if (const TMap<ECurrencyType, int64>* Currencies = PlayerCurrencies.Find(PlayerID))
+	if (const TMap<EHarmoniaCurrencyType, int64>* Currencies = PlayerCurrencies.Find(PlayerID))
 	{
 		if (const int64* Amount = Currencies->Find(Type))
 		{
@@ -605,7 +605,7 @@ int64 UHarmoniaShopSubsystem::GetPlayerCurrency(APlayerController* Player, ECurr
 	return 0;
 }
 
-void UHarmoniaShopSubsystem::AddPlayerCurrency(APlayerController* Player, ECurrencyType Type, int64 Amount)
+void UHarmoniaShopSubsystem::AddPlayerCurrency(APlayerController* Player, EHarmoniaCurrencyType Type, int64 Amount)
 {
 	if (!Player || Amount <= 0)
 	{
@@ -613,12 +613,12 @@ void UHarmoniaShopSubsystem::AddPlayerCurrency(APlayerController* Player, ECurre
 	}
 
 	uint32 PlayerID = GetPlayerID(Player);
-	TMap<ECurrencyType, int64>& Currencies = PlayerCurrencies.FindOrAdd(PlayerID);
+	TMap<EHarmoniaCurrencyType, int64>& Currencies = PlayerCurrencies.FindOrAdd(PlayerID);
 	int64& CurrentAmount = Currencies.FindOrAdd(Type);
 	CurrentAmount += Amount;
 }
 
-bool UHarmoniaShopSubsystem::RemovePlayerCurrency(APlayerController* Player, ECurrencyType Type, int64 Amount)
+bool UHarmoniaShopSubsystem::RemovePlayerCurrency(APlayerController* Player, EHarmoniaCurrencyType Type, int64 Amount)
 {
 	if (!Player || Amount <= 0)
 	{
@@ -626,7 +626,7 @@ bool UHarmoniaShopSubsystem::RemovePlayerCurrency(APlayerController* Player, ECu
 	}
 
 	uint32 PlayerID = GetPlayerID(Player);
-	TMap<ECurrencyType, int64>* Currencies = PlayerCurrencies.Find(PlayerID);
+	TMap<EHarmoniaCurrencyType, int64>* Currencies = PlayerCurrencies.Find(PlayerID);
 	if (!Currencies)
 	{
 		return false;

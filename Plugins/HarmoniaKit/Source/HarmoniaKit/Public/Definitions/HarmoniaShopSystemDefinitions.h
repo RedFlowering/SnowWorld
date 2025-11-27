@@ -11,11 +11,14 @@
 #include "HarmoniaShopSystemDefinitions.generated.h"
 
 /**
- * Currency type
+ * Currency type - unified currency enum for all systems (Shop, Death Penalty, etc.)
  */
 UENUM(BlueprintType)
-enum class ECurrencyType : uint8
+enum class EHarmoniaCurrencyType : uint8
 {
+	None			UMETA(DisplayName = "None"),			// 없음
+	
+	// Economy currencies
 	Gold			UMETA(DisplayName = "Gold"),			// 기본 골드
 	Premium			UMETA(DisplayName = "Premium"),			// 프리미엄 재화 (캐시)
 	Honor			UMETA(DisplayName = "Honor"),			// 명예 포인트
@@ -23,12 +26,19 @@ enum class ECurrencyType : uint8
 	Guild			UMETA(DisplayName = "Guild"),			// 길드 포인트
 	Event			UMETA(DisplayName = "Event"),			// 이벤트 재화
 	Reputation		UMETA(DisplayName = "Reputation"),		// 평판 포인트
+	
+	// Death Penalty currencies
+	MemoryEssence		UMETA(DisplayName = "Memory Essence"),	// 기억의 정수
+	SoulCrystals		UMETA(DisplayName = "Soul Crystals"),	// 영혼 수정
+	ForgottenKnowledge	UMETA(DisplayName = "Forgotten Knowledge"),	// 잊혀진 지식
+	TimeFragments		UMETA(DisplayName = "Time Fragments"),	// 시간 파편
+	
 	Custom			UMETA(DisplayName = "Custom"),			// 커스텀 (태그로 지정)
 	MAX				UMETA(Hidden)
 };
 
-// Alias for naming consistency with subsystems
-using EHarmoniaCurrencyType = ECurrencyType;
+// Legacy alias for backward compatibility
+using ECurrencyType = EHarmoniaCurrencyType;
 
 /**
  * Shop type
@@ -105,10 +115,10 @@ struct HARMONIAKIT_API FHarmoniaCurrencyCost
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cost")
-	ECurrencyType CurrencyType = ECurrencyType::Gold;
+	EHarmoniaCurrencyType CurrencyType = EHarmoniaCurrencyType::Gold;
 
 	// Alias for compatibility - returns CurrencyType
-	ECurrencyType GetType() const { return CurrencyType; }
+	EHarmoniaCurrencyType GetType() const { return CurrencyType; }
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cost")
 	int64 Amount = 0;
@@ -117,7 +127,7 @@ struct HARMONIAKIT_API FHarmoniaCurrencyCost
 	FGameplayTag CustomCurrencyTag;
 
 	FHarmoniaCurrencyCost() = default;
-	FHarmoniaCurrencyCost(ECurrencyType InType, int64 InAmount)
+	FHarmoniaCurrencyCost(EHarmoniaCurrencyType InType, int64 InAmount)
 		: CurrencyType(InType), Amount(InAmount) {}
 };
 
@@ -130,7 +140,7 @@ struct FCurrencyDefinition : public FTableRowBase
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Currency")
-	ECurrencyType Type = ECurrencyType::Gold;
+	EHarmoniaCurrencyType Type = EHarmoniaCurrencyType::Gold;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Currency")
 	FText DisplayName = FText();
@@ -163,7 +173,7 @@ struct FShopItemData : public FTableRowBase
 	FGameplayTag ItemTag;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pricing")
-	ECurrencyType Currency = ECurrencyType::Gold;
+	EHarmoniaCurrencyType Currency = EHarmoniaCurrencyType::Gold;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pricing")
 	int64 BasePrice = 0;
@@ -283,7 +293,7 @@ struct FTradeOfferItem
 	int32 Quantity = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trade")
-	ECurrencyType Currency = ECurrencyType::Gold;
+	EHarmoniaCurrencyType Currency = EHarmoniaCurrencyType::Gold;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trade")
 	int64 CurrencyAmount = 0;
@@ -368,7 +378,7 @@ struct FTransactionRecord
 	int32 Quantity = 0;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Transaction")
-	ECurrencyType CurrencyType = ECurrencyType::Gold;
+	EHarmoniaCurrencyType CurrencyType = EHarmoniaCurrencyType::Gold;
 
 	// Multi-currency support (runtime only)
 	TArray<FHarmoniaCurrencyCost> Currency;
