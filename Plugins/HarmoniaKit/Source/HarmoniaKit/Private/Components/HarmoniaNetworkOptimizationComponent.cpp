@@ -26,13 +26,13 @@ void UHarmoniaNetworkOptimizationComponent::BeginPlay()
 	}
 
 	// Store original values
-	OriginalNetUpdateFrequency = GetOwner()->NetUpdateFrequency;
+	OriginalNetUpdateFrequency = GetOwner()->GetNetUpdateFrequency();
 	OriginalDormancy = GetOwner()->NetDormancy;
 
 	// Apply custom net cull distance if configured
 	if (Config.bUseCustomRelevancy)
 	{
-		GetOwner()->NetCullDistanceSquared = Config.NetCullDistanceSquared;
+		GetOwner()->SetNetCullDistanceSquared(Config.NetCullDistanceSquared);
 	}
 
 	// Initial calculation
@@ -44,7 +44,7 @@ void UHarmoniaNetworkOptimizationComponent::EndPlay(const EEndPlayReason::Type E
 	// Restore original values
 	if (GetOwner() && GetOwner()->HasAuthority())
 	{
-		GetOwner()->NetUpdateFrequency = OriginalNetUpdateFrequency;
+		GetOwner()->SetNetUpdateFrequency(OriginalNetUpdateFrequency);
 		GetOwner()->SetNetDormancy(OriginalDormancy);
 	}
 
@@ -197,7 +197,7 @@ void UHarmoniaNetworkOptimizationComponent::ApplyLevelSettings()
 
 	// Apply NetUpdateFrequency
 	float NewFrequency = GetNetUpdateFrequencyForLevel(CurrentLevel);
-	Owner->NetUpdateFrequency = NewFrequency;
+	Owner->SetNetUpdateFrequency(NewFrequency);
 
 	// Log in development
 #if !UE_BUILD_SHIPPING
