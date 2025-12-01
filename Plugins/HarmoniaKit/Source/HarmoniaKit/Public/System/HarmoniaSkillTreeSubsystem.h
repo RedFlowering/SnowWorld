@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "GameplayTagContainer.h"
+#include "GameplayAbilitySpec.h"
 #include "Definitions/HarmoniaProgressionDefinitions.h"
 #include "HarmoniaSkillTreeSubsystem.generated.h"
 
@@ -164,6 +165,10 @@ struct HARMONIAKIT_API FHarmoniaSkillNodeProgress
 
 	UPROPERTY(BlueprintReadWrite, Category = "Progress")
 	EHarmoniaSkillNodeState State = EHarmoniaSkillNodeState::Locked;
+
+	/** Handle for the granted ability (runtime only) */
+	UPROPERTY(Transient)
+	FGameplayAbilitySpecHandle GrantedAbilityHandle;
 };
 
 /**

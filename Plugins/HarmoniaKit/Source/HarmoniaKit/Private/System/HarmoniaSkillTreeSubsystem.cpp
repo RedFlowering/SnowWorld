@@ -444,13 +444,29 @@ void UHarmoniaSkillTreeSubsystem::ApplyNodeEffects(APlayerController* PlayerCont
 	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Pawn);
 	if (!ASC) return;
 
+	// Find the node progress to update the handle
+	FHarmoniaPlayerSkillData* PlayerData = FindPlayerData(PlayerController);
+	FHarmoniaSkillNodeProgress* NodeProgress = nullptr;
+	if (PlayerData)
+	{
+		if (FHarmoniaSkillTreeProgress* TreeProgress = PlayerData->TreeProgress.Find(NodeData.SkillTreeTag))
+		{
+			NodeProgress = TreeProgress->NodeProgress.Find(NodeData.NodeID);
+		}
+	}
+
 	switch (NodeData.NodeType)
 	{
 	case EHarmoniaSkillNodeType::Active:
 		if (NodeData.GrantedAbility && Level == 1) // Only grant on first unlock
 		{
 			FGameplayAbilitySpec AbilitySpec(NodeData.GrantedAbility, Level);
-			ASC->GiveAbility(AbilitySpec);
+			FGameplayAbilitySpecHandle Handle = ASC->GiveAbility(AbilitySpec);
+
+			if (NodeProgress)
+			{
+				NodeProgress->GrantedAbilityHandle = Handle;
+			}
 		}
 		break;
 
@@ -487,15 +503,35 @@ void UHarmoniaSkillTreeSubsystem::RemoveNodeEffects(APlayerController* PlayerCon
 	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Pawn);
 	if (!ASC) return;
 
+	// Find the node progress to get the handle
+	FHarmoniaPlayerSkillData* PlayerData = FindPlayerData(PlayerController);
+	FHarmoniaSkillNodeProgress* NodeProgress = nullptr;
+	if (PlayerData)
+	{
+		if (FHarmoniaSkillTreeProgress* TreeProgress = PlayerData->TreeProgress.Find(NodeData.SkillTreeTag))
+		{
+			NodeProgress = TreeProgress->NodeProgress.Find(NodeData.NodeID);
+		}
+	}
+
 	switch (NodeData.NodeType)
 	{
 	case EHarmoniaSkillNodeType::Active:
 		if (NodeData.GrantedAbility)
 		{
-			FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromClass(NodeData.GrantedAbility);
-			if (Spec)
+			if (NodeProgress && NodeProgress->GrantedAbilityHandle.IsValid())
 			{
-				ASC->ClearAbility(Spec->Handle);
+				ASC->ClearAbility(NodeProgress->GrantedAbilityHandle);
+				NodeProgress->GrantedAbilityHandle = FGameplayAbilitySpecHandle();
+			}
+			else
+			{
+				// Fallback to class search if handle is missing (legacy support or error)
+				FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromClass(NodeData.GrantedAbility);
+				if (Spec)
+				{
+					ASC->ClearAbility(Spec->Handle);
+				}
 			}
 		}
 		break;

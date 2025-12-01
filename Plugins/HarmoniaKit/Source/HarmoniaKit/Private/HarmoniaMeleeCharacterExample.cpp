@@ -278,34 +278,28 @@ void AHarmoniaMeleeCharacterExample::GrantMeleeAbilities()
 {
 	if (UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(this))
 	{
-		// Grant light attack
-		if (LightAttackAbilityClass)
+		// Helper to grant ability only if not already granted
+		auto GrantIfMissing = [&](TSubclassOf<UGameplayAbility> AbilityClass)
 		{
-			ASC->GiveAbility(FGameplayAbilitySpec(LightAttackAbilityClass, 1, INDEX_NONE, this));
-		}
+			if (AbilityClass && !ASC->FindAbilitySpecFromClass(AbilityClass))
+			{
+				ASC->GiveAbility(FGameplayAbilitySpec(AbilityClass, 1, INDEX_NONE, this));
+			}
+		};
+
+		// Grant light attack
+		GrantIfMissing(LightAttackAbilityClass);
 
 		// Grant heavy attack
-		if (HeavyAttackAbilityClass)
-		{
-			ASC->GiveAbility(FGameplayAbilitySpec(HeavyAttackAbilityClass, 1, INDEX_NONE, this));
-		}
+		GrantIfMissing(HeavyAttackAbilityClass);
 
 		// Grant block
-		if (BlockAbilityClass)
-		{
-			ASC->GiveAbility(FGameplayAbilitySpec(BlockAbilityClass, 1, INDEX_NONE, this));
-		}
+		GrantIfMissing(BlockAbilityClass);
 
 		// Grant parry
-		if (ParryAbilityClass)
-		{
-			ASC->GiveAbility(FGameplayAbilitySpec(ParryAbilityClass, 1, INDEX_NONE, this));
-		}
+		GrantIfMissing(ParryAbilityClass);
 
 		// Grant dodge
-		if (DodgeAbilityClass)
-		{
-			ASC->GiveAbility(FGameplayAbilitySpec(DodgeAbilityClass, 1, INDEX_NONE, this));
-		}
+		GrantIfMissing(DodgeAbilityClass);
 	}
 }

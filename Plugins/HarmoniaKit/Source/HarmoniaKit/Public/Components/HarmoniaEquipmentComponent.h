@@ -205,6 +205,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Harmonia|Equipment")
 	UDataTable* EquipmentDataTable;
 
+	/** Gameplay Effect class for applying stat modifiers via SetByCaller */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Harmonia|Equipment")
+	TSubclassOf<UGameplayEffect> DefaultStatModifierEffectClass;
+
+	/** Gameplay Effect class for applying equipment load penalty via SetByCaller */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Harmonia|Equipment")
+	TSubclassOf<UGameplayEffect> EquipLoadPenaltyEffectClass;
+
 	// ============================================================================
 	// Internal Functions
 	// ============================================================================

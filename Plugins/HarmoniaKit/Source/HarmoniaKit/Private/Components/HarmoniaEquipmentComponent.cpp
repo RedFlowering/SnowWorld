@@ -4,6 +4,7 @@
 #include "Components/HarmoniaInventoryComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
+#include "HarmoniaGameplayTags.h"
 #include "Engine/DataTable.h"
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
@@ -616,29 +617,26 @@ void UHarmoniaEquipmentComponent::ApplyEquipLoadPenalty()
 	}
 
 	// Apply penalty as a gameplay effect
-	// Note: This creates a simple additive modifier
-	// In a production system, you might want to use a proper GameplayEffect class
 	if (FMath::Abs(SpeedPenalty) > KINDA_SMALL_NUMBER)
 	{
-		// Create a dynamic GameplayEffect for movement speed penalty
-		UGameplayEffect* GameplayEffect = NewObject<UGameplayEffect>(GetTransientPackage(), FName(TEXT("EquipLoadPenaltyEffect")));
-		GameplayEffect->DurationPolicy = EGameplayEffectDurationType::Infinite;
+		if (!EquipLoadPenaltyEffectClass)
+		{
+			// Only log once to avoid spam, or if you want to warn the designer
+			// UE_LOG(LogTemp, Warning, TEXT("ApplyEquipLoadPenalty: EquipLoadPenaltyEffectClass is not set in HarmoniaEquipmentComponent!"));
+			return;
+		}
 
-		// Add modifier for MovementSpeed
-		int32 Idx = GameplayEffect->Modifiers.Num();
-		GameplayEffect->Modifiers.SetNum(Idx + 1);
-		FGameplayModifierInfo& ModifierInfo = GameplayEffect->Modifiers[Idx];
-		ModifierInfo.ModifierMagnitude = FScalableFloat(SpeedPenalty);
-		ModifierInfo.ModifierOp = EGameplayModOp::Additive;
-		ModifierInfo.Attribute = UHarmoniaAttributeSet::GetMovementSpeedAttribute();
-
-		// Apply new penalty
+		// Apply new penalty using SetByCaller
 		FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
 		EffectContext.AddSourceObject(this);
 
-		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(GameplayEffect->GetClass(), 1.0f, EffectContext);
+		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(EquipLoadPenaltyEffectClass, 1.0f, EffectContext);
 		if (SpecHandle.IsValid())
 		{
+			// Set the magnitude for the movement speed penalty
+			// The GE should be set up to use SetByCaller with this tag for MovementSpeed attribute
+			SpecHandle.Data->SetSetByCallerMagnitude(HarmoniaGameplayTags::Stat_Movement_Speed, SpeedPenalty);
+
 			ActiveEquipLoadPenaltyHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 			UE_LOG(LogTemp, Verbose, TEXT("ApplyEquipLoadPenalty: Applied %.1f%% movement speed penalty (Load: %.1f%%)"),
 				SpeedPenalty * 100.f, LoadRatio * 100.f);
@@ -694,72 +692,80 @@ void UHarmoniaEquipmentComponent::ApplyStatModifiers(const FEquipmentData& Equip
 		return;
 	}
 
+	if (!DefaultStatModifierEffectClass)
+	{
+		// UE_LOG(LogTemp, Warning, TEXT("ApplyStatModifiers: DefaultStatModifierEffectClass not set!"));
+		return;
+	}
+
+	// Create the spec
+	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+	EffectContext.AddSourceObject(this);
+
+	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(DefaultStatModifierEffectClass, 1.0f, EffectContext);
+	if (!SpecHandle.IsValid())
+	{
+		return;
+	}
+
+	bool bHasModifiers = false;
+
 	// Create and apply a GameplayEffect for each stat modifier
 	for (const FEquipmentStatModifier& Modifier : EquipmentData.StatModifiers)
 	{
-		FGameplayAttribute Attribute = GetAttributeFromName(Modifier.AttributeName);
+		FGameplayTag StatTag;
+		if (Modifier.AttributeName == "Strength") StatTag = HarmoniaGameplayTags::Stat_Primary_Strength;
+		else if (Modifier.AttributeName == "Dexterity") StatTag = HarmoniaGameplayTags::Stat_Primary_Dexterity;
+		else if (Modifier.AttributeName == "Intelligence") StatTag = HarmoniaGameplayTags::Stat_Primary_Intelligence;
+		else if (Modifier.AttributeName == "Faith") StatTag = HarmoniaGameplayTags::Stat_Primary_Faith;
+		else if (Modifier.AttributeName == "MaxHealth") StatTag = HarmoniaGameplayTags::Stat_Resource_MaxHealth;
+		else if (Modifier.AttributeName == "MaxStamina") StatTag = HarmoniaGameplayTags::Stat_Resource_MaxStamina;
+		else if (Modifier.AttributeName == "AttackPower") StatTag = HarmoniaGameplayTags::Stat_Combat_AttackPower;
+		else if (Modifier.AttributeName == "Defense") StatTag = HarmoniaGameplayTags::Stat_Combat_Defense;
+		else if (Modifier.AttributeName == "CriticalChance") StatTag = HarmoniaGameplayTags::Stat_Combat_CriticalChance;
+		else if (Modifier.AttributeName == "CriticalDamage") StatTag = HarmoniaGameplayTags::Stat_Combat_CriticalDamage;
+		else if (Modifier.AttributeName == "MovementSpeed") StatTag = HarmoniaGameplayTags::Stat_Movement_Speed;
+		else if (Modifier.AttributeName == "AttackSpeed") StatTag = HarmoniaGameplayTags::Stat_Movement_AttackSpeed;
 
-		if (!Attribute.IsValid())
+		if (!StatTag.IsValid())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("ApplyStatModifiers: Invalid attribute name '%s'"), *Modifier.AttributeName);
+			UE_LOG(LogTemp, Warning, TEXT("ApplyStatModifiers: Invalid attribute name or no tag mapping for '%s'"), *Modifier.AttributeName);
 			continue;
 		}
 
-		// Create a dynamic GameplayEffect
-		UGameplayEffect* GameplayEffect = NewObject<UGameplayEffect>(GetTransientPackage(), FName(TEXT("DynamicEquipmentEffect")));
-		GameplayEffect->DurationPolicy = EGameplayEffectDurationType::Infinite; // Persists until removed
-
-		// Determine the modifier operation based on type
-		EGameplayModOp::Type ModOp;
 		float ModifierMagnitude = Modifier.Value;
 
-		if (Modifier.ModifierType == EStatModifierType::Flat)
+		if (Modifier.ModifierType == EStatModifierType::Percentage)
 		{
-			ModOp = EGameplayModOp::Additive;
-		}
-			else if (Modifier.ModifierType == EStatModifierType::Percentage)
-		{
-			// Note: Using Additive for percentage modifiers
-			// The magnitude is converted from percentage to actual value based on current attribute
-			// Example: 10% bonus on 100 HP = 100 * (10/100) = 10 HP (additive)
-			ModOp = EGameplayModOp::Additive;
-
 			// Get current attribute value to calculate percentage
-			float CurrentValue = ASC->GetNumericAttribute(Attribute);
-			// Calculate actual value from percentage
-			ModifierMagnitude = CurrentValue * (Modifier.Value / 100.0f);
+			FGameplayAttribute Attribute = GetAttributeFromName(Modifier.AttributeName);
+			if (Attribute.IsValid())
+			{
+				float CurrentValue = ASC->GetNumericAttribute(Attribute);
+				ModifierMagnitude = CurrentValue * (Modifier.Value / 100.0f);
+			}
 		}
 		else if (Modifier.ModifierType == EStatModifierType::Override)
 		{
-			ModOp = EGameplayModOp::Override;
-		}
-		else
-		{
+			// Override is not supported with the single SetByCaller GE approach currently
+			UE_LOG(LogTemp, Warning, TEXT("ApplyStatModifiers: Override modifier type not supported for %s"), *Modifier.AttributeName);
 			continue;
 		}
 
-		// Add modifier to the effect
-		int32 Idx = GameplayEffect->Modifiers.Num();
-		GameplayEffect->Modifiers.SetNum(Idx + 1);
-		FGameplayModifierInfo& ModifierInfo = GameplayEffect->Modifiers[Idx];
-		ModifierInfo.ModifierMagnitude = FScalableFloat(ModifierMagnitude);
-		ModifierInfo.ModifierOp = ModOp;
-		ModifierInfo.Attribute = Attribute;
+		// Set the magnitude for the tag
+		SpecHandle.Data->SetSetByCallerMagnitude(StatTag, ModifierMagnitude);
+		bHasModifiers = true;
 
-		// Apply the GameplayEffect
-		FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
-		EffectContext.AddSourceObject(this);
+		UE_LOG(LogTemp, Verbose, TEXT("ApplyStatModifiers: Setting %s to %.2f"), *StatTag.ToString(), ModifierMagnitude);
+	}
 
-		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(GameplayEffect->GetClass(), 1.0f, EffectContext);
-		if (SpecHandle.IsValid())
+	if (bHasModifiers)
+	{
+		FActiveGameplayEffectHandle ActiveHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		if (ActiveHandle.IsValid())
 		{
-			FActiveGameplayEffectHandle ActiveHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-			if (ActiveHandle.IsValid())
-			{
-				OutEquippedItem.ActiveEffectHandles.Add(ActiveHandle);
-				UE_LOG(LogTemp, Verbose, TEXT("ApplyStatModifiers: Applied %s modifier to %s"),
-					*UEnum::GetValueAsString(Modifier.ModifierType), *Modifier.AttributeName);
-			}
+			OutEquippedItem.ActiveEffectHandles.Add(ActiveHandle);
+			UE_LOG(LogTemp, Verbose, TEXT("ApplyStatModifiers: Applied equipment stats"));
 		}
 	}
 }
