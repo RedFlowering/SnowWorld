@@ -4,6 +4,7 @@
 
 #include "Components/ActorComponent.h"
 #include "GameplayTagContainer.h"
+#include "GameplayAbilitySpec.h"
 #include "HarmoniaBossPatternComponent.generated.h"
 
 class AHarmoniaBossMonster;
@@ -239,4 +240,8 @@ protected:
 	/** Pattern cooldown timers (pattern name -> remaining time) */
 	UPROPERTY()
 	TMap<FName, float> PatternCooldowns;
+
+	/** Temporarily granted ability handles (need to be cleaned up after pattern completes) */
+	UPROPERTY()
+	TArray<FGameplayAbilitySpecHandle> TemporarilyGrantedAbilities;
 };

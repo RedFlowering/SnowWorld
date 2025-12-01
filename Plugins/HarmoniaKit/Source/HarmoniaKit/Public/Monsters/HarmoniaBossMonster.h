@@ -95,6 +95,24 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|UI")
 	FText BossTitle;
 
+	// ============================================================================
+	// Phase Stat Modifier Effects (SetByCaller)
+	// ============================================================================
+
+	/**
+	 * Gameplay Effect class for phase-based attack power modifier.
+	 * Must use SetByCaller with tag "Stat.Combat.AttackPower" for magnitude.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Phase|Effects")
+	TSubclassOf<UGameplayEffect> PhaseAttackPowerModifierEffect;
+
+	/**
+	 * Gameplay Effect class for phase-based defense modifier.
+	 * Must use SetByCaller with tag "Stat.Combat.Defense" for magnitude.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Phase|Effects")
+	TSubclassOf<UGameplayEffect> PhaseDefenseModifierEffect;
+
 	/**
 	 * Boss music to play during encounter
 	 */

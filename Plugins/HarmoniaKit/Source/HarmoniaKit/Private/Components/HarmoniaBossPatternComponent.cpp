@@ -303,6 +303,9 @@ void UHarmoniaBossPatternComponent::ExecuteAbilityAtIndex(int32 AbilityIndex)
 		FGameplayAbilitySpec TempSpec(AbilityClass, 1, INDEX_NONE, BossOwner);
 		FGameplayAbilitySpecHandle Handle = ASC->GiveAbility(TempSpec);
 		ASC->TryActivateAbility(Handle);
+		
+		// Track temporarily granted abilities for cleanup
+		TemporarilyGrantedAbilities.Add(Handle);
 	}
 }
 
@@ -315,6 +318,22 @@ void UHarmoniaBossPatternComponent::CompletePatternExecution()
 	{
 		PatternCooldowns.Add(CurrentPatternName, ActivePattern.Cooldown);
 	}
+
+	// Clean up temporarily granted abilities to prevent memory leaks
+	if (BossOwner)
+	{
+		if (UAbilitySystemComponent* ASC = BossOwner->GetAbilitySystemComponent())
+		{
+			for (const FGameplayAbilitySpecHandle& TempHandle : TemporarilyGrantedAbilities)
+			{
+				if (TempHandle.IsValid())
+				{
+					ASC->ClearAbility(TempHandle);
+				}
+			}
+		}
+	}
+	TemporarilyGrantedAbilities.Empty();
 
 	// Reset state
 	bIsExecutingPattern = false;
