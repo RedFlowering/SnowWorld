@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Components/HarmoniaPartyScalingComponent.h"
+#include "Core/HarmoniaCoreBFL.h"
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "AbilitySystemComponent.h"
@@ -89,10 +90,7 @@ void UHarmoniaPartyScalingComponent::TickComponent(float DeltaTime, ELevelTick T
 void UHarmoniaPartyScalingComponent::DetectPartyMembers()
 {
 	// Only run on server
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	HARMONIA_REQUIRE_SERVER(this);
 
 	if (!OwnerMonster)
 	{
@@ -166,10 +164,7 @@ void UHarmoniaPartyScalingComponent::DetectPartyMembers()
 void UHarmoniaPartyScalingComponent::ApplyScaling(int32 PartySize)
 {
 	// Only run on server
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	HARMONIA_REQUIRE_SERVER(this);
 
 	if (!OwnerMonster)
 	{
@@ -355,10 +350,7 @@ FHarmoniaPartyScalingConfig UHarmoniaPartyScalingComponent::GetCurrentScaling() 
 void UHarmoniaPartyScalingComponent::ForceUpdatePartySize()
 {
 	// Only run on server
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	HARMONIA_REQUIRE_SERVER(this);
 
 	DetectPartyMembers();
 }
@@ -366,10 +358,7 @@ void UHarmoniaPartyScalingComponent::ForceUpdatePartySize()
 void UHarmoniaPartyScalingComponent::SetPartySize(int32 NewSize)
 {
 	// Only run on server
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	HARMONIA_REQUIRE_SERVER(this);
 
 	// Input validation
 	NewSize = FMath::Max(1, NewSize);

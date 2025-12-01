@@ -1,6 +1,7 @@
 // Copyright (c) 2025 RedFlowering. All Rights Reserved.
 
 #include "Actors/HarmoniaDungeonInstance.h"
+#include "Core/HarmoniaCoreBFL.h"
 #include "Components/HarmoniaDungeonComponent.h"
 #include "Managers/HarmoniaDungeonManager.h"
 #include "Engine/World.h"
@@ -23,7 +24,7 @@ void AHarmoniaDungeonInstance::BeginPlay()
 	Super::BeginPlay();
 
 	// 매니저에 인스턴스 등록
-	if (UHarmoniaDungeonManager* Manager = GetGameInstance()->GetSubsystem<UHarmoniaDungeonManager>())
+	if (UHarmoniaDungeonManager* Manager = UHarmoniaCoreBFL::GetGameInstanceSubsystem<UHarmoniaDungeonManager>(this))
 	{
 		if (DungeonData)
 		{

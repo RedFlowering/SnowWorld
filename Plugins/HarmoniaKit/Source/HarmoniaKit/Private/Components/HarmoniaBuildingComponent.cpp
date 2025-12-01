@@ -1,6 +1,7 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "Components/HarmoniaBuildingComponent.h"
+#include "Core/HarmoniaCoreBFL.h"
 #include "Actors/HarmoniaBuildingPreviewActor.h"
 #include "Managers/HarmoniaBuildingInstanceManager.h"
 #include "Managers/HarmoniaTerrainOwnershipManager.h"
@@ -426,7 +427,7 @@ void UHarmoniaBuildingComponent::PlaceCurrentPart()
 bool UHarmoniaBuildingComponent::CheckAndConsumeResources(const FBuildingPartData& PartData)
 {
 	// Server-only execution
-	if (!GetOwner() || !GetOwner()->HasAuthority())
+	if (!UHarmoniaCoreBFL::IsComponentServerAuthoritative(this))
 	{
 		UE_LOG(LogBuildingSystem, Warning, TEXT("CheckAndConsumeResources called on client - this is a server-only function"));
 		return false;

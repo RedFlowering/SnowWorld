@@ -3,8 +3,7 @@
 #include "System/HarmoniaSaveGameLibrary.h"
 #include "System/HarmoniaSaveGameSubsystem.h"
 #include "System/HarmoniaSaveGame.h"
-#include "Engine/World.h"
-#include "Engine/GameInstance.h"
+#include "Core/HarmoniaCoreBFL.h"
 #include "OnlineSubsystem.h"
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "GameFramework/PlayerController.h"
@@ -12,164 +11,37 @@
 
 bool UHarmoniaSaveGameLibrary::SaveGame(const UObject* WorldContextObject, const FString& SaveSlotName, bool bUseSteamCloud)
 {
-	if (!WorldContextObject)
-	{
-		return false;
-	}
-
-	UWorld* World = WorldContextObject->GetWorld();
-	if (!World)
-	{
-		return false;
-	}
-
-	UGameInstance* GameInstance = World->GetGameInstance();
-	if (!GameInstance)
-	{
-		return false;
-	}
-
-	UHarmoniaSaveGameSubsystem* SaveSystem = GameInstance->GetSubsystem<UHarmoniaSaveGameSubsystem>();
-	if (!SaveSystem)
-	{
-		return false;
-	}
-
+	HARMONIA_GET_SUBSYSTEM_OR_RETURN_VALUE(UHarmoniaSaveGameSubsystem, SaveSystem, WorldContextObject, false);
 	return SaveSystem->SaveGame(SaveSlotName, bUseSteamCloud);
 }
 
 bool UHarmoniaSaveGameLibrary::LoadGame(const UObject* WorldContextObject, const FString& SaveSlotName, bool bUseSteamCloud)
 {
-	if (!WorldContextObject)
-	{
-		return false;
-	}
-
-	UWorld* World = WorldContextObject->GetWorld();
-	if (!World)
-	{
-		return false;
-	}
-
-	UGameInstance* GameInstance = World->GetGameInstance();
-	if (!GameInstance)
-	{
-		return false;
-	}
-
-	UHarmoniaSaveGameSubsystem* SaveSystem = GameInstance->GetSubsystem<UHarmoniaSaveGameSubsystem>();
-	if (!SaveSystem)
-	{
-		return false;
-	}
-
+	HARMONIA_GET_SUBSYSTEM_OR_RETURN_VALUE(UHarmoniaSaveGameSubsystem, SaveSystem, WorldContextObject, false);
 	return SaveSystem->LoadGame(SaveSlotName, bUseSteamCloud);
 }
 
 bool UHarmoniaSaveGameLibrary::DeleteSaveGame(const UObject* WorldContextObject, const FString& SaveSlotName, bool bDeleteFromSteamCloud)
 {
-	if (!WorldContextObject)
-	{
-		return false;
-	}
-
-	UWorld* World = WorldContextObject->GetWorld();
-	if (!World)
-	{
-		return false;
-	}
-
-	UGameInstance* GameInstance = World->GetGameInstance();
-	if (!GameInstance)
-	{
-		return false;
-	}
-
-	UHarmoniaSaveGameSubsystem* SaveSystem = GameInstance->GetSubsystem<UHarmoniaSaveGameSubsystem>();
-	if (!SaveSystem)
-	{
-		return false;
-	}
-
+	HARMONIA_GET_SUBSYSTEM_OR_RETURN_VALUE(UHarmoniaSaveGameSubsystem, SaveSystem, WorldContextObject, false);
 	return SaveSystem->DeleteSaveGame(SaveSlotName, bDeleteFromSteamCloud);
 }
 
 bool UHarmoniaSaveGameLibrary::DoesSaveGameExist(const UObject* WorldContextObject, const FString& SaveSlotName)
 {
-	if (!WorldContextObject)
-	{
-		return false;
-	}
-
-	UWorld* World = WorldContextObject->GetWorld();
-	if (!World)
-	{
-		return false;
-	}
-
-	UGameInstance* GameInstance = World->GetGameInstance();
-	if (!GameInstance)
-	{
-		return false;
-	}
-
-	UHarmoniaSaveGameSubsystem* SaveSystem = GameInstance->GetSubsystem<UHarmoniaSaveGameSubsystem>();
-	if (!SaveSystem)
-	{
-		return false;
-	}
-
+	HARMONIA_GET_SUBSYSTEM_OR_RETURN_VALUE(UHarmoniaSaveGameSubsystem, SaveSystem, WorldContextObject, false);
 	return SaveSystem->DoesSaveGameExist(SaveSlotName);
 }
 
 UHarmoniaSaveGame* UHarmoniaSaveGameLibrary::GetCurrentSaveGame(const UObject* WorldContextObject)
 {
-	if (!WorldContextObject)
-	{
-		return nullptr;
-	}
-
-	UWorld* World = WorldContextObject->GetWorld();
-	if (!World)
-	{
-		return nullptr;
-	}
-
-	UGameInstance* GameInstance = World->GetGameInstance();
-	if (!GameInstance)
-	{
-		return nullptr;
-	}
-
-	UHarmoniaSaveGameSubsystem* SaveSystem = GameInstance->GetSubsystem<UHarmoniaSaveGameSubsystem>();
-	if (!SaveSystem)
-	{
-		return nullptr;
-	}
-
+	HARMONIA_GET_SUBSYSTEM_OR_RETURN_VALUE(UHarmoniaSaveGameSubsystem, SaveSystem, WorldContextObject, nullptr);
 	return SaveSystem->GetCurrentSaveGame();
 }
 
 UHarmoniaSaveGameSubsystem* UHarmoniaSaveGameLibrary::GetSaveGameSubsystem(const UObject* WorldContextObject)
 {
-	if (!WorldContextObject)
-	{
-		return nullptr;
-	}
-
-	UWorld* World = WorldContextObject->GetWorld();
-	if (!World)
-	{
-		return nullptr;
-	}
-
-	UGameInstance* GameInstance = World->GetGameInstance();
-	if (!GameInstance)
-	{
-		return nullptr;
-	}
-
-	return GameInstance->GetSubsystem<UHarmoniaSaveGameSubsystem>();
+	return UHarmoniaCoreBFL::GetGameInstanceSubsystem<UHarmoniaSaveGameSubsystem>(WorldContextObject);
 }
 
 void UHarmoniaSaveGameLibrary::SetAutoSaveEnabled(const UObject* WorldContextObject, bool bEnabled)

@@ -1,6 +1,7 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "Components/HarmoniaDialogueComponent.h"
+#include "Core/HarmoniaCoreBFL.h"
 #include "Components/HarmoniaQuestComponent.h"
 #include "Relationship/HarmoniaRelationshipComponent.h"
 #include "Journal/HarmoniaJournalSubsystem.h"
@@ -171,7 +172,7 @@ void UHarmoniaDialogueComponent::ExecuteConsequences(const TArray<FDialogueConse
 			{
 				if (Consequence.TargetId.IsValid())
 				{
-					UHarmoniaJournalSubsystem* Journal = GetWorld()->GetGameInstance()->GetSubsystem<UHarmoniaJournalSubsystem>();
+					UHarmoniaJournalSubsystem* Journal = UHarmoniaCoreBFL::GetGameInstanceSubsystem<UHarmoniaJournalSubsystem>(this);
 					if (Journal)
 					{
 						Journal->UnlockEntry(Consequence.TargetId);

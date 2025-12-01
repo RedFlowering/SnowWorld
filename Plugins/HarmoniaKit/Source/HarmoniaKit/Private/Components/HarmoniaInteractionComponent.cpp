@@ -1,6 +1,7 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "Components/HarmoniaInteractionComponent.h"
+#include "Core/HarmoniaCoreBFL.h"
 #include "Interfaces/HarmoniaInteractableInterface.h"
 #include "Camera/CameraComponent.h"
 
@@ -14,10 +15,7 @@ void UHarmoniaInteractionComponent::BeginPlay()
     Super::BeginPlay();
 
     // 매니저 캐싱 획득
-    if (GetWorld() && GetWorld()->GetGameInstance())
-    {
-        InteractionManager = GetWorld()->GetGameInstance()->GetSubsystem<UHarmoniaInteractionManager>();
-    }
+    InteractionManager = UHarmoniaCoreBFL::GetGameInstanceSubsystem<UHarmoniaInteractionManager>(this);
 }
 
 void UHarmoniaInteractionComponent::SetTargetActor(AActor* Target)

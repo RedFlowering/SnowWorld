@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Utils/HarmoniaReplicationUtils.h"
+#include "Core/HarmoniaCoreBFL.h"
 #include "HarmoniaLogCategories.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
@@ -8,70 +9,30 @@
 
 bool UHarmoniaReplicationUtils::IsServer(const UObject* WorldContextObject)
 {
-	if (!WorldContextObject)
-	{
-		return false;
-	}
-
-	UWorld* World = WorldContextObject->GetWorld();
-	if (!World)
-	{
-		return false;
-	}
-
-	return World->GetNetMode() != NM_Client;
+	UWorld* World = UHarmoniaCoreBFL::GetWorldSafe(WorldContextObject);
+	return World && World->GetNetMode() != NM_Client;
 }
 
 bool UHarmoniaReplicationUtils::IsClient(const UObject* WorldContextObject)
 {
-	if (!WorldContextObject)
-	{
-		return false;
-	}
-
-	UWorld* World = WorldContextObject->GetWorld();
-	if (!World)
-	{
-		return false;
-	}
-
-	return World->GetNetMode() == NM_Client;
+	UWorld* World = UHarmoniaCoreBFL::GetWorldSafe(WorldContextObject);
+	return World && World->GetNetMode() == NM_Client;
 }
 
 bool UHarmoniaReplicationUtils::IsStandalone(const UObject* WorldContextObject)
 {
-	if (!WorldContextObject)
-	{
-		return false;
-	}
-
-	UWorld* World = WorldContextObject->GetWorld();
-	if (!World)
-	{
-		return false;
-	}
-
-	return World->GetNetMode() == NM_Standalone;
+	UWorld* World = UHarmoniaCoreBFL::GetWorldSafe(WorldContextObject);
+	return World && World->GetNetMode() == NM_Standalone;
 }
 
 bool UHarmoniaReplicationUtils::IsLocallyControlled(const APawn* Pawn)
 {
-	if (!Pawn)
-	{
-		return false;
-	}
-
-	return Pawn->IsLocallyControlled();
+	return Pawn && Pawn->IsLocallyControlled();
 }
 
 bool UHarmoniaReplicationUtils::HasAuthority(const AActor* Actor)
 {
-	if (!Actor)
-	{
-		return false;
-	}
-
-	return Actor->HasAuthority();
+	return UHarmoniaCoreBFL::HasServerAuthority(Actor);
 }
 
 bool UHarmoniaReplicationUtils::IsOwnedByLocalPlayer(const AActor* Actor)

@@ -1,6 +1,7 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "Libraries/HarmoniaCombatLibrary.h"
+#include "Core/HarmoniaCoreBFL.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "GameFramework/Character.h"
@@ -297,42 +298,27 @@ bool UHarmoniaCombatLibrary::SphereSweepForHits(
 }
 
 // ============================================================================
-// Gameplay Tag Helpers
+// Gameplay Tag Helpers (Delegated to HarmoniaCoreBFL)
 // ============================================================================
 
 void UHarmoniaCombatLibrary::AddGameplayTag(AActor* Actor, FGameplayTag Tag)
 {
-	if (UAbilitySystemComponent* ASC = GetAbilitySystemFromActor(Actor))
-	{
-		ASC->AddLooseGameplayTag(Tag);
-	}
+	UHarmoniaCoreBFL::AddGameplayTag(Actor, Tag);
 }
 
 void UHarmoniaCombatLibrary::RemoveGameplayTag(AActor* Actor, FGameplayTag Tag)
 {
-	if (UAbilitySystemComponent* ASC = GetAbilitySystemFromActor(Actor))
-	{
-		ASC->RemoveLooseGameplayTag(Tag);
-	}
+	UHarmoniaCoreBFL::RemoveGameplayTag(Actor, Tag);
 }
 
 bool UHarmoniaCombatLibrary::HasGameplayTag(AActor* Actor, FGameplayTag Tag)
 {
-	if (UAbilitySystemComponent* ASC = GetAbilitySystemFromActor(Actor))
-	{
-		return ASC->HasMatchingGameplayTag(Tag);
-	}
-	return false;
+	return UHarmoniaCoreBFL::HasGameplayTag(Actor, Tag);
 }
 
 UAbilitySystemComponent* UHarmoniaCombatLibrary::GetAbilitySystemFromActor(AActor* Actor)
 {
-	if (!Actor)
-	{
-		return nullptr;
-	}
-
-	return UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Actor);
+	return UHarmoniaCoreBFL::GetASC(Actor);
 }
 
 // ============================================================================

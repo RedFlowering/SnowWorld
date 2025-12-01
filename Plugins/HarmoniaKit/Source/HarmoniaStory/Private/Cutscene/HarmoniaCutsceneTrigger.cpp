@@ -1,6 +1,7 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "Cutscene/HarmoniaCutsceneTrigger.h"
+#include "Core/HarmoniaCoreBFL.h"
 #include "Components/BoxComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
@@ -32,7 +33,7 @@ void AHarmoniaCutsceneTrigger::OnOverlapBegin(UPrimitiveComponent* OverlappedCom
 	// Check if it's a player character
 	if (OtherActor && OtherActor->IsA(ACharacter::StaticClass()) && OtherActor->GetInstigatorController() && OtherActor->GetInstigatorController()->IsPlayerController())
 	{
-		UHarmoniaCutsceneManager* CutsceneManager = GetGameInstance()->GetSubsystem<UHarmoniaCutsceneManager>();
+		UHarmoniaCutsceneManager* CutsceneManager = UHarmoniaCoreBFL::GetGameInstanceSubsystem<UHarmoniaCutsceneManager>(this);
 		if (CutsceneManager && CutsceneSequence)
 		{
 			CutsceneManager->PlayCutscene(CutsceneSequence, Settings);

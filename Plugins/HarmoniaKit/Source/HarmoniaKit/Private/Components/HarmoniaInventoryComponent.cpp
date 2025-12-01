@@ -1,6 +1,7 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "Components/HarmoniaInventoryComponent.h"
+#include "Core/HarmoniaCoreBFL.h"
 #include "HarmoniaLogCategories.h"
 #include "Definitions/HarmoniaInventorySystemDefinitions.h"
 #include "Definitions/HarmoniaCoreDefinitions.h"
@@ -98,7 +99,7 @@ void UHarmoniaInventoryComponent::RequestSwapSlots(int32 SlotA, int32 SlotB)
 void UHarmoniaInventoryComponent::RequestClear()
 {
 	// [SECURITY] Clear is a dangerous operation that requires Admin permissions
-	if (!GetOwner() || !GetOwner()->HasAuthority())
+	if (!UHarmoniaCoreBFL::IsComponentServerAuthoritative(this))
 	{
 		UE_LOG(LogHarmoniaInventory, Warning, TEXT("[SECURITY] RequestClear: Must be called on server"));
 		return;
@@ -143,10 +144,7 @@ void UHarmoniaInventoryComponent::RequestClear()
 bool UHarmoniaInventoryComponent::AddItem(const FHarmoniaID& ItemID, int32 Count, float Durability)
 {
 	// Server-only execution
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return false;
-	}
+	HARMONIA_REQUIRE_SERVER_RETURN(this, false);
 
 	if (Count > 0)
 	{
@@ -181,10 +179,7 @@ bool UHarmoniaInventoryComponent::AddItem(const FHarmoniaID& ItemID, int32 Count
 bool UHarmoniaInventoryComponent::RemoveItem(const FHarmoniaID& ItemID, int32 Count, float Durability)
 {
 	// Server-only execution
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return false;
-	}
+	HARMONIA_REQUIRE_SERVER_RETURN(this, false);
 
 	if (Count <= 0) return false;
 
@@ -212,10 +207,7 @@ bool UHarmoniaInventoryComponent::RemoveItem(const FHarmoniaID& ItemID, int32 Co
 void UHarmoniaInventoryComponent::SwapSlots(int32 SlotA, int32 SlotB)
 {
 	// Server-only execution
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	HARMONIA_REQUIRE_SERVER(this);
 
 	if (InventoryData.Slots.IsValidIndex(SlotA) && InventoryData.Slots.IsValidIndex(SlotB) && SlotA != SlotB)
 	{
@@ -227,10 +219,7 @@ void UHarmoniaInventoryComponent::SwapSlots(int32 SlotA, int32 SlotB)
 void UHarmoniaInventoryComponent::Clear()
 {
 	// Server-only execution
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	HARMONIA_REQUIRE_SERVER(this);
 
 	for (FInventorySlot& Slot : InventoryData.Slots)
 	{
@@ -449,10 +438,7 @@ void UHarmoniaInventoryComponent::RequestSortInventory(EInventorySortMethod Meth
 void UHarmoniaInventoryComponent::SortInventory(EInventorySortMethod Method)
 {
 	// Server-only execution
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	HARMONIA_REQUIRE_SERVER(this);
 
 	// Sort logic
 	InventoryData.Slots.Sort([Method](const FInventorySlot& A, const FInventorySlot& B)

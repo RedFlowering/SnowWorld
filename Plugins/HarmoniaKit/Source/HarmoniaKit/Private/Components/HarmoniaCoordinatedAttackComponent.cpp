@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Components/HarmoniaCoordinatedAttackComponent.h"
+#include "Core/HarmoniaCoreBFL.h"
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -43,10 +44,7 @@ void UHarmoniaCoordinatedAttackComponent::TickComponent(float DeltaTime, ELevelT
 bool UHarmoniaCoordinatedAttackComponent::InitiateCoordinatedAttack(AActor* Target)
 {
 	// Only run on server
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return false;
-	}
+	HARMONIA_REQUIRE_SERVER_RETURN(this, false);
 
 	if (!Target || CooldownTimer > 0.0f)
 	{
@@ -76,10 +74,7 @@ bool UHarmoniaCoordinatedAttackComponent::InitiateCoordinatedAttack(AActor* Targ
 void UHarmoniaCoordinatedAttackComponent::AssignRole(AHarmoniaMonsterBase* Monster, EHarmoniaCoordinatedRole Role)
 {
 	// Only run on server
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	HARMONIA_REQUIRE_SERVER(this);
 
 	if (Monster)
 	{

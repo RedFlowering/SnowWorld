@@ -1,6 +1,7 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "Components/HarmoniaSquadComponent.h"
+#include "Core/HarmoniaCoreBFL.h"
 #include "HarmoniaLogCategories.h"
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "Monsters/HarmoniaMonsterInterface.h"
@@ -169,10 +170,7 @@ bool UHarmoniaSquadComponent::JoinSquad(AActor* Leader)
 
 void UHarmoniaSquadComponent::LeaveSquad()
 {
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	HARMONIA_REQUIRE_SERVER(this);
 
 	if (SquadLeader)
 	{
@@ -296,10 +294,7 @@ FVector UHarmoniaSquadComponent::GetFormationPosition() const
 
 void UHarmoniaSquadComponent::SetSquadTarget(AActor* NewTarget)
 {
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	HARMONIA_REQUIRE_SERVER(this);
 
 	SharedTarget = NewTarget;
 
@@ -604,10 +599,7 @@ void UHarmoniaSquadComponent::CheckSquadCohesion()
 
 void UHarmoniaSquadComponent::OnMemberDeath(AHarmoniaMonsterBase* DeadMember, AActor* Killer)
 {
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	HARMONIA_REQUIRE_SERVER(this);
 
 	// Mark member as dead
 	for (FHarmoniaSquadMemberInfo& Member : SquadMembers)

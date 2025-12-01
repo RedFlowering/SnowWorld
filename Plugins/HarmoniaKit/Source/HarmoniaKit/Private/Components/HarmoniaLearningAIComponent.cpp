@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Components/HarmoniaLearningAIComponent.h"
+#include "Core/HarmoniaCoreBFL.h"
 #include "HarmoniaLogCategories.h"
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
@@ -174,10 +175,7 @@ void UHarmoniaLearningAIComponent::UpdatePatternConfidence(AActor* Player)
 void UHarmoniaLearningAIComponent::RecordPlayerDodge(AActor* Player, FVector DodgeDirection)
 {
 	// Only run on server
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	HARMONIA_REQUIRE_SERVER(this);
 
 	if (!Player)
 	{
@@ -209,10 +207,7 @@ void UHarmoniaLearningAIComponent::RecordPlayerDodge(AActor* Player, FVector Dod
 void UHarmoniaLearningAIComponent::RecordPlayerAttack(AActor* Player, FName AbilityName)
 {
 	// Only run on server
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	HARMONIA_REQUIRE_SERVER(this);
 
 	if (!Player)
 	{
@@ -269,10 +264,7 @@ void UHarmoniaLearningAIComponent::RecordPlayerAttack(AActor* Player, FName Abil
 void UHarmoniaLearningAIComponent::RecordCombatResult(AActor* Player, bool bPlayerWon, float CombatDuration)
 {
 	// Only run on server
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	HARMONIA_REQUIRE_SERVER(this);
 
 	if (!Player)
 	{
@@ -375,10 +367,7 @@ float UHarmoniaLearningAIComponent::GetOptimalAttackTiming(AActor* Player) const
 void UHarmoniaLearningAIComponent::AdjustDifficulty()
 {
 	// Only run on server
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	HARMONIA_REQUIRE_SERVER(this);
 
 	if (!bEnableAdaptiveDifficulty)
 	{
@@ -458,10 +447,7 @@ float UHarmoniaLearningAIComponent::CalculatePlayerWinRate(AActor* Player) const
 void UHarmoniaLearningAIComponent::ApplyDifficultyAdjustments()
 {
 	// Only run on server
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	HARMONIA_REQUIRE_SERVER(this);
 
 	if (!OwnerMonster)
 	{

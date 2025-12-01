@@ -1,6 +1,7 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "HarmoniaStoryQuestIntegration.h"
+#include "Core/HarmoniaCoreBFL.h"
 #include "Components/HarmoniaQuestComponent.h"
 #include "Components/HarmoniaDialogueComponent.h"
 #include "Cutscene/HarmoniaCutsceneManager.h"
@@ -111,7 +112,7 @@ void UHarmoniaStoryQuestIntegration::OnQuestStarted(FHarmoniaID QuestId, const F
 void UHarmoniaStoryQuestIntegration::OnQuestCompleted(FHarmoniaID QuestId, const FQuestData& QuestData, const TArray<FQuestReward>& Rewards)
 {
 	// Check for Journal rewards
-	UHarmoniaJournalSubsystem* JournalSubsystem = GetGameInstance()->GetSubsystem<UHarmoniaJournalSubsystem>();
+	UHarmoniaJournalSubsystem* JournalSubsystem = UHarmoniaCoreBFL::GetGameInstanceSubsystem<UHarmoniaJournalSubsystem>(this);
 	if (JournalSubsystem)
 	{
 		for (const FQuestReward& Reward : Rewards)
@@ -133,7 +134,7 @@ void UHarmoniaStoryQuestIntegration::OnQuestEventTriggered(FHarmoniaID QuestId, 
 			ULevelSequence* Sequence = Event.CutsceneToPlay.LoadSynchronous();
 			if (Sequence)
 			{
-				UHarmoniaCutsceneManager* CutsceneManager = GetGameInstance()->GetSubsystem<UHarmoniaCutsceneManager>();
+				UHarmoniaCutsceneManager* CutsceneManager = UHarmoniaCoreBFL::GetGameInstanceSubsystem<UHarmoniaCutsceneManager>(this);
 				if (CutsceneManager)
 				{
 					FCutsceneSettings Settings;

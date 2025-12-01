@@ -1,6 +1,7 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "Components/HarmoniaAdvancedAIComponent.h"
+#include "Core/HarmoniaCoreBFL.h"
 #include "HarmoniaLogCategories.h"
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "Monsters/HarmoniaMonsterInterface.h"
@@ -37,7 +38,7 @@ void UHarmoniaAdvancedAIComponent::UpdateAIComponent(float DeltaTime)
 {
 	Super::UpdateAIComponent(DeltaTime);
 
-	if (!GetOwner() || !GetOwner()->HasAuthority())
+	if (!UHarmoniaCoreBFL::IsComponentServerAuthoritative(this))
 	{
 		return;
 	}
@@ -79,10 +80,7 @@ void UHarmoniaAdvancedAIComponent::GetLifetimeReplicatedProps(TArray<FLifetimePr
 
 void UHarmoniaAdvancedAIComponent::TriggerEmotion(EHarmoniaMonsterEmotion Emotion, float Intensity, float Duration)
 {
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	HARMONIA_REQUIRE_SERVER(this);
 
 	EHarmoniaMonsterEmotion OldEmotion = EmotionState.CurrentEmotion;
 
@@ -165,10 +163,7 @@ void UHarmoniaAdvancedAIComponent::ApplyEmotionModifiers(EHarmoniaMonsterEmotion
 
 void UHarmoniaAdvancedAIComponent::StartCombo(const FHarmoniaMonsterAttackPattern& AttackPattern)
 {
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	HARMONIA_REQUIRE_SERVER(this);
 
 	if (!AttackPattern.bCanStartCombo || AttackPattern.ComboFollowUps.Num() == 0)
 	{
@@ -187,10 +182,7 @@ void UHarmoniaAdvancedAIComponent::StartCombo(const FHarmoniaMonsterAttackPatter
 
 bool UHarmoniaAdvancedAIComponent::TryContinueCombo(FName& OutNextAttackID)
 {
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return false;
-	}
+	HARMONIA_REQUIRE_SERVER_RETURN(this, false);
 
 	if (!ComboState.IsActive())
 	{
