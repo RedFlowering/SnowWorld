@@ -411,34 +411,34 @@ protected:
 	// Server RPCs
 	// ============================================================================
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerEnhanceItem(FGuid ItemGUID, int32 TargetLevel, bool bUseProtection);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerInsertGem(FGuid ItemGUID, int32 SocketIndex, FHarmoniaID GemId);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRemoveGem(FGuid ItemGUID, int32 SocketIndex, bool bDestroyGem);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerReforgeItem(FGuid ItemGUID);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerTranscendItem(FGuid ItemGUID, ETranscendenceTier TargetTier);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerApplyTransmog(FGuid TargetItemGUID, FHarmoniaID AppearanceItemId);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRemoveTransmog(FGuid ItemGUID);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRepairItem(FGuid ItemGUID, bool bFullRepair, float RepairAmount);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRepairItemWithKit(FGuid ItemGUID, FHarmoniaID RepairKitId);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRepairItemAtStation(FGuid ItemGUID, AActor* RepairStation, bool bFullRepair);
 
 	// ============================================================================

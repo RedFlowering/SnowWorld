@@ -330,19 +330,19 @@ protected:
 	// Server RPCs
 	// ============================================================================
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerFireProjectile(const FVector& SpawnLocation, const FVector& Direction, float DamageMultiplier);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerStartAiming();
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerStopAiming();
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerStartDrawing();
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerReleaseDrawing();
 
 	// ============================================================================

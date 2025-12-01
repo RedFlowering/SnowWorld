@@ -134,16 +134,32 @@ protected:
 	// ============================================================================
 
 	/** Current upgrade level */
-	UPROPERTY(BlueprintReadOnly, Category = "Weapon Upgrade|State", Replicated)
+	UPROPERTY(BlueprintReadOnly, Category = "Weapon Upgrade|State", ReplicatedUsing = OnRep_UpgradeLevel)
 	int32 UpgradeLevel = 0;
 
 	/** Current infusion type */
-	UPROPERTY(BlueprintReadOnly, Category = "Weapon Upgrade|State", Replicated)
+	UPROPERTY(BlueprintReadOnly, Category = "Weapon Upgrade|State", ReplicatedUsing = OnRep_InfusionType)
 	EHarmoniaElementType InfusionType = EHarmoniaElementType::None;
 
 	/** Custom stat modifiers from upgrades */
 	UPROPERTY()
 	TArray<FEquipmentStatModifier> UpgradeStatModifiers;
+
+	// ============================================================================
+	// Server RPCs
+	// ============================================================================
+
+	/** Request weapon upgrade from server */
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerUpgradeWeapon();
+
+	/** Request weapon infusion from server */
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerInfuseWeapon(EHarmoniaElementType ElementType);
+
+	/** Request infusion removal from server */
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRemoveInfusion();
 
 	// ============================================================================
 	// Replication

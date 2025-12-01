@@ -31,6 +31,14 @@ bool UHarmoniaWeaponUpgradeComponent::CanUpgrade() const
 
 bool UHarmoniaWeaponUpgradeComponent::UpgradeWeapon()
 {
+	// Client: Request server to perform upgrade
+	if (!GetOwner()->HasAuthority())
+	{
+		ServerUpgradeWeapon();
+		return true; // Assume success, will be corrected by replication
+	}
+
+	// Server: Perform upgrade
 	if (!CanUpgrade())
 	{
 		return false;
@@ -81,8 +89,6 @@ bool UHarmoniaWeaponUpgradeComponent::UpgradeWeapon()
 	UpgradeLevel++;
 	RecalculateStatModifiers();
 
-	OnRep_UpgradeLevel();
-
 	UE_LOG(LogTemp, Log, TEXT("Weapon upgraded to level %d"), UpgradeLevel);
 	return true;
 }
@@ -109,6 +115,14 @@ bool UHarmoniaWeaponUpgradeComponent::CanInfuse(EHarmoniaElementType ElementType
 
 bool UHarmoniaWeaponUpgradeComponent::InfuseWeapon(EHarmoniaElementType ElementType)
 {
+	// Client: Request server to perform infusion
+	if (!GetOwner()->HasAuthority())
+	{
+		ServerInfuseWeapon(ElementType);
+		return true; // Assume success, will be corrected by replication
+	}
+
+	// Server: Perform infusion
 	if (!CanInfuse(ElementType))
 	{
 		return false;
@@ -177,18 +191,22 @@ bool UHarmoniaWeaponUpgradeComponent::InfuseWeapon(EHarmoniaElementType ElementT
 	InfusionType = ElementType;
 	RecalculateStatModifiers();
 
-	OnRep_InfusionType();
-
 	UE_LOG(LogTemp, Log, TEXT("Weapon infused with %s element"), *UEnum::GetValueAsString(ElementType));
 	return true;
 }
 
 void UHarmoniaWeaponUpgradeComponent::RemoveInfusion()
 {
+	// Client: Request server to remove infusion
+	if (!GetOwner()->HasAuthority())
+	{
+		ServerRemoveInfusion();
+		return;
+	}
+
+	// Server: Remove infusion
 	InfusionType = EHarmoniaElementType::None;
 	RecalculateStatModifiers();
-
-	OnRep_InfusionType();
 }
 
 float UHarmoniaWeaponUpgradeComponent::GetInfusionDamageBonus() const
@@ -293,4 +311,93 @@ void UHarmoniaWeaponUpgradeComponent::OnRep_InfusionType()
 {
 	// Notify UI or other systems
 	RecalculateStatModifiers();
+}
+
+// ============================================================================
+// Server RPCs
+// ============================================================================
+
+void UHarmoniaWeaponUpgradeComponent::ServerUpgradeWeapon_Implementation()
+{
+	UpgradeWeapon();
+}
+
+bool UHarmoniaWeaponUpgradeComponent::ServerUpgradeWeapon_Validate()
+{
+	// [ANTI-CHEAT] Validate upgrade request
+	if (!CanUpgrade())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerUpgradeWeapon: Cannot upgrade - already at max level or invalid state"));
+		return false;
+	}
+
+	// Validate player has required currency
+	AActor* Owner = GetOwner();
+	if (Owner)
+	{
+		UHarmoniaCurrencyManagerComponent* CurrencyComponent = Owner->FindComponentByClass<UHarmoniaCurrencyManagerComponent>();
+		if (CurrencyComponent)
+		{
+			int32 RequiredCurrency = GetRequiredCurrency(UpgradeLevel + 1);
+			if (!CurrencyComponent->HasCurrency(EHarmoniaCurrencyType::Gold, RequiredCurrency))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerUpgradeWeapon: Insufficient currency (Has: %d, Required: %d)"), 
+					CurrencyComponent->GetCurrencyAmount(EHarmoniaCurrencyType::Gold), RequiredCurrency);
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+void UHarmoniaWeaponUpgradeComponent::ServerInfuseWeapon_Implementation(EHarmoniaElementType ElementType)
+{
+	InfuseWeapon(ElementType);
+}
+
+bool UHarmoniaWeaponUpgradeComponent::ServerInfuseWeapon_Validate(EHarmoniaElementType ElementType)
+{
+	// [ANTI-CHEAT] Validate infusion request
+	if (!CanInfuse(ElementType))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerInfuseWeapon: Cannot infuse with element type %s"), 
+			*UEnum::GetValueAsString(ElementType));
+		return false;
+	}
+
+	// Validate player has required currency
+	AActor* Owner = GetOwner();
+	if (Owner)
+	{
+		UHarmoniaCurrencyManagerComponent* CurrencyComponent = Owner->FindComponentByClass<UHarmoniaCurrencyManagerComponent>();
+		if (CurrencyComponent)
+		{
+			if (!CurrencyComponent->HasCurrency(EHarmoniaCurrencyType::Gold, BaseInfusionCost))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerInfuseWeapon: Insufficient currency (Has: %d, Required: %d)"), 
+					CurrencyComponent->GetCurrencyAmount(EHarmoniaCurrencyType::Gold), BaseInfusionCost);
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+void UHarmoniaWeaponUpgradeComponent::ServerRemoveInfusion_Implementation()
+{
+	RemoveInfusion();
+}
+
+bool UHarmoniaWeaponUpgradeComponent::ServerRemoveInfusion_Validate()
+{
+	// [ANTI-CHEAT] Validate removal request - only allow if there's an infusion to remove
+	if (InfusionType == EHarmoniaElementType::None)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerRemoveInfusion: No infusion to remove"));
+		return false;
+	}
+
+	return true;
 }

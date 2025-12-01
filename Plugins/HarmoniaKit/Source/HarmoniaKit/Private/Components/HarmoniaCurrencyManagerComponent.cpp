@@ -331,14 +331,79 @@ void UHarmoniaCurrencyManagerComponent::Server_AddCurrency_Implementation(EHarmo
 	AddCurrency(CurrencyType, Amount);
 }
 
+bool UHarmoniaCurrencyManagerComponent::Server_AddCurrency_Validate(EHarmoniaCurrencyType CurrencyType, int32 Amount)
+{
+	// [ANTI-CHEAT] Validate currency addition request
+	if (Amount <= 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Server_AddCurrency: Invalid amount %d"), Amount);
+		return false;
+	}
+
+	// Validate reasonable amount (prevent integer overflow exploits)
+	constexpr int32 MaxSingleTransactionAmount = 1000000;
+	if (Amount > MaxSingleTransactionAmount)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Server_AddCurrency: Amount too large %d (max: %d)"), Amount, MaxSingleTransactionAmount);
+		return false;
+	}
+
+	// Validate currency type is valid enum value
+	if (CurrencyType == EHarmoniaCurrencyType::None)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Server_AddCurrency: Invalid currency type"));
+		return false;
+	}
+
+	return true;
+}
+
 void UHarmoniaCurrencyManagerComponent::Server_RemoveCurrency_Implementation(EHarmoniaCurrencyType CurrencyType, int32 Amount)
 {
 	RemoveCurrency(CurrencyType, Amount);
 }
 
+bool UHarmoniaCurrencyManagerComponent::Server_RemoveCurrency_Validate(EHarmoniaCurrencyType CurrencyType, int32 Amount)
+{
+	// [ANTI-CHEAT] Validate currency removal request
+	if (Amount <= 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Server_RemoveCurrency: Invalid amount %d"), Amount);
+		return false;
+	}
+
+	// Validate currency type is valid enum value
+	if (CurrencyType == EHarmoniaCurrencyType::None)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Server_RemoveCurrency: Invalid currency type"));
+		return false;
+	}
+
+	// Validate player has enough currency to remove
+	const int32 CurrentAmount = GetCurrencyAmount(CurrencyType);
+	if (CurrentAmount < Amount)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Server_RemoveCurrency: Insufficient currency (Has: %d, Trying to remove: %d)"), CurrentAmount, Amount);
+		return false;
+	}
+
+	return true;
+}
+
 void UHarmoniaCurrencyManagerComponent::Server_SetCurrency_Implementation(EHarmoniaCurrencyType CurrencyType, int32 Amount)
 {
 	SetCurrency(CurrencyType, Amount);
+}
+
+bool UHarmoniaCurrencyManagerComponent::Server_SetCurrency_Validate(EHarmoniaCurrencyType CurrencyType, int32 Amount)
+{
+	// [ANTI-CHEAT] SetCurrency is a dangerous operation - requires admin validation
+	// For security, reject all client-initiated SetCurrency requests
+	// SetCurrency should only be called server-side (e.g., from quest rewards, admin commands)
+	UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] Server_SetCurrency: Direct currency setting is not allowed from clients"));
+	
+	// Always reject client requests - this function should only be called server-side
+	return false;
 }
 
 void UHarmoniaCurrencyManagerComponent::OnRep_CurrencyAmounts()

@@ -121,13 +121,13 @@ protected:
 	void SetCurrencyInternal(EHarmoniaCurrencyType CurrencyType, int32 Amount);
 
 	//~ Server RPCs
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_AddCurrency(EHarmoniaCurrencyType CurrencyType, int32 Amount);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_RemoveCurrency(EHarmoniaCurrencyType CurrencyType, int32 Amount);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_SetCurrency(EHarmoniaCurrencyType CurrencyType, int32 Amount);
 
 	//~ Replication

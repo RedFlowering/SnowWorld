@@ -212,6 +212,33 @@ void UHarmoniaEnhancementSystemComponent::ServerEnhanceItem_Implementation(FGuid
 	OnEnhancementCompleted.Broadcast(ItemGUID, Result, NewLevel);
 }
 
+bool UHarmoniaEnhancementSystemComponent::ServerEnhanceItem_Validate(FGuid ItemGUID, int32 TargetLevel, bool bUseProtection)
+{
+	// [ANTI-CHEAT] Validate enhancement request
+	if (!ItemGUID.IsValid())
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerEnhanceItem: Invalid ItemGUID"));
+		return false;
+	}
+
+	// Validate target level is reasonable
+	if (TargetLevel <= 0 || TargetLevel > MaxEnhancementLevel)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerEnhanceItem: Invalid target level %d (max: %d)"), TargetLevel, MaxEnhancementLevel);
+		return false;
+	}
+
+	// Validate item exists
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
+	if (!ItemData)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerEnhanceItem: Item not found"));
+		return false;
+	}
+
+	return true;
+}
+
 bool UHarmoniaEnhancementSystemComponent::GetEnhancementLevelConfig(int32 Level, FEnhancementLevelConfig& OutConfig) const
 {
 	if (!EnhancementLevelConfigTable)
@@ -468,6 +495,37 @@ void UHarmoniaEnhancementSystemComponent::ServerInsertGem_Implementation(FGuid I
 	OnGemInserted.Broadcast(ItemGUID, SocketIndex, GemId);
 }
 
+bool UHarmoniaEnhancementSystemComponent::ServerInsertGem_Validate(FGuid ItemGUID, int32 SocketIndex, FHarmoniaID GemId)
+{
+	// [ANTI-CHEAT] Validate gem insertion request
+	if (!ItemGUID.IsValid())
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerInsertGem: Invalid ItemGUID"));
+		return false;
+	}
+
+	if (!GemId.IsValid())
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerInsertGem: Invalid GemId"));
+		return false;
+	}
+
+	if (SocketIndex < 0)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerInsertGem: Invalid socket index %d"), SocketIndex);
+		return false;
+	}
+
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
+	if (!ItemData)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerInsertGem: Item not found"));
+		return false;
+	}
+
+	return true;
+}
+
 bool UHarmoniaEnhancementSystemComponent::RemoveGem(FGuid ItemGUID, int32 SocketIndex, bool bDestroyGem)
 {
 	if (GetOwner()->HasAuthority())
@@ -506,6 +564,31 @@ void UHarmoniaEnhancementSystemComponent::ServerRemoveGem_Implementation(FGuid I
 
 	Socket.InsertedGemId = FHarmoniaID();
 	OnGemRemoved.Broadcast(ItemGUID, SocketIndex, RemovedGemId);
+}
+
+bool UHarmoniaEnhancementSystemComponent::ServerRemoveGem_Validate(FGuid ItemGUID, int32 SocketIndex, bool bDestroyGem)
+{
+	// [ANTI-CHEAT] Validate gem removal request
+	if (!ItemGUID.IsValid())
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerRemoveGem: Invalid ItemGUID"));
+		return false;
+	}
+
+	if (SocketIndex < 0)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerRemoveGem: Invalid socket index %d"), SocketIndex);
+		return false;
+	}
+
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
+	if (!ItemData)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerRemoveGem: Item not found"));
+		return false;
+	}
+
+	return true;
 }
 
 bool UHarmoniaEnhancementSystemComponent::GetGemData(FHarmoniaID GemId, FGemData& OutData) const
@@ -649,6 +732,25 @@ void UHarmoniaEnhancementSystemComponent::ServerReforgeItem_Implementation(FGuid
 	ItemData->ReforgedStats = NewStats;
 
 	OnItemReforged.Broadcast(ItemGUID, NewStats);
+}
+
+bool UHarmoniaEnhancementSystemComponent::ServerReforgeItem_Validate(FGuid ItemGUID)
+{
+	// [ANTI-CHEAT] Validate reforge request
+	if (!ItemGUID.IsValid())
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerReforgeItem: Invalid ItemGUID"));
+		return false;
+	}
+
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
+	if (!ItemData)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerReforgeItem: Item not found"));
+		return false;
+	}
+
+	return true;
 }
 
 bool UHarmoniaEnhancementSystemComponent::GetReforgeConfig(EItemGrade ItemGrade, FReforgeConfig& OutConfig) const
@@ -817,6 +919,32 @@ void UHarmoniaEnhancementSystemComponent::ServerTranscendItem_Implementation(FGu
 	OnItemTranscended.Broadcast(ItemGUID, TargetTier);
 }
 
+bool UHarmoniaEnhancementSystemComponent::ServerTranscendItem_Validate(FGuid ItemGUID, ETranscendenceTier TargetTier)
+{
+	// [ANTI-CHEAT] Validate transcendence request
+	if (!ItemGUID.IsValid())
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerTranscendItem: Invalid ItemGUID"));
+		return false;
+	}
+
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
+	if (!ItemData)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerTranscendItem: Item not found"));
+		return false;
+	}
+
+	// Validate target tier is valid and higher than current
+	if (TargetTier <= ItemData->TranscendenceTier)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerTranscendItem: Target tier must be higher than current"));
+		return false;
+	}
+
+	return true;
+}
+
 bool UHarmoniaEnhancementSystemComponent::GetTranscendenceConfig(ETranscendenceTier Tier, FTranscendenceConfig& OutConfig) const
 {
 	if (!TranscendenceConfigTable)
@@ -932,6 +1060,31 @@ void UHarmoniaEnhancementSystemComponent::ServerApplyTransmog_Implementation(FGu
 	OnTransmogApplied.Broadcast(TargetItemGUID, AppearanceItemId);
 }
 
+bool UHarmoniaEnhancementSystemComponent::ServerApplyTransmog_Validate(FGuid TargetItemGUID, FHarmoniaID AppearanceItemId)
+{
+	// [ANTI-CHEAT] Validate transmog request
+	if (!TargetItemGUID.IsValid())
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerApplyTransmog: Invalid TargetItemGUID"));
+		return false;
+	}
+
+	if (!AppearanceItemId.IsValid())
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerApplyTransmog: Invalid AppearanceItemId"));
+		return false;
+	}
+
+	const FEnhancedItemData* ItemData = FindEnhancedItem(TargetItemGUID);
+	if (!ItemData)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerApplyTransmog: Item not found"));
+		return false;
+	}
+
+	return true;
+}
+
 bool UHarmoniaEnhancementSystemComponent::RemoveTransmog(FGuid ItemGUID)
 {
 	if (GetOwner()->HasAuthority())
@@ -956,6 +1109,25 @@ void UHarmoniaEnhancementSystemComponent::ServerRemoveTransmog_Implementation(FG
 
 	ItemData->Transmog = FTransmogData();
 	OnTransmogRemoved.Broadcast(ItemGUID);
+}
+
+bool UHarmoniaEnhancementSystemComponent::ServerRemoveTransmog_Validate(FGuid ItemGUID)
+{
+	// [ANTI-CHEAT] Validate transmog removal request
+	if (!ItemGUID.IsValid())
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerRemoveTransmog: Invalid ItemGUID"));
+		return false;
+	}
+
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
+	if (!ItemData)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerRemoveTransmog: Item not found"));
+		return false;
+	}
+
+	return true;
 }
 
 bool UHarmoniaEnhancementSystemComponent::GetTransmogData(FGuid ItemGUID, FTransmogData& OutData) const
@@ -1064,6 +1236,32 @@ void UHarmoniaEnhancementSystemComponent::ServerRepairItem_Implementation(FGuid 
 	}
 
 	OnItemRepaired.Broadcast(ItemGUID, ItemData->CurrentDurability);
+}
+
+bool UHarmoniaEnhancementSystemComponent::ServerRepairItem_Validate(FGuid ItemGUID, bool bFullRepair, float RepairAmount)
+{
+	// [ANTI-CHEAT] Validate repair request
+	if (!ItemGUID.IsValid())
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerRepairItem: Invalid ItemGUID"));
+		return false;
+	}
+
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
+	if (!ItemData)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerRepairItem: Item not found"));
+		return false;
+	}
+
+	// Validate repair amount is reasonable
+	if (!bFullRepair && (RepairAmount <= 0.0f || RepairAmount > ItemData->MaxDurability))
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerRepairItem: Invalid repair amount %.2f"), RepairAmount);
+		return false;
+	}
+
+	return true;
 }
 
 int32 UHarmoniaEnhancementSystemComponent::GetRepairCost(FGuid ItemGUID, bool bFullRepair, float RepairAmount) const
@@ -1243,6 +1441,31 @@ void UHarmoniaEnhancementSystemComponent::ServerRepairItemWithKit_Implementation
 	OnItemRepaired.Broadcast(ItemGUID, ItemData->CurrentDurability);
 }
 
+bool UHarmoniaEnhancementSystemComponent::ServerRepairItemWithKit_Validate(FGuid ItemGUID, FHarmoniaID RepairKitId)
+{
+	// [ANTI-CHEAT] Validate repair with kit request
+	if (!ItemGUID.IsValid())
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerRepairItemWithKit: Invalid ItemGUID"));
+		return false;
+	}
+
+	if (!RepairKitId.IsValid())
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerRepairItemWithKit: Invalid RepairKitId"));
+		return false;
+	}
+
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
+	if (!ItemData)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerRepairItemWithKit: Item not found"));
+		return false;
+	}
+
+	return true;
+}
+
 bool UHarmoniaEnhancementSystemComponent::RepairItemAtStation(FGuid ItemGUID, AActor* RepairStation, bool bFullRepair)
 {
 	if (GetOwner()->HasAuthority())
@@ -1336,6 +1559,44 @@ void UHarmoniaEnhancementSystemComponent::ServerRepairItemAtStation_Implementati
 	Station->Execute_OnRepairCompleted(RepairStation, GetOwner(), ItemGUID, DurabilityToRepair);
 
 	OnItemRepaired.Broadcast(ItemGUID, ItemData->CurrentDurability);
+}
+
+bool UHarmoniaEnhancementSystemComponent::ServerRepairItemAtStation_Validate(FGuid ItemGUID, AActor* RepairStation, bool bFullRepair)
+{
+	// [ANTI-CHEAT] Validate repair at station request
+	if (!ItemGUID.IsValid())
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerRepairItemAtStation: Invalid ItemGUID"));
+		return false;
+	}
+
+	if (!RepairStation)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerRepairItemAtStation: RepairStation is null"));
+		return false;
+	}
+
+	const FEnhancedItemData* ItemData = FindEnhancedItem(ItemGUID);
+	if (!ItemData)
+	{
+		UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerRepairItemAtStation: Item not found"));
+		return false;
+	}
+
+	// Validate player is within range of station
+	AActor* Owner = GetOwner();
+	if (Owner)
+	{
+		const float MaxStationDistance = 1000.0f;
+		float Distance = FVector::Dist(Owner->GetActorLocation(), RepairStation->GetActorLocation());
+		if (Distance > MaxStationDistance)
+		{
+			UE_LOG(LogHarmoniaEnhancement, Warning, TEXT("[ANTI-CHEAT] ServerRepairItemAtStation: Station too far (%.1f > %.1f)"), Distance, MaxStationDistance);
+			return false;
+		}
+	}
+
+	return true;
 }
 
 int32 UHarmoniaEnhancementSystemComponent::GetRepairCostAtStation(FGuid ItemGUID, AActor* RepairStation, bool bFullRepair) const

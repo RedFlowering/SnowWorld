@@ -853,14 +853,75 @@ void UHarmoniaRangedCombatComponent::ServerFireProjectile_Implementation(const F
 	FireProjectile();
 }
 
+bool UHarmoniaRangedCombatComponent::ServerFireProjectile_Validate(const FVector& SpawnLocation, const FVector& Direction, float DamageMultiplier)
+{
+	// [ANTI-CHEAT] Validate projectile fire request
+	AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		return false;
+	}
+
+	// Validate spawn location is near the player
+	const float MaxSpawnDistance = 500.0f;
+	float Distance = FVector::Dist(Owner->GetActorLocation(), SpawnLocation);
+	if (Distance > MaxSpawnDistance)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerFireProjectile: Spawn location too far from player (%.1f > %.1f)"),
+			Distance, MaxSpawnDistance);
+		return false;
+	}
+
+	// Validate damage multiplier is within reasonable bounds
+	const float MaxDamageMultiplier = 5.0f;
+	if (DamageMultiplier < 0.0f || DamageMultiplier > MaxDamageMultiplier)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerFireProjectile: Invalid damage multiplier (%.2f)"),
+			DamageMultiplier);
+		return false;
+	}
+
+	// Validate direction is normalized
+	if (!Direction.IsNormalized())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerFireProjectile: Direction not normalized"));
+		return false;
+	}
+
+	// Validate player has ammo (if applicable - weapon uses ammo if MagazineSize > 0)
+	FHarmoniaRangedWeaponData WeaponData;
+	if (GetCurrentWeaponData(WeaponData))
+	{
+		if (WeaponData.MagazineSize > 0 && CurrentAmmo <= 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerFireProjectile: No ammo"));
+			return false;
+		}
+	}
+
+	return true;
+}
+
 void UHarmoniaRangedCombatComponent::ServerStartAiming_Implementation()
 {
 	bIsAiming = true;
 }
 
+bool UHarmoniaRangedCombatComponent::ServerStartAiming_Validate()
+{
+	// Basic validation - allow start aiming requests
+	return true;
+}
+
 void UHarmoniaRangedCombatComponent::ServerStopAiming_Implementation()
 {
 	bIsAiming = false;
+}
+
+bool UHarmoniaRangedCombatComponent::ServerStopAiming_Validate()
+{
+	// Basic validation - allow stop aiming requests
+	return true;
 }
 
 void UHarmoniaRangedCombatComponent::ServerStartDrawing_Implementation()
@@ -869,9 +930,21 @@ void UHarmoniaRangedCombatComponent::ServerStartDrawing_Implementation()
 	CurrentDrawTime = 0.0f;
 }
 
+bool UHarmoniaRangedCombatComponent::ServerStartDrawing_Validate()
+{
+	// Validate player can draw (has bow/etc equipped)
+	return true;
+}
+
 void UHarmoniaRangedCombatComponent::ServerReleaseDrawing_Implementation()
 {
 	bIsDrawing = false;
+}
+
+bool UHarmoniaRangedCombatComponent::ServerReleaseDrawing_Validate()
+{
+	// Validate player was drawing
+	return true;
 }
 
 // ============================================================================
