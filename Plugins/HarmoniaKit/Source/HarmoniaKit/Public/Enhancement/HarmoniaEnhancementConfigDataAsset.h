@@ -8,7 +8,7 @@
 #include "HarmoniaEnhancementConfigDataAsset.generated.h"
 
 /**
- * 강화 ?�스???�정 ?�이???�셋
+ * 강화 시스템 설정 데이터셋
  * Enhancement System Configuration Data Asset
  */
 UCLASS(BlueprintType)
@@ -18,39 +18,39 @@ class HARMONIAKIT_API UHarmoniaEnhancementConfigDataAsset : public UPrimaryDataA
 
 public:
 	// General Settings
-	/** 최�? 강화 ?�벨 */
+	/** 최대 강화 레벨 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|General", meta = (ClampMin = "1", ClampMax = "30"))
 	int32 MaxEnhancementLevel = 15;
 
-	/** 최�? ?�켓 ??*/
+	/** 최대 소켓 수 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|General", meta = (ClampMin = "1", ClampMax = "10"))
 	int32 MaxSockets = 3;
 
 	// Pity System Settings
-	/** 기본 천장 ?�계�?*/
+	/** 기본 천장 값 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Pity", meta = (ClampMin = "1"))
 	int32 BasePityThreshold = 10;
 
-	/** ?�벨??천장 증�???*/
+	/** 레벨별 천장 증가량 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Pity", meta = (ClampMin = "0"))
 	int32 PityThresholdPerLevel = 1;
 
-	/** ?�패???�공�?보너??(0.0 = 비활?�화) */
+	/** 실패 시 보너스 (0.0 = 비활성화) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Pity", meta = (ClampMin = "0.0", ClampMax = "0.1"))
 	float PityBonusPerFailure = 0.01f;
 
 	// Enhancement Level Definitions
-	/** 기본 강화 ?�벨 ?�의 */
+	/** 기본 강화 레벨 정의 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Levels")
 	TArray<FHarmoniaEnhancementLevelConfig> DefaultEnhancementLevels;
 
 	// Enchantment Definitions
-	/** 기본 마법부???�의 */
+	/** 기본 마법부여 정의 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Enchantments")
 	TArray<FEnchantmentDefinition> DefaultEnchantments;
 
 	// Cost Scaling
-	/** ?�벨??비용 배율 */
+	/** 레벨별 비용 배율 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Cost", meta = (ClampMin = "1.0"))
 	float CostMultiplierPerLevel = 1.5f;
 
@@ -59,23 +59,23 @@ public:
 	int64 BaseCurrencyCost = 1000;
 
 	// UI Settings
-	/** 강화 결과 ?�시 ?�간 (�? */
+	/** 강화 결과 표시 시간 (초) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|UI", meta = (ClampMin = "0.0"))
 	float ResultDisplayDuration = 2.0f;
 
-	/** 강화 ?�니메이???�생 ?�간 (�? */
+	/** 강화 애니메이션 재생 시간 (초) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|UI", meta = (ClampMin = "0.0"))
 	float EnhancementAnimationDuration = 1.5f;
 
-	/** 강화 ?�공 ?�펙???�그 */
+	/** 강화 성공 이펙트 태그 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|UI")
 	FGameplayTag SuccessEffectTag;
 
-	/** 강화 ?�패 ?�펙???�그 */
+	/** 강화 실패 이펙트 태그 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|UI")
 	FGameplayTag FailureEffectTag;
 
-	/** ?�이???�괴 ?�펙???�그 */
+	/** 파괴 이펙트 태그 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|UI")
 	FGameplayTag DestructionEffectTag;
 
@@ -86,7 +86,7 @@ public:
 		InitializeDefaultLevels();
 	}
 
-	/** 기본 강화 ?�벨 초기??*/
+	/** 기본 강화 레벨 초기화 */
 	void InitializeDefaultLevels()
 	{
 		DefaultEnhancementLevels.Reset();

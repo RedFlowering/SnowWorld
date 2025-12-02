@@ -224,7 +224,7 @@ bool UHarmoniaCraftingSubsystem::CanCraft(APlayerController* Player, FName Recip
 {
 	if (!Player)
 	{
-		OutReason = NSLOCTEXT("Crafting", "NoPlayer", "?�레?�어가 ?�습?�다.");
+		OutReason = NSLOCTEXT("Crafting", "NoPlayer", "플레이어가 없습니다.");
 		return false;
 	}
 

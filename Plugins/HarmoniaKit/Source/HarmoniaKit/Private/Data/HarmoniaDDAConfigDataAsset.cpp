@@ -4,9 +4,9 @@
 
 UHarmoniaDDAConfigDataAsset::UHarmoniaDDAConfigDataAsset()
 {
-	// 기본 ?�로???�정
-	
-	// Beginner - 가???��?
+	// 기본 프로필 설정
+
+	// Beginner - 초보자
 	BeginnerProfile.ProfileName = TEXT("Beginner");
 	BeginnerProfile.BaseParameters.EnemyHealthMultiplier = 0.7f;
 	BeginnerProfile.BaseParameters.EnemyDamageMultiplier = 0.6f;
@@ -19,7 +19,7 @@ UHarmoniaDDAConfigDataAsset::UHarmoniaDDAConfigDataAsset()
 	BeginnerProfile.BaseParameters.ItemDropRateMultiplier = 1.5f;
 	BeginnerProfile.BaseParameters.AIDelayBetweenAttacks = 0.5f;
 	
-	// Learning - ?��?
+	// Learning - 학습자
 	LearningProfile.ProfileName = TEXT("Learning");
 	LearningProfile.BaseParameters.EnemyHealthMultiplier = 0.85f;
 	LearningProfile.BaseParameters.EnemyDamageMultiplier = 0.8f;
@@ -45,7 +45,7 @@ UHarmoniaDDAConfigDataAsset::UHarmoniaDDAConfigDataAsset()
 	StandardProfile.BaseParameters.ItemDropRateMultiplier = 1.0f;
 	StandardProfile.BaseParameters.AIDelayBetweenAttacks = 0.0f;
 	
-	// Skilled - ?�려?�?
+	// Skilled - 숙련자
 	SkilledProfile.ProfileName = TEXT("Skilled");
 	SkilledProfile.BaseParameters.EnemyHealthMultiplier = 1.15f;
 	SkilledProfile.BaseParameters.EnemyDamageMultiplier = 1.2f;
@@ -58,7 +58,7 @@ UHarmoniaDDAConfigDataAsset::UHarmoniaDDAConfigDataAsset()
 	SkilledProfile.BaseParameters.ItemDropRateMultiplier = 1.1f;
 	SkilledProfile.BaseParameters.AIDelayBetweenAttacks = 0.0f;
 	
-	// Master - 가???�려?�?
+	// Master - 최고 숙련자
 	MasterProfile.ProfileName = TEXT("Master");
 	MasterProfile.BaseParameters.EnemyHealthMultiplier = 1.3f;
 	MasterProfile.BaseParameters.EnemyDamageMultiplier = 1.4f;

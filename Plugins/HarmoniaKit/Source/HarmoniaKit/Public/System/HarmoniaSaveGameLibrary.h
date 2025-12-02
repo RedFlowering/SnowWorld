@@ -8,7 +8,7 @@
 #include "HarmoniaSaveGameLibrary.generated.h"
 
 /**
- * 블루?�린?�에???�이�?로드 ?�스?�을 ?�게 ?�용?????�도�??�는 ?�수 ?�이브러�?
+ * 블루프린트에서 세이브/로드 시스템을 쉽게 사용할 수 있도록 돕는 함수 라이브러리
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaSaveGameLibrary : public UBlueprintFunctionLibrary
@@ -17,82 +17,82 @@ class HARMONIAKIT_API UHarmoniaSaveGameLibrary : public UBlueprintFunctionLibrar
 
 public:
 	/**
-	 * 게임 ?�??
-	 * @param WorldContextObject ?�드 컨텍?�트
-	 * @param SaveSlotName ?�???�롯 ?�름
-	 * @param bUseSteamCloud ?��? ?�라?�드 ?�용 ?��?
-	 * @return ?�???�공 ?��?
+	 * 게임 저장
+	 * @param WorldContextObject 월드 컨텍스트
+	 * @param SaveSlotName 저장 슬롯 이름
+	 * @param bUseSteamCloud 스팀 클라우드 사용 여부
+	 * @return 저장 성공 여부
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame", meta = (WorldContext = "WorldContextObject"))
 	static bool SaveGame(const UObject* WorldContextObject, const FString& SaveSlotName = TEXT("DefaultSave"), bool bUseSteamCloud = true);
 
 	/**
 	 * 게임 로드
-	 * @param WorldContextObject ?�드 컨텍?�트
-	 * @param SaveSlotName 로드???�롯 ?�름
-	 * @param bUseSteamCloud ?��? ?�라?�드?�서 로드 ?��?
-	 * @return 로드 ?�공 ?��?
+	 * @param WorldContextObject 월드 컨텍스트
+	 * @param SaveSlotName 저장 슬롯 이름
+	 * @param bUseSteamCloud 스팀 클라우드 사용 여부
+	 * @return 로드 성공 여부
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame", meta = (WorldContext = "WorldContextObject"))
 	static bool LoadGame(const UObject* WorldContextObject, const FString& SaveSlotName = TEXT("DefaultSave"), bool bUseSteamCloud = true);
 
 	/**
-	 * ?�이�??�일 ??��
-	 * @param WorldContextObject ?�드 컨텍?�트
-	 * @param SaveSlotName ??��???�롯 ?�름
-	 * @param bDeleteFromSteamCloud ?��? ?�라?�드?�서????�� ?��?
+	 * 세이브 파일 삭제
+	 * @param WorldContextObject 월드 컨텍스트
+	 * @param SaveSlotName 저장 슬롯 이름
+	 * @param bDeleteFromSteamCloud 스팀 클라우드에서도 삭제할지 여부
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame", meta = (WorldContext = "WorldContextObject"))
 	static bool DeleteSaveGame(const UObject* WorldContextObject, const FString& SaveSlotName = TEXT("DefaultSave"), bool bDeleteFromSteamCloud = true);
 
 	/**
-	 * ?�이�??�일 존재 ?��? ?�인
-	 * @param WorldContextObject ?�드 컨텍?�트
-	 * @param SaveSlotName ?�인???�롯 ?�름
+	 * 세이브 파일 존재 확인
+	 * @param WorldContextObject 월드 컨텍스트
+	 * @param SaveSlotName 저장 슬롯 이름
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|SaveGame", meta = (WorldContext = "WorldContextObject"))
 	static bool DoesSaveGameExist(const UObject* WorldContextObject, const FString& SaveSlotName = TEXT("DefaultSave"));
 
 	/**
-	 * ?�재 로드???�이�?게임 반환
-	 * @param WorldContextObject ?�드 컨텍?�트
+	 * 현재 로드된 SaveGame 반환
+	 * @param WorldContextObject 월드 컨텍스트
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|SaveGame", meta = (WorldContext = "WorldContextObject"))
 	static UHarmoniaSaveGame* GetCurrentSaveGame(const UObject* WorldContextObject);
 
 	/**
-	 * ?�이�?게임 ?�브?�스??가?�오�?
-	 * @param WorldContextObject ?�드 컨텍?�트
+	 * 세이브 게임 서브시스템 반환
+	 * @param WorldContextObject 월드 컨텍스트
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|SaveGame", meta = (WorldContext = "WorldContextObject"))
 	static UHarmoniaSaveGameSubsystem* GetSaveGameSubsystem(const UObject* WorldContextObject);
 
 	/**
-	 * ?�동 ?�???�성??비활?�화
-	 * @param WorldContextObject ?�드 컨텍?�트
-	 * @param bEnabled ?�성???��?
+	 * 자동 세이브 활성화/비활성화
+	 * @param WorldContextObject 월드 컨텍스트
+	 * @param bEnabled 활성화 여부
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame", meta = (WorldContext = "WorldContextObject"))
 	static void SetAutoSaveEnabled(const UObject* WorldContextObject, bool bEnabled);
 
 	/**
-	 * ?�동 ?�??간격 ?�정
-	 * @param WorldContextObject ?�드 컨텍?�트
-	 * @param IntervalInSeconds 간격 (�??�위)
+	 * 자동 세이브 간격 설정 (초 단위)
+	 * @param WorldContextObject 월드 컨텍스트
+	 * @param IntervalInSeconds 간격 (초 단위)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame", meta = (WorldContext = "WorldContextObject"))
 	static void SetAutoSaveInterval(const UObject* WorldContextObject, float IntervalInSeconds);
 
 	/**
-	 * ?�레?�어???��? ID 가?�오�?
-	 * @param PlayerController ?�레?�어 컨트롤러
+	 * 플레이어의 Steam ID 가져오기
+	 * @param PlayerController 플레이어 컨트롤러
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|SaveGame")
 	static FString GetPlayerSteamID(APlayerController* PlayerController);
 
 	/**
-	 * ?�재 ?�레?�어가 ?�버 ?�유주인지 ?�인
-	 * @param PlayerController ?�레?�어 컨트롤러
+	 * 현재 플레이어가 서버 소유주인지 확인
+	 * @param PlayerController 플레이어 컨트롤러
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|SaveGame")
 	static bool IsServerOwner(APlayerController* PlayerController);
