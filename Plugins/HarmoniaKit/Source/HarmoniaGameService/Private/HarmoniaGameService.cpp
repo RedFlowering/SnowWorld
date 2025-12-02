@@ -229,7 +229,7 @@ void UHarmoniaGameService::UnlockAchievement(FName AchievementId)
 	Achievements->WriteAchievements(*UserId, WriteObject, WriteDelegate);
 
 	// Update local cache
-	if (FHarmoniaAchievementData* CachedAchievement = AchievementCache.Find(AchievementId))
+	if (FHarmoniaServiceAchievementData* CachedAchievement = AchievementCache.Find(AchievementId))
 	{
 		CachedAchievement->State = EHarmoniaAchievementState::Unlocked;
 		CachedAchievement->Progress = 1.0f;
@@ -237,7 +237,7 @@ void UHarmoniaGameService::UnlockAchievement(FName AchievementId)
 	}
 	else
 	{
-		FHarmoniaAchievementData NewAchievement;
+		FHarmoniaServiceAchievementData NewAchievement;
 		NewAchievement.AchievementId = AchievementId;
 		NewAchievement.State = EHarmoniaAchievementState::Unlocked;
 		NewAchievement.Progress = 1.0f;
@@ -295,7 +295,7 @@ void UHarmoniaGameService::UpdateAchievementProgress(FName AchievementId, float 
 	Achievements->WriteAchievements(*UserId, WriteObject, WriteDelegate);
 
 	// Update local cache
-	if (FHarmoniaAchievementData* CachedAchievement = AchievementCache.Find(AchievementId))
+	if (FHarmoniaServiceAchievementData* CachedAchievement = AchievementCache.Find(AchievementId))
 	{
 		CachedAchievement->Progress = Progress;
 		CachedAchievement->State = (Progress >= 1.0f) ? EHarmoniaAchievementState::Unlocked : EHarmoniaAchievementState::InProgress;
@@ -307,7 +307,7 @@ void UHarmoniaGameService::UpdateAchievementProgress(FName AchievementId, float 
 	}
 	else
 	{
-		FHarmoniaAchievementData NewAchievement;
+		FHarmoniaServiceAchievementData NewAchievement;
 		NewAchievement.AchievementId = AchievementId;
 		NewAchievement.Progress = Progress;
 		NewAchievement.State = (Progress >= 1.0f) ? EHarmoniaAchievementState::Unlocked : EHarmoniaAchievementState::InProgress;
@@ -327,35 +327,35 @@ void UHarmoniaGameService::QueryAchievements()
 {
 	if (!bEnableAchievements)
 	{
-		OnAchievementsQueried.Broadcast(TArray<FHarmoniaAchievementData>(), false);
+		OnAchievementsQueried.Broadcast(TArray<FHarmoniaServiceAchievementData>(), false);
 		return;
 	}
 
 	IOnlineSubsystem* OSS = GetCurrentPlatformSubsystem();
 	if (!OSS)
 	{
-		OnAchievementsQueried.Broadcast(TArray<FHarmoniaAchievementData>(), false);
+		OnAchievementsQueried.Broadcast(TArray<FHarmoniaServiceAchievementData>(), false);
 		return;
 	}
 
 	IOnlineIdentityPtr Identity = OSS->GetIdentityInterface();
 	if (!Identity.IsValid())
 	{
-		OnAchievementsQueried.Broadcast(TArray<FHarmoniaAchievementData>(), false);
+		OnAchievementsQueried.Broadcast(TArray<FHarmoniaServiceAchievementData>(), false);
 		return;
 	}
 
 	FUniqueNetIdPtr UserId = Identity->GetUniquePlayerId(0);
 	if (!UserId.IsValid())
 	{
-		OnAchievementsQueried.Broadcast(TArray<FHarmoniaAchievementData>(), false);
+		OnAchievementsQueried.Broadcast(TArray<FHarmoniaServiceAchievementData>(), false);
 		return;
 	}
 
 	IOnlineAchievementsPtr Achievements = OSS->GetAchievementsInterface();
 	if (!Achievements.IsValid())
 	{
-		OnAchievementsQueried.Broadcast(TArray<FHarmoniaAchievementData>(), false);
+		OnAchievementsQueried.Broadcast(TArray<FHarmoniaServiceAchievementData>(), false);
 		return;
 	}
 
@@ -370,9 +370,9 @@ void UHarmoniaGameService::QueryAchievements()
 	UE_LOG(LogTemp, Log, TEXT("[HarmoniaGameService] Querying achievements..."));
 }
 
-bool UHarmoniaGameService::GetAchievementData(FName AchievementId, FHarmoniaAchievementData& OutAchievement) const
+bool UHarmoniaGameService::GetAchievementData(FName AchievementId, FHarmoniaServiceAchievementData& OutAchievement) const
 {
-	const FHarmoniaAchievementData* Found = AchievementCache.Find(AchievementId);
+	const FHarmoniaServiceAchievementData* Found = AchievementCache.Find(AchievementId);
 	if (Found)
 	{
 		OutAchievement = *Found;
@@ -381,9 +381,9 @@ bool UHarmoniaGameService::GetAchievementData(FName AchievementId, FHarmoniaAchi
 	return false;
 }
 
-TArray<FHarmoniaAchievementData> UHarmoniaGameService::GetAllAchievements() const
+TArray<FHarmoniaServiceAchievementData> UHarmoniaGameService::GetAllAchievements() const
 {
-	TArray<FHarmoniaAchievementData> Result;
+	TArray<FHarmoniaServiceAchievementData> Result;
 	AchievementCache.GenerateValueArray(Result);
 	return Result;
 }
@@ -413,7 +413,7 @@ void UHarmoniaGameService::OnAchievementQueryComplete(const FUniqueNetId& Player
 				{
 					FName AchievementId(*Achievement.Id);
 
-					FHarmoniaAchievementData& CachedData = AchievementCache.FindOrAdd(AchievementId);
+					FHarmoniaServiceAchievementData& CachedData = AchievementCache.FindOrAdd(AchievementId);
 					CachedData.AchievementId = AchievementId;
 					CachedData.Progress = Achievement.Progress;
 

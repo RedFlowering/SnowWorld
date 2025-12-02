@@ -28,10 +28,10 @@ UHarmoniaCheatManager::UHarmoniaCheatManager()
 
 void UHarmoniaCheatManager::HarmoniaSetHealth(float NewHealth)
 {
-	LogCheat(FString::Printf(TEXT("체력??%.0f�??�정?�려�??�도?�습?�다."), NewHealth));
-	LogCheat(TEXT("??기능?� ?�로?�트??AttributeSet??맞게 구현???�요?�니??"));
+	LogCheat(FString::Printf(TEXT("Attempting to set health to %.0f."), NewHealth));
+	LogCheat(TEXT("This function needs to be implemented according to project's AttributeSet."));
 	
-	// ?�로?�트�?구현 ?�시:
+	// Implementation example:
 	// UAbilitySystemComponent* ASC = GetPlayerAbilitySystemComponent();
 	// if (ASC && ASC->HasAttributeSetForAttribute(UYourAttributeSet::GetHealthAttribute()))
 	// {
@@ -41,38 +41,38 @@ void UHarmoniaCheatManager::HarmoniaSetHealth(float NewHealth)
 
 void UHarmoniaCheatManager::HarmoniaSetMaxHealth(float NewMaxHealth)
 {
-	LogCheat(FString::Printf(TEXT("최�? 체력??%.0f�??�정?�려�??�도?�습?�다."), NewMaxHealth));
-	LogCheat(TEXT("??기능?� ?�로?�트??AttributeSet??맞게 구현???�요?�니??"));
+	LogCheat(FString::Printf(TEXT("최�? 체력??%.0f�??�정?�려�??�도?�습?�다."), NewMaxHealth));
+	LogCheat(TEXT("??기능?� ?�로?�트??AttributeSet??맞게 구현???�요?�니??"));
 }
 
 void UHarmoniaCheatManager::HarmoniaHealFull()
 {
-	LogCheat(TEXT("체력???�전???�복?�려�??�도?�습?�다."));
-	LogCheat(TEXT("??기능?� ?�로?�트??AttributeSet??맞게 구현???�요?�니??"));
+	LogCheat(TEXT("체력???�전???�복?�려�??�도?�습?�다."));
+	LogCheat(TEXT("??기능?� ?�로?�트??AttributeSet??맞게 구현???�요?�니??"));
 }
 
 void UHarmoniaCheatManager::HarmoniaSetMana(float NewMana)
 {
-	LogCheat(FString::Printf(TEXT("마나�?%.0f�??�정?�려�??�도?�습?�다."), NewMana));
-	LogCheat(TEXT("??기능?� ?�로?�트??AttributeSet??맞게 구현???�요?�니??"));
+	LogCheat(FString::Printf(TEXT("마나�?%.0f�??�정?�려�??�도?�습?�다."), NewMana));
+	LogCheat(TEXT("??기능?� ?�로?�트??AttributeSet??맞게 구현???�요?�니??"));
 }
 
 void UHarmoniaCheatManager::HarmoniaSetMaxMana(float NewMaxMana)
 {
-	LogCheat(FString::Printf(TEXT("최�? 마나�?%.0f�??�정?�려�??�도?�습?�다."), NewMaxMana));
-	LogCheat(TEXT("??기능?� ?�로?�트??AttributeSet??맞게 구현???�요?�니??"));
+	LogCheat(FString::Printf(TEXT("최�? 마나�?%.0f�??�정?�려�??�도?�습?�다."), NewMaxMana));
+	LogCheat(TEXT("??기능?� ?�로?�트??AttributeSet??맞게 구현???�요?�니??"));
 }
 
 void UHarmoniaCheatManager::HarmoniaSetStamina(float NewStamina)
 {
-	LogCheat(FString::Printf(TEXT("?�태미나�?%.0f�??�정?�려�??�도?�습?�다."), NewStamina));
-	LogCheat(TEXT("??기능?� ?�로?�트??AttributeSet??맞게 구현?�필?�합?�다."));
+	LogCheat(FString::Printf(TEXT("?�태미나�?%.0f�??�정?�려�??�도?�습?�다."), NewStamina));
+	LogCheat(TEXT("??기능?� ?�로?�트??AttributeSet??맞게 구현?�필?�합?�다."));
 }
 
 void UHarmoniaCheatManager::HarmoniaSetMaxStamina(float NewMaxStamina)
 {
-	LogCheat(FString::Printf(TEXT("최�? ?�태미나�?%.0f�??�정?�려�??�도?�습?�다."), NewMaxStamina));
-	LogCheat(TEXT("??기능?� ?�로?�트??AttributeSet??맞게 구현???�요?�니??"));
+	LogCheat(FString::Printf(TEXT("최�? ?�태미나�?%.0f�??�정?�려�??�도?�습?�다."), NewMaxStamina));
+	LogCheat(TEXT("??기능?� ?�로?�트??AttributeSet??맞게 구현???�요?�니??"));
 }
 
 // ==================== Currency ====================
@@ -88,17 +88,17 @@ void UHarmoniaCheatManager::HarmoniaGiveGold(int32 Amount)
 			if (Amount >= 0)
 			{
 				CurrencyManager->AddCurrency(EHarmoniaCurrencyType::Gold, Amount);
-				LogCheat(FString::Printf(TEXT("%d 골드�?지급했?�니??"), Amount));
+				LogCheat(FString::Printf(TEXT("%d 골드�?지급했?�니??"), Amount));
 			}
 			else
 			{
 				CurrencyManager->RemoveCurrency(EHarmoniaCurrencyType::Gold, -Amount);
-				LogCheat(FString::Printf(TEXT("%d 골드�??�거?�습?�다."), -Amount));
+				LogCheat(FString::Printf(TEXT("%d 골드�??�거?�습?�다."), -Amount));
 			}
 		}
 		else
 		{
-			LogCheat(TEXT("Currency Manager Component�?찾을 ???�습?�다."));
+			LogCheat(TEXT("Currency Manager Component�?찾을 ???�습?�다."));
 		}
 	}
 }
@@ -112,59 +112,59 @@ void UHarmoniaCheatManager::HarmoniaSetGold(int32 Amount)
 		if (CurrencyManager)
 		{
 			CurrencyManager->SetCurrency(EHarmoniaCurrencyType::Gold, Amount);
-			LogCheat(FString::Printf(TEXT("골드�?%d�??�정?�습?�다."), Amount));
+			LogCheat(FString::Printf(TEXT("골드�?%d�??�정?�습?�다."), Amount));
 		}
 		else
 		{
-			LogCheat(TEXT("Currency Manager Component�?찾을 ???�습?�다."));
+			LogCheat(TEXT("Currency Manager Component�?찾을 ???�습?�다."));
 		}
 	}
 }
 
 void UHarmoniaCheatManager::HarmoniaGiveCurrency(const FString& CurrencyName, int32 Amount)
 {
-	LogCheat(FString::Printf(TEXT("?�화 '%s' %d개�? 지급하?�고 ?�도?�습?�다."), *CurrencyName, Amount));
-	LogCheat(TEXT("??기능?� ?�로?�트???�정 ?�화 ?�?�에 맞게 구현???�요?�니??"));
+	LogCheat(FString::Printf(TEXT("?�화 '%s' %d개�? 지급하?�고 ?�도?�습?�다."), *CurrencyName, Amount));
+	LogCheat(TEXT("??기능?� ?�로?�트???�정 ?�화 ?�?�에 맞게 구현???�요?�니??"));
 }
 
 // ==================== Items ====================
 
 void UHarmoniaCheatManager::HarmoniaGiveItem(const FString& ItemName, int32 Amount)
 {
-	LogCheat(FString::Printf(TEXT("?�이??'%s' %d개�? 지급하?�고 ?�도?�습?�다."), *ItemName, Amount));
-	LogCheat(TEXT("??기능?� ?�벤?�리 ?�스?�과 ?�동?�여 구현???�요?�니??"));
+	LogCheat(FString::Printf(TEXT("?�이??'%s' %d개�? 지급하?�고 ?�도?�습?�다."), *ItemName, Amount));
+	LogCheat(TEXT("??기능?� ?�벤?�리 ?�스?�과 ?�동?�여 구현???�요?�니??"));
 }
 
 void UHarmoniaCheatManager::HarmoniaGiveAllItems()
 {
-	LogCheat(TEXT("모든 ?�이?�을 지급하?�고 ?�도?�습?�다."));
-	LogCheat(TEXT("??기능?� Data Asset??모든 ?�이?�을 ?�회?�여 구현???�요?�니??"));
+	LogCheat(TEXT("모든 ?�이?�을 지급하?�고 ?�도?�습?�다."));
+	LogCheat(TEXT("??기능?� Data Asset??모든 ?�이?�을 ?�회?�여 구현???�요?�니??"));
 }
 
 void UHarmoniaCheatManager::HarmoniaClearInventory()
 {
-	LogCheat(TEXT("?�벤?�리�??�리?�했?�니??"));
-	LogCheat(TEXT("??기능?� ?�벤?�리 ?�스?�과 ?�동?�여 구현???�요?�니??"));
+	LogCheat(TEXT("?�벤?�리�??�리?�했?�니??"));
+	LogCheat(TEXT("??기능?� ?�벤?�리 ?�스?�과 ?�동?�여 구현???�요?�니??"));
 }
 
 // ==================== Level & Experience ====================
 
 void UHarmoniaCheatManager::HarmoniaSetLevel(int32 NewLevel)
 {
-	LogCheat(FString::Printf(TEXT("?�벨??%d�??�정?�습?�다."), NewLevel));
-	LogCheat(TEXT("??기능?� ?�벨�??�스?�과 ?�동?�여 구현???�요?�니??"));
+	LogCheat(FString::Printf(TEXT("?�벨??%d�??�정?�습?�다."), NewLevel));
+	LogCheat(TEXT("??기능?� ?�벨�??�스?�과 ?�동?�여 구현???�요?�니??"));
 }
 
 void UHarmoniaCheatManager::HarmoniaGiveXP(int32 Amount)
 {
-	LogCheat(FString::Printf(TEXT("%d 경험치�? 지급했?�니??"), Amount));
-	LogCheat(TEXT("??기능?� 경험�??�스?�과 ?�동?�여 구현???�요?�니??"));
+	LogCheat(FString::Printf(TEXT("%d 경험치�? 지급했?�니??"), Amount));
+	LogCheat(TEXT("??기능?� 경험�??�스?�과 ?�동?�여 구현???�요?�니??"));
 }
 
 void UHarmoniaCheatManager::HarmoniaLevelUp()
 {
-	LogCheat(TEXT("?�벨?�을 ?�도?�습?�다."));
-	LogCheat(TEXT("??기능?� ?�벨�??�스?�과 ?�동?�여 구현???�요?�니??"));
+	LogCheat(TEXT("?�벨?�을 ?�도?�습?�다."));
+	LogCheat(TEXT("??기능?� ?�벨�??�스?�과 ?�동?�여 구현???�요?�니??"));
 }
 
 // ==================== Combat ====================
@@ -174,7 +174,7 @@ void UHarmoniaCheatManager::HarmoniaToggleInvincible()
 	bInvincible = !bInvincible;
 	LogCheat(FString::Printf(TEXT("무적 모드: %s"), bInvincible ? TEXT("켜짐") : TEXT("꺼짐")));
 	
-	// 무적 ?�태�??�용?�려�??��?지 처리 로직?�서 bInvincible ?�래그�? ?�인?�야 ?�니??
+	// 무적 ?�태�??�용?�려�??��?지 처리 로직?�서 bInvincible ?�래그�? ?�인?�야 ?�니??
 }
 
 void UHarmoniaCheatManager::HarmoniaToggleGodMode()
@@ -185,7 +185,7 @@ void UHarmoniaCheatManager::HarmoniaToggleGodMode()
 	if (bGodMode)
 	{
 		bInvincible = true;
-		// ??모드?�서??체력, 마나, ?�태미나�?지?�적?�로 채워줘야 ?�니??
+		// ??모드?�서??체력, 마나, ?�태미나�?지?�적?�로 채워줘야 ?�니??
 	}
 	else
 	{
@@ -196,13 +196,13 @@ void UHarmoniaCheatManager::HarmoniaToggleGodMode()
 void UHarmoniaCheatManager::HarmoniaToggleOneHitKill()
 {
 	bOneHitKill = !bOneHitKill;
-	LogCheat(FString::Printf(TEXT("?�샷 ?�킬 모드: %s"), bOneHitKill ? TEXT("켜짐") : TEXT("꺼짐")));
+	LogCheat(FString::Printf(TEXT("?�샷 ?�킬 모드: %s"), bOneHitKill ? TEXT("켜짐") : TEXT("꺼짐")));
 }
 
 void UHarmoniaCheatManager::HarmoniaSetDamageMultiplier(float Multiplier)
 {
 	DamageMultiplier = FMath::Max(0.0f, Multiplier);
-	LogCheat(FString::Printf(TEXT("?��?지 배수: %.1fx"), DamageMultiplier));
+	LogCheat(FString::Printf(TEXT("?��?지 배수: %.1fx"), DamageMultiplier));
 }
 
 // ==================== Movement ====================
@@ -217,10 +217,10 @@ void UHarmoniaCheatManager::HarmoniaSetSpeed(float Multiplier)
 		UCharacterMovementComponent* MovementComp = PlayerChar->GetCharacterMovement();
 		if (MovementComp)
 		{
-			// 기본 ?�도�??�?�하�?배수�??�용
-			const float BaseSpeed = 600.0f; // ?�로?�트??맞게 조정
+			// 기본 ?�도�??�?�하�?배수�??�용
+			const float BaseSpeed = 600.0f; // ?�로?�트??맞게 조정
 			MovementComp->MaxWalkSpeed = BaseSpeed * SpeedMultiplier;
-			LogCheat(FString::Printf(TEXT("?�동 ?�도: %.1fx (%.0f)"), SpeedMultiplier, MovementComp->MaxWalkSpeed));
+			LogCheat(FString::Printf(TEXT("?�동 ?�도: %.1fx (%.0f)"), SpeedMultiplier, MovementComp->MaxWalkSpeed));
 		}
 	}
 }
@@ -239,13 +239,13 @@ void UHarmoniaCheatManager::HarmoniaToggleNoClip()
 			{
 				MovementComp->SetMovementMode(MOVE_Flying);
 				PlayerChar->GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
-				LogCheat(TEXT("?�클�?모드: 켜짐"));
+				LogCheat(TEXT("?�클�?모드: 켜짐"));
 			}
 			else
 			{
 				MovementComp->SetMovementMode(MOVE_Walking);
 				PlayerChar->GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Block);
-				LogCheat(TEXT("?�클�?모드: 꺼짐"));
+				LogCheat(TEXT("?�클�?모드: 꺼짐"));
 			}
 		}
 	}
@@ -275,8 +275,8 @@ void UHarmoniaCheatManager::HarmoniaToggleFly()
 
 void UHarmoniaCheatManager::HarmoniaTeleportToMarker(const FString& MarkerName)
 {
-	LogCheat(FString::Printf(TEXT("마커 '%s'�??�레?�트�??�도?�습?�다."), *MarkerName));
-	LogCheat(TEXT("??기능?� ?�드??마커/?�이?�인???�스?�과 ?�동?�여 구현???�요?�니??"));
+	LogCheat(FString::Printf(TEXT("마커 '%s'�??�레?�트�??�도?�습?�다."), *MarkerName));
+	LogCheat(TEXT("??기능?� ?�드??마커/?�이?�인???�스?�과 ?�동?�여 구현???�요?�니??"));
 }
 
 void UHarmoniaCheatManager::HarmoniaTeleport(float X, float Y, float Z)
@@ -286,7 +286,7 @@ void UHarmoniaCheatManager::HarmoniaTeleport(float X, float Y, float Z)
 	{
 		FVector NewLocation(X, Y, Z);
 		PlayerChar->SetActorLocation(NewLocation, false, nullptr, ETeleportType::TeleportPhysics);
-		LogCheat(FString::Printf(TEXT("좌표 (%.0f, %.0f, %.0f)�??�레?�트?�습?�다."), X, Y, Z));
+		LogCheat(FString::Printf(TEXT("좌표 (%.0f, %.0f, %.0f)�??�레?�트?�습?�다."), X, Y, Z));
 	}
 }
 
@@ -299,18 +299,18 @@ void UHarmoniaCheatManager::HarmoniaSetTime(int32 Hour, int32 Minute)
 		UHarmoniaTimeWeatherManager* TimeWeatherManager = World->GetSubsystem<UHarmoniaTimeWeatherManager>();
 		if (TimeWeatherManager)
 		{
-			// ?�간 ?�정?� 블루?�린?�에??처리?�도�?delegate ?�출
+			// ?�간 ?�정?� 블루?�린?�에??처리?�도�?delegate ?�출
 			Hour = FMath::Clamp(Hour, 0, 23);
 			Minute = FMath::Clamp(Minute, 0, 59);
 			
 			EHarmoniaTimeOfDay TimeOfDay = UHarmoniaTimeWeatherManager::HourToTimeOfDay(Hour);
 			TimeWeatherManager->BroadcastTimeChange(TimeWeatherManager->GetCurrentTimeOfDay(), TimeOfDay, Hour, Minute);
 			
-			LogCheat(FString::Printf(TEXT("?�간??%02d:%02d�??�정?�습?�다."), Hour, Minute));
+			LogCheat(FString::Printf(TEXT("?�간??%02d:%02d�??�정?�습?�다."), Hour, Minute));
 		}
 		else
 		{
-			LogCheat(TEXT("Time Weather Manager�?찾을 ???�습?�다."));
+			LogCheat(TEXT("Time Weather Manager�?찾을 ???�습?�다."));
 		}
 	}
 }
@@ -321,9 +321,9 @@ void UHarmoniaCheatManager::HarmoniaSetTimeScale(float Multiplier)
 	
 	if (UWorld* World = GetWorld())
 	{
-		// ?�건 World???�간 ?�름??변경하??것이 ?�니?? 게임 ???�간 ?�스?�의 배속?�니??
-		LogCheat(FString::Printf(TEXT("?�간 배속: %.1fx"), TimeScale));
-		LogCheat(TEXT("?�제 ?�간 ?�름 변경�? ?�???�스?�에??TimeScale 값을 참조?�여 구현?�야 ?�니??"));
+		// ?�건 World???�간 ?�름??변경하??것이 ?�니?? 게임 ???�간 ?�스?�의 배속?�니??
+		LogCheat(FString::Printf(TEXT("?�간 배속: %.1fx"), TimeScale));
+		LogCheat(TEXT("?�제 ?�간 ?�름 변경�? ?�???�스?�에??TimeScale 값을 참조?�여 구현?�야 ?�니??"));
 	}
 }
 
@@ -366,11 +366,11 @@ void UHarmoniaCheatManager::HarmoniaSetWeather(const FString& WeatherType)
 			}
 			
 			TimeWeatherManager->BroadcastWeatherChange(TimeWeatherManager->GetCurrentWeather(), NewWeather, 1.0f, 5.0f);
-			LogCheat(FString::Printf(TEXT("?�씨�?'%s'�??�정?�습?�다."), *WeatherType));
+			LogCheat(FString::Printf(TEXT("?�씨�?'%s'�??�정?�습?�다."), *WeatherType));
 		}
 		else
 		{
-			LogCheat(TEXT("Time Weather Manager�?찾을 ???�습?�다."));
+			LogCheat(TEXT("Time Weather Manager�?찾을 ???�습?�다."));
 		}
 	}
 }
@@ -379,20 +379,20 @@ void UHarmoniaCheatManager::HarmoniaSetWeather(const FString& WeatherType)
 
 void UHarmoniaCheatManager::HarmoniaCompleteQuest(const FString& QuestName)
 {
-	LogCheat(FString::Printf(TEXT("?�스??'%s'�??�료?�습?�다."), *QuestName));
-	LogCheat(TEXT("??기능?� ?�스???�스?�과 ?�동?�여 구현???�요?�니??"));
+	LogCheat(FString::Printf(TEXT("?�스??'%s'�??�료?�습?�다."), *QuestName));
+	LogCheat(TEXT("??기능?� ?�스???�스?�과 ?�동?�여 구현???�요?�니??"));
 }
 
 void UHarmoniaCheatManager::HarmoniaCompleteAllQuests()
 {
-	LogCheat(TEXT("모든 ?�스?��? ?�료?�습?�다."));
-	LogCheat(TEXT("??기능?� ?�스???�스?�과 ?�동?�여 구현???�요?�니??"));
+	LogCheat(TEXT("모든 ?�스?��? ?�료?�습?�다."));
+	LogCheat(TEXT("??기능?� ?�스???�스?�과 ?�동?�여 구현???�요?�니??"));
 }
 
 void UHarmoniaCheatManager::HarmoniaUnlockAchievement(const FString& AchievementName)
 {
-	LogCheat(FString::Printf(TEXT("?�적 '%s'�??�제?�습?�다."), *AchievementName));
-	LogCheat(TEXT("??기능?� ?�적 ?�스?�과 ?�동?�여 구현???�요?�니??"));
+	LogCheat(FString::Printf(TEXT("?�적 '%s'�??�제?�습?�다."), *AchievementName));
+	LogCheat(TEXT("??기능?� ?�적 ?�스?�과 ?�동?�여 구현???�요?�니??"));
 }
 
 // ==================== Debug ====================
@@ -400,19 +400,19 @@ void UHarmoniaCheatManager::HarmoniaUnlockAchievement(const FString& Achievement
 void UHarmoniaCheatManager::HarmoniaToggleDebugInfo()
 {
 	bShowDebugInfo = !bShowDebugInfo;
-	LogCheat(FString::Printf(TEXT("?�버�??�보 ?�시: %s"), bShowDebugInfo ? TEXT("켜짐") : TEXT("꺼짐")));
+	LogCheat(FString::Printf(TEXT("?�버�??�보 ?�시: %s"), bShowDebugInfo ? TEXT("켜짐") : TEXT("꺼짐")));
 }
 
 void UHarmoniaCheatManager::HarmoniaKillAllEnemies()
 {
-	LogCheat(TEXT("모든 ?�을 ?�거?�습?�다."));
-	LogCheat(TEXT("??기능?� ???�터?�을 찾아???�거?�도�?구현???�요?�니??"));
+	LogCheat(TEXT("모든 ?�을 ?�거?�습?�다."));
+	LogCheat(TEXT("??기능?� ???�터?�을 찾아???�거?�도�?구현???�요?�니??"));
 }
 
 void UHarmoniaCheatManager::HarmoniaSpawnEnemy(const FString& EnemyName, int32 Count)
 {
-	LogCheat(FString::Printf(TEXT("??'%s'�?%d마리 ?�폰?�습?�다."), *EnemyName, Count));
-	LogCheat(TEXT("??기능?� ???�폰 ?�스?�과 ?�동?�여 구현???�요?�니??"));
+	LogCheat(FString::Printf(TEXT("??'%s'�?%d마리 ?�폰?�습?�다."), *EnemyName, Count));
+	LogCheat(TEXT("??기능?� ???�폰 ?�스?�과 ?�동?�여 구현???�요?�니??"));
 }
 
 void UHarmoniaCheatManager::HarmoniaResetCheats()
@@ -426,58 +426,58 @@ void UHarmoniaCheatManager::HarmoniaResetCheats()
 	DamageMultiplier = 1.0f;
 	TimeScale = 1.0f;
 	
-	// ?�도 리셋
+	// ?�도 리셋
 	HarmoniaSetSpeed(1.0f);
 	
-	LogCheat(TEXT("모든 치트�?리셋?�습?�다."));
+	LogCheat(TEXT("모든 치트�?리셋?�습?�다."));
 }
 
 void UHarmoniaCheatManager::HarmoniaHelp()
 {
 	LogCheat(TEXT("========== HarmoniaKit 치트 명령??목록 =========="));
 	LogCheat(TEXT(""));
-	LogCheat(TEXT("== 체력/마나/?�태미나 =="));
-	LogCheat(TEXT("HarmoniaSetHealth <�? - 체력 ?�정"));
-	LogCheat(TEXT("HarmoniaSetMaxHealth <�? - 최�? 체력 ?�정"));
-	LogCheat(TEXT("HarmoniaHealFull - 체력 ?�전 ?�복"));
-	LogCheat(TEXT("HarmoniaSetMana <�? - 마나 ?�정"));
-	LogCheat(TEXT("HarmoniaSetStamina <�? - ?�태미나 ?�정"));
+	LogCheat(TEXT("== 체력/마나/?�태미나 =="));
+	LogCheat(TEXT("HarmoniaSetHealth <value> - Set health"));
+	LogCheat(TEXT("HarmoniaSetMaxHealth <value> - Set max health"));
+	LogCheat(TEXT("HarmoniaHealFull - Fully restore health"));
+	LogCheat(TEXT("HarmoniaSetMana <value> - Set mana"));
+	LogCheat(TEXT("HarmoniaSetStamina <value> - Set stamina"));
 	LogCheat(TEXT(""));
-	LogCheat(TEXT("== ?�화 =="));
-	LogCheat(TEXT("HarmoniaGiveGold <?? - 골드 지�?));
-	LogCheat(TEXT("HarmoniaSetGold <?? - 골드 ?�정"));
+	LogCheat(TEXT("== Currency =="));
+	LogCheat(TEXT("HarmoniaGiveGold <amount> - Give gold"));
+	LogCheat(TEXT("HarmoniaSetGold <amount> - Set gold"));
 	LogCheat(TEXT(""));
-	LogCheat(TEXT("== ?�이??=="));
-	LogCheat(TEXT("HarmoniaGiveItem <?�름> [?�량] - ?�이??지�?));
-	LogCheat(TEXT("HarmoniaGiveAllItems - 모든 ?�이??지�?));
-	LogCheat(TEXT("HarmoniaClearInventory - ?�벤?�리 ?�리??));
+	LogCheat(TEXT("== Items =="));
+	LogCheat(TEXT("HarmoniaGiveItem <name> [quantity] - Give item"));
+	LogCheat(TEXT("HarmoniaGiveAllItems - Give all items"));
+	LogCheat(TEXT("HarmoniaClearInventory - Clear inventory"));
 	LogCheat(TEXT(""));
-	LogCheat(TEXT("== ?�벨/경험�?=="));
-	LogCheat(TEXT("HarmoniaSetLevel <?�벨> - ?�벨 ?�정"));
-	LogCheat(TEXT("HarmoniaGiveXP <?? - 경험�?지�?));
-	LogCheat(TEXT("HarmoniaLevelUp - ?�벨??));
+	LogCheat(TEXT("== Level/XP =="));
+	LogCheat(TEXT("HarmoniaSetLevel <level> - Set level"));
+	LogCheat(TEXT("HarmoniaGiveXP <amount> - Give XP"));
+	LogCheat(TEXT("HarmoniaLevelUp - Level up"));
 	LogCheat(TEXT(""));
-	LogCheat(TEXT("== ?�투 =="));
-	LogCheat(TEXT("HarmoniaToggleInvincible - 무적 모드 ?��?"));
-	LogCheat(TEXT("HarmoniaToggleGodMode - ??모드 ?��?"));
-	LogCheat(TEXT("HarmoniaToggleOneHitKill - ?�킬 모드 ?��?"));
-	LogCheat(TEXT("HarmoniaSetDamageMultiplier <배수> - ?��?지 배수 ?�정"));
+	LogCheat(TEXT("== Combat =="));
+	LogCheat(TEXT("HarmoniaToggleInvincible - Toggle invincibility"));
+	LogCheat(TEXT("HarmoniaToggleGodMode - Toggle god mode"));
+	LogCheat(TEXT("HarmoniaToggleOneHitKill - Toggle one hit kill"));
+	LogCheat(TEXT("HarmoniaSetDamageMultiplier <multiplier> - Set damage multiplier"));
 	LogCheat(TEXT(""));
-	LogCheat(TEXT("== ?�동 =="));
-	LogCheat(TEXT("HarmoniaSetSpeed <배수> - ?�동 ?�도 ?�정"));
-	LogCheat(TEXT("HarmoniaToggleNoClip - ?�클�?모드 ?��?"));
-	LogCheat(TEXT("HarmoniaToggleFly - 비행 모드 ?��?"));
-	LogCheat(TEXT("HarmoniaTeleport <X> <Y> <Z> - 좌표�??�레?�트"));
+	LogCheat(TEXT("== Movement =="));
+	LogCheat(TEXT("HarmoniaSetSpeed <multiplier> - Set speed"));
+	LogCheat(TEXT("HarmoniaToggleNoClip - Toggle no clip mode"));
+	LogCheat(TEXT("HarmoniaToggleFly - Toggle fly mode"));
+	LogCheat(TEXT("HarmoniaTeleport <X> <Y> <Z> - Teleport to coordinates"));
 	LogCheat(TEXT(""));
-	LogCheat(TEXT("== ?�간/?�씨 =="));
-	LogCheat(TEXT("HarmoniaSetTime <?? <�? - ?�간 ?�정"));
-	LogCheat(TEXT("HarmoniaSetTimeScale <배수> - ?�간 ?�름 ?�도"));
-	LogCheat(TEXT("HarmoniaSetWeather <?�?? - ?�씨 ?�정 (Clear/Rain/Snow/Storm ??"));
+	LogCheat(TEXT("== Time/Weather =="));
+	LogCheat(TEXT("HarmoniaSetTime <hour> <minute> - Set time"));
+	LogCheat(TEXT("HarmoniaSetTimeScale <multiplier> - Set time scale"));
+	LogCheat(TEXT("HarmoniaSetWeather <type> - Set weather (Clear/Rain/Snow/Storm)"));
 	LogCheat(TEXT(""));
-	LogCheat(TEXT("== 기�? =="));
-	LogCheat(TEXT("HarmoniaToggleDebugInfo - ?�버�??�보 ?�시"));
-	LogCheat(TEXT("HarmoniaResetCheats - 모든 치트 리셋"));
-	LogCheat(TEXT("HarmoniaHelp - ???��?�??�시"));
+	LogCheat(TEXT("== Misc =="));
+	LogCheat(TEXT("HarmoniaToggleDebugInfo - Toggle debug info"));
+	LogCheat(TEXT("HarmoniaResetCheats - Reset all cheats"));
+	LogCheat(TEXT("HarmoniaHelp - Show this help"));
 	LogCheat(TEXT(""));
 	LogCheat(TEXT("================================================"));
 }

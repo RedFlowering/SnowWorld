@@ -123,10 +123,10 @@ enum class EHarmoniaSessionJoinability : uint8
 };
 
 /**
- * Achievement data structure
+ * Achievement data structure for platform service integration
  */
 USTRUCT(BlueprintType)
-struct HARMONIAGAMESERVICE_API FHarmoniaAchievementData
+struct HARMONIAGAMESERVICE_API FHarmoniaServiceAchievementData
 {
 	GENERATED_BODY()
 
@@ -170,7 +170,7 @@ struct HARMONIAGAMESERVICE_API FHarmoniaAchievementData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Achievement")
 	int32 RewardPoints = 0;
 
-	FHarmoniaAchievementData()
+	FHarmoniaServiceAchievementData()
 		: AchievementId(NAME_None)
 		, State(EHarmoniaAchievementState::Locked)
 		, Progress(0.0f)

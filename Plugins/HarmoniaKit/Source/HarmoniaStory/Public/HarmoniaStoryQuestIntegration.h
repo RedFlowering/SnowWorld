@@ -36,10 +36,10 @@ protected:
 	UHarmoniaQuestComponent* BoundQuestComponent;
 
 	UFUNCTION()
-	void OnQuestStarted(FHarmoniaID QuestId, const FQuestData& QuestData);
+	void OnQuestStarted(FHarmoniaID QuestId, const FHarmoniaQuestData& QuestData);
 
 	UFUNCTION()
-	void OnQuestCompleted(FHarmoniaID QuestId, const FQuestData& QuestData, const TArray<FQuestReward>& Rewards);
+	void OnQuestCompleted(FHarmoniaID QuestId, const FHarmoniaQuestData& QuestData, const TArray<FQuestReward>& Rewards);
 
 	UFUNCTION()
 	void OnQuestEventTriggered(FHarmoniaID QuestId, const FQuestEvent& Event);

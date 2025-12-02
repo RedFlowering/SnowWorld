@@ -82,7 +82,7 @@ void UHarmoniaStoryQuestIntegration::BindToQuestComponent(UHarmoniaQuestComponen
 	UE_LOG(LogHarmoniaStory, Log, TEXT("Story Integration bound to Quest Component"));
 }
 
-void UHarmoniaStoryQuestIntegration::OnQuestStarted(FHarmoniaID QuestId, const FQuestData& QuestData)
+void UHarmoniaStoryQuestIntegration::OnQuestStarted(FHarmoniaID QuestId, const FHarmoniaQuestData& QuestData)
 {
 	// Check for start dialogue
 	if (!QuestData.Dialogues.StartDialogueTree.IsNull())
@@ -109,7 +109,7 @@ void UHarmoniaStoryQuestIntegration::OnQuestStarted(FHarmoniaID QuestId, const F
 	}
 }
 
-void UHarmoniaStoryQuestIntegration::OnQuestCompleted(FHarmoniaID QuestId, const FQuestData& QuestData, const TArray<FQuestReward>& Rewards)
+void UHarmoniaStoryQuestIntegration::OnQuestCompleted(FHarmoniaID QuestId, const FHarmoniaQuestData& QuestData, const TArray<FQuestReward>& Rewards)
 {
 	// Check for Journal rewards
 	UHarmoniaJournalSubsystem* JournalSubsystem = UHarmoniaCoreBFL::GetGameInstanceSubsystem<UHarmoniaJournalSubsystem>(this);

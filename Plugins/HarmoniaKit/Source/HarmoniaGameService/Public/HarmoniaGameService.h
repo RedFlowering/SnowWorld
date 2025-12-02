@@ -20,7 +20,7 @@ class FOnlineLeaderboardWrite;
 
 // Delegates for async operations
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHarmoniaAchievementUnlocked, FName, AchievementId, bool, bSuccess);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHarmoniaAchievementsQueried, const TArray<FHarmoniaAchievementData>&, Achievements, bool, bSuccess);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHarmoniaAchievementsQueried, const TArray<FHarmoniaServiceAchievementData>&, Achievements, bool, bSuccess);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHarmoniaCloudSaveSynced, const FString&, SlotName, bool, bSuccess);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnHarmoniaLeaderboardScoreUploaded, FName, LeaderboardId, int64, Score, bool, bSuccess);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHarmoniaLeaderboardQueried, const TArray<FHarmoniaLeaderboardEntry>&, Entries, bool, bSuccess);
@@ -94,14 +94,14 @@ public:
 	 * @return True if the achievement was found in cache
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|GameService|Achievements")
-	bool GetAchievementData(FName AchievementId, FHarmoniaAchievementData& OutAchievement) const;
+	bool GetAchievementData(FName AchievementId, FHarmoniaServiceAchievementData& OutAchievement) const;
 
 	/**
 	 * Get all cached achievements
 	 * @return Array of all achievement data
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|GameService|Achievements")
-	TArray<FHarmoniaAchievementData> GetAllAchievements() const;
+	TArray<FHarmoniaServiceAchievementData> GetAllAchievements() const;
 
 	// Achievement events
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|GameService|Events")
@@ -364,7 +364,7 @@ private:
 
 	// Achievement cache
 	UPROPERTY()
-	TMap<FName, FHarmoniaAchievementData> AchievementCache;
+	TMap<FName, FHarmoniaServiceAchievementData> AchievementCache;
 
 	// Cloud save cache
 	UPROPERTY()

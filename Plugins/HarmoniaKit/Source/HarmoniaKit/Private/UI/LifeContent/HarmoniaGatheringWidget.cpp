@@ -38,7 +38,7 @@ void UHarmoniaGatheringWidget::UpdateToolDisplay(EGatheringToolType ToolType, in
 	if (ToolTierText)
 	{
 		ToolTierText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaGathering", "ToolTier", "?±Í∏â {0}"),
+			NSLOCTEXT("HarmoniaGathering", "ToolTier", "?ÔøΩÍ∏â {0}"),
 			FText::AsNumber(ToolTier)));
 	}
 
@@ -97,7 +97,7 @@ void UHarmoniaGatheringWidget::ShowResourceInfo(const FGatheringResourceData& Re
 	if (RequiredLevelText)
 	{
 		RequiredLevelText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaGathering", "RequiredLevel", "?ÑÏöî ?àÎ≤®: {0}"),
+			NSLOCTEXT("HarmoniaGathering", "RequiredLevel", "?ÔøΩÏöî ?ÔøΩÎ≤®: {0}"),
 			FText::AsNumber(ResourceData.MinGatheringLevel)));
 	}
 }
@@ -122,7 +122,7 @@ void UHarmoniaGatheringWidget::ShowGatheredResult(const FName& ResourceName, int
 		if (bCritical)
 		{
 			GatheredResultText->SetText(FText::Format(
-				NSLOCTEXT("HarmoniaGathering", "CriticalGather", "???¨Î¶¨?∞Ïª¨! {0} x{1} ??),
+				NSLOCTEXT("HarmoniaGathering", "CriticalGather", "Critical! {0} x{1}"),
 				FText::FromName(ResourceName),
 				FText::AsNumber(Amount)));
 			GatheredResultText->SetColorAndOpacity(FLinearColor(1.0f, 0.84f, 0.0f)); // Gold
@@ -143,15 +143,15 @@ FText UHarmoniaGatheringWidget::GetToolTypeName(EGatheringToolType ToolType) con
 	switch (ToolType)
 	{
 	case EGatheringToolType::None:
-		return NSLOCTEXT("HarmoniaGathering", "ToolNone", "?ÜÏùå");
+		return NSLOCTEXT("HarmoniaGathering", "ToolNone", "None");
 	case EGatheringToolType::Pickaxe:
-		return NSLOCTEXT("HarmoniaGathering", "ToolPickaxe", "Í≥°Í¥≠??);
+		return NSLOCTEXT("HarmoniaGathering", "ToolPickaxe", "Pickaxe");
 	case EGatheringToolType::Axe:
-		return NSLOCTEXT("HarmoniaGathering", "ToolAxe", "?ÑÎÅº");
+		return NSLOCTEXT("HarmoniaGathering", "ToolAxe", "Axe");
 	case EGatheringToolType::Sickle:
-		return NSLOCTEXT("HarmoniaGathering", "ToolSickle", "??);
+		return NSLOCTEXT("HarmoniaGathering", "ToolSickle", "Sickle");
 	case EGatheringToolType::Hammer:
-		return NSLOCTEXT("HarmoniaGathering", "ToolHammer", "ÎßùÏπò");
+		return NSLOCTEXT("HarmoniaGathering", "ToolHammer", "Hammer");
 	default:
 		return FText::GetEmpty();
 	}
@@ -162,21 +162,21 @@ FText UHarmoniaGatheringWidget::GetResourceTypeName(EGatheringResourceType Resou
 	switch (ResourceType)
 	{
 	case EGatheringResourceType::Mineral:
-		return NSLOCTEXT("HarmoniaGathering", "TypeMineral", "Í¥ëÎ¨º");
+		return NSLOCTEXT("HarmoniaGathering", "TypeMineral", "Mineral");
 	case EGatheringResourceType::Herb:
-		return NSLOCTEXT("HarmoniaGathering", "TypeHerb", "?ΩÏ¥à");
+		return NSLOCTEXT("HarmoniaGathering", "TypeHerb", "Herb");
 	case EGatheringResourceType::Wood:
-		return NSLOCTEXT("HarmoniaGathering", "TypeWood", "Î™©Ïû¨");
+		return NSLOCTEXT("HarmoniaGathering", "TypeWood", "Wood");
 	case EGatheringResourceType::Fiber:
-		return NSLOCTEXT("HarmoniaGathering", "TypeFiber", "?¨Ïú†");
+		return NSLOCTEXT("HarmoniaGathering", "TypeFiber", "Fiber");
 	case EGatheringResourceType::Stone:
-		return NSLOCTEXT("HarmoniaGathering", "TypeStone", "?ùÏû¨");
+		return NSLOCTEXT("HarmoniaGathering", "TypeStone", "Stone");
 	case EGatheringResourceType::Crystal:
-		return NSLOCTEXT("HarmoniaGathering", "TypeCrystal", "?¨Î¶¨?§ÌÉà");
+		return NSLOCTEXT("HarmoniaGathering", "TypeCrystal", "Crystal");
 	case EGatheringResourceType::Flower:
-		return NSLOCTEXT("HarmoniaGathering", "TypeFlower", "ÍΩ?);
+		return NSLOCTEXT("HarmoniaGathering", "TypeFlower", "Flower");
 	case EGatheringResourceType::Mushroom:
-		return NSLOCTEXT("HarmoniaGathering", "TypeMushroom", "Î≤ÑÏÑØ");
+		return NSLOCTEXT("HarmoniaGathering", "TypeMushroom", "Mushroom");
 	default:
 		return FText::GetEmpty();
 	}
@@ -187,15 +187,15 @@ FText UHarmoniaGatheringWidget::GetRarityText(EGatheringRarity Rarity) const
 	switch (Rarity)
 	{
 	case EGatheringRarity::Common:
-		return NSLOCTEXT("HarmoniaGathering", "RarityCommon", "?ºÎ∞ò");
+		return NSLOCTEXT("HarmoniaGathering", "RarityCommon", "Common");
 	case EGatheringRarity::Uncommon:
-		return NSLOCTEXT("HarmoniaGathering", "RarityUncommon", "Í≥†Í∏â");
+		return NSLOCTEXT("HarmoniaGathering", "RarityUncommon", "Uncommon");
 	case EGatheringRarity::Rare:
-		return NSLOCTEXT("HarmoniaGathering", "RarityRare", "?¨Í?");
+		return NSLOCTEXT("HarmoniaGathering", "RarityRare", "Rare");
 	case EGatheringRarity::Epic:
-		return NSLOCTEXT("HarmoniaGathering", "RarityEpic", "?ÅÏõÖ");
+		return NSLOCTEXT("HarmoniaGathering", "RarityEpic", "Epic");
 	case EGatheringRarity::Legendary:
-		return NSLOCTEXT("HarmoniaGathering", "RarityLegendary", "?ÑÏÑ§");
+		return NSLOCTEXT("HarmoniaGathering", "RarityLegendary", "Legendary");
 	default:
 		return FText::GetEmpty();
 	}

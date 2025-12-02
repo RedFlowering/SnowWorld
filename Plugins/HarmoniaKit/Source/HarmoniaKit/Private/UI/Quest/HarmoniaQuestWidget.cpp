@@ -223,14 +223,14 @@ void UHarmoniaQuestWidget::ShowRewards(int32 Experience, int32 Gold, const TArra
 	if (ExperienceRewardText)
 	{
 		ExperienceRewardText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaQuest", "ExpReward", "Í≤ΩÌóòÏπ? {0}"),
+			NSLOCTEXT("HarmoniaQuest", "ExpReward", "Experience: {0}"),
 			FText::AsNumber(Experience)));
 	}
 
 	if (GoldRewardText)
 	{
 		GoldRewardText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaQuest", "GoldReward", "Í≥®Îìú: {0}"),
+			NSLOCTEXT("HarmoniaQuest", "GoldReward", "Gold: {0}"),
 			FText::AsNumber(Gold)));
 	}
 
@@ -259,7 +259,7 @@ void UHarmoniaQuestWidget::ShowQuestAcceptedNotification(const FText& QuestName)
 	if (NotificationText)
 	{
 		NotificationText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaQuest", "QuestAccepted", "?òÏä§???òÎùΩ: {0}"),
+			NSLOCTEXT("HarmoniaQuest", "QuestAccepted", "?ÔøΩÏä§???ÔøΩÎùΩ: {0}"),
 			QuestName));
 		NotificationText->SetColorAndOpacity(FLinearColor::Yellow);
 	}
@@ -277,7 +277,7 @@ void UHarmoniaQuestWidget::ShowQuestCompletedNotification(const FText& QuestName
 	if (NotificationText)
 	{
 		NotificationText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaQuest", "QuestCompleted", "?òÏä§???ÑÎ£å: {0}"),
+			NSLOCTEXT("HarmoniaQuest", "QuestCompleted", "?ÔøΩÏä§???ÔøΩÎ£å: {0}"),
 			QuestName));
 		NotificationText->SetColorAndOpacity(FLinearColor::Green);
 	}
@@ -325,21 +325,21 @@ FText UHarmoniaQuestWidget::GetQuestTypeText(EQuestType Type) const
 	switch (Type)
 	{
 	case EQuestType::Main:
-		return NSLOCTEXT("HarmoniaQuest", "TypeMain", "Î©îÏù∏ ?òÏä§??);
+		return NSLOCTEXT("HarmoniaQuest", "TypeMain", "Main Quest");
 	case EQuestType::Side:
-		return NSLOCTEXT("HarmoniaQuest", "TypeSide", "?¨Ïù¥???òÏä§??);
+		return NSLOCTEXT("HarmoniaQuest", "TypeSide", "Side Quest");
 	case EQuestType::Daily:
-		return NSLOCTEXT("HarmoniaQuest", "TypeDaily", "?ºÏùº ?òÏä§??);
+		return NSLOCTEXT("HarmoniaQuest", "TypeDaily", "Daily Quest");
 	case EQuestType::Weekly:
-		return NSLOCTEXT("HarmoniaQuest", "TypeWeekly", "Ï£ºÍ∞Ñ ?òÏä§??);
+		return NSLOCTEXT("HarmoniaQuest", "TypeWeekly", "Weekly Quest");
 	case EQuestType::Repeatable:
-		return NSLOCTEXT("HarmoniaQuest", "TypeRepeatable", "Î∞òÎ≥µ ?òÏä§??);
+		return NSLOCTEXT("HarmoniaQuest", "TypeRepeatable", "Repeatable Quest");
 	case EQuestType::Story:
-		return NSLOCTEXT("HarmoniaQuest", "TypeStory", "?§ÌÜ†Î¶??òÏä§??);
+		return NSLOCTEXT("HarmoniaQuest", "TypeStory", "Story Quest");
 	case EQuestType::Tutorial:
-		return NSLOCTEXT("HarmoniaQuest", "TypeTutorial", "?úÌÜ†Î¶¨Ïñº");
+		return NSLOCTEXT("HarmoniaQuest", "TypeTutorial", "Tutorial");
 	case EQuestType::Achievement:
-		return NSLOCTEXT("HarmoniaQuest", "TypeAchievement", "?ÖÏ†Å");
+		return NSLOCTEXT("HarmoniaQuest", "TypeAchievement", "Achievement");
 	default:
 		return FText::GetEmpty();
 	}
@@ -350,17 +350,17 @@ FText UHarmoniaQuestWidget::GetQuestStateText(EQuestState State) const
 	switch (State)
 	{
 	case EQuestState::Locked:
-		return NSLOCTEXT("HarmoniaQuest", "StateLocked", "?†Í?");
+		return NSLOCTEXT("HarmoniaQuest", "StateLocked", "Locked");
 	case EQuestState::Available:
-		return NSLOCTEXT("HarmoniaQuest", "StateAvailable", "?òÎùΩ Í∞Ä??);
+		return NSLOCTEXT("HarmoniaQuest", "StateAvailable", "Available");
 	case EQuestState::InProgress:
-		return NSLOCTEXT("HarmoniaQuest", "StateInProgress", "ÏßÑÌñâ Ï§?);
+		return NSLOCTEXT("HarmoniaQuest", "StateInProgress", "In Progress");
 	case EQuestState::ReadyToComplete:
-		return NSLOCTEXT("HarmoniaQuest", "StateReadyComplete", "?ÑÎ£å Í∞Ä??);
+		return NSLOCTEXT("HarmoniaQuest", "StateReadyComplete", "Ready to Complete");
 	case EQuestState::Completed:
-		return NSLOCTEXT("HarmoniaQuest", "StateCompleted", "?ÑÎ£å??);
+		return NSLOCTEXT("HarmoniaQuest", "StateCompleted", "Completed");
 	case EQuestState::Failed:
-		return NSLOCTEXT("HarmoniaQuest", "StateFailed", "?§Ìå®");
+		return NSLOCTEXT("HarmoniaQuest", "StateFailed", "Failed");
 	default:
 		return FText::GetEmpty();
 	}

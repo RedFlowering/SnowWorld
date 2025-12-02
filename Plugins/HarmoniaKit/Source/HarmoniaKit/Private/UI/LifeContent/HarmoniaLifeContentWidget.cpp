@@ -111,12 +111,12 @@ void UHarmoniaLifeContentWidget::UpdateActivityStatus()
 		if (bIsActive)
 		{
 			ActivityStatusText->SetText(FText::Format(
-				NSLOCTEXT("HarmoniaLifeContent", "ActivityProgress", "ì§„í–‰ ì¤?.. {0}%"),
+				NSLOCTEXT("HarmoniaLifeContent", "ActivityProgress", "Progress: {0}%"),
 				FText::AsNumber(FMath::RoundToInt(Progress * 100.0f))));
 		}
 		else
 		{
-			ActivityStatusText->SetText(NSLOCTEXT("HarmoniaLifeContent", "ActivityReady", "ì¤€ë¹??„ë£Œ"));
+			ActivityStatusText->SetText(NSLOCTEXT("HarmoniaLifeContent", "ActivityReady", "Ready"));
 		}
 	}
 }
