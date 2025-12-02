@@ -109,6 +109,8 @@ namespace HarmoniaGameplayTags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_State_Dodging);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_State_Attacking);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_State_Blocking);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_State_Parrying);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_State_Invulnerable);
 
 	// ============================================================
 	// Difficulty System Tags

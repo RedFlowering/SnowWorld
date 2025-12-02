@@ -1,6 +1,7 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "Components/HarmoniaMeleeCombatComponent.h"
+#include "HarmoniaGameplayTags.h"
 #include "HarmoniaLogCategories.h"
 #include "Components/HarmoniaSenseAttackComponent.h"
 #include "Components/HarmoniaEquipmentComponent.h"
@@ -18,11 +19,11 @@ UHarmoniaMeleeCombatComponent::UHarmoniaMeleeCombatComponent()
 	PrimaryComponentTick.bStartWithTickEnabled = false; // Enable only when needed
 
 	// Initialize default gameplay tags
-	AttackingTag = FGameplayTag::RequestGameplayTag(FName("Character.State.Attacking"));
-	BlockingTag = FGameplayTag::RequestGameplayTag(FName("Character.State.Blocking"));
-	ParryingTag = FGameplayTag::RequestGameplayTag(FName("Character.State.Parrying"));
-	DodgingTag = FGameplayTag::RequestGameplayTag(FName("Character.State.Dodging"));
-	InvulnerableTag = FGameplayTag::RequestGameplayTag(FName("Character.State.Invulnerable"));
+	AttackingTag = HarmoniaGameplayTags::Character_State_Attacking;
+	BlockingTag = HarmoniaGameplayTags::Character_State_Blocking;
+	ParryingTag = HarmoniaGameplayTags::Character_State_Parrying;
+	DodgingTag = HarmoniaGameplayTags::Character_State_Dodging;
+	InvulnerableTag = HarmoniaGameplayTags::Character_State_Invulnerable;
 }
 
 void UHarmoniaMeleeCombatComponent::BeginPlay()

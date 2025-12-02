@@ -111,6 +111,8 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_State_Dodging, "Character.State.Dodging", "Character state dodging");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_State_Attacking, "Character.State.Attacking", "Character state attacking");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_State_Blocking, "Character.State.Blocking", "Character state blocking");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_State_Parrying, "Character.State.Parrying", "Character state parrying");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_State_Invulnerable, "Character.State.Invulnerable", "Character state invulnerable");
 
 	// ============================================================
 	// Difficulty System Tags
