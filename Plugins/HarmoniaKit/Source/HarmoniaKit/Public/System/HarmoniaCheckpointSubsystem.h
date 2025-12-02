@@ -23,21 +23,21 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnCheckpointTeleport, FName, Fro
 /**
  * UHarmoniaCheckpointSubsystem
  *
- * ?�리?�탈 공명�?체크?�인???�스??관�?
+ * 크리스탈 공명형 체크포인트 시스템 관리
  *
  * 주요 기능:
- * - 체크?�인???�록 �??�성??
- * - 공명(?�식) ?�스??- ?�복 + ??리스??+ ?�동 ?�??
- * - 체크?�인??�??�레?�트 (공명 ?�트?�크)
- * - 체크?�인??강화 ?�스??
- * - 죽었????마�?�?체크?�인?�에??리스??
- * - 공명 주파?�별 고유???�과
+ * - 체크포인트 등록 및 활성화
+ * - 공명(휴식) 시스템 - 회복 + 적 리스폰 + 자동 저장
+ * - 체크포인트간 텔레포트 (공명 네트워크)
+ * - 체크포인트 강화 시스템
+ * - 죽었을때 마지막 체크포인트에서 리스폰
+ * - 공명 주파수별 고유한 효과
  *
- * ?�창???�소:
- * - �??�리?�탈마다 고유??"공명 주파?? (?�상/?�향)
- * - 체크?�인??강화�??�복??증�?
- * - 가까운 체크?�인?�들?�리 공명 ?�과
- * - 공명 ?�트?�크�??�한 ?�레?�트
+ * 확장할 요소:
+ * - 각 크리스탈마다 고유한 "공명 주파수" (색상/음향)
+ * - 체크포인트 강화로 회복량 증가
+ * - 가까운 체크포인트들끼리 공명 효과
+ * - 공명 네트워크를 통한 텔레포트
  */
 UCLASS(Config=Game)
 class HARMONIAKIT_API UHarmoniaCheckpointSubsystem : public UGameInstanceSubsystem
@@ -57,13 +57,13 @@ public:
 	// ============================================================================
 
 	/**
-	 * 체크?�인???�정 가?�오�?
+	 * 체크포인트 설정 가져오기
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Checkpoint")
 	const FHarmoniaCheckpointConfig& GetCheckpointConfig() const { return CheckpointConfig; }
 
 	/**
-	 * 체크?�인???�정 변�?
+	 * 체크포인트 설정 변경
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Checkpoint")
 	void SetCheckpointConfig(const FHarmoniaCheckpointConfig& NewConfig) { CheckpointConfig = NewConfig; }
@@ -73,33 +73,33 @@ public:
 	// ============================================================================
 
 	/**
-	 * 체크?�인???�록
-	 * @param Checkpoint ?�록??체크?�인???�터
-	 * @return ?�록 ?�공 ?��?
+	 * 체크포인트 등록
+	 * @param Checkpoint 등록할 체크포인트 액터
+	 * @return 등록 성공 여부
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Checkpoint")
 	bool RegisterCheckpoint(AHarmoniaCrystalResonator* Checkpoint);
 
 	/**
-	 * 체크?�인???�록 ?�제
+	 * 체크포인트 등록 해제
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Checkpoint")
 	void UnregisterCheckpoint(FName CheckpointID);
 
 	/**
-	 * 체크?�인??찾기
+	 * 체크포인트 찾기
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Checkpoint")
 	AHarmoniaCrystalResonator* FindCheckpoint(FName CheckpointID) const;
 
 	/**
-	 * 모든 체크?�인??가?�오�?
+	 * 모든 체크포인트 가져오기
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Checkpoint")
 	TArray<AHarmoniaCrystalResonator*> GetAllCheckpoints() const;
 
 	/**
-	 * ?�성?�된 체크?�인?�만 가?�오�?
+	 * 활성화된 체크포인트만 가져오기
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Checkpoint")
 	TArray<AHarmoniaCrystalResonator*> GetActivatedCheckpoints() const;
@@ -109,16 +109,16 @@ public:
 	// ============================================================================
 
 	/**
-	 * 체크?�인???�성??
-	 * @param CheckpointID ?�성?�할 체크?�인??ID
-	 * @param Player ?�성?�하???�레?�어
-	 * @return ?�성???�공 ?��?
+	 * 체크포인트 활성화
+	 * @param CheckpointID 활성화할 체크포인트 ID
+	 * @param Player 활성화하는 플레이어
+	 * @return 활성화 성공 여부
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Checkpoint")
 	bool ActivateCheckpoint(FName CheckpointID, APlayerController* Player);
 
 	/**
-	 * 체크?�인???�성???��? ?�인
+	 * 체크포인트 활성화 여부 확인
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Checkpoint")
 	bool IsCheckpointActivated(FName CheckpointID) const;
@@ -128,30 +128,30 @@ public:
 	// ============================================================================
 
 	/**
-	 * 체크?�인?�에??공명 ?�작 (?�식/?�복)
-	 * @param CheckpointID 공명??체크?�인??ID
-	 * @param Player 공명?�는 ?�레?�어
-	 * @return 공명 ?�작 ?�공 ?��?
+	 * 체크포인트에서 공명 시작 (휴식/회복)
+	 * @param CheckpointID 공명할 체크포인트 ID
+	 * @param Player 공명하는 플레이어
+	 * @return 공명 시작 성공 여부
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Checkpoint")
 	bool StartResonance(FName CheckpointID, APlayerController* Player);
 
 	/**
 	 * 공명 취소
-	 * @param Player 공명 중인 ?�레?�어
-	 * @param Reason 취소 ?�유
+	 * @param Player 공명 중인 플레이어
+	 * @param Reason 취소 이유
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Checkpoint")
 	void CancelResonance(APlayerController* Player, const FText& Reason);
 
 	/**
-	 * ?�레?�어가 ?�재 공명 중인지 ?�인
+	 * 플레이어가 현재 공명 중인지 확인
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Checkpoint")
 	bool IsPlayerResonating(APlayerController* Player) const;
 
 	/**
-	 * ?�레?�어가 공명 중인 체크?�인??ID 가?�오�?
+	 * 플레이어가 공명 중인 체크포인트 ID 가져오기
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Checkpoint")
 	FName GetResonatingCheckpointID(APlayerController* Player) const;
@@ -161,26 +161,26 @@ public:
 	// ============================================================================
 
 	/**
-	 * 체크?�인?�로 ?�레?�트
-	 * @param Player ?�레?�트???�레?�어
-	 * @param DestinationCheckpointID 목적지 체크?�인??ID
-	 * @return ?�레?�트 결과
+	 * 체크포인트로 텔레포트
+	 * @param Player 텔레포트할 플레이어
+	 * @param DestinationCheckpointID 목적지 체크포인트 ID
+	 * @return 텔레포트 결과
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Checkpoint")
 	FHarmoniaTeleportResult TeleportToCheckpoint(APlayerController* Player, FName DestinationCheckpointID);
 
 	/**
-	 * ?�레?�트 가???��? ?�인
-	 * @param Player ?�레?�트???�레?�어
-	 * @param DestinationCheckpointID 목적지 체크?�인??ID
-	 * @param OutReason 불�??�한 ?�유 (?�패 ??
-	 * @return ?�레?�트 가???��?
+	 * 텔레포트 가능 여부 확인
+	 * @param Player 텔레포트할 플레이어
+	 * @param DestinationCheckpointID 목적지 체크포인트 ID
+	 * @param OutReason 불가능한 이유 (실패 시)
+	 * @return 텔레포트 가능 여부
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Checkpoint")
 	bool CanTeleportToCheckpoint(APlayerController* Player, FName DestinationCheckpointID, FText& OutReason) const;
 
 	/**
-	 * ?�레?�트 비용 계산
+	 * 텔레포트 비용 계산
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Checkpoint")
 	int32 CalculateTeleportCost(FName FromCheckpointID, FName ToCheckpointID) const;
@@ -190,16 +190,16 @@ public:
 	// ============================================================================
 
 	/**
-	 * 체크?�인??강화
-	 * @param CheckpointID 강화??체크?�인??ID
-	 * @param UpgradeType 강화 ?�??
-	 * @return 강화 ?�공 ?��?
+	 * 체크포인트 강화
+	 * @param CheckpointID 강화할 체크포인트 ID
+	 * @param UpgradeType 강화 타입
+	 * @return 강화 성공 여부
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Checkpoint")
 	bool UpgradeCheckpoint(FName CheckpointID, EHarmoniaCheckpointUpgradeType UpgradeType);
 
 	/**
-	 * 체크?�인??강화 ?�벨 가?�오�?
+	 * 체크포인트 강화 레벨 가져오기
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Checkpoint")
 	int32 GetCheckpointUpgradeLevel(FName CheckpointID, EHarmoniaCheckpointUpgradeType UpgradeType) const;
@@ -209,19 +209,19 @@ public:
 	// ============================================================================
 
 	/**
-	 * ?�레?�어 마�?�?공명 체크?�인???�정
+	 * 플레이어 마지막 공명 체크포인트 설정
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Checkpoint")
 	void SetPlayerLastCheckpoint(APlayerController* Player, FName CheckpointID);
 
 	/**
-	 * ?�레?�어 마�?�?공명 체크?�인??가?�오�?
+	 * 플레이어 마지막 공명 체크포인트 가져오기
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Checkpoint")
 	FName GetPlayerLastCheckpoint(APlayerController* Player) const;
 
 	/**
-	 * ?�레?�어�?마�?�?체크?�인?�에??리스??
+	 * 플레이어를 마지막 체크포인트에서 리스폰
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Checkpoint")
 	bool RespawnPlayerAtLastCheckpoint(APlayerController* Player);
@@ -231,19 +231,19 @@ public:
 	// ============================================================================
 
 	/**
-	 * 몬스???�포???�록 (공명 ??리셋??
+	 * 몬스터 스포너 등록 (공명 시 리셋용)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Checkpoint")
 	void RegisterMonsterSpawner(AHarmoniaMonsterSpawner* Spawner);
 
 	/**
-	 * 몬스???�포???�록 ?�제
+	 * 몬스터 스포너 등록 해제
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Checkpoint")
 	void UnregisterMonsterSpawner(AHarmoniaMonsterSpawner* Spawner);
 
 	/**
-	 * 모든 ??리스??(공명 ???�출)
+	 * 모든 적 리스폰 (공명 시 호출)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Checkpoint")
 	int32 RespawnAllEnemies();
@@ -253,25 +253,25 @@ public:
 	// ============================================================================
 
 	/**
-	 * 체크?�인???�이???�??
+	 * 체크포인트 데이터 저장
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Checkpoint")
 	void SaveCheckpointData();
 
 	/**
-	 * 체크?�인???�이??로드
+	 * 체크포인트 데이터 로드
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Checkpoint")
 	void LoadCheckpointData();
 
 	/**
-	 * 체크?�인???�이??가?�오�?(?�이�??�스???�동??
+	 * 체크포인트 데이터 가져오기 (세이브 시스템 연동용)
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Checkpoint")
 	TArray<FHarmoniaCheckpointData> GetCheckpointDataForSave() const;
 
 	/**
-	 * 체크?�인???�이???�용 (로드 ?�스???�동??
+	 * 체크포인트 데이터 적용 (로드 시스템 연동용)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Checkpoint")
 	void ApplyCheckpointDataFromLoad(const TArray<FHarmoniaCheckpointData>& LoadedData);
@@ -280,72 +280,72 @@ public:
 	// Events
 	// ============================================================================
 
-	/** 체크?�인???�성???�벤??*/
+	/** 체크포인트 활성화 이벤트 */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Checkpoint|Events")
 	FOnCheckpointActivated OnCheckpointActivated;
 
-	/** 공명 ?�작 ?�벤??*/
+	/** 공명 시작 이벤트 */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Checkpoint|Events")
 	FOnResonanceStarted OnResonanceStarted;
 
-	/** 공명 ?�료 ?�벤??*/
+	/** 공명 완료 이벤트 */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Checkpoint|Events")
 	FOnResonanceCompleted OnResonanceCompleted;
 
-	/** 공명 취소 ?�벤??*/
+	/** 공명 취소 이벤트 */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Checkpoint|Events")
 	FOnResonanceCancelled OnResonanceCancelled;
 
-	/** ?�레?�트 ?�벤??*/
+	/** 텔레포트 이벤트 */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Checkpoint|Events")
 	FOnCheckpointTeleport OnCheckpointTeleport;
 
 protected:
 	/**
-	 * 공명 ?�료 처리
+	 * 공명 완료 처리
 	 */
 	void CompleteResonance(APlayerController* Player, FName CheckpointID);
 
 	/**
-	 * ?�레?�어 ?�복
+	 * 플레이어 회복
 	 */
 	void RestorePlayerHealth(APlayerController* Player, float RestorationRate);
 
 	/**
-	 * 게임 ?�동 ?�??
+	 * 게임 자동 저장
 	 */
 	void AutoSaveGame(APlayerController* Player);
 
 	/**
-	 * 공명 주파?�에 ?�른 추�? ?�과
+	 * 공명 주파수에 따른 추가 효과
 	 */
 	void ApplyResonanceFrequencyEffects(APlayerController* Player, EHarmoniaResonanceFrequency Frequency);
 
 private:
-	/** 체크?�인???�정 */
+	/** 체크포인트 설정 */
 	UPROPERTY(Config)
 	FHarmoniaCheckpointConfig CheckpointConfig;
 
-	/** ?�록??체크?�인?�들 (ID -> Actor) */
+	/** 등록된 체크포인트들 (ID -> Actor) */
 	UPROPERTY(Transient)
 	TMap<FName, TObjectPtr<AHarmoniaCrystalResonator>> RegisteredCheckpoints;
 
-	/** 체크?�인???�이??(ID -> Data) */
+	/** 체크포인트 데이터 (ID -> Data) */
 	UPROPERTY(Transient)
 	TMap<FName, FHarmoniaCheckpointData> CheckpointDataMap;
 
-	/** ?�레?�어�?마�?�?체크?�인??(PlayerController -> CheckpointID) */
+	/** 플레이어별 마지막 체크포인트 (PlayerController -> CheckpointID) */
 	UPROPERTY(Transient)
 	TMap<TObjectPtr<APlayerController>, FName> PlayerLastCheckpoints;
 
-	/** 공명 중인 ?�레?�어 (PlayerController -> CheckpointID) */
+	/** 공명 중인 플레이어 (PlayerController -> CheckpointID) */
 	UPROPERTY(Transient)
 	TMap<TObjectPtr<APlayerController>, FName> ResonatingPlayers;
 
-	/** 공명 ?�?�머 ?�들 (PlayerController -> TimerHandle) */
+	/** 공명 타이머 핸들 (PlayerController -> TimerHandle) */
 	TMap<APlayerController*, FTimerHandle> ResonanceTimerHandles;
 
-	/** ?�록??몬스???�포?�들 */
+	/** 등록된 몬스터 스포너들 */
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<AHarmoniaMonsterSpawner>> RegisteredSpawners;
 };

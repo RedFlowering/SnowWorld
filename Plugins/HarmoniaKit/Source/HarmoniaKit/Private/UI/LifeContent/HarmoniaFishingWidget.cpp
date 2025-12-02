@@ -144,17 +144,17 @@ void UHarmoniaFishingWidget::ShowMinigameResult(bool bSuccess, bool bPerfect)
 
 		if (bPerfect)
 		{
-			MinigameResultText->SetText(NSLOCTEXT("HarmoniaFishing", "PerfectCatch", "?�벽???�시!"));
+			MinigameResultText->SetText(NSLOCTEXT("HarmoniaFishing", "PerfectCatch", "완벽한 낚시!"));
 			MinigameResultText->SetColorAndOpacity(FLinearColor(1.0f, 0.84f, 0.0f)); // Gold
 		}
 		else if (bSuccess)
 		{
-			MinigameResultText->SetText(NSLOCTEXT("HarmoniaFishing", "GoodCatch", "?�공!"));
+			MinigameResultText->SetText(NSLOCTEXT("HarmoniaFishing", "GoodCatch", "성공!"));
 			MinigameResultText->SetColorAndOpacity(FLinearColor::Green);
 		}
 		else
 		{
-			MinigameResultText->SetText(NSLOCTEXT("HarmoniaFishing", "FailedCatch", "?�쳤??.."));
+			MinigameResultText->SetText(NSLOCTEXT("HarmoniaFishing", "FailedCatch", "놓쳤다.."));
 			MinigameResultText->SetColorAndOpacity(FLinearColor::Red);
 		}
 	}
@@ -198,7 +198,7 @@ void UHarmoniaFishingWidget::ShowCaughtFish(const FCaughtFish& FishInfo, const F
 	if (CaughtFishQualityText)
 	{
 		CaughtFishQualityText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaFishing", "QualityFormat", "?�질: {0}"),
+			NSLOCTEXT("HarmoniaFishing", "QualityFormat", "품질: {0}"),
 			FText::AsNumber(FMath::RoundToInt(FishInfo.QualityScore))));
 	}
 
@@ -238,19 +238,19 @@ void UHarmoniaFishingWidget::UpdateFishingSpotInfo(const UFishingSpotData* SpotD
 		switch (SpotData->SpotType)
 		{
 		case EFishingSpotType::River:
-			TypeText = NSLOCTEXT("HarmoniaFishing", "SpotRiver", "�?);
+			TypeText = NSLOCTEXT("HarmoniaFishing", "SpotRiver", "강");
 			break;
 		case EFishingSpotType::Lake:
-			TypeText = NSLOCTEXT("HarmoniaFishing", "SpotLake", "?�수");
+			TypeText = NSLOCTEXT("HarmoniaFishing", "SpotLake", "호수");
 			break;
 		case EFishingSpotType::Ocean:
 			TypeText = NSLOCTEXT("HarmoniaFishing", "SpotOcean", "바다");
 			break;
 		case EFishingSpotType::Pond:
-			TypeText = NSLOCTEXT("HarmoniaFishing", "SpotPond", "?�못");
+			TypeText = NSLOCTEXT("HarmoniaFishing", "SpotPond", "연못");
 			break;
 		case EFishingSpotType::Special:
-			TypeText = NSLOCTEXT("HarmoniaFishing", "SpotSpecial", "?�별 ?�시??);
+			TypeText = NSLOCTEXT("HarmoniaFishing", "SpotSpecial", "특별 낚시터");
 			break;
 		}
 		FishingSpotTypeText->SetText(TypeText);
@@ -262,13 +262,13 @@ FText UHarmoniaFishingWidget::GetMinigameInstruction(EFishingMinigameType Type) 
 	switch (Type)
 	{
 	case EFishingMinigameType::TimingBased:
-		return NSLOCTEXT("HarmoniaFishing", "InstructionTiming", "?�?�밍??맞춰 버튼???�르?�요!");
+		return NSLOCTEXT("HarmoniaFishing", "InstructionTiming", "타이밍에 맞춰 버튼을 누르세요!");
 	case EFishingMinigameType::BarBalance:
-		return NSLOCTEXT("HarmoniaFishing", "InstructionBalance", "균형???��??�세??");
+		return NSLOCTEXT("HarmoniaFishing", "InstructionBalance", "균형을 유지하세요!");
 	case EFishingMinigameType::QuickTimeEvent:
-		return NSLOCTEXT("HarmoniaFishing", "InstructionQTE", "?�시?�는 버튼??빠르�??�르?�요!");
+		return NSLOCTEXT("HarmoniaFishing", "InstructionQTE", "표시되는 버튼을 빠르게 누르세요!");
 	case EFishingMinigameType::ReelTension:
-		return NSLOCTEXT("HarmoniaFishing", "InstructionTension", "?�력???�절???��??�세??");
+		return NSLOCTEXT("HarmoniaFishing", "InstructionTension", "장력을 적절히 유지하세요!");
 	default:
 		return FText::GetEmpty();
 	}
@@ -279,15 +279,15 @@ FText UHarmoniaFishingWidget::GetRarityText(EFishRarity Rarity) const
 	switch (Rarity)
 	{
 	case EFishRarity::Common:
-		return NSLOCTEXT("HarmoniaFishing", "RarityCommon", "?�반");
+		return NSLOCTEXT("HarmoniaFishing", "RarityCommon", "일반");
 	case EFishRarity::Uncommon:
 		return NSLOCTEXT("HarmoniaFishing", "RarityUncommon", "고급");
 	case EFishRarity::Rare:
-		return NSLOCTEXT("HarmoniaFishing", "RarityRare", "?��?");
+		return NSLOCTEXT("HarmoniaFishing", "RarityRare", "희귀");
 	case EFishRarity::Epic:
-		return NSLOCTEXT("HarmoniaFishing", "RarityEpic", "?�웅");
+		return NSLOCTEXT("HarmoniaFishing", "RarityEpic", "영웅");
 	case EFishRarity::Legendary:
-		return NSLOCTEXT("HarmoniaFishing", "RarityLegendary", "?�설");
+		return NSLOCTEXT("HarmoniaFishing", "RarityLegendary", "전설");
 	default:
 		return FText::GetEmpty();
 	}

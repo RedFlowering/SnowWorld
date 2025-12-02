@@ -9,7 +9,7 @@ AHarmoniaGameModeExample::AHarmoniaGameModeExample()
 	// 치트 매니저 클래스는 블루프린트나 에디터에서 설정하세요.
 	// CheatClass = UHarmoniaCheatManager::StaticClass();
 	// 
-	// ?�는 ?�로?또는 프로젝트 설정 > General Settings > CheatClass에서 UHarmoniaCheatManager로변경하세요.
+	// 또는 직접 또는 프로젝트 설정 > General Settings > CheatClass에서 UHarmoniaCheatManager로 변경하세요.
 	
 	UE_LOG(LogTemp, Log, TEXT("[HarmoniaGameMode] Harmonia 게임모드가 생성되었습니다."));
 	UE_LOG(LogTemp, Log, TEXT("[HarmoniaGameMode] 치트를 사용하려면 CheatClass를 UHarmoniaCheatManager로 설정하세요."));
@@ -22,8 +22,8 @@ void AHarmoniaGameModeExample::BeginPlay()
 	if (IsCheatsEnabled())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("========================================"));
-		UE_LOG(LogTemp, Warning, TEXT("  Harmonia 치트 ?�스???�성?�됨"));
-		UE_LOG(LogTemp, Warning, TEXT("  콘솔(~)???�고 'HarmoniaHelp' ?�력"));
+		UE_LOG(LogTemp, Warning, TEXT("  Harmonia 치트 시스템 활성화됨"));
+		UE_LOG(LogTemp, Warning, TEXT("  콘솔(~)을 열고 'HarmoniaHelp' 입력"));
 		UE_LOG(LogTemp, Warning, TEXT("========================================"));
 
 		if (GEngine)
@@ -32,7 +32,7 @@ void AHarmoniaGameModeExample::BeginPlay()
 				-1, 
 				10.0f, 
 				FColor::Yellow, 
-				TEXT("[Harmonia] 치트 ?�스???�성?�됨! 콘솔(~)?�서 'HarmoniaHelp' ?�력")
+				TEXT("[Harmonia] 치트 시스템 활성화됨! 콘솔(~)에서 'HarmoniaHelp' 입력")
 			);
 		}
 	}
