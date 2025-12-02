@@ -11,6 +11,7 @@ public:
 
 private:
     static bool ValidateConfig(const UHarmoniaRegistryAsset* Registry);
+    static void GenerateRowIncludesHeader(const UHarmoniaRegistryAsset* Registry);
     static void GenerateMacroHeaderFromRegistry(const UHarmoniaRegistryAsset* Registry);
     static void GenerateFunctionLibraryFromRegistry(const UHarmoniaRegistryAsset* Registry);
 };

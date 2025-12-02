@@ -8,6 +8,7 @@ void FHarmoniaMacroGenerator::ValidateAndGenerate(const UHarmoniaRegistryAsset* 
 {
     if (ValidateConfig(Registry))
     {
+        GenerateRowIncludesHeader(Registry);
         GenerateMacroHeaderFromRegistry(Registry);
         GenerateFunctionLibraryFromRegistry(Registry);
     }
@@ -58,9 +59,67 @@ bool FHarmoniaMacroGenerator::ValidateConfig(const UHarmoniaRegistryAsset* Regis
 		{
 			UE_LOG(LogTemp, Warning, TEXT("[Harmonia] Failed to get RowStruct for: %s. Skipped."), *Entry.FunctionName);
 			bResult = false;
+			continue;
 		}
+		
+		// 디버그: 실제 RowStruct 이름 출력
+		UE_LOG(LogTemp, Log, TEXT("[Harmonia] DataTable '%s' has RowStruct: %s (StructName: %s)"), 
+			*Entry.FunctionName, 
+			*RowStruct->GetName(),
+			*RowStruct->GetStructCPPName());
     }
     return bResult;
+}
+
+void FHarmoniaMacroGenerator::GenerateRowIncludesHeader(const UHarmoniaRegistryAsset* Registry)
+{
+    if (!Registry) return;
+
+    FString Output;
+    Output += TEXT("// Copyright 2025 Snow Game Studio.\n\n");
+    Output += TEXT("#pragma once\n\n");
+    Output += TEXT("#include \"Engine/DataTable.h\"\n\n");
+    Output += TEXT("// This file is auto-generated. Do not modify manually.\n");
+    Output += TEXT("// Any manual changes will be overwritten by the code generator.\n");
+    Output += TEXT("// Contains include directives for all DataTable row struct headers.\n\n");
+
+    // 중복 방지를 위한 Set
+    TSet<FString> IncludedHeaders;
+
+    for (const FHarmoniaDataTableEntry& Entry : Registry->Entries)
+    {
+        const UDataTable* DataTable = Entry.Table.LoadSynchronous();
+        if (!DataTable) continue;
+
+        const UScriptStruct* RowStruct = DataTable->GetRowStruct();
+        if (!RowStruct) continue;
+
+        // RowStruct가 정의된 헤더 파일 경로 추출
+        // GetMetaData("ModuleRelativePath")를 통해 상대 경로 획득
+        FString ModuleRelativePath = RowStruct->GetMetaData(TEXT("ModuleRelativePath"));
+        
+        if (!ModuleRelativePath.IsEmpty() && !IncludedHeaders.Contains(ModuleRelativePath))
+        {
+            IncludedHeaders.Add(ModuleRelativePath);
+            Output += FString::Printf(TEXT("#include \"%s\"\n"), *ModuleRelativePath);
+            UE_LOG(LogTemp, Log, TEXT("[Harmonia] Added RowStruct header: %s (from %s)"), *ModuleRelativePath, *RowStruct->GetName());
+        }
+        else if (ModuleRelativePath.IsEmpty())
+        {
+            UE_LOG(LogTemp, Warning, TEXT("[Harmonia] Could not find header path for RowStruct: %s"), *RowStruct->GetName());
+        }
+    }
+
+    Output += TEXT("\n// Auto-generated macro definitions\n");
+    Output += TEXT("#include \"Definitions/HarmoniaMacroDefinitions.h\"\n");
+
+    const FString OutputPath = FPaths::Combine(
+        IPluginManager::Get().FindPlugin("HarmoniaKit")->GetBaseDir(),
+        TEXT("Source/HarmoniaLoadManager/Public/HarmoniaRowIncludes.h")
+    );
+
+    FFileHelper::SaveStringToFile(Output, *OutputPath);
+    UE_LOG(LogTemp, Log, TEXT("[HarmoniaMacroGenerator] Row includes header generated: %s"), *OutputPath);
 }
 
 void FHarmoniaMacroGenerator::GenerateMacroHeaderFromRegistry(const UHarmoniaRegistryAsset* Registry)
@@ -87,15 +146,15 @@ void FHarmoniaMacroGenerator::GenerateMacroHeaderFromRegistry(const UHarmoniaReg
             FString MacroFind = FString::Printf(TEXT("FIND%sROW"), *FunctionName.ToUpper());
             FString MacroAll = FString::Printf(TEXT("GETALL%sROWS"), *FunctionName.ToUpper());
 
-            // Extracting RowStruct names
+            // Extracting RowStruct names - GetStructCPPName()으로 정확한 C++ 이름 획득
             FString StructName = TEXT("UNKNOWN");
 
 			if (const UScriptStruct* RowStruct = DataTable->GetRowStruct())
 			{
-                FString RawName = RowStruct->GetName();
-                RawName.RemoveFromEnd(TEXT("TableRow"));
+                // GetStructCPPName()은 이미 F 접두사가 포함된 정확한 C++ 구조체 이름을 반환
+                StructName = RowStruct->GetStructCPPName();
                 
-                StructName = TEXT("F") + RawName;
+                UE_LOG(LogTemp, Verbose, TEXT("[Harmonia] Macro Gen - %s uses RowStruct: %s"), *FunctionName, *StructName);
 
                 // Get<DataTable>()
                 Output += FString::Printf(TEXT("#define %s() HARMONIALOADMANAGER()->GetDataTableByKey(TEXT(\"%s\"))\n"), *MacroGet, *FunctionName);
@@ -153,15 +212,15 @@ void FHarmoniaMacroGenerator::GenerateFunctionLibraryFromRegistry(const UHarmoni
         {
             const FString Key = Entry.FunctionName;
 
-            // Extracting RowStruct names
+            // Extracting RowStruct names - GetStructCPPName()으로 정확한 C++ 이름 획득
             FString StructName = TEXT("UNKNOWN");
 
 			if (const UScriptStruct* RowStruct = DataTable->GetRowStruct())
 			{
-                FString RawName = RowStruct->GetName();
-                RawName.RemoveFromEnd(TEXT("TableRow"));
-
-                StructName = TEXT("F") + RawName;
+                // GetStructCPPName()은 이미 F 접두사가 포함된 정확한 C++ 구조체 이름을 반환
+                StructName = RowStruct->GetStructCPPName();
+                
+                UE_LOG(LogTemp, Verbose, TEXT("[Harmonia] BFL Gen - %s uses RowStruct: %s"), *Key, *StructName);
 
 				// BFL function name
 				const FString FuncGet = FString::Printf(TEXT("Get%sDataTable"), *Key);
