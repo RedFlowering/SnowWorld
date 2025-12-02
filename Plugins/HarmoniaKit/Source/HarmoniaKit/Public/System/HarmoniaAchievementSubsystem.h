@@ -40,7 +40,7 @@ public:
 
 	// Get achievement definition
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Achievement")
-	bool GetAchievementDefinition(const FHarmoniaID& AchievementId, FHarmoniaAchievementDefinition& OutDefinition) const;
+	bool GetAchievementDefinition(const FHarmoniaID& AchievementId, FHarmoniaAchievementData& OutDefinition) const;
 
 	// Event delegates
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Achievement")

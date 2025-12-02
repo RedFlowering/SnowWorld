@@ -16,7 +16,7 @@ void UHarmoniaBuildingInstanceManager::Initialize(FSubsystemCollectionBase& Coll
 {
 	Super::Initialize(Collection);
 
-	// ISM을 관리할 더미 액터 생성
+	// ISM??관리할 ?��? ?�터 ?�성
 	UWorld* World = GetWorld();
 	if (!World)
 	{
@@ -34,7 +34,7 @@ void UHarmoniaBuildingInstanceManager::Initialize(FSubsystemCollectionBase& Coll
 		return;
 	}
 
-	// AActor는 기본적으로 RootComponent가 없으므로 생성
+	// AActor??기본?�으�?RootComponent가 ?�으므�??�성
 	USceneComponent* RootComp = NewObject<USceneComponent>(ISMManagerActor, USceneComponent::StaticClass(), TEXT("RootComponent"));
 	if (RootComp)
 	{
@@ -68,7 +68,7 @@ void UHarmoniaBuildingInstanceManager::Initialize(FSubsystemCollectionBase& Coll
 
 void UHarmoniaBuildingInstanceManager::Deinitialize()
 {
-	// ISM 매니저 액터 정리
+	// ISM 매니?� ?�터 ?�리
 	if (ISMManagerActor)
 	{
 		ISMManagerActor->Destroy();
@@ -83,7 +83,7 @@ void UHarmoniaBuildingInstanceManager::Deinitialize()
 	UE_LOG(LogBuildingInstanceManager, Log, TEXT("Building Instance Manager Deinitialized"));
 }
 
-FGuid UHarmoniaBuildingInstanceManager::PlaceBuilding(const FBuildingPartData& PartData, const FVector& Location, const FRotator& Rotation, AActor* Owner)
+FGuid UHarmoniaBuildingInstanceManager::PlaceBuilding(const FHarmoniaBuildingPartData& PartData, const FVector& Location, const FRotator& Rotation, AActor* Owner)
 {
 	// Server-only execution
 	UWorld* World = GetWorld();
@@ -99,7 +99,7 @@ FGuid UHarmoniaBuildingInstanceManager::PlaceBuilding(const FBuildingPartData& P
 		return FGuid();
 	}
 
-	// ISM 컴포넌트 가져오기 또는 생성
+	// ISM 컴포?�트 가?�오�??�는 ?�성
 	UInstancedStaticMeshComponent* ISMComponent = nullptr;
 
 	if (PartToISMMap.Contains(PartData.ID))
@@ -118,10 +118,10 @@ FGuid UHarmoniaBuildingInstanceManager::PlaceBuilding(const FBuildingPartData& P
 		return FGuid();
 	}
 
-	// 트랜스폼 생성
+	// ?�랜?�폼 ?�성
 	FTransform InstanceTransform(Rotation, Location);
 
-	// ISM에 인스턴스 추가
+	// ISM???�스?�스 추�?
 	int32 InstanceIndex = ISMComponent->AddInstance(InstanceTransform);
 
 	if (InstanceIndex == INDEX_NONE)
@@ -130,10 +130,10 @@ FGuid UHarmoniaBuildingInstanceManager::PlaceBuilding(const FBuildingPartData& P
 		return FGuid();
 	}
 
-	// 고유 GUID 생성
+	// 고유 GUID ?�성
 	FGuid NewGuid = FGuid::NewGuid();
 
-	// 인스턴스 데이터 생성
+	// ?�스?�스 ?�이???�성
 	FHarmoniaInstancedObjectData InstanceData;
 	InstanceData.InstanceGuid = NewGuid;
 	InstanceData.ObjectType = EHarmoniaInstancedObjectType::BuildingPart;
@@ -141,16 +141,16 @@ FGuid UHarmoniaBuildingInstanceManager::PlaceBuilding(const FBuildingPartData& P
 	InstanceData.WorldTransform = InstanceTransform;
 	InstanceData.Quantity = 1;
 
-	// 베이스 맵에 추가
+	// 베이??맵에 추�?
 	InstanceMap.Add(NewGuid, InstanceData);
 
-	// 메타데이터 생성
+	// 메�??�이???�성
 	FBuildingInstanceMetadata Metadata;
 	Metadata.InstanceIndex = InstanceIndex;
 	Metadata.PartID = PartData.ID;
 	Metadata.Location = Location;
 	Metadata.Rotation = Rotation;
-	Metadata.Health = 100.0f; // 기본 내구도
+	Metadata.Health = 100.0f; // 기본 ?�구??
 	Metadata.OwnerPlayerID = Owner ? Owner->GetName() : TEXT("");
 
 	// [TEAM SUPPORT] Set team ownership and sharing
@@ -211,14 +211,14 @@ bool UHarmoniaBuildingInstanceManager::RemoveBuilding(const FGuid& BuildingGuid)
 
 	const FBuildingInstanceMetadata& Metadata = BuildingMetadataMap[BuildingGuid];
 
-	// ISM 컴포넌트에서 인스턴스 제거
+	// ISM 컴포?�트?�서 ?�스?�스 ?�거
 	if (UInstancedStaticMeshComponent** ISMPtr = PartToISMMap.Find(Metadata.PartID))
 	{
 		if (*ISMPtr)
 		{
 			(*ISMPtr)->RemoveInstance(Metadata.InstanceIndex);
 
-			// 인덱스 재정렬 - 제거된 인스턴스 이후의 모든 메타데이터 인덱스 업데이트
+			// ?�덱???�정??- ?�거???�스?�스 ?�후??모든 메�??�이???�덱???�데?�트
 			for (auto& Pair : BuildingMetadataMap)
 			{
 				if (Pair.Value.PartID == Metadata.PartID && Pair.Value.InstanceIndex > Metadata.InstanceIndex)
@@ -229,7 +229,7 @@ bool UHarmoniaBuildingInstanceManager::RemoveBuilding(const FGuid& BuildingGuid)
 		}
 	}
 
-	// 데이터 제거
+	// ?�이???�거
 	InstanceMap.Remove(BuildingGuid);
 	BuildingMetadataMap.Remove(BuildingGuid);
 
@@ -278,7 +278,7 @@ bool UHarmoniaBuildingInstanceManager::DamageBuilding(const FGuid& BuildingGuid,
 	UE_LOG(LogBuildingInstanceManager, Log, TEXT("Building damaged: %s (Health: %.1f)"),
 		*BuildingGuid.ToString(), Metadata.Health);
 
-	// 내구도가 0이 되면 자동 파괴
+	// ?�구?��? 0???�면 ?�동 ?�괴
 	if (Metadata.Health <= 0.0f)
 	{
 		UE_LOG(LogBuildingInstanceManager, Warning, TEXT("Building destroyed due to zero health: %s"),
@@ -308,29 +308,29 @@ bool UHarmoniaBuildingInstanceManager::CheckBuildingOverlap(const FVector& Locat
 		return false;
 	}
 
-	// 배치하려는 건축물의 박스 변환
+	// 배치?�려??건축물의 박스 변??
 	FTransform PlacingTransform(Rotation, Location);
 
-	// 모든 배치된 건축물과 충돌 검사
+	// 모든 배치??건축물과 충돌 검??
 	for (const auto& Pair : BuildingMetadataMap)
 	{
 		const FBuildingInstanceMetadata& ExistingBuilding = Pair.Value;
 
-		// 기존 건축물 데이터 조회
-		FBuildingPartData* ExistingPartData = BuildingDataTable->FindRow<FBuildingPartData>(ExistingBuilding.PartID, TEXT("CheckOverlap"));
+		// 기존 건축�??�이??조회
+		FHarmoniaBuildingPartData* ExistingPartData = BuildingDataTable->FindRow<FHarmoniaBuildingPartData>(ExistingBuilding.PartID, TEXT("CheckOverlap"));
 		if (!ExistingPartData)
 		{
 			continue;
 		}
 
-		// 타입별 오버랩 허용 규칙 체크
+		// ?�?�별 ?�버???�용 규칙 체크
 		if (IsOverlapAllowed(PlacingPartType, ExistingPartData->PartType))
 		{
-			// 이 조합은 오버랩 허용 (예: 벽걸이 장식품 + 벽)
+			// ??조합?� ?�버???�용 (?? 벽걸???�식??+ �?
 			continue;
 		}
 
-		// 거리 기반 충돌 검사 (MinDistance가 양수일 때만)
+		// 거리 기반 충돌 검??(MinDistance가 ?�수???�만)
 		if (MinDistance >= 0.0f)
 		{
 			float Distance = FVector::Dist(Location, ExistingBuilding.Location);
@@ -341,13 +341,13 @@ bool UHarmoniaBuildingInstanceManager::CheckBuildingOverlap(const FVector& Locat
 			}
 		}
 
-		// 박스 오버랩 검사
+		// 박스 ?�버??검??
 		if (BoundsExtent.SizeSquared() > 0.0f && ExistingPartData->BoundsExtent.SizeSquared() > 0.0f)
 		{
-			// 기존 건축물의 박스 변환
+			// 기존 건축물의 박스 변??
 			FTransform ExistingTransform(ExistingBuilding.Rotation, ExistingBuilding.Location);
 
-			// 두 박스가 오버랩되는지 검사
+			// ??박스가 ?�버?�되?��? 검??
 			if (DoBoxesOverlap(PlacingTransform, BoundsExtent, ExistingTransform, ExistingPartData->BoundsExtent))
 			{
 				UE_LOG(LogBuildingInstanceManager, Warning, TEXT("Building box overlap detected at %s"), *Location.ToString());
@@ -356,59 +356,59 @@ bool UHarmoniaBuildingInstanceManager::CheckBuildingOverlap(const FVector& Locat
 		}
 	}
 
-	return false; // 충돌 없음 - 배치 가능
+	return false; // 충돌 ?�음 - 배치 가??
 }
 
 bool UHarmoniaBuildingInstanceManager::IsOverlapAllowed(EBuildingPartType PlacingType, EBuildingPartType ExistingType) const
 {
-	// 벽걸이 장식품은 벽과 오버랩 가능
+	// 벽걸???�식?��? 벽과 ?�버??가??
 	if (PlacingType == EBuildingPartType::WallDecoration && ExistingType == EBuildingPartType::Wall)
 	{
 		return true;
 	}
 
-	// 문은 벽과 오버랩 가능
+	// 문�? 벽과 ?�버??가??
 	if (PlacingType == EBuildingPartType::Door && ExistingType == EBuildingPartType::Wall)
 	{
 		return true;
 	}
 
-	// 창문은 벽과 오버랩 가능
+	// 창문?� 벽과 ?�버??가??
 	if (PlacingType == EBuildingPartType::Window && ExistingType == EBuildingPartType::Wall)
 	{
 		return true;
 	}
 
-	// 기타 조합은 오버랩 불가
+	// 기�? 조합?� ?�버??불�?
 	return false;
 }
 
 bool UHarmoniaBuildingInstanceManager::DoBoxesOverlap(const FTransform& TransformA, const FVector& ExtentA, const FTransform& TransformB, const FVector& ExtentB) const
 {
-	// Oriented Bounding Box (OBB) 충돌 검사
-	// 간단한 구현: 각 박스의 8개 코너를 변환하고 분리축 정리(SAT)를 사용
+	// Oriented Bounding Box (OBB) 충돌 검??
+	// 간단??구현: �?박스??8�?코너�?변?�하�?분리�??�리(SAT)�??�용
 
-	// 박스 A의 로컬 좌표계 축
+	// 박스 A??로컬 좌표�?�?
 	FVector AxisA[3] = {
 		TransformA.GetRotation().GetAxisX(),
 		TransformA.GetRotation().GetAxisY(),
 		TransformA.GetRotation().GetAxisZ()
 	};
 
-	// 박스 B의 로컬 좌표계 축
+	// 박스 B??로컬 좌표�?�?
 	FVector AxisB[3] = {
 		TransformB.GetRotation().GetAxisX(),
 		TransformB.GetRotation().GetAxisY(),
 		TransformB.GetRotation().GetAxisZ()
 	};
 
-	// 두 박스 중심 간의 벡터
+	// ??박스 중심 간의 벡터
 	FVector T = TransformB.GetLocation() - TransformA.GetLocation();
 
-	// 분리축 정리(SAT) 검사
-	// 15개의 축을 검사: A의 3축, B의 3축, 외적으로 만들어진 9축
+	// 분리�??�리(SAT) 검??
+	// 15개의 축을 검?? A??3�? B??3�? ?�적?�로 만들?�진 9�?
 
-	// 박스 A의 축 검사
+	// 박스 A??�?검??
 	for (int i = 0; i < 3; i++)
 	{
 		float ra = ExtentA[i];
@@ -418,11 +418,11 @@ bool UHarmoniaBuildingInstanceManager::DoBoxesOverlap(const FTransform& Transfor
 
 		if (FMath::Abs(FVector::DotProduct(T, AxisA[i])) > ra + rb)
 		{
-			return false; // 분리축 발견 - 오버랩 없음
+			return false; // 분리�?발견 - ?�버???�음
 		}
 	}
 
-	// 박스 B의 축 검사
+	// 박스 B??�?검??
 	for (int i = 0; i < 3; i++)
 	{
 		float ra = ExtentA.X * FMath::Abs(FVector::DotProduct(AxisA[0], AxisB[i])) +
@@ -432,12 +432,12 @@ bool UHarmoniaBuildingInstanceManager::DoBoxesOverlap(const FTransform& Transfor
 
 		if (FMath::Abs(FVector::DotProduct(T, AxisB[i])) > ra + rb)
 		{
-			return false; // 분리축 발견 - 오버랩 없음
+			return false; // 분리�?발견 - ?�버???�음
 		}
 	}
 
-	// 외적 축 검사 (9개)
-	// 간단한 구현을 위해 일부 축만 검사 (성능 최적화 가능)
+	// ?�적 �?검??(9�?
+	// 간단??구현???�해 ?��? 축만 검??(?�능 최적??가??
 	for (int i = 0; i < 3; i++)
 	{
 		for (int j = 0; j < 3; j++)
@@ -445,7 +445,7 @@ bool UHarmoniaBuildingInstanceManager::DoBoxesOverlap(const FTransform& Transfor
 			FVector Axis = FVector::CrossProduct(AxisA[i], AxisB[j]);
 			if (Axis.SizeSquared() < 1e-6f)
 			{
-				continue; // 평행한 축은 스킵
+				continue; // ?�행??축�? ?�킵
 			}
 			Axis.Normalize();
 
@@ -459,12 +459,12 @@ bool UHarmoniaBuildingInstanceManager::DoBoxesOverlap(const FTransform& Transfor
 
 			if (FMath::Abs(FVector::DotProduct(T, Axis)) > ra + rb)
 			{
-				return false; // 분리축 발견 - 오버랩 없음
+				return false; // 분리�?발견 - ?�버???�음
 			}
 		}
 	}
 
-	return true; // 모든 축 검사 통과 - 오버랩 발생
+	return true; // 모든 �?검???�과 - ?�버??발생
 }
 
 void UHarmoniaBuildingInstanceManager::GetAllBuildingMetadata(TArray<FBuildingInstanceMetadata>& OutMetadataArray) const
@@ -488,40 +488,40 @@ bool UHarmoniaBuildingInstanceManager::FindNearbySnapPoint(const FVector& Target
 	float ClosestDistance = SearchRadius;
 	bool bFoundSnapPoint = false;
 
-	// 모든 배치된 건축물을 순회
+	// 모든 배치??건축물을 ?�회
 	for (const auto& Pair : BuildingMetadataMap)
 	{
 		const FBuildingInstanceMetadata& ExistingBuilding = Pair.Value;
 
-		// 거리 체크 - 검색 반경 내에 있는지
+		// 거리 체크 - 검??반경 ?�에 ?�는지
 		float Distance = FVector::Dist(TargetLocation, ExistingBuilding.Location);
 		if (Distance > SearchRadius)
 		{
 			continue;
 		}
 
-		// 기존 건축물의 데이터 가져오기
-		FBuildingPartData* ExistingPartData = BuildingDataTable->FindRow<FBuildingPartData>(ExistingBuilding.PartID, TEXT("FindNearbySnapPoint"));
+		// 기존 건축물의 ?�이??가?�오�?
+		FHarmoniaBuildingPartData* ExistingPartData = BuildingDataTable->FindRow<FHarmoniaBuildingPartData>(ExistingBuilding.PartID, TEXT("FindNearbySnapPoint"));
 		if (!ExistingPartData || ExistingPartData->SnapPoints.Num() == 0)
 		{
 			continue;
 		}
 
-		// 각 스냅 포인트 검사
+		// �??�냅 ?�인??검??
 		for (const FBuildingSnapPoint& SnapPoint : ExistingPartData->SnapPoints)
 		{
-			// 스냅 포인트가 현재 배치하려는 건축물 타입을 허용하는지 확인
+			// ?�냅 ?�인?��? ?�재 배치?�려??건축�??�?�을 ?�용?�는지 ?�인
 			if (SnapPoint.AcceptsType != EBuildingPartType::None && SnapPoint.AcceptsType != PartType)
 			{
 				continue;
 			}
 
-			// 스냅 포인트의 월드 위치 계산
+			// ?�냅 ?�인?�의 ?�드 ?�치 계산
 			FTransform BuildingTransform(ExistingBuilding.Rotation, ExistingBuilding.Location);
 			FVector SnapWorldLocation = BuildingTransform.TransformPosition(SnapPoint.LocalOffset);
 			FRotator SnapWorldRotation = (BuildingTransform.GetRotation() * SnapPoint.LocalRotation.Quaternion()).Rotator();
 
-			// 타겟 위치와 스냅 포인트 간의 거리 계산
+			// ?��??�치?� ?�냅 ?�인??간의 거리 계산
 			float SnapDistance = FVector::Dist(TargetLocation, SnapWorldLocation);
 
 			if (SnapDistance < ClosestDistance)
@@ -556,7 +556,7 @@ AActor* UHarmoniaBuildingInstanceManager::SpawnWorldActor(const FHarmoniaInstanc
 	}
 
 	// Get building part data from data table
-	FBuildingPartData* PartData = BuildingDataTable->FindRow<FBuildingPartData>(Data.DataId, TEXT("SpawnWorldActor"));
+	FHarmoniaBuildingPartData* PartData = BuildingDataTable->FindRow<FHarmoniaBuildingPartData>(Data.DataId, TEXT("SpawnWorldActor"));
 	if (!PartData || !PartData->PreviewMesh.Mesh)
 	{
 		UE_LOG(LogBuildingInstanceManager, Error, TEXT("Invalid part data or mesh for PartID: %s"), *Data.DataId.ToString());
@@ -637,7 +637,7 @@ void UHarmoniaBuildingInstanceManager::InitializeISMComponent(const FName& PartI
 		return;
 	}
 
-	// 새 ISM 컴포넌트 생성
+	// ??ISM 컴포?�트 ?�성
 	UInstancedStaticMeshComponent* NewISM = NewObject<UInstancedStaticMeshComponent>(ISMManagerActor,
 		UInstancedStaticMeshComponent::StaticClass(),
 		*FString::Printf(TEXT("ISM_%s"), *PartID.ToString()));

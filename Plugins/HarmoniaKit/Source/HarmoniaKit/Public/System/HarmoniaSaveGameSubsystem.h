@@ -12,7 +12,7 @@ class APlayerController;
 class ALyraPlayerState;
 class ULyraInventoryManagerComponent;
 
-/** 세이브/로드 결과 */
+/** ?�이�?로드 결과 */
 UENUM(BlueprintType)
 enum class EHarmoniaSaveGameResult : uint8
 {
@@ -22,22 +22,22 @@ enum class EHarmoniaSaveGameResult : uint8
 	NotSupported
 };
 
-/** 세이브/로드 완료 델리게이트 */
+/** ?�이�?로드 ?�료 ?�리게이??*/
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHarmoniaSaveGameComplete, EHarmoniaSaveGameResult, Result, const FString&, SaveSlotName);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHarmoniaLoadGameComplete, EHarmoniaSaveGameResult, Result, UHarmoniaSaveGame*, SaveGameObject);
 
 /**
- * 게임 세이브/로드 시스템
+ * 게임 ?�이�?로드 ?�스??
  *
  * 기능:
- * - 로컬 PC에 저장 (서버 소유주)
- * - 스팀 클라우드 세이브 지원
- * - 멀티플레이어: 각 플레이어의 스팀 ID별 데이터 저장
+ * - 로컬 PC???�??(?�버 ?�유�?
+ * - ?��? ?�라?�드 ?�이�?지??
+ * - 멀?�플?�이?? �??�레?�어???��? ID�??�이???�??
  *
- * 사용 방법:
- * 1. SaveGame() - 현재 게임 상태 저장
- * 2. LoadGame() - 게임 상태 로드
- * 3. AutoSave 활성화 시 자동 저장
+ * ?�용 방법:
+ * 1. SaveGame() - ?�재 게임 ?�태 ?�??
+ * 2. LoadGame() - 게임 ?�태 로드
+ * 3. AutoSave ?�성?????�동 ?�??
  */
 UCLASS(config=Game)
 class HARMONIAKIT_API UHarmoniaSaveGameSubsystem : public UGameInstanceSubsystem
@@ -53,102 +53,102 @@ public:
 	// End of USubsystem interface
 
 	/**
-	 * 게임 저장
-	 * @param SaveSlotName 저장 슬롯 이름
-	 * @param bUseSteamCloud 스팀 클라우드 사용 여부
-	 * @return 저장 성공 여부
+	 * 게임 ?�??
+	 * @param SaveSlotName ?�???�롯 ?�름
+	 * @param bUseSteamCloud ?��? ?�라?�드 ?�용 ?��?
+	 * @return ?�???�공 ?��?
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame")
 	bool SaveGame(const FString& SaveSlotName = TEXT("DefaultSave"), bool bUseSteamCloud = true);
 
 	/**
 	 * 게임 로드
-	 * @param SaveSlotName 로드할 슬롯 이름
-	 * @param bUseSteamCloud 스팀 클라우드에서 로드 여부
-	 * @return 로드 성공 여부
+	 * @param SaveSlotName 로드???�롯 ?�름
+	 * @param bUseSteamCloud ?��? ?�라?�드?�서 로드 ?��?
+	 * @return 로드 ?�공 ?��?
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame")
 	bool LoadGame(const FString& SaveSlotName = TEXT("DefaultSave"), bool bUseSteamCloud = true);
 
 	/**
-	 * 세이브 파일 삭제
-	 * @param SaveSlotName 삭제할 슬롯 이름
-	 * @param bDeleteFromSteamCloud 스팀 클라우드에서도 삭제 여부
+	 * ?�이�??�일 ??��
+	 * @param SaveSlotName ??��???�롯 ?�름
+	 * @param bDeleteFromSteamCloud ?��? ?�라?�드?�서????�� ?��?
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame")
 	bool DeleteSaveGame(const FString& SaveSlotName = TEXT("DefaultSave"), bool bDeleteFromSteamCloud = true);
 
 	/**
-	 * 세이브 파일 존재 여부 확인
-	 * @param SaveSlotName 확인할 슬롯 이름
+	 * ?�이�??�일 존재 ?��? ?�인
+	 * @param SaveSlotName ?�인???�롯 ?�름
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame")
 	bool DoesSaveGameExist(const FString& SaveSlotName = TEXT("DefaultSave")) const;
 
 	/**
-	 * 현재 로드된 세이브 게임 반환
+	 * ?�재 로드???�이�?게임 반환
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|SaveGame")
 	UHarmoniaSaveGame* GetCurrentSaveGame() const { return CurrentSaveGame; }
 
 	/**
-	 * 자동 저장 활성화/비활성화
+	 * ?�동 ?�???�성??비활?�화
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame")
 	void SetAutoSaveEnabled(bool bEnabled);
 
 	/**
-	 * 자동 저장 간격 설정 (초 단위)
+	 * ?�동 ?�??간격 ?�정 (�??�위)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame")
 	void SetAutoSaveInterval(float IntervalInSeconds);
 
-	/** 세이브 완료 이벤트 */
+	/** ?�이�??�료 ?�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|SaveGame")
 	FOnHarmoniaSaveGameComplete OnSaveGameComplete;
 
-	/** 로드 완료 이벤트 */
+	/** 로드 ?�료 ?�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|SaveGame")
 	FOnHarmoniaLoadGameComplete OnLoadGameComplete;
 
 protected:
-	/** 플레이어 데이터를 SaveGame에 저장 */
+	/** ?�레?�어 ?�이?��? SaveGame???�??*/
 	void SavePlayerData(APlayerController* PlayerController, UHarmoniaSaveGame* SaveGameObject);
 
-	/** SaveGame에서 플레이어 데이터 로드 */
+	/** SaveGame?�서 ?�레?�어 ?�이??로드 */
 	void LoadPlayerData(APlayerController* PlayerController, const UHarmoniaSaveGame* SaveGameObject);
 
-	/** 월드 데이터 저장 (빌딩 등) */
+	/** ?�드 ?�이???�??(빌딩 ?? */
 	void SaveWorldData(UHarmoniaSaveGame* SaveGameObject);
 
-	/** 월드 데이터 로드 */
+	/** ?�드 ?�이??로드 */
 	void LoadWorldData(const UHarmoniaSaveGame* SaveGameObject);
 
-	/** 플레이어 속성 저장 */
+	/** ?�레?�어 ?�성 ?�??*/
 	void SavePlayerAttributes(ALyraPlayerState* PlayerState, FHarmoniaSavedPlayerAttributes& OutAttributes);
 
-	/** 플레이어 속성 로드 */
+	/** ?�레?�어 ?�성 로드 */
 	void LoadPlayerAttributes(ALyraPlayerState* PlayerState, const FHarmoniaSavedPlayerAttributes& Attributes);
 
-	/** 인벤토리 저장 */
+	/** ?�벤?�리 ?�??*/
 	void SaveInventory(ULyraInventoryManagerComponent* InventoryComponent, TArray<FHarmoniaSavedInventoryItem>& OutItems);
 
-	/** 인벤토리 로드 */
+	/** ?�벤?�리 로드 */
 	void LoadInventory(ULyraInventoryManagerComponent* InventoryComponent, const TArray<FHarmoniaSavedInventoryItem>& Items);
 
-	/** 스팀 ID 가져오기 */
+	/** ?��? ID 가?�오�?*/
 	FString GetSteamIDForPlayer(APlayerController* PlayerController) const;
 
-	/** 로컬 플레이어가 서버 소유주인지 확인 */
+	/** 로컬 ?�레?�어가 ?�버 ?�유주인지 ?�인 */
 	bool IsServerOwner(APlayerController* PlayerController) const;
 
-	/** 스팀 클라우드에 저장 */
+	/** ?��? ?�라?�드???�??*/
 	bool SaveToSteamCloud(const FString& SaveSlotName, const TArray<uint8>& SaveData);
 
-	/** 스팀 클라우드에서 로드 */
+	/** ?��? ?�라?�드?�서 로드 */
 	bool LoadFromSteamCloud(const FString& SaveSlotName, TArray<uint8>& OutSaveData);
 
-	/** 자동 저장 타이머 */
+	/** ?�동 ?�???�?�머 */
 	void OnAutoSaveTimer();
 
 	// [SECURITY] Save file encryption and integrity
@@ -165,27 +165,27 @@ protected:
 	bool VerifyChecksum(const TArray<uint8>& Data, uint32 ExpectedChecksum) const;
 
 private:
-	/** 현재 로드된 세이브 게임 */
+	/** ?�재 로드???�이�?게임 */
 	UPROPERTY(Transient)
 	TObjectPtr<UHarmoniaSaveGame> CurrentSaveGame;
 
-	/** 자동 저장 활성화 여부 */
+	/** ?�동 ?�???�성???��? */
 	UPROPERTY(Config)
 	bool bAutoSaveEnabled = true;
 
-	/** 자동 저장 간격 (초) */
+	/** ?�동 ?�??간격 (�? */
 	UPROPERTY(Config)
-	float AutoSaveIntervalSeconds = 300.0f; // 5분
+	float AutoSaveIntervalSeconds = 300.0f; // 5�?
 
-	/** 자동 저장 타이머 핸들 */
+	/** ?�동 ?�???�?�머 ?�들 */
 	FTimerHandle AutoSaveTimerHandle;
 
-	/** 마지막 저장 시간 */
+	/** 마�?�??�???�간 */
 	float LastSaveTime = 0.0f;
 
-	/** 기본 저장 슬롯 이름 */
+	/** 기본 ?�???�롯 ?�름 */
 	static const FString DefaultSaveSlotName;
 
-	/** 세이브 파일 사용자 인덱스 */
+	/** ?�이�??�일 ?�용???�덱??*/
 	static const int32 SaveGameUserIndex;
 };

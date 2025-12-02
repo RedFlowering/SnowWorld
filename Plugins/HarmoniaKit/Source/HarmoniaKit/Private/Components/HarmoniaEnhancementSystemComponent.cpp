@@ -87,7 +87,7 @@ bool UHarmoniaEnhancementSystemComponent::CanEnhanceItem(FGuid ItemGUID, int32 T
 	}
 
 	// Get config for target level
-	FEnhancementLevelConfig Config;
+	FHarmoniaEnhancementLevelConfig Config;
 	if (!GetEnhancementLevelConfig(TargetLevel, Config))
 	{
 		OutReason = TEXT("Enhancement level config not found");
@@ -140,7 +140,7 @@ void UHarmoniaEnhancementSystemComponent::ServerEnhanceItem_Implementation(FGuid
 	}
 
 	// Get config
-	FEnhancementLevelConfig Config;
+	FHarmoniaEnhancementLevelConfig Config;
 	if (!GetEnhancementLevelConfig(TargetLevel, Config))
 	{
 		return;
@@ -239,7 +239,7 @@ bool UHarmoniaEnhancementSystemComponent::ServerEnhanceItem_Validate(FGuid ItemG
 	return true;
 }
 
-bool UHarmoniaEnhancementSystemComponent::GetEnhancementLevelConfig(int32 Level, FEnhancementLevelConfig& OutConfig) const
+bool UHarmoniaEnhancementSystemComponent::GetEnhancementLevelConfig(int32 Level, FHarmoniaEnhancementLevelConfig& OutConfig) const
 {
 	if (!EnhancementLevelConfigTable)
 	{
@@ -247,7 +247,7 @@ bool UHarmoniaEnhancementSystemComponent::GetEnhancementLevelConfig(int32 Level,
 	}
 
 	FString ContextString(TEXT("GetEnhancementLevelConfig"));
-	FEnhancementLevelConfig* Config = EnhancementLevelConfigTable->FindRow<FEnhancementLevelConfig>(
+	FHarmoniaEnhancementLevelConfig* Config = EnhancementLevelConfigTable->FindRow<FHarmoniaEnhancementLevelConfig>(
 		FName(*FString::FromInt(Level)), ContextString);
 
 	if (Config)
@@ -264,7 +264,7 @@ float UHarmoniaEnhancementSystemComponent::GetTotalStatMultiplier(const FEnhance
 	float Multiplier = 1.0f;
 
 	// Enhancement multiplier
-	FEnhancementLevelConfig EnhanceConfig;
+	FHarmoniaEnhancementLevelConfig EnhanceConfig;
 	if (GetEnhancementLevelConfig(ItemData.EnhancementLevel, EnhanceConfig))
 	{
 		Multiplier *= EnhanceConfig.StatMultiplier;
@@ -273,7 +273,7 @@ float UHarmoniaEnhancementSystemComponent::GetTotalStatMultiplier(const FEnhance
 	// Transcendence multiplier
 	if (ItemData.TranscendenceTier != ETranscendenceTier::None)
 	{
-		FTranscendenceConfig TransConfig;
+		FHarmoniaTranscendenceConfig TransConfig;
 		if (GetTranscendenceConfig(ItemData.TranscendenceTier, TransConfig))
 		{
 			Multiplier *= (1.0f + TransConfig.StatMultiplierBonus);
@@ -288,7 +288,7 @@ void UHarmoniaEnhancementSystemComponent::GetEnhancedStatModifiers(const FEnhanc
 	OutModifiers.Reset();
 
 	// Get base item stats
-	FEquipmentData BaseData;
+	FHarmoniaEquipmentData BaseData;
 	if (GetItemBaseData(ItemData.ItemId, BaseData))
 	{
 		OutModifiers = BaseData.StatModifiers;
@@ -302,7 +302,7 @@ void UHarmoniaEnhancementSystemComponent::GetEnhancedStatModifiers(const FEnhanc
 	}
 
 	// Add enhancement bonus stats
-	FEnhancementLevelConfig EnhanceConfig;
+	FHarmoniaEnhancementLevelConfig EnhanceConfig;
 	if (GetEnhancementLevelConfig(ItemData.EnhancementLevel, EnhanceConfig))
 	{
 		OutModifiers.Append(EnhanceConfig.BonusStats);
@@ -311,7 +311,7 @@ void UHarmoniaEnhancementSystemComponent::GetEnhancedStatModifiers(const FEnhanc
 	// Add transcendence bonus stats
 	if (ItemData.TranscendenceTier != ETranscendenceTier::None)
 	{
-		FTranscendenceConfig TransConfig;
+		FHarmoniaTranscendenceConfig TransConfig;
 		if (GetTranscendenceConfig(ItemData.TranscendenceTier, TransConfig))
 		{
 			OutModifiers.Append(TransConfig.BonusStats);
@@ -323,7 +323,7 @@ void UHarmoniaEnhancementSystemComponent::GetEnhancedStatModifiers(const FEnhanc
 	{
 		if (Socket.HasGem())
 		{
-			FGemData GemData;
+			FHarmoniaGemData GemData;
 			if (GetGemData(Socket.InsertedGemId, GemData))
 			{
 				OutModifiers.Append(GemData.StatModifiers);
@@ -436,7 +436,7 @@ bool UHarmoniaEnhancementSystemComponent::CanInsertGem(FGuid ItemGUID, int32 Soc
 		return false;
 	}
 
-	FGemData GemData;
+	FHarmoniaGemData GemData;
 	if (!GetGemData(GemId, GemData))
 	{
 		OutReason = TEXT("Gem data not found");
@@ -481,7 +481,7 @@ void UHarmoniaEnhancementSystemComponent::ServerInsertGem_Implementation(FGuid I
 		return;
 	}
 
-	// 인벤토리에서 젬 제거
+	// ?�벤?�리?�서 ???�거
 	if (InventoryComponent)
 	{
 		if (!InventoryComponent->RemoveItem(GemId, 1, -1.0f))
@@ -591,7 +591,7 @@ bool UHarmoniaEnhancementSystemComponent::ServerRemoveGem_Validate(FGuid ItemGUI
 	return true;
 }
 
-bool UHarmoniaEnhancementSystemComponent::GetGemData(FHarmoniaID GemId, FGemData& OutData) const
+bool UHarmoniaEnhancementSystemComponent::GetGemData(FHarmoniaID GemId, FHarmoniaGemData& OutData) const
 {
 	if (!GemDataTable)
 	{
@@ -599,7 +599,7 @@ bool UHarmoniaEnhancementSystemComponent::GetGemData(FHarmoniaID GemId, FGemData
 	}
 
 	FString ContextString(TEXT("GetGemData"));
-	FGemData* Data = GemDataTable->FindRow<FGemData>(FName(*GemId.ToString()), ContextString);
+	FHarmoniaGemData* Data = GemDataTable->FindRow<FHarmoniaGemData>(FName(*GemId.ToString()), ContextString);
 
 	if (Data)
 	{
@@ -610,7 +610,7 @@ bool UHarmoniaEnhancementSystemComponent::GetGemData(FHarmoniaID GemId, FGemData
 	return false;
 }
 
-void UHarmoniaEnhancementSystemComponent::GetInsertedGems(FGuid ItemGUID, TArray<FGemData>& OutGems) const
+void UHarmoniaEnhancementSystemComponent::GetInsertedGems(FGuid ItemGUID, TArray<FHarmoniaGemData>& OutGems) const
 {
 	OutGems.Reset();
 
@@ -624,7 +624,7 @@ void UHarmoniaEnhancementSystemComponent::GetInsertedGems(FGuid ItemGUID, TArray
 	{
 		if (Socket.HasGem())
 		{
-			FGemData GemData;
+			FHarmoniaGemData GemData;
 			if (GetGemData(Socket.InsertedGemId, GemData))
 			{
 				OutGems.Add(GemData);
@@ -646,14 +646,14 @@ bool UHarmoniaEnhancementSystemComponent::CanReforgeItem(FGuid ItemGUID, FString
 		return false;
 	}
 
-	FEquipmentData BaseData;
+	FHarmoniaEquipmentData BaseData;
 	if (!GetItemBaseData(ItemData->ItemId, BaseData))
 	{
 		OutReason = TEXT("Base item data not found");
 		return false;
 	}
 
-	FReforgeConfig Config;
+	FHarmoniaReforgeConfig Config;
 	if (!GetReforgeConfig(BaseData.Grade, Config))
 	{
 		OutReason = TEXT("Reforge config not found");
@@ -704,13 +704,13 @@ void UHarmoniaEnhancementSystemComponent::ServerReforgeItem_Implementation(FGuid
 		return;
 	}
 
-	FEquipmentData BaseData;
+	FHarmoniaEquipmentData BaseData;
 	if (!GetItemBaseData(ItemData->ItemId, BaseData))
 	{
 		return;
 	}
 
-	FReforgeConfig Config;
+	FHarmoniaReforgeConfig Config;
 	if (!GetReforgeConfig(BaseData.Grade, Config))
 	{
 		return;
@@ -753,7 +753,7 @@ bool UHarmoniaEnhancementSystemComponent::ServerReforgeItem_Validate(FGuid ItemG
 	return true;
 }
 
-bool UHarmoniaEnhancementSystemComponent::GetReforgeConfig(EItemGrade ItemGrade, FReforgeConfig& OutConfig) const
+bool UHarmoniaEnhancementSystemComponent::GetReforgeConfig(EItemGrade ItemGrade, FHarmoniaReforgeConfig& OutConfig) const
 {
 	if (!ReforgeConfigTable)
 	{
@@ -766,7 +766,7 @@ bool UHarmoniaEnhancementSystemComponent::GetReforgeConfig(EItemGrade ItemGrade,
 	FString GradeName = UEnum::GetValueAsString(ItemGrade);
 	GradeName = GradeName.Right(GradeName.Len() - GradeName.Find(TEXT("::")) - 2);
 
-	FReforgeConfig* Config = ReforgeConfigTable->FindRow<FReforgeConfig>(FName(*GradeName), ContextString);
+	FHarmoniaReforgeConfig* Config = ReforgeConfigTable->FindRow<FHarmoniaReforgeConfig>(FName(*GradeName), ContextString);
 
 	if (Config)
 	{
@@ -813,14 +813,14 @@ bool UHarmoniaEnhancementSystemComponent::CanTranscendItem(FGuid ItemGUID, ETran
 		return false;
 	}
 
-	FTranscendenceConfig Config;
+	FHarmoniaTranscendenceConfig Config;
 	if (!GetTranscendenceConfig(TargetTier, Config))
 	{
 		OutReason = TEXT("Transcendence config not found");
 		return false;
 	}
 
-	FEquipmentData BaseData;
+	FHarmoniaEquipmentData BaseData;
 	if (!GetItemBaseData(ItemData->ItemId, BaseData))
 	{
 		OutReason = TEXT("Base item data not found");
@@ -890,7 +890,7 @@ void UHarmoniaEnhancementSystemComponent::ServerTranscendItem_Implementation(FGu
 		return;
 	}
 
-	FTranscendenceConfig Config;
+	FHarmoniaTranscendenceConfig Config;
 	if (!GetTranscendenceConfig(TargetTier, Config))
 	{
 		return;
@@ -945,7 +945,7 @@ bool UHarmoniaEnhancementSystemComponent::ServerTranscendItem_Validate(FGuid Ite
 	return true;
 }
 
-bool UHarmoniaEnhancementSystemComponent::GetTranscendenceConfig(ETranscendenceTier Tier, FTranscendenceConfig& OutConfig) const
+bool UHarmoniaEnhancementSystemComponent::GetTranscendenceConfig(ETranscendenceTier Tier, FHarmoniaTranscendenceConfig& OutConfig) const
 {
 	if (!TranscendenceConfigTable)
 	{
@@ -957,7 +957,7 @@ bool UHarmoniaEnhancementSystemComponent::GetTranscendenceConfig(ETranscendenceT
 	FString TierName = UEnum::GetValueAsString(Tier);
 	TierName = TierName.Right(TierName.Len() - TierName.Find(TEXT("::")) - 2);
 
-	FTranscendenceConfig* Config = TranscendenceConfigTable->FindRow<FTranscendenceConfig>(FName(*TierName), ContextString);
+	FHarmoniaTranscendenceConfig* Config = TranscendenceConfigTable->FindRow<FHarmoniaTranscendenceConfig>(FName(*TierName), ContextString);
 
 	if (Config)
 	{
@@ -981,14 +981,14 @@ bool UHarmoniaEnhancementSystemComponent::CanApplyTransmog(FGuid TargetItemGUID,
 		return false;
 	}
 
-	FEquipmentData AppearanceData;
+	FHarmoniaEquipmentData AppearanceData;
 	if (!GetItemBaseData(AppearanceItemId, AppearanceData))
 	{
 		OutReason = TEXT("Appearance item data not found");
 		return false;
 	}
 
-	FEquipmentData BaseData;
+	FHarmoniaEquipmentData BaseData;
 	if (!GetItemBaseData(ItemData->ItemId, BaseData))
 	{
 		OutReason = TEXT("Base item data not found");
@@ -1045,7 +1045,7 @@ void UHarmoniaEnhancementSystemComponent::ServerApplyTransmog_Implementation(FGu
 		return;
 	}
 
-	FEquipmentData AppearanceData;
+	FHarmoniaEquipmentData AppearanceData;
 	if (!GetItemBaseData(AppearanceItemId, AppearanceData))
 	{
 		return;
@@ -1272,13 +1272,13 @@ int32 UHarmoniaEnhancementSystemComponent::GetRepairCost(FGuid ItemGUID, bool bF
 		return 0;
 	}
 
-	FEquipmentData BaseData;
+	FHarmoniaEquipmentData BaseData;
 	if (!GetItemBaseData(ItemData->ItemId, BaseData))
 	{
 		return 0;
 	}
 
-	FRepairConfig Config;
+	FHarmoniaRepairConfig Config;
 	if (!GetRepairConfig(BaseData.Grade, Config))
 	{
 		return 0;
@@ -1288,7 +1288,7 @@ int32 UHarmoniaEnhancementSystemComponent::GetRepairCost(FGuid ItemGUID, bool bF
 	return FMath::CeilToInt(DurabilityToRepair * Config.CostPerDurability);
 }
 
-bool UHarmoniaEnhancementSystemComponent::GetRepairConfig(EItemGrade ItemGrade, FRepairConfig& OutConfig) const
+bool UHarmoniaEnhancementSystemComponent::GetRepairConfig(EItemGrade ItemGrade, FHarmoniaRepairConfig& OutConfig) const
 {
 	if (!RepairConfigTable)
 	{
@@ -1300,7 +1300,7 @@ bool UHarmoniaEnhancementSystemComponent::GetRepairConfig(EItemGrade ItemGrade, 
 	FString GradeName = UEnum::GetValueAsString(ItemGrade);
 	GradeName = GradeName.Right(GradeName.Len() - GradeName.Find(TEXT("::")) - 2);
 
-	FRepairConfig* Config = RepairConfigTable->FindRow<FRepairConfig>(FName(*GradeName), ContextString);
+	FHarmoniaRepairConfig* Config = RepairConfigTable->FindRow<FHarmoniaRepairConfig>(FName(*GradeName), ContextString);
 
 	if (Config)
 	{
@@ -1311,7 +1311,7 @@ bool UHarmoniaEnhancementSystemComponent::GetRepairConfig(EItemGrade ItemGrade, 
 	return false;
 }
 
-bool UHarmoniaEnhancementSystemComponent::GetRepairKitData(FHarmoniaID RepairKitId, FRepairKitData& OutData) const
+bool UHarmoniaEnhancementSystemComponent::GetRepairKitData(FHarmoniaID RepairKitId, FHarmoniaRepairKitData& OutData) const
 {
 	if (!RepairKitDataTable)
 	{
@@ -1319,7 +1319,7 @@ bool UHarmoniaEnhancementSystemComponent::GetRepairKitData(FHarmoniaID RepairKit
 	}
 
 	FString ContextString(TEXT("GetRepairKitData"));
-	FRepairKitData* Data = RepairKitDataTable->FindRow<FRepairKitData>(FName(*RepairKitId.ToString()), ContextString);
+	FHarmoniaRepairKitData* Data = RepairKitDataTable->FindRow<FHarmoniaRepairKitData>(FName(*RepairKitId.ToString()), ContextString);
 
 	if (Data)
 	{
@@ -1345,14 +1345,14 @@ bool UHarmoniaEnhancementSystemComponent::CanUseRepairKit(FGuid ItemGUID, FHarmo
 		return false;
 	}
 
-	FRepairKitData KitData;
+	FHarmoniaRepairKitData KitData;
 	if (!GetRepairKitData(RepairKitId, KitData))
 	{
 		OutReason = TEXT("Repair kit data not found");
 		return false;
 	}
 
-	FEquipmentData BaseData;
+	FHarmoniaEquipmentData BaseData;
 	if (!GetItemBaseData(ItemData->ItemId, BaseData))
 	{
 		OutReason = TEXT("Base item data not found");
@@ -1419,7 +1419,7 @@ void UHarmoniaEnhancementSystemComponent::ServerRepairItemWithKit_Implementation
 		return;
 	}
 
-	FRepairKitData KitData;
+	FHarmoniaRepairKitData KitData;
 	if (!GetRepairKitData(RepairKitId, KitData))
 	{
 		return;
@@ -1670,7 +1670,7 @@ FGuid UHarmoniaEnhancementSystemComponent::CreateEnhancedItem(FHarmoniaID ItemId
 	NewItem.EnhancementLevel = InitialEnhancementLevel;
 
 	// Get base data for durability
-	FEquipmentData BaseData;
+	FHarmoniaEquipmentData BaseData;
 	if (GetItemBaseData(ItemId, BaseData))
 	{
 		NewItem.MaxDurability = BaseData.MaxDurability;
@@ -1699,7 +1699,7 @@ bool UHarmoniaEnhancementSystemComponent::ItemExists(FGuid ItemGUID) const
 	return FindEnhancedItem(ItemGUID) != nullptr;
 }
 
-bool UHarmoniaEnhancementSystemComponent::GetItemBaseData(FHarmoniaID ItemId, FEquipmentData& OutData) const
+bool UHarmoniaEnhancementSystemComponent::GetItemBaseData(FHarmoniaID ItemId, FHarmoniaEquipmentData& OutData) const
 {
 	if (!EquipmentDataTable)
 	{
@@ -1707,7 +1707,7 @@ bool UHarmoniaEnhancementSystemComponent::GetItemBaseData(FHarmoniaID ItemId, FE
 	}
 
 	FString ContextString(TEXT("GetItemBaseData"));
-	FEquipmentData* Data = EquipmentDataTable->FindRow<FEquipmentData>(FName(*ItemId.ToString()), ContextString);
+	FHarmoniaEquipmentData* Data = EquipmentDataTable->FindRow<FHarmoniaEquipmentData>(FName(*ItemId.ToString()), ContextString);
 
 	if (Data)
 	{
@@ -1722,7 +1722,7 @@ bool UHarmoniaEnhancementSystemComponent::GetItemBaseData(FHarmoniaID ItemId, FE
 // Internal Methods
 // ============================================================================
 
-EEnhancementResult UHarmoniaEnhancementSystemComponent::RollEnhancementResult(const FEnhancementLevelConfig& Config, bool bUseProtection) const
+EEnhancementResult UHarmoniaEnhancementSystemComponent::RollEnhancementResult(const FHarmoniaEnhancementLevelConfig& Config, bool bUseProtection) const
 {
 	float Roll = FMath::FRand();
 
@@ -1767,7 +1767,7 @@ void UHarmoniaEnhancementSystemComponent::ApplyEnhancement(FEnhancedItemData& It
 	ItemData.EnhancementLevel = NewLevel;
 
 	// Optionally increase max durability with enhancement
-	FEnhancementLevelConfig Config;
+	FHarmoniaEnhancementLevelConfig Config;
 	if (GetEnhancementLevelConfig(NewLevel, Config))
 	{
 		// Increase max durability by 5% per level
@@ -1775,7 +1775,7 @@ void UHarmoniaEnhancementSystemComponent::ApplyEnhancement(FEnhancedItemData& It
 	}
 }
 
-TArray<FReforgeStatEntry> UHarmoniaEnhancementSystemComponent::RollReforgeStats(const FReforgeConfig& Config) const
+TArray<FReforgeStatEntry> UHarmoniaEnhancementSystemComponent::RollReforgeStats(const FHarmoniaReforgeConfig& Config) const
 {
 	TArray<FReforgeStatEntry> Stats;
 
@@ -1811,13 +1811,13 @@ bool UHarmoniaEnhancementSystemComponent::ConsumeMaterials(const TMap<FHarmoniaI
 		return false;
 	}
 
-	// 먼저 모든 재료가 있는지 확인
+	// 먼�? 모든 ?�료가 ?�는지 ?�인
 	if (!HasMaterials(Materials))
 	{
 		return false;
 	}
 
-	// 재료 소비
+	// ?�료 ?�비
 	for (const auto& Pair : Materials)
 	{
 		if (!InventoryComponent->RemoveItem(Pair.Key, Pair.Value, -1.0f))
@@ -1832,8 +1832,8 @@ bool UHarmoniaEnhancementSystemComponent::ConsumeMaterials(const TMap<FHarmoniaI
 
 bool UHarmoniaEnhancementSystemComponent::ConsumeCurrency(int32 Amount)
 {
-	// 통화 시스템은 별도의 Economy 시스템으로 구현 필요
-	// 현재는 항상 성공 반환 (테스트용)
+	// ?�화 ?�스?��? 별도??Economy ?�스?�으�?구현 ?�요
+	// ?�재????�� ?�공 반환 (?�스?�용)
 	UE_LOG(LogHarmoniaEnhancement, Log, TEXT("ConsumeCurrency: Would consume %d currency"), Amount);
 	return true;
 }
@@ -1859,8 +1859,8 @@ bool UHarmoniaEnhancementSystemComponent::HasMaterials(const TMap<FHarmoniaID, i
 
 bool UHarmoniaEnhancementSystemComponent::HasCurrency(int32 Amount) const
 {
-	// 통화 시스템은 별도의 Economy 시스템으로 구현 필요
-	// 현재는 항상 true 반환 (테스트용)
+	// ?�화 ?�스?��? 별도??Economy ?�스?�으�?구현 ?�요
+	// ?�재????�� true 반환 (?�스?�용)
 	return true;
 }
 
@@ -1982,7 +1982,7 @@ void UHarmoniaEnhancementSystemComponent::TryAutoRepair(FGuid ItemGUID)
 	if (bAutoRepairPreferKits && RepairKitDataTable && InventoryComponent)
 	{
 		// Get item base data to check compatibility
-		FEquipmentData BaseData;
+		FHarmoniaEquipmentData BaseData;
 		if (GetItemBaseData(ItemData->ItemId, BaseData))
 		{
 			// Search through all repair kits and find one we have in inventory
@@ -1991,7 +1991,7 @@ void UHarmoniaEnhancementSystemComponent::TryAutoRepair(FGuid ItemGUID)
 			
 			for (const FName& RowName : RowNames)
 			{
-				FRepairKitData* KitData = RepairKitDataTable->FindRow<FRepairKitData>(RowName, ContextString);
+				FHarmoniaRepairKitData* KitData = RepairKitDataTable->FindRow<FHarmoniaRepairKitData>(RowName, ContextString);
 				if (KitData && KitData->CanRepairGrade(BaseData.Grade) && KitData->CanRepairSlot(BaseData.EquipmentSlot))
 				{
 					// Check if we have this repair kit in inventory

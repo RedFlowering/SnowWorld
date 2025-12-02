@@ -9,10 +9,10 @@
 /**
  * HarmoniaCheatLibrary
  * 
- * 블루프린트에서 치트 매니저에 쉽게 접근할 수 있도록 하는 함수 라이브러리입니다.
+ * 블루?�린?�에??치트 매니?�???�게 ?�근?????�도�??�는 ?�수 ?�이브러리입?�다.
  * 
- * ⚠️ 주의: 이 라이브러리는 Shipping 빌드에서 컴파일되지만 치트 매니저가 없으므로
- *          모든 함수가 실질적으로 동작하지 않습니다.
+ * ?�️ 주의: ???�이브러리는 Shipping 빌드?�서 컴파?�되지�?치트 매니?�가 ?�으므�?
+ *          모든 ?�수가 ?�질?�으�??�작?��? ?�습?�다.
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaCheatLibrary : public UBlueprintFunctionLibrary
@@ -21,25 +21,25 @@ class HARMONIAKIT_API UHarmoniaCheatLibrary : public UBlueprintFunctionLibrary
 
 public:
 	/**
-	 * 현재 플레이어의 치트 매니저를 가져옵니다.
-	 * @param WorldContextObject 월드 컨텍스트
-	 * @return 치트 매니저 (없으면 nullptr)
+	 * ?�재 ?�레?�어??치트 매니?��?가?�옵?�다.
+	 * @param WorldContextObject ?�드 컨텍?�트
+	 * @return 치트 매니?� (?�으�?nullptr)
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cheat", meta = (WorldContext = "WorldContextObject"))
 	static class UHarmoniaCheatManager* GetHarmoniaCheatManager(const UObject* WorldContextObject);
 
 	/**
-	 * 치트 매니저가 활성화되어 있는지 확인합니다.
-	 * @param WorldContextObject 월드 컨텍스트
-	 * @return 치트 매니저 사용 가능 여부
+	 * 치트 매니?�가 ?�성?�되???�는지 ?�인?�니??
+	 * @param WorldContextObject ?�드 컨텍?�트
+	 * @return 치트 매니?� ?�용 가???��?
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cheat", meta = (WorldContext = "WorldContextObject"))
 	static bool IsCheatManagerAvailable(const UObject* WorldContextObject);
 
 	/**
-	 * 치트가 현재 활성화되어 있는지 확인 (Development 빌드나 -cheat 커맨드라인 옵션 필요)
-	 * @param WorldContextObject 월드 컨텍스트
-	 * @return 치트 활성화 여부
+	 * 치트가 ?�재 ?�성?�되???�는지 ?�인 (Development 빌드??-cheat 커맨?�라???�션 ?�요)
+	 * @param WorldContextObject ?�드 컨텍?�트
+	 * @return 치트 ?�성???��?
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cheat", meta = (WorldContext = "WorldContextObject"))
 	static bool IsCheatsEnabled(const UObject* WorldContextObject);
@@ -47,37 +47,37 @@ public:
 	// ==================== Quick Cheat Functions ====================
 
 	/**
-	 * 빠른 치트: 플레이어를 완전히 회복합니다.
+	 * 빠른 치트: ?�레?�어�??�전???�복?�니??
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Cheat|Quick", meta = (WorldContext = "WorldContextObject"))
 	static void QuickHeal(const UObject* WorldContextObject);
 
 	/**
-	 * 빠른 치트: 무적 모드를 토글합니다.
+	 * 빠른 치트: 무적 모드�??��??�니??
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Cheat|Quick", meta = (WorldContext = "WorldContextObject"))
 	static void QuickToggleInvincible(const UObject* WorldContextObject);
 
 	/**
-	 * 빠른 치트: 골드 10000을 지급합니다.
+	 * 빠른 치트: 골드 10000??지급합?�다.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Cheat|Quick", meta = (WorldContext = "WorldContextObject"))
 	static void QuickGiveGold(const UObject* WorldContextObject, int32 Amount = 10000);
 
 	/**
-	 * 빠른 치트: 비행 모드를 토글합니다.
+	 * 빠른 치트: 비행 모드�??��??�니??
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Cheat|Quick", meta = (WorldContext = "WorldContextObject"))
 	static void QuickToggleFly(const UObject* WorldContextObject);
 
 	/**
-	 * 빠른 치트: 이동 속도를 2배로 설정합니다.
+	 * 빠른 치트: ?�동 ?�도�?2배로 ?�정?�니??
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Cheat|Quick", meta = (WorldContext = "WorldContextObject"))
 	static void QuickDoubleSpeed(const UObject* WorldContextObject);
 
 	/**
-	 * 빠른 치트: 치트를 모두 리셋합니다.
+	 * 빠른 치트: 치트�?모두 리셋?�니??
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Cheat|Quick", meta = (WorldContext = "WorldContextObject"))
 	static void QuickResetCheats(const UObject* WorldContextObject);

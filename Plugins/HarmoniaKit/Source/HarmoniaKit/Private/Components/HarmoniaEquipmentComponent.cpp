@@ -69,7 +69,7 @@ bool UHarmoniaEquipmentComponent::EquipItem(const FHarmoniaID& EquipmentId, EEqu
 	}
 
 	// Get equipment data
-	FEquipmentData EquipmentData;
+	FHarmoniaEquipmentData EquipmentData;
 	if (!GetEquipmentData(EquipmentId, EquipmentData))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("EquipItem: Equipment data not found for ID: %s"), *EquipmentId.ToString());
@@ -159,7 +159,7 @@ bool UHarmoniaEquipmentComponent::UnequipItem(EEquipmentSlot Slot)
 	FHarmoniaID OldEquipmentId = EquippedItem.EquipmentId;
 
 	// Get equipment data
-	FEquipmentData EquipmentData;
+	FHarmoniaEquipmentData EquipmentData;
 	if (GetEquipmentData(EquippedItem.EquipmentId, EquipmentData))
 	{
 		// Remove all gameplay effects (including stat modifiers)
@@ -258,7 +258,7 @@ TArray<FEquippedItem> UHarmoniaEquipmentComponent::GetAllEquippedItems() const
 	return EquippedItems;
 }
 
-bool UHarmoniaEquipmentComponent::GetEquipmentData(const FHarmoniaID& EquipmentId, FEquipmentData& OutData) const
+bool UHarmoniaEquipmentComponent::GetEquipmentData(const FHarmoniaID& EquipmentId, FHarmoniaEquipmentData& OutData) const
 {
 	if (!EquipmentDataTable)
 	{
@@ -267,7 +267,7 @@ bool UHarmoniaEquipmentComponent::GetEquipmentData(const FHarmoniaID& EquipmentI
 	}
 
 	FString ContextString = TEXT("GetEquipmentData");
-	FEquipmentData* FoundData = EquipmentDataTable->FindRow<FEquipmentData>(FName(*EquipmentId.ToString()), ContextString, false);
+	FHarmoniaEquipmentData* FoundData = EquipmentDataTable->FindRow<FHarmoniaEquipmentData>(FName(*EquipmentId.ToString()), ContextString, false);
 
 	if (!FoundData)
 	{
@@ -285,7 +285,7 @@ float UHarmoniaEquipmentComponent::GetTotalStatModifier(const FString& Attribute
 
 	for (const FEquippedItem& Item : EquippedItems)
 	{
-		FEquipmentData EquipmentData;
+		FHarmoniaEquipmentData EquipmentData;
 		if (GetEquipmentData(Item.EquipmentId, EquipmentData))
 		{
 			for (const FEquipmentStatModifier& Modifier : EquipmentData.StatModifiers)
@@ -375,7 +375,7 @@ void UHarmoniaEquipmentComponent::RepairEquipment(EEquipmentSlot Slot, float Rep
 	}
 
 	FEquippedItem& EquippedItem = EquippedItems[ItemIndex];
-	FEquipmentData EquipmentData;
+	FHarmoniaEquipmentData EquipmentData;
 	if (GetEquipmentData(EquippedItem.EquipmentId, EquipmentData))
 	{
 		EquippedItem.CurrentDurability = FMath::Min(EquipmentData.MaxDurability,
@@ -395,7 +395,7 @@ float UHarmoniaEquipmentComponent::GetEquipmentDurabilityPercent(EEquipmentSlot 
 		return 0.f;
 	}
 
-	FEquipmentData EquipmentData;
+	FHarmoniaEquipmentData EquipmentData;
 	if (GetEquipmentData(FoundItem->EquipmentId, EquipmentData) && EquipmentData.MaxDurability > 0.f)
 	{
 		return FoundItem->CurrentDurability / EquipmentData.MaxDurability;
@@ -457,7 +457,7 @@ void UHarmoniaEquipmentComponent::SetEquipmentDataTable(UDataTable* InDataTable)
 bool UHarmoniaEquipmentComponent::CanEquipItem(const FHarmoniaID& EquipmentId, FText& OutFailureReason) const
 {
 	// Get equipment data
-	FEquipmentData EquipmentData;
+	FHarmoniaEquipmentData EquipmentData;
 	if (!GetEquipmentData(EquipmentId, EquipmentData))
 	{
 		OutFailureReason = FText::FromString(TEXT("Equipment data not found"));
@@ -522,7 +522,7 @@ float UHarmoniaEquipmentComponent::GetTotalEquipmentLoad() const
 
 	for (const FEquippedItem& Item : EquippedItems)
 	{
-		FEquipmentData EquipmentData;
+		FHarmoniaEquipmentData EquipmentData;
 		if (GetEquipmentData(Item.EquipmentId, EquipmentData))
 		{
 			TotalWeight += EquipmentData.Weight;
@@ -682,7 +682,7 @@ FGameplayAttribute UHarmoniaEquipmentComponent::GetAttributeFromName(const FStri
 	return FGameplayAttribute();
 }
 
-void UHarmoniaEquipmentComponent::ApplyStatModifiers(const FEquipmentData& EquipmentData, FEquippedItem& OutEquippedItem)
+void UHarmoniaEquipmentComponent::ApplyStatModifiers(const FHarmoniaEquipmentData& EquipmentData, FEquippedItem& OutEquippedItem)
 {
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 	UHarmoniaAttributeSet* AttributeSet = GetAttributeSet();
@@ -770,7 +770,7 @@ void UHarmoniaEquipmentComponent::ApplyStatModifiers(const FEquipmentData& Equip
 	}
 }
 
-void UHarmoniaEquipmentComponent::ApplyGameplayEffects(const FEquipmentData& EquipmentData, FEquippedItem& OutEquippedItem)
+void UHarmoniaEquipmentComponent::ApplyGameplayEffects(const FHarmoniaEquipmentData& EquipmentData, FEquippedItem& OutEquippedItem)
 {
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 	if (!ASC)
@@ -823,7 +823,7 @@ void UHarmoniaEquipmentComponent::RemoveGameplayEffects(FEquippedItem& EquippedI
 	EquippedItem.ActiveEffectHandles.Empty();
 
 	// Remove granted tags
-	FEquipmentData EquipmentData;
+	FHarmoniaEquipmentData EquipmentData;
 	if (GetEquipmentData(EquippedItem.EquipmentId, EquipmentData))
 	{
 		if (EquipmentData.GrantedTags.Num() > 0)
@@ -833,7 +833,7 @@ void UHarmoniaEquipmentComponent::RemoveGameplayEffects(FEquippedItem& EquippedI
 	}
 }
 
-void UHarmoniaEquipmentComponent::ApplyVisualMesh(const FEquipmentData& EquipmentData)
+void UHarmoniaEquipmentComponent::ApplyVisualMesh(const FHarmoniaEquipmentData& EquipmentData)
 {
 	USkeletalMeshComponent* OwnerMesh = GetOwnerMesh();
 	if (!OwnerMesh || EquipmentData.EquipmentMesh.IsNull())
@@ -960,7 +960,7 @@ bool UHarmoniaEquipmentComponent::ServerEquipItem_Validate(const FHarmoniaID& Eq
 	}
 
 	// Validate equipment exists in data table
-	FEquipmentData EquipmentData;
+	FHarmoniaEquipmentData EquipmentData;
 	if (!GetEquipmentData(EquipmentId, EquipmentData))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerEquipItem: Equipment data not found for ID: %s"), *EquipmentId.ToString());

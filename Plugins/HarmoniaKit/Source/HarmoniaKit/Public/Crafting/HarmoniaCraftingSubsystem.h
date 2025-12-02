@@ -53,7 +53,7 @@ public:
 
 	/** Register a new recipe */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Crafting")
-	void RegisterRecipe(const FCraftingRecipeData& Recipe);
+	void RegisterRecipe(const FHarmoniaCraftingRecipeData& Recipe);
 
 	/** Unregister a recipe */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Crafting")
@@ -61,19 +61,19 @@ public:
 
 	/** Get recipe by ID */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Crafting")
-	bool GetRecipe(FName RecipeID, FCraftingRecipeData& OutRecipe) const;
+	bool GetRecipe(FName RecipeID, FHarmoniaCraftingRecipeData& OutRecipe) const;
 
 	/** Get all recipes */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Crafting")
-	TArray<FCraftingRecipeData> GetAllRecipes() const;
+	TArray<FHarmoniaCraftingRecipeData> GetAllRecipes() const;
 
 	/** Get recipes by station type */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Crafting")
-	TArray<FCraftingRecipeData> GetRecipesByStation(ECraftingStationType Station) const;
+	TArray<FHarmoniaCraftingRecipeData> GetRecipesByStation(ECraftingStationType Station) const;
 
 	/** Get recipes by category */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Crafting")
-	TArray<FCraftingRecipeData> GetRecipesByCategory(FGameplayTag CategoryTag) const;
+	TArray<FHarmoniaCraftingRecipeData> GetRecipesByCategory(FGameplayTag CategoryTag) const;
 
 	// ============================================================================
 	// Player Recipe Unlocks
@@ -93,7 +93,7 @@ public:
 
 	/** Get available recipes (unlocked + can craft) for a player */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Crafting")
-	TArray<FCraftingRecipeData> GetAvailableRecipes(APlayerController* Player, ECraftingStationType Station) const;
+	TArray<FHarmoniaCraftingRecipeData> GetAvailableRecipes(APlayerController* Player, ECraftingStationType Station) const;
 
 	// ============================================================================
 	// Crafting Operations
@@ -125,7 +125,7 @@ public:
 
 	/** Get crafting skill for a player */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Crafting")
-	FCraftingCategoryData GetCraftingSkill(APlayerController* Player, ECraftingStationType Station) const;
+	FHarmoniaCraftingCategoryData GetCraftingSkill(APlayerController* Player, ECraftingStationType Station) const;
 
 	/** Add experience to a crafting skill */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Crafting")
@@ -177,7 +177,7 @@ public:
 
 protected:
 	/** Consume materials from player inventory */
-	virtual bool ConsumeMaterials(APlayerController* Player, const FCraftingRecipeData& Recipe, int32 Quantity);
+	virtual bool ConsumeMaterials(APlayerController* Player, const FHarmoniaCraftingRecipeData& Recipe, int32 Quantity);
 
 	/** Grant crafted items to player */
 	virtual bool GrantCraftedItems(APlayerController* Player, const FHarmoniaCraftingSessionResult& Result);
@@ -191,13 +191,13 @@ protected:
 private:
 	/** All registered recipes */
 	UPROPERTY()
-	TMap<FName, FCraftingRecipeData> Recipes;
+	TMap<FName, FHarmoniaCraftingRecipeData> Recipes;
 
 	/** Player unlocked recipes (PlayerID -> RecipeIDs) */
 	TMap<uint32, TSet<FName>> PlayerUnlockedRecipes;
 
 	/** Player crafting skills (PlayerID -> Station -> Skill) */
-	TMap<uint32, TMap<ECraftingStationType, FCraftingCategoryData>> PlayerSkills;
+	TMap<uint32, TMap<ECraftingStationType, FHarmoniaCraftingCategoryData>> PlayerSkills;
 
 	/** Active crafting sessions (PlayerID -> RecipeID -> Progress) */
 	struct FCraftingSession

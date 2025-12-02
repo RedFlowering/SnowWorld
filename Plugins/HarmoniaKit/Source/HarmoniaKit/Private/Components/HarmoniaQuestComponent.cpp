@@ -102,7 +102,7 @@ bool UHarmoniaQuestComponent::StartQuest(FHarmoniaID QuestId)
 	if (IsQuestCompleted(QuestId))
 	{
 		// Check if repeatable
-		FQuestData QuestData;
+		FHarmoniaQuestData QuestData;
 		if (GetQuestData(QuestId, QuestData))
 		{
 			if (QuestData.QuestType != EQuestType::Repeatable &&
@@ -116,7 +116,7 @@ bool UHarmoniaQuestComponent::StartQuest(FHarmoniaID QuestId)
 	}
 
 	// Get quest data
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
 		UE_LOG(LogHarmoniaQuest, Error, TEXT("Quest %s not found in data table"), *QuestId.ToString());
@@ -206,7 +206,7 @@ bool UHarmoniaQuestComponent::CompleteQuest(FHarmoniaID QuestId, const TArray<in
 	}
 
 	// Get quest data
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
 		UE_LOG(LogHarmoniaQuest, Error, TEXT("Quest %s not found in data table"), *QuestId.ToString());
@@ -317,7 +317,7 @@ bool UHarmoniaQuestComponent::AbandonQuest(FHarmoniaID QuestId)
 	}
 
 	// Get quest data
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
 		UE_LOG(LogHarmoniaQuest, Error, TEXT("Quest %s not found in data table"), *QuestId.ToString());
@@ -378,7 +378,7 @@ bool UHarmoniaQuestComponent::FailQuest(FHarmoniaID QuestId)
 	}
 
 	// Get quest data
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
 		return false;
@@ -471,7 +471,7 @@ bool UHarmoniaQuestComponent::UpdateQuestObjective(FHarmoniaID QuestId, int32 Ob
 	}
 
 	// Get quest data
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (GetQuestData(QuestId, QuestData))
 	{
 		// Check if all objectives are completed
@@ -608,14 +608,14 @@ void UHarmoniaQuestComponent::SetTrackedQuest(FHarmoniaID QuestId)
 //~ Quest Queries
 //~==============================================
 
-bool UHarmoniaQuestComponent::GetQuestData(FHarmoniaID QuestId, FQuestData& OutQuestData) const
+bool UHarmoniaQuestComponent::GetQuestData(FHarmoniaID QuestId, FHarmoniaQuestData& OutQuestData) const
 {
 	if (!QuestDataTable || !QuestId.IsValid())
 	{
 		return false;
 	}
 
-	FQuestData* QuestData = QuestDataTable->FindRow<FQuestData>(QuestId.Id, TEXT("GetQuestData"));
+	FHarmoniaQuestData* QuestData = QuestDataTable->FindRow<FHarmoniaQuestData>(QuestId.Id, TEXT("GetQuestData"));
 	if (QuestData)
 	{
 		OutQuestData = *QuestData;
@@ -671,11 +671,11 @@ TArray<FHarmoniaID> UHarmoniaQuestComponent::GetAvailableQuests() const
 	}
 
 	// Get all quest rows
-	TArray<FQuestData*> AllQuests;
-	QuestDataTable->GetAllRows<FQuestData>(TEXT("GetAvailableQuests"), AllQuests);
+	TArray<FHarmoniaQuestData*> AllQuests;
+	QuestDataTable->GetAllRows<FHarmoniaQuestData>(TEXT("GetAvailableQuests"), AllQuests);
 
 	// Check each quest
-	for (FQuestData* QuestData : AllQuests)
+	for (FHarmoniaQuestData* QuestData : AllQuests)
 	{
 		if (QuestData && IsQuestAvailable(QuestData->QuestId))
 		{
@@ -695,7 +695,7 @@ bool UHarmoniaQuestComponent::IsQuestAvailable(FHarmoniaID QuestId) const
 	}
 
 	// Get quest data
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
 		return false;
@@ -893,7 +893,7 @@ void UHarmoniaQuestComponent::GrantReward(const FQuestReward& Reward)
 			// Unlock quest (notify via delegate)
 			if (Reward.QuestToUnlock.IsValid())
 			{
-				FQuestData UnlockedQuestData;
+				FHarmoniaQuestData UnlockedQuestData;
 				if (GetQuestData(Reward.QuestToUnlock, UnlockedQuestData))
 				{
 					OnQuestUnlocked.Broadcast(Reward.QuestToUnlock, UnlockedQuestData);
@@ -918,7 +918,7 @@ void UHarmoniaQuestComponent::GrantReward(const FQuestReward& Reward)
 void UHarmoniaQuestComponent::CheckQuestChain(FHarmoniaID CompletedQuestId)
 {
 	// Get quest data
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (!GetQuestData(CompletedQuestId, QuestData))
 	{
 		return;
@@ -948,7 +948,7 @@ void UHarmoniaQuestComponent::UpdateTimeLimitedQuests(float DeltaTime)
 		Progress.ElapsedTime += DeltaTime;
 
 		// Check time limit
-		FQuestData QuestData;
+		FHarmoniaQuestData QuestData;
 		if (GetQuestData(Progress.QuestId, QuestData))
 		{
 			if (Progress.IsTimeUp(QuestData))
@@ -967,7 +967,7 @@ void UHarmoniaQuestComponent::UpdateTimeLimitedQuests(float DeltaTime)
 
 bool UHarmoniaQuestComponent::CheckQuestTimeLimit(FHarmoniaID QuestId, const FActiveQuestProgress& Progress)
 {
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (GetQuestData(QuestId, QuestData))
 	{
 		return Progress.IsTimeUp(QuestData);
@@ -1182,7 +1182,7 @@ const FActiveQuestProgress* UHarmoniaQuestComponent::FindActiveQuest(FHarmoniaID
 
 void UHarmoniaQuestComponent::CheckAutoComplete(FHarmoniaID QuestId)
 {
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (GetQuestData(QuestId, QuestData) && QuestData.bAutoComplete)
 	{
 		if (IsQuestReadyToComplete(QuestId))
@@ -1220,7 +1220,7 @@ bool UHarmoniaQuestComponent::AdvanceToNextPhase(FHarmoniaID QuestId)
 		return false;
 	}
 
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
 		return false;
@@ -1267,7 +1267,7 @@ bool UHarmoniaQuestComponent::AdvanceToNextPhase(FHarmoniaID QuestId)
 
 bool UHarmoniaQuestComponent::GetPhaseObjectives(FHarmoniaID QuestId, int32 PhaseNumber, TArray<FQuestObjective>& OutObjectives) const
 {
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
 		return false;
@@ -1302,7 +1302,7 @@ bool UHarmoniaQuestComponent::ArePhaseObjectivesComplete(FHarmoniaID QuestId, in
 
 void UHarmoniaQuestComponent::TriggerPhaseEvents(FHarmoniaID QuestId, int32 PhaseNumber)
 {
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
 		return;
@@ -1329,7 +1329,7 @@ TArray<FQuestMarker> UHarmoniaQuestComponent::GetActiveMarkers(FHarmoniaID Quest
 {
 	TArray<FQuestMarker> Markers;
 
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
 		return Markers;
@@ -1383,7 +1383,7 @@ TArray<FQuestHint> UHarmoniaQuestComponent::GetAvailableHints(FHarmoniaID QuestI
 {
 	TArray<FQuestHint> AvailableHints;
 
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
 		return AvailableHints;
@@ -1433,7 +1433,7 @@ void UHarmoniaQuestComponent::MarkHintShown(FHarmoniaID QuestId, int32 HintIndex
 		return;
 	}
 
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
 		return;
@@ -1508,7 +1508,7 @@ void UHarmoniaQuestComponent::AddPlayerNote(FHarmoniaID QuestId, const FString& 
 	}
 }
 
-void UHarmoniaQuestComponent::UpdateQuestStatistics(FHarmoniaID QuestId, const FQuestData& QuestData, float CompletionTime)
+void UHarmoniaQuestComponent::UpdateQuestStatistics(FHarmoniaID QuestId, const FHarmoniaQuestData& QuestData, float CompletionTime)
 {
 	// Server only
 	if (GetOwnerRole() < ROLE_Authority)
@@ -1554,7 +1554,7 @@ void UHarmoniaQuestComponent::UpdateQuestStatistics(FHarmoniaID QuestId, const F
 		QuestStatistics.TotalQuestsCompleted, QuestStatistics.CurrentStreak);
 }
 
-void UHarmoniaQuestComponent::UpdateQuestLog(FHarmoniaID QuestId, const FQuestData& QuestData, bool bCompleted)
+void UHarmoniaQuestComponent::UpdateQuestLog(FHarmoniaID QuestId, const FHarmoniaQuestData& QuestData, bool bCompleted)
 {
 	// Server only
 	if (GetOwnerRole() < ROLE_Authority)
@@ -1597,7 +1597,7 @@ bool UHarmoniaQuestComponent::ShareQuestWithParty(FHarmoniaID QuestId)
 		return false;
 	}
 
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
 		return false;
@@ -1676,7 +1676,7 @@ TArray<APlayerController*> UHarmoniaQuestComponent::GetPartyMembers() const
 
 void UHarmoniaQuestComponent::TriggerQuestEvents(FHarmoniaID QuestId, EQuestEventTrigger TriggerType)
 {
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
 		return;
@@ -1774,7 +1774,7 @@ void UHarmoniaQuestComponent::CheckFailConditions(float DeltaTime)
 
 	for (const FActiveQuestProgress& Progress : ActiveQuests)
 	{
-		FQuestData QuestData;
+		FHarmoniaQuestData QuestData;
 		if (!GetQuestData(Progress.QuestId, QuestData))
 		{
 			continue;
@@ -1807,7 +1807,7 @@ bool UHarmoniaQuestComponent::CheckFailCondition(const FQuestFailCondition& Cond
 			const FActiveQuestProgress* Progress = FindActiveQuest(QuestId);
 			if (Progress)
 			{
-				FQuestData QuestData;
+				FHarmoniaQuestData QuestData;
 				if (GetQuestData(QuestId, QuestData))
 				{
 					return Progress->IsTimeUp(QuestData);

@@ -17,7 +17,7 @@ AActor* UHarmoniaInstancedItemManager::SpawnWorldActor(const FHarmoniaInstancedO
 
     if (ItemDataTable)
     {
-        const FItemData* Item = ItemDataTable->FindRow<FItemData>(Data.DataId, TEXT("FindItemRow"));
+        const FHarmoniaItemData* Item = ItemDataTable->FindRow<FHarmoniaItemData>(Data.DataId, TEXT("FindItemRow"));
         if (!Item)
         {
             UE_LOG(LogTemp, Warning, TEXT("UHarmoniaInstancedItemManager::SpawnWorldActor - Item data not found for ItemId: %s"), *Data.DataId.ToString());

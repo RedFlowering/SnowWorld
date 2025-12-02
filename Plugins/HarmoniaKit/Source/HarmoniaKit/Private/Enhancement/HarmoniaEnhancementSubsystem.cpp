@@ -20,7 +20,7 @@ void UHarmoniaEnhancementSubsystem::SetConfigDataAsset(UHarmoniaEnhancementConfi
 
 	if (ConfigAsset)
 	{
-		for (const FEnhancementLevelConfig& Level : ConfigAsset->DefaultEnhancementLevels)
+		for (const FHarmoniaEnhancementLevelConfig& Level : ConfigAsset->DefaultEnhancementLevels)
 		{
 			RegisterEnhancementLevel(Level);
 		}
@@ -32,14 +32,14 @@ void UHarmoniaEnhancementSubsystem::SetConfigDataAsset(UHarmoniaEnhancementConfi
 	}
 }
 
-void UHarmoniaEnhancementSubsystem::RegisterEnhancementLevel(const FEnhancementLevelConfig& Level)
+void UHarmoniaEnhancementSubsystem::RegisterEnhancementLevel(const FHarmoniaEnhancementLevelConfig& Level)
 {
 	EnhancementLevels.Add(Level.Level, Level);
 }
 
-bool UHarmoniaEnhancementSubsystem::GetEnhancementLevel(int32 Level, FEnhancementLevelConfig& OutLevel) const
+bool UHarmoniaEnhancementSubsystem::GetEnhancementLevel(int32 Level, FHarmoniaEnhancementLevelConfig& OutLevel) const
 {
-	if (const FEnhancementLevelConfig* Found = EnhancementLevels.Find(Level))
+	if (const FHarmoniaEnhancementLevelConfig* Found = EnhancementLevels.Find(Level))
 	{
 		OutLevel = *Found;
 		return true;
@@ -143,7 +143,7 @@ bool UHarmoniaEnhancementSubsystem::CanEnhance(APlayerController* Player, FGuid 
 		return false;
 	}
 
-	FEnhancementLevelConfig NextLevel;
+	FHarmoniaEnhancementLevelConfig NextLevel;
 	if (!GetEnhancementLevel(State.EnhancementLevel + 1, NextLevel))
 	{
 		OutReason = NSLOCTEXT("Enhancement", "NoLevelData", "Enhancement data not found.");
@@ -176,7 +176,7 @@ FHarmoniaEnhancementSessionResult UHarmoniaEnhancementSubsystem::AttemptEnhance(
 
 	Result.PreviousLevel = State.EnhancementLevel;
 
-	FEnhancementLevelConfig LevelData;
+	FHarmoniaEnhancementLevelConfig LevelData;
 	if (!GetEnhancementLevel(State.EnhancementLevel + 1, LevelData))
 	{
 		Result.Result = EEnhancementResult::InvalidItem;
@@ -270,7 +270,7 @@ float UHarmoniaEnhancementSubsystem::GetSuccessRate(FGuid ItemID, float BonusRat
 {
 	FEnhancedItemData State = GetItemState(ItemID);
 
-	FEnhancementLevelConfig LevelData;
+	FHarmoniaEnhancementLevelConfig LevelData;
 	if (!GetEnhancementLevel(State.EnhancementLevel + 1, LevelData))
 	{
 		return 0.0f;
@@ -291,7 +291,7 @@ TArray<FEnhancementMaterial> UHarmoniaEnhancementSubsystem::GetRequiredMaterials
 {
 	FEnhancedItemData State = GetItemState(ItemID);
 
-	FEnhancementLevelConfig LevelData;
+	FHarmoniaEnhancementLevelConfig LevelData;
 	if (GetEnhancementLevel(State.EnhancementLevel + 1, LevelData))
 	{
 		// Convert TMap to TArray
@@ -313,7 +313,7 @@ int64 UHarmoniaEnhancementSubsystem::GetEnhancementCost(FGuid ItemID) const
 {
 	FEnhancedItemData State = GetItemState(ItemID);
 
-	FEnhancementLevelConfig LevelData;
+	FHarmoniaEnhancementLevelConfig LevelData;
 	if (GetEnhancementLevel(State.EnhancementLevel + 1, LevelData))
 	{
 		return LevelData.RequiredCurrency;
@@ -478,7 +478,7 @@ bool UHarmoniaEnhancementSubsystem::IsPityActive(FGuid ItemID) const
 
 float UHarmoniaEnhancementSubsystem::GetStatMultiplier(int32 EnhancementLevel) const
 {
-	FEnhancementLevelConfig LevelData;
+	FHarmoniaEnhancementLevelConfig LevelData;
 	if (GetEnhancementLevel(EnhancementLevel, LevelData))
 	{
 		return LevelData.StatMultiplier;
@@ -525,7 +525,7 @@ bool UHarmoniaEnhancementSubsystem::ConsumeCurrency(APlayerController* Player, i
 	return true;
 }
 
-EEnhancementResult UHarmoniaEnhancementSubsystem::RollEnhancementResult(const FEnhancementLevelConfig& Level, bool bPityActive, bool bUseProtection)
+EEnhancementResult UHarmoniaEnhancementSubsystem::RollEnhancementResult(const FHarmoniaEnhancementLevelConfig& Level, bool bPityActive, bool bUseProtection)
 {
 	// Pity guarantees success
 	if (bPityActive)

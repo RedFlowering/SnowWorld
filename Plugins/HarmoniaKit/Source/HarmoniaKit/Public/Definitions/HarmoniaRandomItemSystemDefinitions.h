@@ -15,11 +15,11 @@
 UENUM(BlueprintType)
 enum class EItemRarity : uint8
 {
-	Common			UMETA(DisplayName = "Common"),			// 일반
+	Common			UMETA(DisplayName = "Common"),			// ?�반
 	Uncommon		UMETA(DisplayName = "Uncommon"),		// 고급
-	Rare			UMETA(DisplayName = "Rare"),			// 희귀
-	Epic			UMETA(DisplayName = "Epic"),			// 영웅
-	Legendary		UMETA(DisplayName = "Legendary"),		// 전설
+	Rare			UMETA(DisplayName = "Rare"),			// ?��?
+	Epic			UMETA(DisplayName = "Epic"),			// ?�웅
+	Legendary		UMETA(DisplayName = "Legendary"),		// ?�설
 	MAX				UMETA(Hidden)
 };
 
@@ -32,10 +32,10 @@ using EHarmoniaItemRarity = EItemRarity;
 UENUM(BlueprintType)
 enum class EAffixType : uint8
 {
-	Prefix			UMETA(DisplayName = "Prefix"),			// 접두사
-	Suffix			UMETA(DisplayName = "Suffix"),			// 접미사
-	Implicit		UMETA(DisplayName = "Implicit"),		// 암시적 (기본 부여)
-	Enchant			UMETA(DisplayName = "Enchant"),			// 마법부여
+	Prefix			UMETA(DisplayName = "Prefix"),			// ?�두??
+	Suffix			UMETA(DisplayName = "Suffix"),			// ?��???
+	Implicit		UMETA(DisplayName = "Implicit"),		// ?�시??(기본 부??
+	Enchant			UMETA(DisplayName = "Enchant"),			// 마법부??
 	MAX				UMETA(Hidden)
 };
 
@@ -48,9 +48,9 @@ using EHarmoniaAffixType = EAffixType;
 UENUM(BlueprintType)
 enum class EAffixModifierType : uint8
 {
-	Flat			UMETA(DisplayName = "Flat"),			// 고정값 (예: +50 공격력)
-	Percent			UMETA(DisplayName = "Percent"),			// 퍼센트 (예: +10% 공격력)
-	Multiplier		UMETA(DisplayName = "Multiplier"),		// 배율 (예: 1.5x 피해)
+	Flat			UMETA(DisplayName = "Flat"),			// 고정�?(?? +50 공격??
+	Percent			UMETA(DisplayName = "Percent"),			// ?�센??(?? +10% 공격??
+	Multiplier		UMETA(DisplayName = "Multiplier"),		// 배율 (?? 1.5x ?�해)
 	MAX				UMETA(Hidden)
 };
 
@@ -58,7 +58,7 @@ enum class EAffixModifierType : uint8
  * Rarity weight configuration
  */
 USTRUCT(BlueprintType)
-struct FRarityWeight : public FTableRowBase
+struct FHarmoniaRarityWeight : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -109,7 +109,7 @@ struct FAffixStatModifier
  * Affix definition
  */
 USTRUCT(BlueprintType)
-struct FAffixDefinition : public FTableRowBase
+struct FHarmoniaAffixData : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -237,7 +237,7 @@ struct FGeneratedItemData
  * Item base template for generation
  */
 USTRUCT(BlueprintType)
-struct FItemBaseTemplate : public FTableRowBase
+struct FHarmoniaItemBaseTemplate : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -273,9 +273,9 @@ struct FItemBaseTemplate : public FTableRowBase
 // Type aliases for consistent naming with subsystems
 // ============================================================================
 
-using FHarmoniaAffixDefinition = FAffixDefinition;
-using FHarmoniaRarityWeight = FRarityWeight;
+using FHarmoniaAffixDefinition = FHarmoniaAffixData;
+using FHarmoniaRarityWeight = FHarmoniaRarityWeight;
 using FHarmoniaGeneratedItem = FGeneratedItemData;
 using FHarmoniaItemGenerationSettings = FItemGenerationParams;
-using FHarmoniaItemBaseTemplate = FItemBaseTemplate;
+using FHarmoniaItemBaseTemplate = FHarmoniaItemBaseTemplate;
 using FHarmoniaAppliedAffix = FAppliedAffix;

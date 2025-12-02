@@ -38,14 +38,14 @@ void UHarmoniaCraftingSubsystem::SetConfigDataAsset(UHarmoniaCraftingConfigDataA
 	// Load default recipes from config
 	if (ConfigAsset)
 	{
-		for (const FCraftingRecipeData& Recipe : ConfigAsset->DefaultRecipes)
+		for (const FHarmoniaCraftingRecipeData& Recipe : ConfigAsset->DefaultRecipes)
 		{
 			RegisterRecipe(Recipe);
 		}
 	}
 }
 
-void UHarmoniaCraftingSubsystem::RegisterRecipe(const FCraftingRecipeData& Recipe)
+void UHarmoniaCraftingSubsystem::RegisterRecipe(const FHarmoniaCraftingRecipeData& Recipe)
 {
 	if (!Recipe.RecipeId.IsValid())
 	{
@@ -61,9 +61,9 @@ void UHarmoniaCraftingSubsystem::UnregisterRecipe(FName RecipeID)
 	Recipes.Remove(RecipeID);
 }
 
-bool UHarmoniaCraftingSubsystem::GetRecipe(FName RecipeID, FCraftingRecipeData& OutRecipe) const
+bool UHarmoniaCraftingSubsystem::GetRecipe(FName RecipeID, FHarmoniaCraftingRecipeData& OutRecipe) const
 {
-	if (const FCraftingRecipeData* Found = Recipes.Find(RecipeID))
+	if (const FHarmoniaCraftingRecipeData* Found = Recipes.Find(RecipeID))
 	{
 		OutRecipe = *Found;
 		return true;
@@ -71,16 +71,16 @@ bool UHarmoniaCraftingSubsystem::GetRecipe(FName RecipeID, FCraftingRecipeData& 
 	return false;
 }
 
-TArray<FCraftingRecipeData> UHarmoniaCraftingSubsystem::GetAllRecipes() const
+TArray<FHarmoniaCraftingRecipeData> UHarmoniaCraftingSubsystem::GetAllRecipes() const
 {
-	TArray<FCraftingRecipeData> Result;
+	TArray<FHarmoniaCraftingRecipeData> Result;
 	Recipes.GenerateValueArray(Result);
 	return Result;
 }
 
-TArray<FCraftingRecipeData> UHarmoniaCraftingSubsystem::GetRecipesByStation(ECraftingStationType Station) const
+TArray<FHarmoniaCraftingRecipeData> UHarmoniaCraftingSubsystem::GetRecipesByStation(ECraftingStationType Station) const
 {
-	TArray<FCraftingRecipeData> Result;
+	TArray<FHarmoniaCraftingRecipeData> Result;
 	for (const auto& Pair : Recipes)
 	{
 		if (Pair.Value.RequiredStation == Station)
@@ -91,9 +91,9 @@ TArray<FCraftingRecipeData> UHarmoniaCraftingSubsystem::GetRecipesByStation(ECra
 	return Result;
 }
 
-TArray<FCraftingRecipeData> UHarmoniaCraftingSubsystem::GetRecipesByCategory(FGameplayTag CategoryTag) const
+TArray<FHarmoniaCraftingRecipeData> UHarmoniaCraftingSubsystem::GetRecipesByCategory(FGameplayTag CategoryTag) const
 {
-	TArray<FCraftingRecipeData> Result;
+	TArray<FHarmoniaCraftingRecipeData> Result;
 	for (const auto& Pair : Recipes)
 	{
 		if (Pair.Value.CategoryTag == CategoryTag)
@@ -126,7 +126,7 @@ bool UHarmoniaCraftingSubsystem::UnlockRecipe(APlayerController* Player, FName R
 	}
 
 	// Check prerequisites
-	const FCraftingRecipeData& Recipe = Recipes[RecipeID];
+	const FHarmoniaCraftingRecipeData& Recipe = Recipes[RecipeID];
 	for (const FName& PrereqID : Recipe.PrerequisiteRecipes)
 	{
 		if (!UnlockedSet.Contains(PrereqID))
@@ -148,7 +148,7 @@ bool UHarmoniaCraftingSubsystem::IsRecipeUnlocked(APlayerController* Player, FNa
 	}
 
 	// Check if recipe is unlocked by default
-	if (const FCraftingRecipeData* Recipe = Recipes.Find(RecipeID))
+	if (const FHarmoniaCraftingRecipeData* Recipe = Recipes.Find(RecipeID))
 	{
 		if (Recipe->bUnlockedByDefault)
 		{
@@ -195,9 +195,9 @@ TArray<FName> UHarmoniaCraftingSubsystem::GetUnlockedRecipes(APlayerController* 
 	return Result;
 }
 
-TArray<FCraftingRecipeData> UHarmoniaCraftingSubsystem::GetAvailableRecipes(APlayerController* Player, ECraftingStationType Station) const
+TArray<FHarmoniaCraftingRecipeData> UHarmoniaCraftingSubsystem::GetAvailableRecipes(APlayerController* Player, ECraftingStationType Station) const
 {
-	TArray<FCraftingRecipeData> Result;
+	TArray<FHarmoniaCraftingRecipeData> Result;
 
 	if (!Player)
 	{
@@ -207,7 +207,7 @@ TArray<FCraftingRecipeData> UHarmoniaCraftingSubsystem::GetAvailableRecipes(APla
 	TArray<FName> UnlockedIDs = GetUnlockedRecipes(Player);
 	for (const FName& RecipeID : UnlockedIDs)
 	{
-		FCraftingRecipeData Recipe;
+		FHarmoniaCraftingRecipeData Recipe;
 		if (GetRecipe(RecipeID, Recipe))
 		{
 			if (Recipe.RequiredStation == Station)
@@ -228,7 +228,7 @@ bool UHarmoniaCraftingSubsystem::CanCraft(APlayerController* Player, FName Recip
 		return false;
 	}
 
-	FCraftingRecipeData Recipe;
+	FHarmoniaCraftingRecipeData Recipe;
 	if (!GetRecipe(RecipeID, Recipe))
 	{
 		OutReason = NSLOCTEXT("Crafting", "InvalidRecipe", "Invalid recipe.");
@@ -275,7 +275,7 @@ bool UHarmoniaCraftingSubsystem::StartCrafting(APlayerController* Player, FName 
 		return false;
 	}
 
-	FCraftingRecipeData Recipe;
+	FHarmoniaCraftingRecipeData Recipe;
 	if (!GetRecipe(RecipeID, Recipe))
 	{
 		return false;
@@ -299,7 +299,7 @@ bool UHarmoniaCraftingSubsystem::StartCrafting(APlayerController* Player, FName 
 	}
 
 	// Calculate total time with skill modifier
-	FCraftingCategoryData Skill = GetCraftingSkill(Player, Recipe.RequiredStation);
+	FHarmoniaCraftingCategoryData Skill = GetCraftingSkill(Player, Recipe.RequiredStation);
 	float TotalTime = Recipe.CraftingTime * Quantity / Skill.SpeedMultiplier;
 
 	FCraftingSession& Session = Sessions.Add(RecipeID);
@@ -325,7 +325,7 @@ bool UHarmoniaCraftingSubsystem::StartCrafting(APlayerController* Player, FName 
 			FHarmoniaCraftingSessionResult Result;
 			Result.RecipeId = RecipeID;
 
-			FCraftingRecipeData Recipe;
+			FHarmoniaCraftingRecipeData Recipe;
 			if (GetRecipe(RecipeID, Recipe))
 			{
 				// Calculate success
@@ -476,7 +476,7 @@ FHarmoniaCraftingSessionResult UHarmoniaCraftingSubsystem::InstantCraft(APlayerC
 		return Result;
 	}
 
-	FCraftingRecipeData Recipe;
+	FHarmoniaCraftingRecipeData Recipe;
 	if (!GetRecipe(RecipeID, Recipe))
 	{
 		Result.Result = EHarmoniaCraftingResult::InvalidRecipe;
@@ -548,9 +548,9 @@ FHarmoniaCraftingSessionResult UHarmoniaCraftingSubsystem::InstantCraft(APlayerC
 	return Result;
 }
 
-FCraftingCategoryData UHarmoniaCraftingSubsystem::GetCraftingSkill(APlayerController* Player, ECraftingStationType Station) const
+FHarmoniaCraftingCategoryData UHarmoniaCraftingSubsystem::GetCraftingSkill(APlayerController* Player, ECraftingStationType Station) const
 {
-	FCraftingCategoryData DefaultSkill;
+	FHarmoniaCraftingCategoryData DefaultSkill;
 	DefaultSkill.Station = Station;
 
 	if (!Player)
@@ -559,13 +559,13 @@ FCraftingCategoryData UHarmoniaCraftingSubsystem::GetCraftingSkill(APlayerContro
 	}
 
 	uint32 PlayerID = GetPlayerID(Player);
-	const TMap<ECraftingStationType, FCraftingCategoryData>* Skills = PlayerSkills.Find(PlayerID);
+	const TMap<ECraftingStationType, FHarmoniaCraftingCategoryData>* Skills = PlayerSkills.Find(PlayerID);
 	if (!Skills)
 	{
 		return DefaultSkill;
 	}
 
-	const FCraftingCategoryData* Found = Skills->Find(Station);
+	const FHarmoniaCraftingCategoryData* Found = Skills->Find(Station);
 	return Found ? *Found : DefaultSkill;
 }
 
@@ -577,8 +577,8 @@ void UHarmoniaCraftingSubsystem::AddCraftingExperience(APlayerController* Player
 	}
 
 	uint32 PlayerID = GetPlayerID(Player);
-	TMap<ECraftingStationType, FCraftingCategoryData>& Skills = PlayerSkills.FindOrAdd(PlayerID);
-	FCraftingCategoryData& Skill = Skills.FindOrAdd(Station);
+	TMap<ECraftingStationType, FHarmoniaCraftingCategoryData>& Skills = PlayerSkills.FindOrAdd(PlayerID);
+	FHarmoniaCraftingCategoryData& Skill = Skills.FindOrAdd(Station);
 
 	if (Skill.Station == ECraftingStationType::None)
 	{
@@ -612,13 +612,13 @@ TArray<FCraftingMaterial> UHarmoniaCraftingSubsystem::GetMissingMaterials(APlaye
 
 float UHarmoniaCraftingSubsystem::CalculateSuccessChance(APlayerController* Player, FName RecipeID) const
 {
-	FCraftingRecipeData Recipe;
+	FHarmoniaCraftingRecipeData Recipe;
 	if (!GetRecipe(RecipeID, Recipe))
 	{
 		return 0.0f;
 	}
 
-	FCraftingCategoryData Skill = GetCraftingSkill(Player, Recipe.RequiredStation);
+	FHarmoniaCraftingCategoryData Skill = GetCraftingSkill(Player, Recipe.RequiredStation);
 	float DifficultyMod = GetDifficultyModifier(Recipe.Difficulty);
 
 	// Base chance + skill bonus - difficulty penalty
@@ -636,13 +636,13 @@ float UHarmoniaCraftingSubsystem::CalculateSuccessChance(APlayerController* Play
 
 float UHarmoniaCraftingSubsystem::CalculateExpectedQuality(APlayerController* Player, FName RecipeID) const
 {
-	FCraftingRecipeData Recipe;
+	FHarmoniaCraftingRecipeData Recipe;
 	if (!GetRecipe(RecipeID, Recipe))
 	{
 		return 0.5f;
 	}
 
-	FCraftingCategoryData Skill = GetCraftingSkill(Player, Recipe.RequiredStation);
+	FHarmoniaCraftingCategoryData Skill = GetCraftingSkill(Player, Recipe.RequiredStation);
 
 	// Base quality from skill
 	float BaseQuality = 0.5f + (Skill.Level * 0.05f) + Skill.BonusQuality;
@@ -657,7 +657,7 @@ float UHarmoniaCraftingSubsystem::CalculateExpectedQuality(APlayerController* Pl
 	return FMath::Clamp(BaseQuality, 0.0f, 1.0f);
 }
 
-bool UHarmoniaCraftingSubsystem::ConsumeMaterials(APlayerController* Player, const FCraftingRecipeData& Recipe, int32 Quantity)
+bool UHarmoniaCraftingSubsystem::ConsumeMaterials(APlayerController* Player, const FHarmoniaCraftingRecipeData& Recipe, int32 Quantity)
 {
 	// TODO: Integrate with inventory system to consume materials
 	return true;
@@ -708,13 +708,13 @@ void UHarmoniaCraftingSubsystem::ProcessLevelUp(APlayerController* Player, ECraf
 	}
 
 	uint32 PlayerID = GetPlayerID(Player);
-	TMap<ECraftingStationType, FCraftingCategoryData>* Skills = PlayerSkills.Find(PlayerID);
+	TMap<ECraftingStationType, FHarmoniaCraftingCategoryData>* Skills = PlayerSkills.Find(PlayerID);
 	if (!Skills)
 	{
 		return;
 	}
 
-	FCraftingCategoryData* Skill = Skills->Find(Station);
+	FHarmoniaCraftingCategoryData* Skill = Skills->Find(Station);
 	if (!Skill)
 	{
 		return;

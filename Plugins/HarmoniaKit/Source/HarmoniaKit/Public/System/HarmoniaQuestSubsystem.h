@@ -51,7 +51,7 @@ public:
 	 * @return True if quest was found
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Quest|Subsystem")
-	bool GetQuestData(FHarmoniaID QuestId, FQuestData& OutQuestData) const;
+	bool GetQuestData(FHarmoniaID QuestId, FHarmoniaQuestData& OutQuestData) const;
 
 	/**
 	 * Get all quests of a specific type
@@ -59,7 +59,7 @@ public:
 	 * @return Array of quest data
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Quest|Subsystem")
-	TArray<FQuestData> GetQuestsByType(EQuestType QuestType) const;
+	TArray<FHarmoniaQuestData> GetQuestsByType(EQuestType QuestType) const;
 
 	/**
 	 * Get all quests with a specific category tag
@@ -67,14 +67,14 @@ public:
 	 * @return Array of quest data
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Quest|Subsystem")
-	TArray<FQuestData> GetQuestsByCategory(FGameplayTag CategoryTag) const;
+	TArray<FHarmoniaQuestData> GetQuestsByCategory(FGameplayTag CategoryTag) const;
 
 	/**
 	 * Get all quests
 	 * @return Array of all quest data
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Quest|Subsystem")
-	TArray<FQuestData> GetAllQuests() const;
+	TArray<FHarmoniaQuestData> GetAllQuests() const;
 
 	/**
 	 * Check if a quest exists
@@ -192,7 +192,7 @@ public:
 	 * @return Array of recommended quest data
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Quest|Subsystem|Stats")
-	TArray<FQuestData> GetRecommendedQuestsForLevel(int32 PlayerLevel, int32 LevelRange = 5) const;
+	TArray<FHarmoniaQuestData> GetRecommendedQuestsForLevel(int32 PlayerLevel, int32 LevelRange = 5) const;
 
 	//~==============================================
 	//~ Quest Search and Filtering
@@ -204,7 +204,7 @@ public:
 	 * @return Array of matching quest data
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Quest|Subsystem|Search")
-	TArray<FQuestData> SearchQuestsByName(const FString& SearchText) const;
+	TArray<FHarmoniaQuestData> SearchQuestsByName(const FString& SearchText) const;
 
 	/**
 	 * Find quests with specific objective type
@@ -212,7 +212,7 @@ public:
 	 * @return Array of quest data containing this objective type
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Quest|Subsystem|Search")
-	TArray<FQuestData> FindQuestsWithObjectiveType(EQuestObjectiveType ObjectiveType) const;
+	TArray<FHarmoniaQuestData> FindQuestsWithObjectiveType(EQuestObjectiveType ObjectiveType) const;
 
 	/**
 	 * Find quests that reward a specific item
@@ -220,7 +220,7 @@ public:
 	 * @return Array of quest data that reward this item
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Quest|Subsystem|Search")
-	TArray<FQuestData> FindQuestsRewardingItem(FHarmoniaID ItemId) const;
+	TArray<FHarmoniaQuestData> FindQuestsRewardingItem(FHarmoniaID ItemId) const;
 
 	/**
 	 * Find quests that require a specific item
@@ -228,7 +228,7 @@ public:
 	 * @return Array of quest data that require this item
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Quest|Subsystem|Search")
-	TArray<FQuestData> FindQuestsRequiringItem(FHarmoniaID ItemId) const;
+	TArray<FHarmoniaQuestData> FindQuestsRequiringItem(FHarmoniaID ItemId) const;
 
 	//~==============================================
 	//~ Debug and Development
@@ -273,7 +273,7 @@ protected:
 
 	/** Cached quest data for fast lookups */
 	UPROPERTY()
-	TMap<FHarmoniaID, FQuestData> QuestDataCache;
+	TMap<FHarmoniaID, FHarmoniaQuestData> QuestDataCache;
 
 	/** Last daily reset timestamp */
 	UPROPERTY()

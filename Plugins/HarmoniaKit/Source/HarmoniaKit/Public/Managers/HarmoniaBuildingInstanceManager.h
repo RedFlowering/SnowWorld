@@ -11,10 +11,10 @@ class AActor;
 class AController;
 
 /**
- * 건축물 인스턴스 매니저 (WorldSubsystem)
- * - 배치된 건축물을 인스턴싱으로 관리
- * - 플레이어 접근 시 필요에 따라 액터로 변환
- * - 건축물 배치, 파괴, 수리 기능 제공
+ * 건축�??�스?�스 매니?� (WorldSubsystem)
+ * - 배치??건축물을 ?�스?�싱?�로 관�?
+ * - ?�레?�어 ?�근 ???�요???�라 ?�터�?변??
+ * - 건축�?배치, ?�괴, ?�리 기능 ?�공
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaBuildingInstanceManager : public UHarmoniaInstancedObjectManagerBase
@@ -22,79 +22,79 @@ class HARMONIAKIT_API UHarmoniaBuildingInstanceManager : public UHarmoniaInstanc
 	GENERATED_BODY()
 
 public:
-	// 건축물 배치
+	// 건축�?배치
 	UFUNCTION(BlueprintCallable, Category = "Building")
-	FGuid PlaceBuilding(const FBuildingPartData& PartData, const FVector& Location, const FRotator& Rotation, AActor* Owner);
+	FGuid PlaceBuilding(const FHarmoniaBuildingPartData& PartData, const FVector& Location, const FRotator& Rotation, AActor* Owner);
 
-	// 건축물 제거
+	// 건축�??�거
 	UFUNCTION(BlueprintCallable, Category = "Building")
 	bool RemoveBuilding(const FGuid& BuildingGuid);
 
-	// 건축물 수리
+	// 건축�??�리
 	UFUNCTION(BlueprintCallable, Category = "Building")
 	bool RepairBuilding(const FGuid& BuildingGuid, float RepairAmount);
 
-	// 건축물 내구도 감소
+	// 건축�??�구??감소
 	UFUNCTION(BlueprintCallable, Category = "Building")
 	bool DamageBuilding(const FGuid& BuildingGuid, float DamageAmount);
 
-	// 건축물 데이터 조회
+	// 건축�??�이??조회
 	UFUNCTION(BlueprintCallable, Category = "Building")
 	bool GetBuildingMetadata(const FGuid& BuildingGuid, FBuildingInstanceMetadata& OutMetadata) const;
 
-	// 충돌 검사 - 특정 위치와 범위에 이미 배치된 건축물이 있는지 확인
-	// @param Location - 배치하려는 위치
-	// @param Rotation - 배치하려는 회전
-	// @param BoundsExtent - 배치하려는 건축물의 경계 크기
-	// @param PlacingPartType - 배치하려는 건축물 타입 (오버랩 허용 규칙 판단에 사용)
-	// @param MinDistance - 최소 거리 (음수일 경우 거리 검사 스킵)
-	// @return true면 충돌 발생 (배치 불가), false면 배치 가능
+	// 충돌 검??- ?�정 ?�치?� 범위???��? 배치??건축물이 ?�는지 ?�인
+	// @param Location - 배치?�려???�치
+	// @param Rotation - 배치?�려???�전
+	// @param BoundsExtent - 배치?�려??건축물의 경계 ?�기
+	// @param PlacingPartType - 배치?�려??건축�??�??(?�버???�용 규칙 ?�단???�용)
+	// @param MinDistance - 최소 거리 (?�수??경우 거리 검???�킵)
+	// @return true�?충돌 발생 (배치 불�?), false�?배치 가??
 	UFUNCTION(BlueprintCallable, Category = "Building")
 	bool CheckBuildingOverlap(const FVector& Location, const FRotator& Rotation, const FVector& BoundsExtent, EBuildingPartType PlacingPartType, float MinDistance = -1.0f) const;
 
-	// 모든 건축물 메타데이터 가져오기
+	// 모든 건축�?메�??�이??가?�오�?
 	UFUNCTION(BlueprintCallable, Category = "Building")
 	void GetAllBuildingMetadata(TArray<FBuildingInstanceMetadata>& OutMetadataArray) const;
 
-	// 스냅 포인트 찾기 - 주어진 위치 주변에서 스냅 가능한 지점을 찾음
+	// ?�냅 ?�인??찾기 - 주어�??�치 주�??�서 ?�냅 가?�한 지?�을 찾음
 	UFUNCTION(BlueprintCallable, Category = "Building")
 	bool FindNearbySnapPoint(const FVector& TargetLocation, EBuildingPartType PartType, float SearchRadius, FVector& OutSnapLocation, FRotator& OutSnapRotation) const;
 
 protected:
-	// 건축물 액터 생성 (실제 3D 오브젝트)
+	// 건축�??�터 ?�성 (?�제 3D ?�브?�트)
 	virtual AActor* SpawnWorldActor(const FHarmoniaInstancedObjectData& Data, AController* Requestor) override;
 
-	// 건축물 액터 파괴
+	// 건축�??�터 ?�괴
 	virtual void DestroyWorldActor(AActor* Actor) override;
 
-	// WorldSubsystem 초기화
+	// WorldSubsystem 초기??
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
 private:
-	// 건축물 메타데이터 저장 (내구도, 소유자 등)
+	// 건축�?메�??�이???�??(?�구?? ?�유????
 	UPROPERTY()
 	TMap<FGuid, FBuildingInstanceMetadata> BuildingMetadataMap;
 
-	// 건축물 파트별 Instanced Static Mesh Component 맵
+	// 건축�??�트�?Instanced Static Mesh Component �?
 	// Key: PartID, Value: ISM Component
 	UPROPERTY()
 	TMap<FName, class UInstancedStaticMeshComponent*> PartToISMMap;
 
-	// ISM을 관리할 루트 액터
+	// ISM??관리할 루트 ?�터
 	UPROPERTY()
 	TObjectPtr<AActor> ISMManagerActor = nullptr;
 
-	// ISM 컴포넌트 초기화
+	// ISM 컴포?�트 초기??
 	void InitializeISMComponent(const FName& PartID, UStaticMesh* Mesh);
 
-	// 타입별 오버랩 허용 규칙 체크
+	// ?�?�별 ?�버???�용 규칙 체크
 	bool IsOverlapAllowed(EBuildingPartType PlacingType, EBuildingPartType ExistingType) const;
 
-	// OBB(Oriented Bounding Box) 충돌 검사
+	// OBB(Oriented Bounding Box) 충돌 검??
 	bool DoBoxesOverlap(const FTransform& TransformA, const FVector& ExtentA, const FTransform& TransformB, const FVector& ExtentB) const;
 
-	// 건축물 데이터 테이블 캐시
+	// 건축�??�이???�이�?캐시
 	UPROPERTY()
 	TObjectPtr<UDataTable> BuildingDataTable = nullptr;
 };

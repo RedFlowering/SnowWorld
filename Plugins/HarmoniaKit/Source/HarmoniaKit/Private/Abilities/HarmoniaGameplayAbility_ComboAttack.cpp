@@ -77,7 +77,7 @@ void UHarmoniaGameplayAbility_ComboAttack::PerformComboAttack()
 		return;
 	}
 
-	const FComboAttackData ComboData = GetCurrentComboData();
+	const FHarmoniaComboAttackData ComboData = GetCurrentComboData();
 	if (!ComboData.AttackMontage)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ComboAttack: No montage for index %d"), CurrentComboIndex);
@@ -293,29 +293,29 @@ void UHarmoniaGameplayAbility_ComboAttack::OnMontageInterrupted()
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 }
 
-FComboAttackData UHarmoniaGameplayAbility_ComboAttack::GetCurrentComboData() const
+FHarmoniaComboAttackData UHarmoniaGameplayAbility_ComboAttack::GetCurrentComboData() const
 {
 	if (!ComboDataTable || !ComboSequence.IsValidIndex(CurrentComboIndex))
 	{
-		return FComboAttackData();
+		return FHarmoniaComboAttackData();
 	}
 
 	const FName RowName = ComboSequence[CurrentComboIndex];
-	const FComboAttackData* Data = ComboDataTable->FindRow<FComboAttackData>(RowName, TEXT("GetCurrentComboData"));
-	return Data ? *Data : FComboAttackData();
+	const FHarmoniaComboAttackData* Data = ComboDataTable->FindRow<FHarmoniaComboAttackData>(RowName, TEXT("GetCurrentComboData"));
+	return Data ? *Data : FHarmoniaComboAttackData();
 }
 
-FComboAttackData UHarmoniaGameplayAbility_ComboAttack::GetNextComboData() const
+FHarmoniaComboAttackData UHarmoniaGameplayAbility_ComboAttack::GetNextComboData() const
 {
 	const int32 NextIndex = CurrentComboIndex + 1;
 	if (!ComboDataTable || !ComboSequence.IsValidIndex(NextIndex))
 	{
-		return FComboAttackData();
+		return FHarmoniaComboAttackData();
 	}
 
 	const FName RowName = ComboSequence[NextIndex];
-	const FComboAttackData* Data = ComboDataTable->FindRow<FComboAttackData>(RowName, TEXT("GetNextComboData"));
-	return Data ? *Data : FComboAttackData();
+	const FHarmoniaComboAttackData* Data = ComboDataTable->FindRow<FHarmoniaComboAttackData>(RowName, TEXT("GetNextComboData"));
+	return Data ? *Data : FHarmoniaComboAttackData();
 }
 
 bool UHarmoniaGameplayAbility_ComboAttack::HasCurrentComboData() const

@@ -19,7 +19,7 @@ enum class EBuildingPartType : uint8
     Window          UMETA(DisplayName = "Window"),
     Stairs          UMETA(DisplayName = "Stairs"),
     Fence           UMETA(DisplayName = "Fence"),
-    WallDecoration  UMETA(DisplayName = "Wall Decoration")  // 벽걸이 장식품 (액자, 그림, 벽걸이 등)
+    WallDecoration  UMETA(DisplayName = "Wall Decoration")  // 벽걸???�식??(?�자, 그림, 벽걸????
 };
 
 UENUM(BlueprintType)
@@ -86,7 +86,7 @@ struct FBuildingPreviewMesh
 };
 
 USTRUCT(BlueprintType)
-struct FBuildingPartData : public FTableRowBase
+struct FHarmoniaBuildingPartData : public FTableRowBase
 {
     GENERATED_BODY()
 

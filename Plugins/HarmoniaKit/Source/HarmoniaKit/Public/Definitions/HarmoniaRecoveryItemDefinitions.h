@@ -13,85 +13,85 @@ class UNiagaraSystem;
 
 /**
  * Recovery Item Type
- * 회복 아이템 타입
+ * ?�복 ?�이???�??
  */
 UENUM(BlueprintType)
 enum class EHarmoniaRecoveryItemType : uint8
 {
-	// 공명 파편 - 체크포인트에서 충전되는 기본 회복 아이템
+	// 공명 ?�편 - 체크?�인?�에??충전?�는 기본 ?�복 ?�이??
 	ResonanceShard UMETA(DisplayName = "Resonance Shard"),
 
-	// 얼어붙은 시간의 눈송이 - 시간 역행 회복 (희귀)
+	// ?�어붙�? ?�간???�송??- ?�간 ??�� ?�복 (?��?)
 	FrozenTimeSnowflake UMETA(DisplayName = "Frozen Time Snowflake"),
 
-	// 온천 보온병 - 지속 회복 + 버프
+	// ?�천 보온�?- 지???�복 + 버프
 	ThermalSpringFlask UMETA(DisplayName = "Thermal Spring Flask"),
 
-	// 생명의 루미네센스 - 설치형 범위 회복
+	// ?�명??루�??�센??- ?�치??범위 ?�복
 	LifeLuminescence UMETA(DisplayName = "Life Luminescence"),
 
-	// 커스텀 - 확장용
+	// 커스?� - ?�장??
 	Custom UMETA(DisplayName = "Custom")
 };
 
 /**
  * Recovery Effect Type
- * 회복 효과 타입
+ * ?�복 ?�과 ?�??
  */
 UENUM(BlueprintType)
 enum class EHarmoniaRecoveryEffectType : uint8
 {
-	// 즉시 회복 (Instant)
+	// 즉시 ?�복 (Instant)
 	Instant UMETA(DisplayName = "Instant"),
 
-	// 지속 회복 (HoT - Heal over Time)
+	// 지???�복 (HoT - Heal over Time)
 	OverTime UMETA(DisplayName = "Over Time"),
 
-	// 시간 역행 (최근 피해 복구)
+	// ?�간 ??�� (최근 ?�해 복구)
 	TimeReversal UMETA(DisplayName = "Time Reversal"),
 
-	// 설치형 범위 회복
+	// ?�치??범위 ?�복
 	AreaDeployable UMETA(DisplayName = "Area Deployable")
 };
 
 /**
  * Resonance Shard Variant
- * 공명 파편 색상별 효과
+ * 공명 ?�편 ?�상�??�과
  */
 USTRUCT(BlueprintType)
 struct FHarmoniaResonanceShardVariant
 {
 	GENERATED_BODY()
 
-	// 공명 주파수 (색상)
+	// 공명 주파??(?�상)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resonance Shard")
 	EHarmoniaResonanceFrequency Frequency = EHarmoniaResonanceFrequency::Azure;
 
-	// 파편 이름
+	// ?�편 ?�름
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resonance Shard")
 	FText ShardName;
 
-	// 파편 설명
+	// ?�편 ?�명
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resonance Shard")
 	FText ShardDescription;
 
-	// 체력 회복량 (%)
+	// 체력 ?�복??(%)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resonance Shard", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float HealthRecoveryPercent = 0.5f;
 
-	// 추가 효과 (GE)
+	// 추�? ?�과 (GE)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resonance Shard")
 	TSubclassOf<UGameplayEffect> AdditionalEffect;
 
-	// 파편 색상
+	// ?�편 ?�상
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resonance Shard|Visual")
 	FLinearColor ShardColor = FLinearColor::Blue;
 
-	// 사용 시 VFX
+	// ?�용 ??VFX
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resonance Shard|Visual")
 	TObjectPtr<UNiagaraSystem> UsageVFX;
 
-	// 사용 시 SFX
+	// ?�용 ??SFX
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resonance Shard|Audio")
 	TObjectPtr<USoundBase> UsageSound;
 
@@ -104,86 +104,86 @@ struct FHarmoniaResonanceShardVariant
 
 /**
  * Recovery Item Configuration
- * 회복 아이템 설정 (재사용 가능한 기본 클래스)
+ * ?�복 ?�이???�정 (?�사??가?�한 기본 ?�래??
  */
 USTRUCT(BlueprintType)
 struct FHarmoniaRecoveryItemConfig
 {
 	GENERATED_BODY()
 
-	// 아이템 타입
+	// ?�이???�??
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item")
 	EHarmoniaRecoveryItemType ItemType = EHarmoniaRecoveryItemType::ResonanceShard;
 
-	// 아이템 이름
+	// ?�이???�름
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item")
 	FText ItemName;
 
-	// 아이템 설명
+	// ?�이???�명
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item")
 	FText ItemDescription;
 
-	// 아이템 아이콘
+	// ?�이???�이�?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item|Visual")
 	TObjectPtr<UTexture2D> ItemIcon;
 
-	// 최대 보유 횟수
+	// 최�? 보유 ?�수
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item|Charges")
 	int32 MaxCharges = 5;
 
-	// 초기 충전 횟수
+	// 초기 충전 ?�수
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item|Charges")
 	int32 InitialCharges = 5;
 
-	// 체크포인트에서 충전 가능 여부
+	// 체크?�인?�에??충전 가???��?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item|Charges")
 	bool bRechargeableAtCheckpoint = true;
 
-	// 사용 시간 (시전 시간, 초)
+	// ?�용 ?�간 (?�전 ?�간, �?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item|Usage", meta = (ClampMin = "0.0"))
 	float UsageDuration = 1.5f;
 
-	// 사용 중 이동 시 취소 여부
+	// ?�용 �??�동 ??취소 ?��?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item|Usage")
 	bool bCancelOnMovement = true;
 
-	// 사용 중 피격 시 취소 여부
+	// ?�용 �??�격 ??취소 ?��?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item|Usage")
 	bool bCancelOnDamage = true;
 
-	// 회복 효과 타입
+	// ?�복 ?�과 ?�??
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item|Effect")
 	EHarmoniaRecoveryEffectType EffectType = EHarmoniaRecoveryEffectType::Instant;
 
-	// 체력 회복량 (고정값)
+	// 체력 ?�복??(고정�?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item|Effect")
 	float HealthRecoveryAmount = 0.0f;
 
-	// 체력 회복량 (최대 체력 대비 %)
+	// 체력 ?�복??(최�? 체력 ?��?%)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item|Effect", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float HealthRecoveryPercent = 0.5f;
 
-	// 지속 회복 시간 (HoT용)
+	// 지???�복 ?�간 (HoT??
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item|Effect", meta = (ClampMin = "0.0"))
 	float RecoveryDuration = 3.0f;
 
-	// 적용할 Gameplay Effect (버프, 추가 효과 등)
+	// ?�용??Gameplay Effect (버프, 추�? ?�과 ??
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item|Effect")
 	TArray<TSubclassOf<UGameplayEffect>> GameplayEffects;
 
-	// 사용 시 애니메이션
+	// ?�용 ???�니메이??
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item|Animation")
 	TObjectPtr<UAnimMontage> UsageAnimation;
 
-	// 사용 시 VFX
+	// ?�용 ??VFX
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item|Visual")
 	TObjectPtr<UNiagaraSystem> UsageVFX;
 
-	// 사용 시 SFX
+	// ?�용 ??SFX
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item|Audio")
 	TObjectPtr<USoundBase> UsageSound;
 
-	// 사용 실패 시 SFX
+	// ?�용 ?�패 ??SFX
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Item|Audio")
 	TObjectPtr<USoundBase> FailureSound;
 
@@ -196,14 +196,14 @@ struct FHarmoniaRecoveryItemConfig
 
 /**
  * Time Reversal Data
- * 시간 역행 데이터 (Frozen Time Snowflake용)
+ * ?�간 ??�� ?�이??(Frozen Time Snowflake??
  */
 USTRUCT(BlueprintType)
 struct FHarmoniaTimeReversalSnapshot
 {
 	GENERATED_BODY()
 
-	// 스냅샷 시간
+	// ?�냅???�간
 	UPROPERTY(BlueprintReadWrite, Category = "Time Reversal")
 	float Timestamp = 0.0f;
 
@@ -211,49 +211,49 @@ struct FHarmoniaTimeReversalSnapshot
 	UPROPERTY(BlueprintReadWrite, Category = "Time Reversal")
 	float Health = 0.0f;
 
-	// 위치
+	// ?�치
 	UPROPERTY(BlueprintReadWrite, Category = "Time Reversal")
 	FVector Location = FVector::ZeroVector;
 
-	// 회전
+	// ?�전
 	UPROPERTY(BlueprintReadWrite, Category = "Time Reversal")
 	FRotator Rotation = FRotator::ZeroRotator;
 };
 
 /**
  * Deployable Recovery Area Configuration
- * 설치형 회복 구역 설정 (Life Luminescence용)
+ * ?�치???�복 구역 ?�정 (Life Luminescence??
  */
 USTRUCT(BlueprintType)
 struct FHarmoniaDeployableRecoveryConfig
 {
 	GENERATED_BODY()
 
-	// 회복 구역 반경
+	// ?�복 구역 반경
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Deployable Recovery", meta = (ClampMin = "0.0"))
 	float RecoveryRadius = 300.0f;
 
-	// 회복 구역 지속 시간
+	// ?�복 구역 지???�간
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Deployable Recovery", meta = (ClampMin = "0.0"))
 	float Duration = 60.0f;
 
-	// 틱당 회복량
+	// ?�당 ?�복??
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Deployable Recovery")
 	float HealthPerTick = 5.0f;
 
-	// 회복 틱 간격 (초)
+	// ?�복 ??간격 (�?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Deployable Recovery", meta = (ClampMin = "0.1"))
 	float TickInterval = 1.0f;
 
-	// 설치 시 생성할 Actor 클래스
+	// ?�치 ???�성??Actor ?�래??
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Deployable Recovery")
 	TSubclassOf<AActor> DeployableActorClass;
 
-	// 회복 구역 VFX
+	// ?�복 구역 VFX
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Deployable Recovery|Visual")
 	TObjectPtr<UNiagaraSystem> AreaVFX;
 
-	// 회복 구역 SFX (루프)
+	// ?�복 구역 SFX (루프)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Deployable Recovery|Audio")
 	TObjectPtr<USoundBase> AreaSound;
 
@@ -264,30 +264,30 @@ struct FHarmoniaDeployableRecoveryConfig
 
 /**
  * Recovery Item Runtime State
- * 회복 아이템 런타임 상태 (저장/로드용)
+ * ?�복 ?�이???��????�태 (?�??로드??
  */
 USTRUCT(BlueprintType)
 struct FHarmoniaRecoveryItemState
 {
 	GENERATED_BODY()
 
-	// 아이템 타입
+	// ?�이???�??
 	UPROPERTY(BlueprintReadWrite, Category = "Recovery Item")
 	EHarmoniaRecoveryItemType ItemType = EHarmoniaRecoveryItemType::ResonanceShard;
 
-	// 현재 충전 횟수
+	// ?�재 충전 ?�수
 	UPROPERTY(BlueprintReadWrite, Category = "Recovery Item")
 	int32 CurrentCharges = 0;
 
-	// 최대 충전 횟수 (강화로 증가 가능)
+	// 최�? 충전 ?�수 (강화�?증�? 가??
 	UPROPERTY(BlueprintReadWrite, Category = "Recovery Item")
 	int32 MaxCharges = 5;
 
-	// 공명 파편 주파수 (ResonanceShard 전용)
+	// 공명 ?�편 주파??(ResonanceShard ?�용)
 	UPROPERTY(BlueprintReadWrite, Category = "Recovery Item")
 	EHarmoniaResonanceFrequency ShardFrequency = EHarmoniaResonanceFrequency::Azure;
 
-	// 마지막 사용 시간
+	// 마�?�??�용 ?�간
 	UPROPERTY(BlueprintReadWrite, Category = "Recovery Item")
 	FDateTime LastUsedTime;
 
@@ -303,26 +303,26 @@ struct FHarmoniaRecoveryItemState
 
 /**
  * Recovery Item Use Result
- * 회복 아이템 사용 결과
+ * ?�복 ?�이???�용 결과
  */
 USTRUCT(BlueprintType)
 struct FHarmoniaRecoveryItemUseResult
 {
 	GENERATED_BODY()
 
-	// 사용 성공 여부
+	// ?�용 ?�공 ?��?
 	UPROPERTY(BlueprintReadWrite, Category = "Recovery Item")
 	bool bSuccess = false;
 
-	// 회복된 체력
+	// ?�복??체력
 	UPROPERTY(BlueprintReadWrite, Category = "Recovery Item")
 	float HealthRecovered = 0.0f;
 
-	// 남은 충전 횟수
+	// ?��? 충전 ?�수
 	UPROPERTY(BlueprintReadWrite, Category = "Recovery Item")
 	int32 RemainingCharges = 0;
 
-	// 실패 사유
+	// ?�패 ?�유
 	UPROPERTY(BlueprintReadWrite, Category = "Recovery Item")
 	FText FailureReason;
 };

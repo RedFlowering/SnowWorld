@@ -8,9 +8,9 @@
 #include "HarmoniaBuildingPreviewActor.generated.h"
 
 /**
- * 건축물 배치 전 프리뷰를 표시하는 액터
- * - 반투명 메시로 배치 위치를 미리 확인
- * - 배치 가능/불가능 상태에 따라 색상 변경
+ * 건축�?배치 ???�리뷰�? ?�시?�는 ?�터
+ * - 반투�?메시�?배치 ?�치�?미리 ?�인
+ * - 배치 가??불�????�태???�라 ?�상 변�?
  */
 UCLASS()
 class HARMONIAKIT_API AHarmoniaBuildingPreviewActor : public AActor
@@ -24,36 +24,36 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	// 프리뷰 데이터 적용
+	// ?�리�??�이???�용
 	UFUNCTION(BlueprintCallable, Category = "Building Preview")
-	void ApplyPreviewData(const FBuildingPartData& PartData);
+	void ApplyPreviewData(const FHarmoniaBuildingPartData& PartData);
 
-	// 배치 가능 여부에 따른 시각 피드백
+	// 배치 가???��????�른 ?�각 ?�드�?
 	UFUNCTION(BlueprintCallable, Category = "Building Preview")
 	void SetIsPlacementValid(bool bIsValid);
 
-	// 프리뷰 회전
+	// ?�리�??�전
 	UFUNCTION(BlueprintCallable, Category = "Building Preview")
 	void RotatePreview(float DeltaYaw);
 
 protected:
-	// 메시 컴포넌트
+	// 메시 컴포?�트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> PreviewMeshComponent = nullptr;
 
-	// 배치 가능 상태 머티리얼
+	// 배치 가???�태 머티리얼
 	UPROPERTY(EditDefaultsOnly, Category = "Materials")
 	TObjectPtr<UMaterialInterface> ValidPlacementMaterial = nullptr;
 
-	// 배치 불가능 상태 머티리얼
+	// 배치 불�????�태 머티리얼
 	UPROPERTY(EditDefaultsOnly, Category = "Materials")
 	TObjectPtr<UMaterialInterface> InvalidPlacementMaterial = nullptr;
 
-	// 현재 배치 가능 여부
+	// ?�재 배치 가???��?
 	UPROPERTY(BlueprintReadOnly, Category = "State")
 	bool bIsCurrentlyValid = false;
 
-	// 현재 적용된 파트 데이터
+	// ?�재 ?�용???�트 ?�이??
 	UPROPERTY(BlueprintReadOnly, Category = "State")
-	FBuildingPartData CurrentPartData;
+	FHarmoniaBuildingPartData CurrentPartData;
 };

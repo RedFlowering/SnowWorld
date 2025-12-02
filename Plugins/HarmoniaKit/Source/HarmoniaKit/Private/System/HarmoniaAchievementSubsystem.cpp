@@ -57,7 +57,7 @@ void UHarmoniaAchievementSubsystem::UpdateProgress(const FHarmoniaID& Achievemen
 		State->CurrentProgress += Amount;
 		
 		// Check if we reached the target
-		FHarmoniaAchievementDefinition Definition;
+		FHarmoniaAchievementData Definition;
 		if (GetAchievementDefinition(AchievementId, Definition))
 		{
 			if (Definition.Type == EAchievementType::Progressive)
@@ -93,7 +93,7 @@ int32 UHarmoniaAchievementSubsystem::GetAchievementProgress(const FHarmoniaID& A
 	return 0;
 }
 
-bool UHarmoniaAchievementSubsystem::GetAchievementDefinition(const FHarmoniaID& AchievementId, FHarmoniaAchievementDefinition& OutDefinition) const
+bool UHarmoniaAchievementSubsystem::GetAchievementDefinition(const FHarmoniaID& AchievementId, FHarmoniaAchievementData& OutDefinition) const
 {
 	if (AchievementDataTable.IsValid())
 	{
@@ -107,7 +107,7 @@ bool UHarmoniaAchievementSubsystem::GetAchievementDefinition(const FHarmoniaID& 
 		{
 			// Try to find by RowName first if ID matches RowName
 			FName RowName = FName(*AchievementId.ToString());
-			FHarmoniaAchievementDefinition* Row = DT->FindRow<FHarmoniaAchievementDefinition>(RowName, TEXT("GetAchievementDefinition"));
+			FHarmoniaAchievementData* Row = DT->FindRow<FHarmoniaAchievementData>(RowName, TEXT("GetAchievementDefinition"));
 			if (Row)
 			{
 				OutDefinition = *Row;

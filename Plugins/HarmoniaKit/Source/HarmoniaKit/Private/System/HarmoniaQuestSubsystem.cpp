@@ -44,7 +44,7 @@ void UHarmoniaQuestSubsystem::SetQuestDataTable(UDataTable* DataTable)
 	}
 }
 
-bool UHarmoniaQuestSubsystem::GetQuestData(FHarmoniaID QuestId, FQuestData& OutQuestData) const
+bool UHarmoniaQuestSubsystem::GetQuestData(FHarmoniaID QuestId, FHarmoniaQuestData& OutQuestData) const
 {
 	if (!QuestId.IsValid())
 	{
@@ -52,7 +52,7 @@ bool UHarmoniaQuestSubsystem::GetQuestData(FHarmoniaID QuestId, FQuestData& OutQ
 	}
 
 	// Try cache first
-	if (const FQuestData* CachedData = QuestDataCache.Find(QuestId))
+	if (const FHarmoniaQuestData* CachedData = QuestDataCache.Find(QuestId))
 	{
 		OutQuestData = *CachedData;
 		return true;
@@ -61,7 +61,7 @@ bool UHarmoniaQuestSubsystem::GetQuestData(FHarmoniaID QuestId, FQuestData& OutQ
 	// Try data table
 	if (QuestDataTable)
 	{
-		FQuestData* QuestData = QuestDataTable->FindRow<FQuestData>(QuestId.Id, TEXT("GetQuestData"));
+		FHarmoniaQuestData* QuestData = QuestDataTable->FindRow<FHarmoniaQuestData>(QuestId.Id, TEXT("GetQuestData"));
 		if (QuestData)
 		{
 			OutQuestData = *QuestData;
@@ -72,9 +72,9 @@ bool UHarmoniaQuestSubsystem::GetQuestData(FHarmoniaID QuestId, FQuestData& OutQ
 	return false;
 }
 
-TArray<FQuestData> UHarmoniaQuestSubsystem::GetQuestsByType(EQuestType QuestType) const
+TArray<FHarmoniaQuestData> UHarmoniaQuestSubsystem::GetQuestsByType(EQuestType QuestType) const
 {
-	TArray<FQuestData> Result;
+	TArray<FHarmoniaQuestData> Result;
 
 	for (const auto& Pair : QuestDataCache)
 	{
@@ -87,9 +87,9 @@ TArray<FQuestData> UHarmoniaQuestSubsystem::GetQuestsByType(EQuestType QuestType
 	return Result;
 }
 
-TArray<FQuestData> UHarmoniaQuestSubsystem::GetQuestsByCategory(FGameplayTag CategoryTag) const
+TArray<FHarmoniaQuestData> UHarmoniaQuestSubsystem::GetQuestsByCategory(FGameplayTag CategoryTag) const
 {
-	TArray<FQuestData> Result;
+	TArray<FHarmoniaQuestData> Result;
 
 	if (!CategoryTag.IsValid())
 	{
@@ -107,9 +107,9 @@ TArray<FQuestData> UHarmoniaQuestSubsystem::GetQuestsByCategory(FGameplayTag Cat
 	return Result;
 }
 
-TArray<FQuestData> UHarmoniaQuestSubsystem::GetAllQuests() const
+TArray<FHarmoniaQuestData> UHarmoniaQuestSubsystem::GetAllQuests() const
 {
-	TArray<FQuestData> Result;
+	TArray<FHarmoniaQuestData> Result;
 	QuestDataCache.GenerateValueArray(Result);
 	return Result;
 }
@@ -132,7 +132,7 @@ bool UHarmoniaQuestSubsystem::GetPrerequisiteQuests(FHarmoniaID QuestId, TArray<
 {
 	OutPrerequisites.Empty();
 
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
 		return false;
@@ -155,7 +155,7 @@ TArray<FHarmoniaID> UHarmoniaQuestSubsystem::GetUnlockedQuests(FHarmoniaID Quest
 {
 	TArray<FHarmoniaID> Result;
 
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
 		return Result;
@@ -279,9 +279,9 @@ int32 UHarmoniaQuestSubsystem::GetQuestCountByType(EQuestType QuestType) const
 	return Count;
 }
 
-TArray<FQuestData> UHarmoniaQuestSubsystem::GetRecommendedQuestsForLevel(int32 PlayerLevel, int32 LevelRange) const
+TArray<FHarmoniaQuestData> UHarmoniaQuestSubsystem::GetRecommendedQuestsForLevel(int32 PlayerLevel, int32 LevelRange) const
 {
-	TArray<FQuestData> Result;
+	TArray<FHarmoniaQuestData> Result;
 
 	int32 MinLevel = FMath::Max(1, PlayerLevel - LevelRange);
 	int32 MaxLevel = PlayerLevel + LevelRange;
@@ -301,9 +301,9 @@ TArray<FQuestData> UHarmoniaQuestSubsystem::GetRecommendedQuestsForLevel(int32 P
 //~ Quest Search and Filtering
 //~==============================================
 
-TArray<FQuestData> UHarmoniaQuestSubsystem::SearchQuestsByName(const FString& SearchText) const
+TArray<FHarmoniaQuestData> UHarmoniaQuestSubsystem::SearchQuestsByName(const FString& SearchText) const
 {
-	TArray<FQuestData> Result;
+	TArray<FHarmoniaQuestData> Result;
 
 	if (SearchText.IsEmpty())
 	{
@@ -324,9 +324,9 @@ TArray<FQuestData> UHarmoniaQuestSubsystem::SearchQuestsByName(const FString& Se
 	return Result;
 }
 
-TArray<FQuestData> UHarmoniaQuestSubsystem::FindQuestsWithObjectiveType(EQuestObjectiveType ObjectiveType) const
+TArray<FHarmoniaQuestData> UHarmoniaQuestSubsystem::FindQuestsWithObjectiveType(EQuestObjectiveType ObjectiveType) const
 {
-	TArray<FQuestData> Result;
+	TArray<FHarmoniaQuestData> Result;
 
 	for (const auto& Pair : QuestDataCache)
 	{
@@ -343,9 +343,9 @@ TArray<FQuestData> UHarmoniaQuestSubsystem::FindQuestsWithObjectiveType(EQuestOb
 	return Result;
 }
 
-TArray<FQuestData> UHarmoniaQuestSubsystem::FindQuestsRewardingItem(FHarmoniaID ItemId) const
+TArray<FHarmoniaQuestData> UHarmoniaQuestSubsystem::FindQuestsRewardingItem(FHarmoniaID ItemId) const
 {
-	TArray<FQuestData> Result;
+	TArray<FHarmoniaQuestData> Result;
 
 	if (!ItemId.IsValid())
 	{
@@ -378,9 +378,9 @@ TArray<FQuestData> UHarmoniaQuestSubsystem::FindQuestsRewardingItem(FHarmoniaID 
 	return Result;
 }
 
-TArray<FQuestData> UHarmoniaQuestSubsystem::FindQuestsRequiringItem(FHarmoniaID ItemId) const
+TArray<FHarmoniaQuestData> UHarmoniaQuestSubsystem::FindQuestsRequiringItem(FHarmoniaID ItemId) const
 {
-	TArray<FQuestData> Result;
+	TArray<FHarmoniaQuestData> Result;
 
 	if (!ItemId.IsValid())
 	{
@@ -430,7 +430,7 @@ bool UHarmoniaQuestSubsystem::ValidateAllQuests(TArray<FString>& OutErrors) cons
 	for (const auto& Pair : QuestDataCache)
 	{
 		const FHarmoniaID& QuestId = Pair.Key;
-		const FQuestData& QuestData = Pair.Value;
+		const FHarmoniaQuestData& QuestData = Pair.Value;
 
 		// Check for circular dependencies
 		if (!ValidateQuestChain(QuestId))
@@ -493,7 +493,7 @@ void UHarmoniaQuestSubsystem::PrintQuestDependencyGraph() const
 	for (const auto& Pair : QuestDataCache)
 	{
 		const FHarmoniaID& QuestId = Pair.Key;
-		const FQuestData& QuestData = Pair.Value;
+		const FHarmoniaQuestData& QuestData = Pair.Value;
 
 		UE_LOG(LogTemp, Log, TEXT("Quest: %s (%s)"), *QuestData.QuestName.ToString(), *QuestId.ToString());
 
@@ -504,7 +504,7 @@ void UHarmoniaQuestSubsystem::PrintQuestDependencyGraph() const
 			UE_LOG(LogTemp, Log, TEXT("  Prerequisites:"));
 			for (const FHarmoniaID& PrereqId : Prerequisites)
 			{
-				FQuestData PrereqData;
+				FHarmoniaQuestData PrereqData;
 				if (GetQuestData(PrereqId, PrereqData))
 				{
 					UE_LOG(LogTemp, Log, TEXT("    - %s (%s)"), *PrereqData.QuestName.ToString(), *PrereqId.ToString());
@@ -518,7 +518,7 @@ void UHarmoniaQuestSubsystem::PrintQuestDependencyGraph() const
 			UE_LOG(LogTemp, Log, TEXT("  Next Quests:"));
 			for (const FHarmoniaID& NextQuestId : QuestData.NextQuests)
 			{
-				FQuestData NextQuestData;
+				FHarmoniaQuestData NextQuestData;
 				if (GetQuestData(NextQuestId, NextQuestData))
 				{
 					UE_LOG(LogTemp, Log, TEXT("    - %s (%s)"), *NextQuestData.QuestName.ToString(), *NextQuestId.ToString());
@@ -588,11 +588,11 @@ void UHarmoniaQuestSubsystem::CacheQuestData()
 	}
 
 	// Get all quest rows
-	TArray<FQuestData*> AllQuests;
-	QuestDataTable->GetAllRows<FQuestData>(TEXT("CacheQuestData"), AllQuests);
+	TArray<FHarmoniaQuestData*> AllQuests;
+	QuestDataTable->GetAllRows<FHarmoniaQuestData>(TEXT("CacheQuestData"), AllQuests);
 
 	// Cache each quest
-	for (FQuestData* QuestData : AllQuests)
+	for (FHarmoniaQuestData* QuestData : AllQuests)
 	{
 		if (QuestData && QuestData->QuestId.IsValid())
 		{
@@ -651,7 +651,7 @@ FDateTime UHarmoniaQuestSubsystem::GetNextWeeklyResetTime() const
 
 void UHarmoniaQuestSubsystem::GetQuestChainRecursive(FHarmoniaID QuestId, TArray<FHarmoniaID>& OutQuestChain, TSet<FHarmoniaID>& VisitedQuests) const
 {
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
 		return;
@@ -693,7 +693,7 @@ bool UHarmoniaQuestSubsystem::ValidateQuestChainRecursive(FHarmoniaID QuestId, T
 	VisitedQuests.Add(QuestId);
 
 	// Get quest data
-	FQuestData QuestData;
+	FHarmoniaQuestData QuestData;
 	if (!GetQuestData(QuestId, QuestData))
 	{
 		RecursionStack.Remove(QuestId);

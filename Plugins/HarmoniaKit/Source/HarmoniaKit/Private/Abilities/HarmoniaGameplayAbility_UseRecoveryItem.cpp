@@ -32,7 +32,7 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::ActivateAbility(const FGameplayAb
 		return;
 	}
 
-	// EventData에서 아이템 타입 가져오기 (옵션)
+	// EventData?�서 ?�이???�??가?�오�?(?�션)
 	if (TriggerEventData && TriggerEventData->EventMagnitude > 0)
 	{
 		ItemType = static_cast<EHarmoniaRecoveryItemType>(TriggerEventData->EventMagnitude);
@@ -43,14 +43,14 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::ActivateAbility(const FGameplayAb
 
 void UHarmoniaGameplayAbility_UseRecoveryItem::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	// 타이머 정리
+	// ?�?�머 ?�리
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(UsageTimerHandle);
 		World->GetTimerManager().ClearTimer(MovementCheckTimerHandle);
 	}
 
-	// VFX 정리
+	// VFX ?�리
 	if (VFXComponent && VFXComponent->IsActive())
 	{
 		VFXComponent->DeactivateImmediate();
@@ -72,14 +72,14 @@ bool UHarmoniaGameplayAbility_UseRecoveryItem::CanActivateAbility(const FGamepla
 		return false;
 	}
 
-	// Rechargeable Item Component 확인
+	// Rechargeable Item Component ?�인
 	UHarmoniaRechargeableItemComponent* ItemComponent = GetRechargeableItemComponent();
 	if (!ItemComponent)
 	{
 		return false;
 	}
 
-	// 아이템 사용 가능 여부 확인
+	// ?�이???�용 가???��? ?�인
 	FText Reason;
 	return ItemComponent->CanUseRecoveryItem(ItemType, Reason);
 }
@@ -93,8 +93,7 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::StartUsingRecoveryItem()
 		return;
 	}
 
-	// 설정 가져오기
-	if (bUseConfigOverride)
+	// ?�정 가?�오�?	if (bUseConfigOverride)
 	{
 		CurrentConfig = ConfigOverride;
 	}
@@ -107,16 +106,16 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::StartUsingRecoveryItem()
 		}
 	}
 
-	// 사용 시작 위치 저장 (이동 감지용)
+	// ?�용 ?�작 ?�치 ?�??(?�동 감�???
 	if (ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
 	{
 		UsageStartLocation = Character->GetActorLocation();
 	}
 
-	// VFX 재생
+	// VFX ?�생
 	PlayUsageEffects();
 
-	// 애니메이션 재생
+	// ?�니메이???�생
 	if (UsageAnimation)
 	{
 		ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
@@ -126,7 +125,7 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::StartUsingRecoveryItem()
 		}
 	}
 
-	// 시전 시간이 있으면 타이머 설정
+	// ?�전 ?�간???�으�??�?�머 ?�정
 	if (CurrentConfig.UsageDuration > 0.0f)
 	{
 		if (UWorld* World = GetWorld())
@@ -140,7 +139,7 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::StartUsingRecoveryItem()
 			);
 		}
 
-		// 이동/피격 감지 설정
+		// ?�동/?�격 감�? ?�정
 		if (CurrentConfig.bCancelOnMovement)
 		{
 			// Set timer to check movement periodically
@@ -167,7 +166,7 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::StartUsingRecoveryItem()
 	}
 	else
 	{
-		// 즉시 사용
+		// 즉시 ?�용
 		CompleteUsingRecoveryItem();
 	}
 }
@@ -181,7 +180,7 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::CompleteUsingRecoveryItem()
 		return;
 	}
 
-	// 아이템 사용 (충전 횟수 소모)
+	// ?�이???�용 (충전 ?�수 ?�모)
 	bool bUsed = false;
 	if (ItemType == EHarmoniaRecoveryItemType::ResonanceShard)
 	{
@@ -198,7 +197,7 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::CompleteUsingRecoveryItem()
 		return;
 	}
 
-	// 회복 효과 적용
+	// ?�복 ?�과 ?�용
 	ApplyRecoveryEffects();
 
 	// Ability 종료
@@ -209,7 +208,7 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::CancelUsingRecoveryItem(const FTe
 {
 	UE_LOG(LogTemp, Warning, TEXT("Recovery item usage cancelled: %s"), *Reason.ToString());
 
-	// 실패 사운드 재생
+	// ?�패 ?�운???�생
 	if (CurrentConfig.FailureSound)
 	{
 		if (AActor* Avatar = GetAvatarActorFromActorInfo())
@@ -230,7 +229,7 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::ApplyRecoveryEffects()
 		{
 			float HealthAmount = CurrentConfig.HealthRecoveryAmount;
 
-			// 퍼센트 회복이면 최대 체력 계산
+			// ?�센???�복?�면 최�? 체력 계산
 			if (CurrentConfig.HealthRecoveryPercent > 0.0f)
 			{
 				if (ULyraHealthComponent* HealthComp = GetAvatarActorFromActorInfo()->FindComponentByClass<ULyraHealthComponent>())
@@ -262,7 +261,7 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::ApplyRecoveryEffects()
 		break;
 	}
 
-	// 추가 Gameplay Effects 적용
+	// 추�? Gameplay Effects ?�용
 	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
 	{
 		for (TSubclassOf<UGameplayEffect> GEClass : CurrentConfig.GameplayEffects)
@@ -281,7 +280,7 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::ApplyRecoveryEffects()
 		}
 	}
 
-	// 공명 파편 주파수별 추가 효과
+	// 공명 ?�편 주파?�별 추�? ?�과
 	if (ItemType == EHarmoniaRecoveryItemType::ResonanceShard)
 	{
 		UHarmoniaRechargeableItemComponent* ItemComponent = GetRechargeableItemComponent();
@@ -337,19 +336,19 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::ApplyInstantRecovery(float Health
 
 void UHarmoniaGameplayAbility_UseRecoveryItem::ApplyOverTimeRecovery(float HealthPerSecond, float Duration)
 {
-	// HoT (Heal over Time) 효과는 Gameplay Effect로 구현하는 것이 좋음
+	// HoT (Heal over Time) ?�과??Gameplay Effect�?구현?�는 것이 좋음
 	UE_LOG(LogTemp, Log, TEXT("Over time recovery: %f HP/s for %f seconds"), HealthPerSecond, Duration);
 }
 
 void UHarmoniaGameplayAbility_UseRecoveryItem::ApplyTimeReversalRecovery()
 {
-	// 시간 역행 회복 (Frozen Time Snowflake 전용)
+	// ?�간 ??�� ?�복 (Frozen Time Snowflake ?�용)
 	UE_LOG(LogTemp, Log, TEXT("Time reversal recovery applied"));
 }
 
 void UHarmoniaGameplayAbility_UseRecoveryItem::DeployRecoveryArea()
 {
-	// 설치형 범위 회복 (Life Luminescence 전용)
+	// ?�치??범위 ?�복 (Life Luminescence ?�용)
 	if (AActor* Avatar = GetAvatarActorFromActorInfo())
 	{
 		FVector SpawnLocation = Avatar->GetActorLocation();
@@ -365,7 +364,7 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::PlayUsageEffects()
 		return;
 	}
 
-	// VFX 재생
+	// VFX ?�생
 	if (CurrentConfig.UsageVFX)
 	{
 		VFXComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
@@ -379,7 +378,7 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::PlayUsageEffects()
 		);
 	}
 
-	// 공명 파편 주파수별 VFX
+	// 공명 ?�편 주파?�별 VFX
 	if (ItemType == EHarmoniaRecoveryItemType::ResonanceShard)
 	{
 		UHarmoniaRechargeableItemComponent* ItemComponent = GetRechargeableItemComponent();
@@ -401,18 +400,18 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::PlayUsageEffects()
 					);
 				}
 
-				// SFX 재생
+				// SFX ?�생
 				if (ShardVariant.UsageSound)
 				{
 					UGameplayStatics::PlaySoundAtLocation(this, ShardVariant.UsageSound, Avatar->GetActorLocation());
 				}
 
-				return; // 파편의 VFX/SFX를 사용했으므로 기본 사운드는 재생하지 않음
+				return; // ?�편??VFX/SFX�??�용?�으므�?기본 ?�운?�는 ?�생?��? ?�음
 			}
 		}
 	}
 
-	// SFX 재생
+	// SFX ?�생
 	if (CurrentConfig.UsageSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, CurrentConfig.UsageSound, Avatar->GetActorLocation());
@@ -426,7 +425,7 @@ void UHarmoniaGameplayAbility_UseRecoveryItem::OnOwnerMoved()
 		return;
 	}
 
-	// 이동 거리 확인
+	// ?�동 거리 ?�인
 	if (ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
 	{
 		float Distance = FVector::Dist(Character->GetActorLocation(), UsageStartLocation);

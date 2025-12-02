@@ -11,7 +11,7 @@
 class UAbilitySystemComponent;
 class UHarmoniaAttributeSet;
 class UDataTable;
-struct FEquipmentData;
+struct FHarmoniaEquipmentData;
 
 /**
  * Delegate for equipment change events
@@ -100,7 +100,7 @@ public:
 	 * Get equipment data from DataTable
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Equipment")
-	bool GetEquipmentData(const FHarmoniaID& EquipmentId, FEquipmentData& OutData) const;
+	bool GetEquipmentData(const FHarmoniaID& EquipmentId, FHarmoniaEquipmentData& OutData) const;
 
 	/**
 	 * Get total stat value from all equipped items
@@ -223,12 +223,12 @@ protected:
 	 * @param EquipmentData Equipment data containing stat modifiers
 	 * @param OutEquippedItem Output equipped item to store active effect handles
 	 */
-	void ApplyStatModifiers(const FEquipmentData& EquipmentData, FEquippedItem& OutEquippedItem);
+	void ApplyStatModifiers(const FHarmoniaEquipmentData& EquipmentData, FEquippedItem& OutEquippedItem);
 
 	/**
 	 * Apply gameplay effects (GrantedEffects)
 	 */
-	void ApplyGameplayEffects(const FEquipmentData& EquipmentData, FEquippedItem& OutEquippedItem);
+	void ApplyGameplayEffects(const FHarmoniaEquipmentData& EquipmentData, FEquippedItem& OutEquippedItem);
 
 	/**
 	 * Remove gameplay effects
@@ -238,7 +238,7 @@ protected:
 	/**
 	 * Apply visual mesh
 	 */
-	void ApplyVisualMesh(const FEquipmentData& EquipmentData);
+	void ApplyVisualMesh(const FHarmoniaEquipmentData& EquipmentData);
 
 	/**
 	 * Remove visual mesh

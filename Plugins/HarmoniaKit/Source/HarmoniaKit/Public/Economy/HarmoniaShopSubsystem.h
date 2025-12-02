@@ -52,7 +52,7 @@ public:
 
 	/** Register a shop */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Shop")
-	void RegisterShop(const FShopDefinition& Shop);
+	void RegisterShop(const FHarmoniaShopData& Shop);
 
 	/** Unregister a shop */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Shop")
@@ -60,15 +60,15 @@ public:
 
 	/** Get shop by ID */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Shop")
-	bool GetShop(FName ShopID, FShopDefinition& OutShop) const;
+	bool GetShop(FName ShopID, FHarmoniaShopData& OutShop) const;
 
 	/** Get all shops */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Shop")
-	TArray<FShopDefinition> GetAllShops() const;
+	TArray<FHarmoniaShopData> GetAllShops() const;
 
 	/** Get shops by type */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Shop")
-	TArray<FShopDefinition> GetShopsByType(EHarmoniaShopType Type) const;
+	TArray<FHarmoniaShopData> GetShopsByType(EHarmoniaShopType Type) const;
 
 	/** Open a shop */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Shop")
@@ -84,11 +84,11 @@ public:
 
 	/** Get items in a shop */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Shop")
-	TArray<FShopItemData> GetShopItems(FName ShopID) const;
+	TArray<FHarmoniaShopItemData> GetShopItems(FName ShopID) const;
 
 	/** Get available items (that player can buy) */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Shop")
-	TArray<FShopItemData> GetAvailableItems(APlayerController* Player, FName ShopID) const;
+	TArray<FHarmoniaShopItemData> GetAvailableItems(APlayerController* Player, FName ShopID) const;
 
 	/** Check item availability */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Shop")
@@ -209,7 +209,7 @@ protected:
 private:
 	/** Registered shops */
 	UPROPERTY()
-	TMap<FName, FShopDefinition> Shops;
+	TMap<FName, FHarmoniaShopData> Shops;
 
 	/** Active trades */
 	TMap<FGuid, FTradeOffer> ActiveTrades;

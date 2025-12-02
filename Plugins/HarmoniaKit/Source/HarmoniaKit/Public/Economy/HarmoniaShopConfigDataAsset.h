@@ -22,7 +22,7 @@ public:
 
 	/** Default shops to register on startup */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shops")
-	TArray<FShopDefinition> DefaultShops;
+	TArray<FHarmoniaShopData> DefaultShops;
 
 	// ============================================================================
 	// Pricing Settings

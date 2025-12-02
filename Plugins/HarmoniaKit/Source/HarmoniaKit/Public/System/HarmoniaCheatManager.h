@@ -9,15 +9,15 @@
 /**
  * HarmoniaCheatManager
  * 
- * 개발을 편하게 하기 위한 치트 매니저입니다.
- * 콘솔 명령어를 통해 다양한 개발 기능을 제공합니다.
+ * 개발???�하�??�기 ?�한 치트 매니?�?�니??
+ * 콘솔 명령?��? ?�해 ?�양??개발 기능???�공?�니??
  * 
- * ⚠️ 주의: Exec 함수는 Shipping 빌드에서 자동으로 비활성화됩니다.
- *          Unreal Engine의 CheatManager는 Development 빌드와 Editor에서만 작동합니다.
+ * ?�️ 주의: Exec ?�수??Shipping 빌드?�서 ?�동?�로 비활?�화?�니??
+ *          Unreal Engine??CheatManager??Development 빌드?� Editor?�서�??�동?�니??
  * 
- * 사용법:
- * - 게임 실행 후 ~ 키를 눌러 콘솔을 열고 명령어를 입력합니다.
- * - 예: Harmonia.GiveGold 10000
+ * ?�용�?
+ * - 게임 ?�행 ??~ ?��? ?�러 콘솔???�고 명령?��? ?�력?�니??
+ * - ?? Harmonia.GiveGold 10000
  */
 UCLASS(Blueprintable, BlueprintType)
 class HARMONIAKIT_API UHarmoniaCheatManager : public UCheatManager
@@ -30,49 +30,49 @@ public:
 	// ==================== Health, Mana, Stamina ====================
 	
 	/**
-	 * 플레이어의 체력을 설정합니다.
-	 * @param NewHealth 새로운 체력 값
+	 * ?�레?�어??체력???�정?�니??
+	 * @param NewHealth ?�로??체력 �?
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Stats")
 	void HarmoniaSetHealth(float NewHealth);
 
 	/**
-	 * 플레이어의 최대 체력을 설정합니다.
-	 * @param NewMaxHealth 새로운 최대 체력 값
+	 * ?�레?�어??최�? 체력???�정?�니??
+	 * @param NewMaxHealth ?�로??최�? 체력 �?
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Stats")
 	void HarmoniaSetMaxHealth(float NewMaxHealth);
 
 	/**
-	 * 플레이어의 체력을 완전히 회복합니다.
+	 * ?�레?�어??체력???�전???�복?�니??
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Stats")
 	void HarmoniaHealFull();
 
 	/**
-	 * 플레이어의 마나를 설정합니다.
-	 * @param NewMana 새로운 마나 값
+	 * ?�레?�어??마나�??�정?�니??
+	 * @param NewMana ?�로??마나 �?
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Stats")
 	void HarmoniaSetMana(float NewMana);
 
 	/**
-	 * 플레이어의 최대 마나를 설정합니다.
-	 * @param NewMaxMana 새로운 최대 마나 값
+	 * ?�레?�어??최�? 마나�??�정?�니??
+	 * @param NewMaxMana ?�로??최�? 마나 �?
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Stats")
 	void HarmoniaSetMaxMana(float NewMaxMana);
 
 	/**
-	 * 플레이어의 스태미나를 설정합니다.
-	 * @param NewStamina 새로운 스태미나 값
+	 * ?�레?�어???�태미나�??�정?�니??
+	 * @param NewStamina ?�로???�태미나 �?
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Stats")
 	void HarmoniaSetStamina(float NewStamina);
 
 	/**
-	 * 플레이어의 최대 스태미나를 설정합니다.
-	 * @param NewMaxStamina 새로운 최대 스태미나 값
+	 * ?�레?�어??최�? ?�태미나�??�정?�니??
+	 * @param NewMaxStamina ?�로??최�? ?�태미나 �?
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Stats")
 	void HarmoniaSetMaxStamina(float NewMaxStamina);
@@ -80,23 +80,23 @@ public:
 	// ==================== Currency ====================
 
 	/**
-	 * 플레이어에게 골드를 지급합니다.
-	 * @param Amount 지급할 골드 양 (음수 가능)
+	 * ?�레?�어?�게 골드�?지급합?�다.
+	 * @param Amount 지급할 골드 ??(?�수 가??
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Currency")
 	void HarmoniaGiveGold(int32 Amount);
 
 	/**
-	 * 플레이어의 골드를 설정합니다.
-	 * @param Amount 설정할 골드 양
+	 * ?�레?�어??골드�??�정?�니??
+	 * @param Amount ?�정??골드 ??
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Currency")
 	void HarmoniaSetGold(int32 Amount);
 
 	/**
-	 * 플레이어에게 특정 통화를 지급합니다.
-	 * @param CurrencyName 통화 이름
-	 * @param Amount 지급할 양
+	 * ?�레?�어?�게 ?�정 ?�화�?지급합?�다.
+	 * @param CurrencyName ?�화 ?�름
+	 * @param Amount 지급할 ??
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Currency")
 	void HarmoniaGiveCurrency(const FString& CurrencyName, int32 Amount);
@@ -104,21 +104,21 @@ public:
 	// ==================== Items ====================
 
 	/**
-	 * 플레이어에게 아이템을 지급합니다.
-	 * @param ItemName 아이템 이름 또는 ID
-	 * @param Amount 지급할 수량
+	 * ?�레?�어?�게 ?�이?�을 지급합?�다.
+	 * @param ItemName ?�이???�름 ?�는 ID
+	 * @param Amount 지급할 ?�량
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Items")
 	void HarmoniaGiveItem(const FString& ItemName, int32 Amount = 1);
 
 	/**
-	 * 플레이어에게 모든 아이템을 지급합니다.
+	 * ?�레?�어?�게 모든 ?�이?�을 지급합?�다.
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Items")
 	void HarmoniaGiveAllItems();
 
 	/**
-	 * 플레이어의 인벤토리를 클리어합니다.
+	 * ?�레?�어???�벤?�리�??�리?�합?�다.
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Items")
 	void HarmoniaClearInventory();
@@ -126,21 +126,21 @@ public:
 	// ==================== Level & Experience ====================
 
 	/**
-	 * 플레이어의 레벨을 설정합니다.
-	 * @param NewLevel 새로운 레벨
+	 * ?�레?�어???�벨???�정?�니??
+	 * @param NewLevel ?�로???�벨
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Level")
 	void HarmoniaSetLevel(int32 NewLevel);
 
 	/**
-	 * 플레이어에게 경험치를 지급합니다.
-	 * @param Amount 지급할 경험치
+	 * ?�레?�어?�게 경험치�? 지급합?�다.
+	 * @param Amount 지급할 경험�?
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Level")
 	void HarmoniaGiveXP(int32 Amount);
 
 	/**
-	 * 플레이어를 즉시 레벨업 시킵니다.
+	 * ?�레?�어�?즉시 ?�벨???�킵?�다.
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Level")
 	void HarmoniaLevelUp();
@@ -148,26 +148,26 @@ public:
 	// ==================== Combat ====================
 
 	/**
-	 * 무적 모드를 토글합니다.
+	 * 무적 모드�??��??�니??
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Combat")
 	void HarmoniaToggleInvincible();
 
 	/**
-	 * 신 모드를 토글합니다. (무적 + 무한 자원)
+	 * ??모드�??��??�니?? (무적 + 무한 ?�원)
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Combat")
 	void HarmoniaToggleGodMode();
 
 	/**
-	 * 원샷 원킬 모드를 토글합니다.
+	 * ?�샷 ?�킬 모드�??��??�니??
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Combat")
 	void HarmoniaToggleOneHitKill();
 
 	/**
-	 * 플레이어의 공격력을 배수로 설정합니다.
-	 * @param Multiplier 데미지 배수 (1.0 = 기본, 2.0 = 2배)
+	 * ?�레?�어??공격?�을 배수�??�정?�니??
+	 * @param Multiplier ?��?지 배수 (1.0 = 기본, 2.0 = 2�?
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Combat")
 	void HarmoniaSetDamageMultiplier(float Multiplier);
@@ -175,33 +175,33 @@ public:
 	// ==================== Movement ====================
 
 	/**
-	 * 플레이어의 이동 속도를 배수로 설정합니다.
-	 * @param Multiplier 속도 배수 (1.0 = 기본, 2.0 = 2배)
+	 * ?�레?�어???�동 ?�도�?배수�??�정?�니??
+	 * @param Multiplier ?�도 배수 (1.0 = 기본, 2.0 = 2�?
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Movement")
 	void HarmoniaSetSpeed(float Multiplier);
 
 	/**
-	 * 노클립 모드를 토글합니다. (벽 통과)
+	 * ?�클�?모드�??��??�니?? (�??�과)
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Movement")
 	void HarmoniaToggleNoClip();
 
 	/**
-	 * 플라이 모드를 토글합니다.
+	 * ?�라??모드�??��??�니??
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Movement")
 	void HarmoniaToggleFly();
 
 	/**
-	 * 마커 위치로 텔레포트합니다.
-	 * @param MarkerName 마커 이름
+	 * 마커 ?�치�??�레?�트?�니??
+	 * @param MarkerName 마커 ?�름
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Movement")
 	void HarmoniaTeleportToMarker(const FString& MarkerName);
 
 	/**
-	 * 좌표로 텔레포트합니다.
+	 * 좌표�??�레?�트?�니??
 	 * @param X X 좌표
 	 * @param Y Y 좌표
 	 * @param Z Z 좌표
@@ -212,23 +212,23 @@ public:
 	// ==================== Time & Weather ====================
 
 	/**
-	 * 게임 내 시간을 설정합니다.
-	 * @param Hour 시간 (0-23)
-	 * @param Minute 분 (0-59)
+	 * 게임 ???�간???�정?�니??
+	 * @param Hour ?�간 (0-23)
+	 * @param Minute �?(0-59)
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|World")
 	void HarmoniaSetTime(int32 Hour, int32 Minute);
 
 	/**
-	 * 시간 속도를 설정합니다.
-	 * @param Multiplier 시간 배수 (1.0 = 기본, 0 = 정지)
+	 * ?�간 ?�도�??�정?�니??
+	 * @param Multiplier ?�간 배수 (1.0 = 기본, 0 = ?��?)
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|World")
 	void HarmoniaSetTimeScale(float Multiplier);
 
 	/**
-	 * 날씨를 설정합니다.
-	 * @param WeatherType 날씨 타입 (Clear, Rain, Snow, Storm 등)
+	 * ?�씨�??�정?�니??
+	 * @param WeatherType ?�씨 ?�??(Clear, Rain, Snow, Storm ??
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|World")
 	void HarmoniaSetWeather(const FString& WeatherType);
@@ -236,21 +236,21 @@ public:
 	// ==================== Quest & Achievement ====================
 
 	/**
-	 * 퀘스트를 완료합니다.
-	 * @param QuestName 퀘스트 이름 또는 ID
+	 * ?�스?��? ?�료?�니??
+	 * @param QuestName ?�스???�름 ?�는 ID
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Quest")
 	void HarmoniaCompleteQuest(const FString& QuestName);
 
 	/**
-	 * 모든 퀘스트를 완료합니다.
+	 * 모든 ?�스?��? ?�료?�니??
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Quest")
 	void HarmoniaCompleteAllQuests();
 
 	/**
-	 * 업적을 해제합니다.
-	 * @param AchievementName 업적 이름 또는 ID
+	 * ?�적???�제?�니??
+	 * @param AchievementName ?�적 ?�름 ?�는 ID
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Achievement")
 	void HarmoniaUnlockAchievement(const FString& AchievementName);
@@ -258,39 +258,39 @@ public:
 	// ==================== Debug ====================
 
 	/**
-	 * 디버그 정보를 화면에 표시합니다.
+	 * ?�버�??�보�??�면???�시?�니??
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Debug")
 	void HarmoniaToggleDebugInfo();
 
 	/**
-	 * 모든 적을 제거합니다.
+	 * 모든 ?�을 ?�거?�니??
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Debug")
 	void HarmoniaKillAllEnemies();
 
 	/**
-	 * 주변에 적을 스폰합니다.
-	 * @param EnemyName 적 이름 또는 ID
-	 * @param Count 스폰할 수
+	 * 주�????�을 ?�폰?�니??
+	 * @param EnemyName ???�름 ?�는 ID
+	 * @param Count ?�폰????
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Debug")
 	void HarmoniaSpawnEnemy(const FString& EnemyName, int32 Count = 1);
 
 	/**
-	 * 모든 치트를 리셋합니다.
+	 * 모든 치트�?리셋?�니??
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Debug")
 	void HarmoniaResetCheats();
 
 	/**
-	 * 사용 가능한 치트 명령어 목록을 출력합니다.
+	 * ?�용 가?�한 치트 명령??목록??출력?�니??
 	 */
 	UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Debug")
 	void HarmoniaHelp();
 
 protected:
-	// 치트 상태 플래그
+	// 치트 ?�태 ?�래�?
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Cheat")
 	bool bInvincible;
 
@@ -315,7 +315,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Cheat")
 	float TimeScale;
 
-	// 헬퍼 함수들
+	// ?�퍼 ?�수??
 	class ACharacter* GetPlayerCharacter() const;
 	class UAbilitySystemComponent* GetPlayerAbilitySystemComponent() const;
 	void LogCheat(const FString& Message) const;

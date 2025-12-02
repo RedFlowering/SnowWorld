@@ -49,7 +49,7 @@ public:
 
 	/** Register an affix */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|RandomItem")
-	void RegisterAffix(const FAffixDefinition& Affix);
+	void RegisterAffix(const FHarmoniaAffixData& Affix);
 
 	/** Unregister an affix */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|RandomItem")
@@ -57,15 +57,15 @@ public:
 
 	/** Get affix definition */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|RandomItem")
-	bool GetAffix(FName AffixID, FAffixDefinition& OutAffix) const;
+	bool GetAffix(FName AffixID, FHarmoniaAffixData& OutAffix) const;
 
 	/** Get all affixes */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|RandomItem")
-	TArray<FAffixDefinition> GetAllAffixes() const;
+	TArray<FHarmoniaAffixData> GetAllAffixes() const;
 
 	/** Get affixes by type */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|RandomItem")
-	TArray<FAffixDefinition> GetAffixesByType(EAffixType Type) const;
+	TArray<FHarmoniaAffixData> GetAffixesByType(EAffixType Type) const;
 
 	// ============================================================================
 	// Item Generation
@@ -140,14 +140,14 @@ public:
 
 protected:
 	/** Roll affix modifiers */
-	FAppliedAffix RollAffix(const FAffixDefinition& Affix) const;
+	FAppliedAffix RollAffix(const FHarmoniaAffixData& Affix) const;
 
 	/** Get valid affixes for slot and level */
-	TArray<FAffixDefinition> GetValidAffixes(EAffixType Type, EAffixType Slot, 
+	TArray<FHarmoniaAffixData> GetValidAffixes(EAffixType Type, EAffixType Slot, 
 		int32 ItemLevel, const FGameplayTagContainer& ExcludedTags) const;
 
 	/** Select weighted random affix */
-	const FAffixDefinition* SelectWeightedAffix(const TArray<FAffixDefinition>& ValidAffixes) const;
+	const FHarmoniaAffixData* SelectWeightedAffix(const TArray<FHarmoniaAffixData>& ValidAffixes) const;
 
 	/** Update item's combined modifiers */
 	void UpdateCombinedModifiers(FGeneratedItemData& Item) const;
@@ -155,7 +155,7 @@ protected:
 private:
 	/** Registered affixes */
 	UPROPERTY()
-	TMap<FName, FAffixDefinition> Affixes;
+	TMap<FName, FHarmoniaAffixData> Affixes;
 
 	/** Config data asset */
 	UPROPERTY()

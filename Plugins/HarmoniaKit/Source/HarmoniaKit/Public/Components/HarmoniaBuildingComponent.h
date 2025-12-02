@@ -21,7 +21,7 @@ class HARMONIAKIT_API UHarmoniaBuildingComponent : public UActorComponent
 public:
 	UHarmoniaBuildingComponent();
 
-	// 모드 제어 (Client requests)
+	// 모드 ?�어 (Client requests)
 	UFUNCTION(BlueprintCallable, Category = "Building")
 	void RequestEnterBuildingMode();
 
@@ -34,7 +34,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Building")
 	void RequestSetSelectedPart(FName PartID);
 
-	// 현재 선택된 파트 정보
+	// ?�재 ?�택???�트 ?�보
 	UFUNCTION(BlueprintPure, Category = "Building")
 	FName GetSelectedPartID() const { return SelectedPartID; }
 
@@ -47,13 +47,13 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	// 입력 처리
+	// ?�력 처리
 	void SetupInput();
 	void HandlePlaceAction();
 	void HandleRotateAction();
 	void HandleCancelAction();
 
-	// 프리뷰 관련 함수
+	// ?�리�?관???�수
 	void SpawnPreviewActor();
 	void UpdatePreviewTransform();
 	void DestroyPreviewActor();
@@ -84,20 +84,20 @@ protected:
 	void PlaceCurrentPart();
 	bool ValidatePlacement(FVector& OutLocation, FRotator& OutRotation);
 
-	// 유틸 함수
-	FBuildingPartData* GetCurrentPartData() const;
+	// ?�틸 ?�수
+	FHarmoniaBuildingPartData* GetCurrentPartData() const;
 
-	// 자원 검사 (Server-only)
-	bool CheckAndConsumeResources(const FBuildingPartData& PartData);
+	// ?�원 검??(Server-only)
+	bool CheckAndConsumeResources(const FHarmoniaBuildingPartData& PartData);
 
 private:
-	// 상태
+	// ?�태
 	EBuildingMode CurrentMode = EBuildingMode::None;
 
 	UPROPERTY()
 	FName SelectedPartID;
 
-	// 외부 참조
+	// ?��? 참조
 	UPROPERTY()
 	TObjectPtr<APlayerController> CachedPC = nullptr;
 
@@ -110,7 +110,7 @@ private:
 	UPROPERTY()
 	TObjectPtr<UHarmoniaInventoryComponent> InventoryComponent = nullptr;
 
-	// 설정
+	// ?�정
 	UPROPERTY(EditDefaultsOnly, Category = "Building")
 	TSubclassOf<AHarmoniaBuildingPreviewActor> PreviewActorClass = nullptr;
 
@@ -120,7 +120,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Building|DataTable")
 	FName BuildingDataTableKey = FName(TEXT("BuildingParts"));
 
-	// 배치 검증 설정
+	// 배치 검�??�정
 	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
 	float MaxPlacementDistance = 500.0f;
 
@@ -133,26 +133,26 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
 	bool bUseGridSnapping = true;
 
-	// 스냅 포인트 검색 반경
+	// ?�냅 ?�인??검??반경
 	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
 	float SnapSearchRadius = 200.0f;
 
-	// 스냅 포인트 우선 사용 여부
+	// ?�냅 ?�인???�선 ?�용 ?��?
 	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
 	bool bPreferSnapPoints = true;
 
-	// 최대 허용 지형 경사 각도
+	// 최�? ?�용 지??경사 각도
 	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
 	float MaxAllowedSlope = 45.0f;
 
-	// 지형 경사 검사 활성화 여부
+	// 지??경사 검???�성???��?
 	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
 	bool bCheckTerrainSlope = true;
 
-	// 현재 회전 각도 (누적)
+	// ?�재 ?�전 각도 (?�적)
 	float CurrentRotationYaw = 0.0f;
 
-	// 캐시된 건축물 데이터 테이블
+	// 캐시??건축�??�이???�이�?
 	UPROPERTY()
 	TObjectPtr<UDataTable> CachedBuildingDataTable = nullptr;
 };

@@ -223,7 +223,7 @@ void UHarmoniaQuestWidget::ShowRewards(int32 Experience, int32 Gold, const TArra
 	if (ExperienceRewardText)
 	{
 		ExperienceRewardText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaQuest", "ExpReward", "경험치: {0}"),
+			NSLOCTEXT("HarmoniaQuest", "ExpReward", "경험�? {0}"),
 			FText::AsNumber(Experience)));
 	}
 
@@ -259,7 +259,7 @@ void UHarmoniaQuestWidget::ShowQuestAcceptedNotification(const FText& QuestName)
 	if (NotificationText)
 	{
 		NotificationText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaQuest", "QuestAccepted", "퀘스트 수락: {0}"),
+			NSLOCTEXT("HarmoniaQuest", "QuestAccepted", "?�스???�락: {0}"),
 			QuestName));
 		NotificationText->SetColorAndOpacity(FLinearColor::Yellow);
 	}
@@ -277,7 +277,7 @@ void UHarmoniaQuestWidget::ShowQuestCompletedNotification(const FText& QuestName
 	if (NotificationText)
 	{
 		NotificationText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaQuest", "QuestCompleted", "퀘스트 완료: {0}"),
+			NSLOCTEXT("HarmoniaQuest", "QuestCompleted", "?�스???�료: {0}"),
 			QuestName));
 		NotificationText->SetColorAndOpacity(FLinearColor::Green);
 	}
@@ -325,21 +325,21 @@ FText UHarmoniaQuestWidget::GetQuestTypeText(EQuestType Type) const
 	switch (Type)
 	{
 	case EQuestType::Main:
-		return NSLOCTEXT("HarmoniaQuest", "TypeMain", "메인 퀘스트");
+		return NSLOCTEXT("HarmoniaQuest", "TypeMain", "메인 ?�스??);
 	case EQuestType::Side:
-		return NSLOCTEXT("HarmoniaQuest", "TypeSide", "사이드 퀘스트");
+		return NSLOCTEXT("HarmoniaQuest", "TypeSide", "?�이???�스??);
 	case EQuestType::Daily:
-		return NSLOCTEXT("HarmoniaQuest", "TypeDaily", "일일 퀘스트");
+		return NSLOCTEXT("HarmoniaQuest", "TypeDaily", "?�일 ?�스??);
 	case EQuestType::Weekly:
-		return NSLOCTEXT("HarmoniaQuest", "TypeWeekly", "주간 퀘스트");
+		return NSLOCTEXT("HarmoniaQuest", "TypeWeekly", "주간 ?�스??);
 	case EQuestType::Repeatable:
-		return NSLOCTEXT("HarmoniaQuest", "TypeRepeatable", "반복 퀘스트");
+		return NSLOCTEXT("HarmoniaQuest", "TypeRepeatable", "반복 ?�스??);
 	case EQuestType::Story:
-		return NSLOCTEXT("HarmoniaQuest", "TypeStory", "스토리 퀘스트");
+		return NSLOCTEXT("HarmoniaQuest", "TypeStory", "?�토�??�스??);
 	case EQuestType::Tutorial:
-		return NSLOCTEXT("HarmoniaQuest", "TypeTutorial", "튜토리얼");
+		return NSLOCTEXT("HarmoniaQuest", "TypeTutorial", "?�토리얼");
 	case EQuestType::Achievement:
-		return NSLOCTEXT("HarmoniaQuest", "TypeAchievement", "업적");
+		return NSLOCTEXT("HarmoniaQuest", "TypeAchievement", "?�적");
 	default:
 		return FText::GetEmpty();
 	}
@@ -350,17 +350,17 @@ FText UHarmoniaQuestWidget::GetQuestStateText(EQuestState State) const
 	switch (State)
 	{
 	case EQuestState::Locked:
-		return NSLOCTEXT("HarmoniaQuest", "StateLocked", "잠김");
+		return NSLOCTEXT("HarmoniaQuest", "StateLocked", "?��?");
 	case EQuestState::Available:
-		return NSLOCTEXT("HarmoniaQuest", "StateAvailable", "수락 가능");
+		return NSLOCTEXT("HarmoniaQuest", "StateAvailable", "?�락 가??);
 	case EQuestState::InProgress:
-		return NSLOCTEXT("HarmoniaQuest", "StateInProgress", "진행 중");
+		return NSLOCTEXT("HarmoniaQuest", "StateInProgress", "진행 �?);
 	case EQuestState::ReadyToComplete:
-		return NSLOCTEXT("HarmoniaQuest", "StateReadyComplete", "완료 가능");
+		return NSLOCTEXT("HarmoniaQuest", "StateReadyComplete", "?�료 가??);
 	case EQuestState::Completed:
-		return NSLOCTEXT("HarmoniaQuest", "StateCompleted", "완료됨");
+		return NSLOCTEXT("HarmoniaQuest", "StateCompleted", "?�료??);
 	case EQuestState::Failed:
-		return NSLOCTEXT("HarmoniaQuest", "StateFailed", "실패");
+		return NSLOCTEXT("HarmoniaQuest", "StateFailed", "?�패");
 	default:
 		return FText::GetEmpty();
 	}

@@ -8,37 +8,37 @@
 #include "HarmoniaMusicSystemDefinitions.generated.h"
 
 /**
- * 악기 타입
+ * ?�기 ?�??
  */
 UENUM(BlueprintType)
 enum class EInstrumentType : uint8
 {
 	Lute		UMETA(DisplayName = "Lute"),		// 류트
-	Flute		UMETA(DisplayName = "Flute"),		// 플루트
-	Harp		UMETA(DisplayName = "Harp"),		// 하프
-	Drum		UMETA(DisplayName = "Drum"),		// 드럼
-	Horn		UMETA(DisplayName = "Horn"),		// 호른
-	Violin		UMETA(DisplayName = "Violin"),		// 바이올린
-	Piano		UMETA(DisplayName = "Piano"),		// 피아노
-	Guitar		UMETA(DisplayName = "Guitar")		// 기타
+	Flute		UMETA(DisplayName = "Flute"),		// ?�루??
+	Harp		UMETA(DisplayName = "Harp"),		// ?�프
+	Drum		UMETA(DisplayName = "Drum"),		// ?�럼
+	Horn		UMETA(DisplayName = "Horn"),		// ?�른
+	Violin		UMETA(DisplayName = "Violin"),		// 바이?�린
+	Piano		UMETA(DisplayName = "Piano"),		// ?�아??
+	Guitar		UMETA(DisplayName = "Guitar")		// 기�?
 };
 
 /**
- * 음악 장르
+ * ?�악 ?�르
  */
 UENUM(BlueprintType)
 enum class EMusicGenre : uint8
 {
-	Classical	UMETA(DisplayName = "Classical"),	// 클래식
+	Classical	UMETA(DisplayName = "Classical"),	// ?�래??
 	Folk		UMETA(DisplayName = "Folk"),		// 민속
-	Battle		UMETA(DisplayName = "Battle"),		// 전투
+	Battle		UMETA(DisplayName = "Battle"),		// ?�투
 	Healing		UMETA(DisplayName = "Healing"),		// 치유
 	Buff		UMETA(DisplayName = "Buff"),		// 버프
-	Debuff		UMETA(DisplayName = "Debuff")		// 디버프
+	Debuff		UMETA(DisplayName = "Debuff")		// ?�버??
 };
 
 /**
- * 연주 품질
+ * ?�주 ?�질
  */
 UENUM(BlueprintType)
 enum class EPerformanceQuality : uint8
@@ -52,357 +52,357 @@ enum class EPerformanceQuality : uint8
 };
 
 /**
- * 음악 버프 효과
+ * ?�악 버프 ?�과
  */
 USTRUCT(BlueprintType)
 struct FMusicBuffEffect
 {
 	GENERATED_BODY()
 
-	/** 버프 이름 */
+	/** 버프 ?�름 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	FName BuffName;
 
-	/** 버프 설명 */
+	/** 버프 ?�명 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	FText Description;
 
-	/** 체력 회복/초 */
+	/** 체력 ?�복/�?*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float HealthRegenPerSecond = 0.0f;
 
-	/** 마나 회복/초 */
+	/** 마나 ?�복/�?*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float ManaRegenPerSecond = 0.0f;
 
-	/** 스태미나 회복/초 */
+	/** ?�태미나 ?�복/�?*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float StaminaRegenPerSecond = 0.0f;
 
-	/** 공격력 증가 (%) */
+	/** 공격??증�? (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float AttackBonus = 0.0f;
 
-	/** 방어력 증가 (%) */
+	/** 방어??증�? (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float DefenseBonus = 0.0f;
 
-	/** 이동속도 증가 (%) */
+	/** ?�동?�도 증�? (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float SpeedBonus = 0.0f;
 
-	/** 크리티컬 확률 증가 (%) */
+	/** ?�리?�컬 ?�률 증�? (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float CriticalChanceBonus = 0.0f;
 
-	/** 쿨다운 감소 (%) */
+	/** 쿨다??감소 (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float CooldownReduction = 0.0f;
 
-	/** 경험치 획득량 증가 (%) */
+	/** 경험�??�득??증�? (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float ExperienceBonus = 0.0f;
 
-	/** 범위 내 적용 (m) */
+	/** 범위 ???�용 (m) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float EffectRadius = 1000.0f;
 
-	/** 버프 지속시간 (초) */
+	/** 버프 지?�시�?(�? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float Duration = 60.0f;
 
-	/** 아군에게만 적용 */
+	/** ?�군?�게�??�용 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	bool bAllyOnly = true;
 
-	/** 자신에게도 적용 */
+	/** ?�신?�게???�용 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	bool bAffectSelf = true;
 };
 
 /**
- * 악보 데이터
+ * ?�보 ?�이??
  */
 USTRUCT(BlueprintType)
 struct FMusicSheetData
 {
 	GENERATED_BODY()
 
-	/** 곡 이름 */
+	/** �??�름 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	FName MusicName;
 
-	/** 곡 제목 */
+	/** �??�목 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	FText Title;
 
-	/** 곡 설명 */
+	/** �??�명 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	FText Description;
 
-	/** 음악 장르 */
+	/** ?�악 ?�르 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	EMusicGenre Genre = EMusicGenre::Classical;
 
-	/** 필요 악기 */
+	/** ?�요 ?�기 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	TArray<EInstrumentType> RequiredInstruments;
 
-	/** 최소 연주 레벨 */
+	/** 최소 ?�주 ?�벨 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	int32 MinPerformanceLevel = 1;
 
-	/** 난이도 (1-10) */
+	/** ?�이??(1-10) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	int32 Difficulty = 5;
 
-	/** 연주 시간 (초) */
+	/** ?�주 ?�간 (�? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	float PerformanceDuration = 30.0f;
 
-	/** 음악 버프 효과 */
+	/** ?�악 버프 ?�과 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	FMusicBuffEffect BuffEffect;
 
-	/** 품질별 버프 배율 */
+	/** ?�질�?버프 배율 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	TMap<EPerformanceQuality, float> QualityMultipliers;
 
-	/** 경험치 보상 */
+	/** 경험�?보상 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	int32 ExperienceReward = 25;
 
-	/** 음악 사운드 */
+	/** ?�악 ?�운??*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	TSoftObjectPtr<class USoundBase> MusicSound;
 
-	/** 악보 아이콘 */
+	/** ?�보 ?�이�?*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	TSoftObjectPtr<UTexture2D> Icon;
 
-	/** 숨겨진 악보 여부 */
+	/** ?�겨�??�보 ?��? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	bool bHidden = false;
 };
 
 /**
- * 악기 데이터
+ * ?�기 ?�이??
  */
 USTRUCT(BlueprintType)
 struct FInstrumentData
 {
 	GENERATED_BODY()
 
-	/** 악기 이름 */
+	/** ?�기 ?�름 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Instrument")
 	FName InstrumentName;
 
-	/** 악기 타입 */
+	/** ?�기 ?�??*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Instrument")
 	EInstrumentType InstrumentType = EInstrumentType::Lute;
 
-	/** 악기 등급 */
+	/** ?�기 ?�급 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Instrument")
 	int32 InstrumentTier = 1;
 
-	/** 연주 품질 보너스 (%) */
+	/** ?�주 ?�질 보너??(%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Instrument")
 	float QualityBonus = 0.0f;
 
-	/** 버프 효과 증가 (%) */
+	/** 버프 ?�과 증�? (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Instrument")
 	float BuffEffectBonus = 0.0f;
 
-	/** 버프 범위 증가 (%) */
+	/** 버프 범위 증�? (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Instrument")
 	float RangeBonus = 0.0f;
 
-	/** 내구도 */
+	/** ?�구??*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Instrument")
 	int32 Durability = 100;
 
-	/** 최대 내구도 */
+	/** 최�? ?�구??*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Instrument")
 	int32 MaxDurability = 100;
 
-	/** 악기 메시 */
+	/** ?�기 메시 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Instrument")
 	TSoftObjectPtr<UStaticMesh> InstrumentMesh;
 };
 
 /**
- * 연주 결과
+ * ?�주 결과
  */
 USTRUCT(BlueprintType)
 struct FPerformanceResult
 {
 	GENERATED_BODY()
 
-	/** 연주한 곡 ID */
+	/** ?�주??�?ID */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	FName MusicID;
 
-	/** 연주 품질 */
+	/** ?�주 ?�질 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	EPerformanceQuality Quality = EPerformanceQuality::Good;
 
-	/** 적용된 버프 효과 */
+	/** ?�용??버프 ?�과 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	FMusicBuffEffect AppliedBuff;
 
-	/** 영향받은 액터 수 */
+	/** ?�향받�? ?�터 ??*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	int32 AffectedActorCount = 0;
 
-	/** 획득 경험치 */
+	/** ?�득 경험�?*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	int32 Experience = 0;
 
-	/** 완벽한 연주 여부 */
+	/** ?�벽???�주 ?��? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	bool bPerfect = false;
 };
 
 /**
- * 리듬 노트 (미니게임용)
+ * 리듬 ?�트 (미니게임??
  */
 USTRUCT(BlueprintType)
 struct FRhythmNote
 {
 	GENERATED_BODY()
 
-	/** 노트 타입 (0-3: 상하좌우 등) */
+	/** ?�트 ?�??(0-3: ?�하좌우 ?? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rhythm")
 	int32 NoteType = 0;
 
-	/** 노트 타이밍 (초) */
+	/** ?�트 ?�?�밍 (�? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rhythm")
 	float Timing = 0.0f;
 
-	/** 완벽한 타이밍 허용 범위 (초) */
+	/** ?�벽???�?�밍 ?�용 범위 (�? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rhythm")
 	float PerfectWindow = 0.05f;
 
-	/** 좋은 타이밍 허용 범위 (초) */
+	/** 좋�? ?�?�밍 ?�용 범위 (�? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rhythm")
 	float GoodWindow = 0.15f;
 };
 
 /**
- * 연주 특성
+ * ?�주 ?�성
  */
 USTRUCT(BlueprintType)
 struct FPerformanceTrait
 {
 	GENERATED_BODY()
 
-	/** 특성 이름 */
+	/** ?�성 ?�름 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	FName TraitName;
 
-	/** 특성 설명 */
+	/** ?�성 ?�명 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	FText Description;
 
-	/** 연주 품질 보너스 (%) */
+	/** ?�주 ?�질 보너??(%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float QualityBonus = 0.0f;
 
-	/** 버프 효과 증가 (%) */
+	/** 버프 ?�과 증�? (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float BuffEffectBonus = 0.0f;
 
-	/** 버프 지속시간 증가 (%) */
+	/** 버프 지?�시�?증�? (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float BuffDurationBonus = 0.0f;
 
-	/** 버프 범위 증가 (%) */
+	/** 버프 범위 증�? (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float RangeBonus = 0.0f;
 
-	/** 경험치 보너스 (%) */
+	/** 경험�?보너??(%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float ExperienceBonus = 0.0f;
 
-	/** 앙코르 확률 (%) - 버프가 2배 지속 */
+	/** ?�코�??�률 (%) - 버프가 2�?지??*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float EncoreChance = 0.0f;
 };
 
 /**
- * 악보 데이터 테이블 Row
- * 에디터에서 DataTable로 악보를 관리할 때 사용
+ * ?�보 ?�이???�이�?Row
+ * ?�디?�에??DataTable�??�보�?관리할 ???�용
  */
 USTRUCT(BlueprintType)
 struct HARMONIAKIT_API FMusicSheetDataTableRow : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	/** 악보 ID */
+	/** ?�보 ID */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	FName MusicID;
 
-	/** 표시 이름 */
+	/** ?�시 ?�름 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	FText DisplayName;
 
-	/** 설명 */
+	/** ?�명 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	FText Description;
 
-	/** 음악 장르 */
+	/** ?�악 ?�르 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	EMusicGenre Genre = EMusicGenre::Classical;
 
-	/** 호환 악기 타입 */
+	/** ?�환 ?�기 ?�??*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Requirement")
 	TArray<EInstrumentType> CompatibleInstruments;
 
-	/** 난이도 (1-10) */
+	/** ?�이??(1-10) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Difficulty")
 	int32 Difficulty = 1;
 
-	/** 연주 시간 (초) */
+	/** ?�주 ?�간 (�? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Difficulty")
 	float Duration = 30.0f;
 
-	/** 최소 음악 레벨 */
+	/** 최소 ?�악 ?�벨 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Requirement")
 	int32 MinMusicLevel = 1;
 
-	/** BPM (분당 비트수, 리듬 게임용) */
+	/** BPM (분당 비트?? 리듬 게임?? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Rhythm")
 	int32 BPM = 120;
 
-	/** 노트 패턴 (초 단위 타임스탬프) */
+	/** ?�트 ?�턴 (�??�위 ?�?�스?�프) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Rhythm")
 	TArray<float> NotePattern;
 
-	/** 버프 효과 */
+	/** 버프 ?�과 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Buff")
 	FMusicBuffEffect BuffEffect;
 
-	/** 버프 지속시간 (초) */
+	/** 버프 지?�시�?(�? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Buff")
 	float BuffDuration = 60.0f;
 
-	/** 버프 범위 (주변 플레이어/NPC에게 적용) */
+	/** 버프 범위 (주�? ?�레?�어/NPC?�게 ?�용) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Buff")
 	float BuffRadius = 1000.0f;
 
-	/** 성공 연주당 획득 경험치 */
+	/** ?�공 ?�주???�득 경험�?*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Economy")
 	int32 ExperienceGain = 10;
 
-	/** 오디오 에셋 */
+	/** ?�디???�셋 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Audio")
 	TSoftObjectPtr<USoundBase> AudioAsset;
 
-	/** 아이콘/악보 텍스처 */
+	/** ?�이�??�보 ?�스�?*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music|Visual")
 	TSoftObjectPtr<UTexture2D> Icon;
 
-	/** 희귀/전설 악보 여부 */
+	/** ?��?/?�설 ?�보 ?��? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music")
 	bool bIsRare = false;
 };

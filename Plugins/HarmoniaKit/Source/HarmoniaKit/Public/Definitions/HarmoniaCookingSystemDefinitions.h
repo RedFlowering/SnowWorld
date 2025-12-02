@@ -8,344 +8,344 @@
 #include "HarmoniaCookingSystemDefinitions.generated.h"
 
 /**
- * 음식 타입
+ * ?�식 ?�??
  */
 UENUM(BlueprintType)
 enum class EFoodType : uint8
 {
-	Meal		UMETA(DisplayName = "Meal"),		// 식사
-	Soup		UMETA(DisplayName = "Soup"),		// 수프
-	Dessert		UMETA(DisplayName = "Dessert"),		// 디저트
-	Beverage	UMETA(DisplayName = "Beverage"),	// 음료
+	Meal		UMETA(DisplayName = "Meal"),		// ?�사
+	Soup		UMETA(DisplayName = "Soup"),		// ?�프
+	Dessert		UMETA(DisplayName = "Dessert"),		// ?��???
+	Beverage	UMETA(DisplayName = "Beverage"),	// ?�료
 	Snack		UMETA(DisplayName = "Snack"),		// 간식
-	Elixir		UMETA(DisplayName = "Elixir"),		// 엘릭서
-	Salad		UMETA(DisplayName = "Salad")		// 샐러드
+	Elixir		UMETA(DisplayName = "Elixir"),		// ?�릭??
+	Salad		UMETA(DisplayName = "Salad")		// ?�러??
 };
 
 /**
- * 요리 품질
+ * ?�리 ?�질
  */
 UENUM(BlueprintType)
 enum class ECookingQuality : uint8
 {
-	Failed		UMETA(DisplayName = "Failed"),		// 실패작
-	Poor		UMETA(DisplayName = "Poor"),		// 조악함
+	Failed		UMETA(DisplayName = "Failed"),		// ?�패??
+	Poor		UMETA(DisplayName = "Poor"),		// 조악??
 	Normal		UMETA(DisplayName = "Normal"),		// 보통
 	Good		UMETA(DisplayName = "Good"),		// 좋음
-	Excellent	UMETA(DisplayName = "Excellent"),	// 훌륭함
+	Excellent	UMETA(DisplayName = "Excellent"),	// ?��???
 	Masterpiece	UMETA(DisplayName = "Masterpiece")	// 걸작
 };
 
 /**
- * 요리 방법
+ * ?�리 방법
  */
 UENUM(BlueprintType)
 enum class ECookingMethod : uint8
 {
-	Boiling		UMETA(DisplayName = "Boiling"),		// 끓이기
+	Boiling		UMETA(DisplayName = "Boiling"),		// ?�이�?
 	Frying		UMETA(DisplayName = "Frying"),		// 굽기
 	Grilling	UMETA(DisplayName = "Grilling"),	// 그릴
 	Steaming	UMETA(DisplayName = "Steaming"),	// 찌기
-	Baking		UMETA(DisplayName = "Baking"),		// 베이킹
-	Mixing		UMETA(DisplayName = "Mixing"),		// 섞기
-	Roasting	UMETA(DisplayName = "Roasting")		// 로스팅
+	Baking		UMETA(DisplayName = "Baking"),		// 베이??
+	Mixing		UMETA(DisplayName = "Mixing"),		// ?�기
+	Roasting	UMETA(DisplayName = "Roasting")		// 로스??
 };
 
 /**
- * 음식 버프 효과
+ * ?�식 버프 ?�과
  */
 USTRUCT(BlueprintType)
 struct FFoodBuffEffect
 {
 	GENERATED_BODY()
 
-	/** 버프 이름 */
+	/** 버프 ?�름 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	FName BuffName;
 
-	/** 버프 설명 */
+	/** 버프 ?�명 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	FText Description;
 
-	/** 체력 회복량 */
+	/** 체력 ?�복??*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float HealthRestore = 0.0f;
 
-	/** 마나 회복량 */
+	/** 마나 ?�복??*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float ManaRestore = 0.0f;
 
-	/** 스태미나 회복량 */
+	/** ?�태미나 ?�복??*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float StaminaRestore = 0.0f;
 
-	/** 공격력 증가 (%) */
+	/** 공격??증�? (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float AttackBonus = 0.0f;
 
-	/** 방어력 증가 (%) */
+	/** 방어??증�? (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float DefenseBonus = 0.0f;
 
-	/** 이동속도 증가 (%) */
+	/** ?�동?�도 증�? (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float SpeedBonus = 0.0f;
 
-	/** 크리티컬 확률 증가 (%) */
+	/** ?�리?�컬 ?�률 증�? (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float CriticalChanceBonus = 0.0f;
 
-	/** 경험치 획득량 증가 (%) */
+	/** 경험�??�득??증�? (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float ExperienceBonus = 0.0f;
 
-	/** 버프 지속시간 (초) */
+	/** 버프 지?�시�?(�? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	float Duration = 300.0f;
 
-	/** 스택 가능 여부 */
+	/** ?�택 가???��? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	bool bStackable = false;
 
-	/** 최대 스택 수 */
+	/** 최�? ?�택 ??*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Buff")
 	int32 MaxStacks = 1;
 };
 
 /**
- * 요리 재료
+ * ?�리 ?�료
  */
 USTRUCT(BlueprintType)
 struct FCookingIngredient
 {
 	GENERATED_BODY()
 
-	/** 재료 ID */
+	/** ?�료 ID */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ingredient")
 	FName IngredientID;
 
-	/** 필요 수량 */
+	/** ?�요 ?�량 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ingredient")
 	int32 Quantity = 1;
 
-	/** 선택적 재료 여부 */
+	/** ?�택???�료 ?��? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ingredient")
 	bool bOptional = false;
 };
 
 /**
- * 요리 레시피
+ * ?�리 ?�시??
  */
 USTRUCT(BlueprintType)
 struct FCookingRecipe
 {
 	GENERATED_BODY()
 
-	/** 레시피 ID */
+	/** ?�시??ID */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	FName RecipeID;
 
-	/** 레시피 이름 */
+	/** ?�시???�름 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	FText RecipeName;
 
-	/** 레시피 설명 */
+	/** ?�시???�명 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	FText Description;
 
-	/** 음식 타입 */
+	/** ?�식 ?�??*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	EFoodType FoodType = EFoodType::Meal;
 
-	/** 요리 방법 */
+	/** ?�리 방법 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	ECookingMethod CookingMethod = ECookingMethod::Boiling;
 
-	/** 필요 재료 */
+	/** ?�요 ?�료 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	TArray<FCookingIngredient> RequiredIngredients;
 
-	/** 요리 시간 (초) */
+	/** ?�리 ?�간 (�? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	float CookingTime = 10.0f;
 
-	/** 최소 요리 레벨 */
+	/** 최소 ?�리 ?�벨 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	int32 MinCookingLevel = 1;
 
-	/** 난이도 (1-10) */
+	/** ?�이??(1-10) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	int32 Difficulty = 5;
 
-	/** 기본 버프 효과 */
+	/** 기본 버프 ?�과 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	FFoodBuffEffect BaseBuffEffect;
 
-	/** 품질별 버프 배율 */
+	/** ?�질�?버프 배율 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	TMap<ECookingQuality, float> QualityMultipliers;
 
-	/** 레시피 아이콘 */
+	/** ?�시???�이�?*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	TSoftObjectPtr<UTexture2D> Icon;
 
-	/** 완성된 음식 메시 */
+	/** ?�성???�식 메시 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	TSoftObjectPtr<UStaticMesh> FoodMesh;
 
-	/** 경험치 보상 */
+	/** 경험�?보상 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	int32 ExperienceReward = 20;
 
-	/** 숨겨진 레시피 여부 */
+	/** ?�겨�??�시???��? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	bool bHidden = false;
 };
 
 /**
- * 요리 결과
+ * ?�리 결과
  */
 USTRUCT(BlueprintType)
 struct FCookingResult
 {
 	GENERATED_BODY()
 
-	/** 레시피 ID */
+	/** ?�시??ID */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	FName RecipeID;
 
-	/** 요리 품질 */
+	/** ?�리 ?�질 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	ECookingQuality Quality = ECookingQuality::Normal;
 
-	/** 적용된 버프 효과 */
+	/** ?�용??버프 ?�과 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	FFoodBuffEffect BuffEffect;
 
-	/** 획득 경험치 */
+	/** ?�득 경험�?*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	int32 Experience = 0;
 
-	/** 성공 여부 */
+	/** ?�공 ?��? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	bool bSuccess = true;
 
-	/** 완벽한 요리 여부 */
+	/** ?�벽???�리 ?��? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	bool bPerfect = false;
 };
 
 /**
- * 요리 특성
+ * ?�리 ?�성
  */
 USTRUCT(BlueprintType)
 struct FCookingTrait
 {
 	GENERATED_BODY()
 
-	/** 특성 이름 */
+	/** ?�성 ?�름 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	FName TraitName;
 
-	/** 특성 설명 */
+	/** ?�성 ?�명 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	FText Description;
 
-	/** 요리 속도 보너스 (%) */
+	/** ?�리 ?�도 보너??(%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float CookingSpeedBonus = 0.0f;
 
-	/** 성공확률 보너스 (%) */
+	/** ?�공?�률 보너??(%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float SuccessRateBonus = 0.0f;
 
-	/** 품질 향상 확률 (%) */
+	/** ?�질 ?�상 ?�률 (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float QualityBonus = 0.0f;
 
-	/** 버프 효과 증가 (%) */
+	/** 버프 ?�과 증�? (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float BuffEffectBonus = 0.0f;
 
-	/** 버프 지속시간 증가 (%) */
+	/** 버프 지?�시�?증�? (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float BuffDurationBonus = 0.0f;
 
-	/** 재료 절약 확률 (%) */
+	/** ?�료 ?�약 ?�률 (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float IngredientSaveChance = 0.0f;
 
-	/** 경험치 보너스 (%) */
+	/** 경험�?보너??(%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float ExperienceBonus = 0.0f;
 };
 
 /**
- * 요리 레시피 데이터 테이블 Row
- * 에디터에서 DataTable로 레시피를 관리할 때 사용
+ * ?�리 ?�시???�이???�이�?Row
+ * ?�디?�에??DataTable�??�시?��? 관리할 ???�용
  */
 USTRUCT(BlueprintType)
 struct HARMONIAKIT_API FRecipeDataTableRow : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	/** 레시피 ID */
+	/** ?�시??ID */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	FName RecipeID;
 
-	/** 표시 이름 */
+	/** ?�시 ?�름 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	FText DisplayName;
 
-	/** 설명 */
+	/** ?�명 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	FText Description;
 
-	/** 음식 타입 */
+	/** ?�식 ?�??*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	EFoodType FoodType = EFoodType::Meal;
 
-	/** 요리 방법 */
+	/** ?�리 방법 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	ECookingMethod CookingMethod = ECookingMethod::Boiling;
 
-	/** 필요 재료 (아이템 ID -> 수량) */
+	/** ?�요 ?�료 (?�이??ID -> ?�량) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe|Ingredients")
 	TMap<FName, int32> Ingredients;
 
-	/** 요리 시간 (초) */
+	/** ?�리 ?�간 (�? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe|Cooking")
 	float CookingTime = 5.0f;
 
-	/** 최소 요리 레벨 */
+	/** 최소 ?�리 ?�벨 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe|Requirement")
 	int32 MinCookingLevel = 1;
 
-	/** 획득 경험치 */
+	/** ?�득 경험�?*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe|Economy")
 	int32 ExperienceGain = 10;
 
-	/** 난이도 (1-10, 품질 확률에 영향) */
+	/** ?�이??(1-10, ?�질 ?�률???�향) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe|Cooking")
 	int32 Difficulty = 1;
 
-	/** 기본 버프 효과 (품질에 따라 배율 적용) */
+	/** 기본 버프 ?�과 (?�질???�라 배율 ?�용) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe|Buff")
 	FFoodBuffEffect BuffEffect;
 
-	/** 버프 지속시간 (초) */
+	/** 버프 지?�시�?(�? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe|Buff")
 	float BuffDuration = 300.0f;
 
-	/** 숨겨진 레시피 여부 (실험을 통해 발견) */
+	/** ?�겨�??�시???��? (?�험???�해 발견) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe")
 	bool bIsHidden = false;
 
-	/** 아이콘 */
+	/** ?�이�?*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe|Visual")
 	TSoftObjectPtr<UTexture2D> Icon;
 
-	/** 기본 판매 가격 */
+	/** 기본 ?�매 가�?*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipe|Economy")
 	int32 BasePrice = 20;
 };

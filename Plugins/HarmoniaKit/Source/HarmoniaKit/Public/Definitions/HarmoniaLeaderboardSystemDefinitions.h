@@ -12,8 +12,8 @@
 UENUM(BlueprintType)
 enum class ELeaderboardSortOrder : uint8
 {
-	Ascending		UMETA(DisplayName = "Ascending"),		// 오름차순 (낮을수록 좋음, 예: 타임어택)
-	Descending		UMETA(DisplayName = "Descending"),		// 내림차순 (높을수록 좋음, 예: 점수)
+	Ascending		UMETA(DisplayName = "Ascending"),		// ?�름차순 (??��?�록 좋음, ?? ?�?�어??
+	Descending		UMETA(DisplayName = "Descending"),		// ?�림차순 (?�을?�록 좋음, ?? ?�수)
 	MAX				UMETA(Hidden)
 };
 
@@ -23,8 +23,8 @@ enum class ELeaderboardSortOrder : uint8
 UENUM(BlueprintType)
 enum class ELeaderboardType : uint8
 {
-	Numeric			UMETA(DisplayName = "Numeric"),			// 숫자 (점수)
-	Time			UMETA(DisplayName = "Time"),			// 시간 (초 단위)
+	Numeric			UMETA(DisplayName = "Numeric"),			// ?�자 (?�수)
+	Time			UMETA(DisplayName = "Time"),			// ?�간 (�??�위)
 	MAX				UMETA(Hidden)
 };
 
@@ -32,7 +32,7 @@ enum class ELeaderboardType : uint8
  * Leaderboard definition structure
  */
 USTRUCT(BlueprintType)
-struct FHarmoniaLeaderboardDefinition : public FTableRowBase
+struct FHarmoniaLeaderboardData : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -56,7 +56,7 @@ struct FHarmoniaLeaderboardDefinition : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	FString SteamLeaderboardName;
 
-	FHarmoniaLeaderboardDefinition()
+	FHarmoniaLeaderboardData()
 		: LeaderboardId()
 		, DisplayName()
 		, SortOrder(ELeaderboardSortOrder::Descending)

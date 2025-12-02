@@ -23,22 +23,22 @@ void AHarmoniaDungeonInstance::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 매니저에 인스턴스 등록
+	// 매니?�???�스?�스 ?�록
 	if (UHarmoniaDungeonManager* Manager = UHarmoniaCoreBFL::GetGameInstanceSubsystem<UHarmoniaDungeonManager>(this))
 	{
 		if (DungeonData)
 		{
-			// 인스턴스 정보는 매니저에서 관리
+			// ?�스?�스 ?�보??매니?�?�서 관�?
 		}
 	}
 }
 
 void AHarmoniaDungeonInstance::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// 모든 몬스터 제거
+	// 모든 몬스???�거
 	ClearAllMonsters();
 
-	// 타이머 정리
+	// ?�?�머 ?�리
 	GetWorld()->GetTimerManager().ClearTimer(WaveCheckTimerHandle);
 
 	Super::EndPlay(EndPlayReason);
@@ -62,7 +62,7 @@ void AHarmoniaDungeonInstance::StartDungeon()
 
 	UE_LOG(LogTemp, Log, TEXT("Dungeon Instance Started: %s"), *InstanceID.ToString());
 
-	// 플레이어의 던전 컴포넌트에 시작 알림
+	// ?�레?�어???�전 컴포?�트???�작 ?�림
 	for (APlayerController* PC : ActivePlayers)
 	{
 		if (AActor* PlayerPawn = PC->GetPawn())
@@ -74,7 +74,7 @@ void AHarmoniaDungeonInstance::StartDungeon()
 		}
 	}
 
-	// 첫 웨이브 시작
+	// �??�이�??�작
 	StartWave(1);
 }
 
@@ -91,7 +91,7 @@ void AHarmoniaDungeonInstance::EndDungeon(bool bSuccess)
 	UE_LOG(LogTemp, Log, TEXT("Dungeon Instance Ended: %s (Success: %s)"), 
 		*InstanceID.ToString(), bSuccess ? TEXT("True") : TEXT("False"));
 
-	// 플레이어의 던전 컴포넌트에 완료 알림
+	// ?�레?�어???�전 컴포?�트???�료 ?�림
 	for (APlayerController* PC : ActivePlayers)
 	{
 		if (AActor* PlayerPawn = PC->GetPawn())
@@ -103,10 +103,10 @@ void AHarmoniaDungeonInstance::EndDungeon(bool bSuccess)
 		}
 	}
 
-	// 몬스터 정리
+	// 몬스???�리
 	ClearAllMonsters();
 
-	// 타이머 정리
+	// ?�?�머 ?�리
 	GetWorld()->GetTimerManager().ClearTimer(WaveCheckTimerHandle);
 }
 
@@ -124,13 +124,13 @@ void AHarmoniaDungeonInstance::OnPlayerEnter(APlayerController* Player)
 
 		UE_LOG(LogTemp, Log, TEXT("Player entered dungeon: %s"), *Player->GetName());
 
-		// 플레이어를 입장 지점으로 이동
+		// ?�레?�어�??�장 지?�으�??�동
 		if (APawn* PlayerPawn = Player->GetPawn())
 		{
 			PlayerPawn->SetActorLocationAndRotation(EntranceTransform.GetLocation(), EntranceTransform.Rotator());
 		}
 
-		// 플레이어의 던전 컴포넌트에 입장 알림
+		// ?�레?�어???�전 컴포?�트???�장 ?�림
 		if (AActor* PlayerPawn = Player->GetPawn())
 		{
 			if (UHarmoniaDungeonComponent* DungeonComp = PlayerPawn->FindComponentByClass<UHarmoniaDungeonComponent>())
@@ -154,13 +154,13 @@ void AHarmoniaDungeonInstance::OnPlayerExit(APlayerController* Player)
 
 		UE_LOG(LogTemp, Log, TEXT("Player exited dungeon: %s"), *Player->GetName());
 
-		// 플레이어를 출구로 이동
+		// ?�레?�어�?출구�??�동
 		if (APawn* PlayerPawn = Player->GetPawn())
 		{
 			PlayerPawn->SetActorLocationAndRotation(ExitTransform.GetLocation(), ExitTransform.Rotator());
 		}
 
-		// 플레이어의 던전 컴포넌트에 퇴장 알림
+		// ?�레?�어???�전 컴포?�트???�장 ?�림
 		if (AActor* PlayerPawn = Player->GetPawn())
 		{
 			if (UHarmoniaDungeonComponent* DungeonComp = PlayerPawn->FindComponentByClass<UHarmoniaDungeonComponent>())
@@ -169,7 +169,7 @@ void AHarmoniaDungeonInstance::OnPlayerExit(APlayerController* Player)
 			}
 		}
 
-		// 모든 플레이어가 나가면 던전 종료
+		// 모든 ?�레?�어가 ?��?�??�전 종료
 		if (ActivePlayers.Num() == 0 && bIsActive)
 		{
 			EndDungeon(false);
@@ -183,10 +183,10 @@ void AHarmoniaDungeonInstance::StartWave(int32 WaveNumber)
 
 	UE_LOG(LogTemp, Log, TEXT("Starting Wave %d"), WaveNumber);
 
-	// 해당 웨이브의 몬스터 스폰
+	// ?�당 ?�이브의 몬스???�폰
 	ProcessMonsterSpawns(WaveNumber);
 
-	// 웨이브 완료 체크 타이머 시작
+	// ?�이�??�료 체크 ?�?�머 ?�작
 	GetWorld()->GetTimerManager().SetTimer(WaveCheckTimerHandle, this, &AHarmoniaDungeonInstance::CheckWaveCompletion, 1.0f, true);
 }
 
@@ -240,7 +240,7 @@ void AHarmoniaDungeonInstance::RegisterMonster(AActor* Monster)
 	{
 		SpawnedMonsters.Add(Monster);
 
-		// 몬스터 사망 시 콜백 연결 (구현 필요)
+		// 몬스???�망 ??콜백 ?�결 (구현 ?�요)
 	}
 }
 
@@ -274,13 +274,13 @@ void AHarmoniaDungeonInstance::GenerateNextFloor()
 
 	UE_LOG(LogTemp, Log, TEXT("Generating Floor %d"), CurrentFloor);
 
-	// 이전 층 몬스터 정리
+	// ?�전 �?몬스???�리
 	ClearAllMonsters();
 
-	// 새 층 생성 로직 (프로시저럴 생성은 별도 구현 필요)
-	// 현재는 기존 스폰 포인트를 재사용하되 난이도 증가
+	// ??�??�성 로직 (?�로?��????�성?� 별도 구현 ?�요)
+	// ?�재??기존 ?�폰 ?�인?��? ?�사?�하???�이??증�?
 
-	// 플레이어의 던전 컴포넌트에 층 변경 알림
+	// ?�레?�어???�전 컴포?�트??�?변�??�림
 	for (APlayerController* PC : ActivePlayers)
 	{
 		if (AActor* PlayerPawn = PC->GetPawn())
@@ -292,7 +292,7 @@ void AHarmoniaDungeonInstance::GenerateNextFloor()
 		}
 	}
 
-	// 다음 웨이브 시작
+	// ?�음 ?�이�??�작
 	StartWave(1);
 }
 
@@ -327,10 +327,10 @@ void AHarmoniaDungeonInstance::CheckWaveCompletion()
 		return;
 	}
 
-	// 모든 몬스터가 죽었는지 확인
+	// 모든 몬스?��? 죽었?��? ?�인
 	if (GetAliveMonsterCount() == 0)
 	{
-		// 다음 웨이브가 있는지 확인
+		// ?�음 ?�이브�? ?�는지 ?�인
 		bool bHasNextWave = false;
 		for (const FDungeonSpawnPoint& SpawnPoint : SpawnPoints)
 		{
@@ -343,19 +343,19 @@ void AHarmoniaDungeonInstance::CheckWaveCompletion()
 
 		if (bHasNextWave)
 		{
-			// 다음 웨이브로
+			// ?�음 ?�이브로
 			AdvanceToNextWave();
 		}
 		else
 		{
-			// 무한 던전이면 다음 층으로
+			// 무한 ?�전?�면 ?�음 층으�?
 			if (DungeonData && DungeonData->DungeonType == EDungeonType::Infinite)
 			{
 				GenerateNextFloor();
 			}
 			else
 			{
-				// 던전 클리어
+				// ?�전 ?�리??
 				CheckCompletionConditions();
 			}
 		}
@@ -364,7 +364,7 @@ void AHarmoniaDungeonInstance::CheckWaveCompletion()
 
 void AHarmoniaDungeonInstance::CheckCompletionConditions()
 {
-	// 모든 웨이브를 클리어했으면 성공
+	// 모든 ?�이브�? ?�리?�했?�면 ?�공
 	if (GetAliveMonsterCount() == 0)
 	{
 		EndDungeon(true);

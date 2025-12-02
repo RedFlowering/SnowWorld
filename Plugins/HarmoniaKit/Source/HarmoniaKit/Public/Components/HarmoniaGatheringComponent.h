@@ -14,8 +14,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnGatheringLevelUp, int32, NewLeve
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnToolDurabilityChanged, FName, ToolID, int32, RemainingDurability);
 
 /**
- * 채집 시스템 컴포넌트
- * 광물, 약초, 벌목 등 다양한 자원 채집 처리
+ * 채집 ?�스??컴포?�트
+ * 광물, ?�초, 벌목 ???�양???�원 채집 처리
  * Inherits leveling, experience, and activity management from UHarmoniaBaseLifeContentComponent
  */
 UCLASS(ClassGroup=(HarmoniaKit), meta=(BlueprintSpawnableComponent))
@@ -38,7 +38,7 @@ public:
 	// 채집 기본 기능
 	// ====================================
 
-	/** 채집 시작 */
+	/** 채집 ?�작 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Gathering")
 	bool StartGathering(FName ResourceID, AActor* TargetNode = nullptr);
 
@@ -46,176 +46,176 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Gathering")
 	void CancelGathering();
 
-	/** 채집 중인지 확인 */
+	/** 채집 중인지 ?�인 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Gathering")
 	bool IsGathering() const { return bIsGathering; }
 
-	/** 현재 채집 진행도 (0-1) */
+	/** ?�재 채집 진행??(0-1) */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Gathering")
 	float GetGatheringProgress() const;
 
-	/** 자원을 채집할 수 있는지 확인 */
+	/** ?�원??채집?????�는지 ?�인 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Gathering")
 	bool CanGatherResource(FName ResourceID) const;
 
 	// ====================================
-	// 도구 관리
+	// ?�구 관�?
 	// ====================================
 
-	/** 도구 장착 */
+	/** ?�구 ?�착 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Gathering")
 	void EquipTool(const FGatheringToolData& Tool);
 
-	/** 도구 해제 */
+	/** ?�구 ?�제 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Gathering")
 	void UnequipTool();
 
-	/** 현재 장착된 도구 */
+	/** ?�재 ?�착???�구 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Gathering")
 	FGatheringToolData GetEquippedTool() const { return EquippedTool; }
 
-	/** 도구가 장착되어 있는지 확인 */
+	/** ?�구가 ?�착?�어 ?�는지 ?�인 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Gathering")
 	bool HasToolEquipped() const;
 
-	/** 도구 내구도 감소 */
+	/** ?�구 ?�구??감소 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Gathering")
 	void ReduceToolDurability(int32 Amount);
 
 	// ====================================
-	// 레벨 및 경험치 시스템 (per resource type)
+	// ?�벨 �?경험�??�스??(per resource type)
 	// ====================================
 
-	/** 채집 경험치 획득 (per resource type) */
+	/** 채집 경험�??�득 (per resource type) */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Gathering")
 	void AddGatheringExperience(int32 Amount, EGatheringResourceType ResourceType);
 
-	/** 현재 채집 레벨 (per resource type) */
+	/** ?�재 채집 ?�벨 (per resource type) */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Gathering")
 	int32 GetGatheringLevel(EGatheringResourceType ResourceType) const;
 
-	/** 현재 경험치 (per resource type) */
+	/** ?�재 경험�?(per resource type) */
 	int32 GetCurrentExperience(EGatheringResourceType ResourceType) const;
 
-	/** 다음 레벨까지 필요한 경험치 (per resource type) */
+	/** ?�음 ?�벨까�? ?�요??경험�?(per resource type) */
 	int32 GetExperienceForNextLevel(EGatheringResourceType ResourceType) const;
 
 	// ====================================
-	// 특성 시스템
+	// ?�성 ?�스??
 	// ====================================
 
-	/** 특성 추가 */
+	/** ?�성 추�? */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Gathering")
 	void AddTrait(const FGatheringTrait& Trait);
 
-	/** 특성 제거 */
+	/** ?�성 ?�거 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Gathering")
 	void RemoveTrait(FName TraitName);
 
-	/** 모든 특성 가져오기 */
+	/** 모든 ?�성 가?�오�?*/
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Gathering")
 	TArray<FGatheringTrait> GetAllTraits() const { return ActiveTraits; }
 
-	/** 총 채집 속도 보너스 계산 */
+	/** �?채집 ?�도 보너??계산 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Gathering")
 	float GetTotalGatheringSpeedBonus() const;
 
-	/** 총 획득량 보너스 계산 */
+	/** �??�득??보너??계산 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Gathering")
 	float GetTotalYieldBonus() const;
 
-	/** 크리티컬 확률 계산 */
+	/** ?�리?�컬 ?�률 계산 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Gathering")
 	float GetCriticalChance() const;
 
 	// ====================================
-	// 이벤트
+	// ?�벤??
 	// ====================================
 
-	/** 채집 시작 이벤트 */
+	/** 채집 ?�작 ?�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Gathering")
 	FOnGatheringStarted OnGatheringStarted;
 
-	/** 채집 취소 이벤트 */
+	/** 채집 취소 ?�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Gathering")
 	FOnGatheringCancelled OnGatheringCancelled;
 
-	/** 채집 완료 이벤트 */
+	/** 채집 ?�료 ?�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Gathering")
 	FOnGatheringCompleted OnGatheringCompleted;
 
-	/** 레벨업 이벤트 */
+	/** ?�벨???�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Gathering")
 	FOnGatheringLevelUp OnGatheringLevelUp;
 
-	/** 도구 내구도 변경 이벤트 */
+	/** ?�구 ?�구??변�??�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Gathering")
 	FOnToolDurabilityChanged OnToolDurabilityChanged;
 
 	// ====================================
-	// 설정
+	// ?�정
 	// ====================================
 
-	/** 자원 데이터베이스 */
+	/** ?�원 ?�이?�베?�스 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gathering Settings")
 	TMap<FName, FGatheringResourceData> ResourceDatabase;
 
-	// Note: ExperienceMultiplier, BaseExperiencePerLevel은 base class에 정의됨
+	// Note: ExperienceMultiplier, BaseExperiencePerLevel?� base class???�의??
 
-	/** 기본 크리티컬 확률 (%) */
+	/** 기본 ?�리?�컬 ?�률 (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gathering Settings")
 	float BaseCriticalChance = 5.0f;
 
-	/** 크리티컬 시 획득량 배율 */
+	/** ?�리?�컬 ???�득??배율 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gathering Settings")
 	float CriticalYieldMultiplier = 2.0f;
 
 private:
-	/** 채집 중 플래그 */
+	/** 채집 �??�래�?*/
 	UPROPERTY()
 	bool bIsGathering = false;
 
-	/** 현재 채집 중인 자원 */
+	/** ?�재 채집 중인 ?�원 */
 	UPROPERTY()
 	FName CurrentResourceID;
 
-	/** 채집 시작 시간 */
+	/** 채집 ?�작 ?�간 */
 	UPROPERTY()
 	float GatheringStartTime = 0.0f;
 
-	/** 채집 완료까지 필요한 시간 */
+	/** 채집 ?�료까�? ?�요???�간 */
 	UPROPERTY()
 	float RequiredGatheringTime = 0.0f;
 
-	/** 장착된 도구 */
+	/** ?�착???�구 */
 	UPROPERTY()
 	FGatheringToolData EquippedTool;
 
-	/** 자원 타입별 레벨 */
+	/** ?�원 ?�?�별 ?�벨 */
 	UPROPERTY()
 	TMap<EGatheringResourceType, int32> GatheringLevels;
 
-	/** 자원 타입별 경험치 */
+	/** ?�원 ?�?�별 경험�?*/
 	UPROPERTY()
 	TMap<EGatheringResourceType, int32> GatheringExperience;
 
-	/** 활성화된 특성 목록 */
+	/** ?�성?�된 ?�성 목록 */
 	UPROPERTY()
 	TArray<FGatheringTrait> ActiveTraits;
 
-	/** 타겟 노드 */
+	/** ?��??�드 */
 	UPROPERTY()
 	TObjectPtr<AActor> TargetGatheringNode;
 
-	/** 채집 완료 처리 */
+	/** 채집 ?�료 처리 */
 	void CompleteGathering();
 
 	/** 채집 결과 계산 */
 	FGatheringResult CalculateGatheringResult(const FGatheringResourceData& ResourceData);
 
-	/** 레벨 체크 및 처리 (per resource type) */
+	/** ?�벨 체크 �?처리 (per resource type) */
 	void CheckAndProcessLevelUp(EGatheringResourceType ResourceType);
 
-	/** 채집 시간 계산 (보너스 적용) */
+	/** 채집 ?�간 계산 (보너???�용) */
 	float CalculateGatheringTime(float BaseTime) const;
 };

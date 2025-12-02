@@ -28,7 +28,7 @@ void UHarmoniaDungeonComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 컴포넌트 참조 찾기
+	// 컴포?�트 참조 찾기
 	if (AActor* Owner = GetOwner())
 	{
 		ProgressionComponent = Owner->FindComponentByClass<UHarmoniaProgressionComponent>();
@@ -90,7 +90,7 @@ void UHarmoniaDungeonComponent::ExitDungeon(bool bSaveProgress)
 		return;
 	}
 
-	// 진행 중이면 실패 처리
+	// 진행 중이�??�패 처리
 	if (CurrentDungeonState == EDungeonState::InProgress)
 	{
 		SetDungeonState(EDungeonState::Failed);
@@ -149,7 +149,7 @@ void UHarmoniaDungeonComponent::CompleteDungeon(bool bSuccess)
 	{
 		GrantDungeonReward();
 
-		// 랭킹 등록
+		// ??�� ?�록
 		if (APlayerState* PS = Cast<APlayerState>(GetOwner()))
 		{
 			SubmitRanking(PS->GetPlayerName(), ElapsedTime, CurrentScore);
@@ -214,16 +214,16 @@ void UHarmoniaDungeonComponent::SubmitRanking(const FString& PlayerName, float C
 	NewEntry.Difficulty = CurrentDifficulty;
 	NewEntry.ClearDate = FDateTime::Now();
 
-	// 랭킹 목록에 추가
+	// ??�� 목록??추�?
 	DungeonRankings.Add(NewEntry);
 
-	// 점수 순으로 정렬
+	// ?�수 ?�으�??�렬
 	DungeonRankings.Sort([](const FDungeonRankingEntry& A, const FDungeonRankingEntry& B)
 	{
 		return A.Score > B.Score;
 	});
 
-	// 상위 100개만 유지
+	// ?�위 100개만 ?��?
 	if (DungeonRankings.Num() > 100)
 	{
 		DungeonRankings.SetNum(100);
@@ -265,8 +265,8 @@ void UHarmoniaDungeonComponent::GrantDungeonReward()
 
 	FDungeonReward Reward = CalculateReward();
 
-	// 실제 보상 지급 로직은 게임 시스템에 따라 구현
-	// 예: 인벤토리 컴포넌트, 경험치 시스템 등과 연동
+	// ?�제 보상 지�?로직?� 게임 ?�스?�에 ?�라 구현
+	// ?? ?�벤?�리 컴포?�트, 경험�??�스???�과 ?�동
 }
 
 FDungeonReward UHarmoniaDungeonComponent::CalculateReward() const
@@ -278,13 +278,13 @@ FDungeonReward UHarmoniaDungeonComponent::CalculateReward() const
 		return Reward;
 	}
 
-	// 난이도별 보상 가져오기
+	// ?�이?�별 보상 가?�오�?
 	if (const FDungeonReward* BaseReward = CurrentDungeon->Rewards.Find(CurrentDifficulty))
 	{
 		Reward = *BaseReward;
 	}
 
-	// 챌린지 모디파이어 적용
+	// 챌린지 모디?�이???�용
 	for (const FDungeonChallengeModifier& Modifier : ActiveChallengeModifiers)
 	{
 		Reward.ExperienceReward = FMath::RoundToInt(Reward.ExperienceReward * Modifier.ScoreMultiplier);
@@ -292,7 +292,7 @@ FDungeonReward UHarmoniaDungeonComponent::CalculateReward() const
 		Reward.RewardMultiplier *= Modifier.ScoreMultiplier;
 	}
 
-	// 무한 던전은 층수에 따라 보상 증가
+	// 무한 ?�전?� 층수???�라 보상 증�?
 	if (CurrentDungeon->DungeonType == EDungeonType::Infinite)
 	{
 		float FloorMultiplier = 1.0f + (CurrentFloor - 1) * 0.1f;
@@ -305,8 +305,8 @@ FDungeonReward UHarmoniaDungeonComponent::CalculateReward() const
 
 int32 UHarmoniaDungeonComponent::GetPartySize() const
 {
-	// 파티 시스템과 연동 필요
-	// 현재는 임시로 1 반환
+	// ?�티 ?�스?�과 ?�동 ?�요
+	// ?�재???�시�?1 반환
 	return 1;
 }
 
@@ -314,8 +314,8 @@ TMap<ERaidRole, int32> UHarmoniaDungeonComponent::GetRoleComposition() const
 {
 	TMap<ERaidRole, int32> Composition;
 
-	// 파티/레이드 시스템과 연동하여 역할별 인원 계산
-	// 현재는 임시 구현
+	// ?�티/?�이???�스?�과 ?�동?�여 ??���??�원 계산
+	// ?�재???�시 구현
 	Composition.Add(ERaidRole::Tank, 1);
 	Composition.Add(ERaidRole::Healer, 1);
 	Composition.Add(ERaidRole::DPS, 3);
@@ -334,7 +334,7 @@ void UHarmoniaDungeonComponent::UpdateTimer(float DeltaTime)
 		if (RemainingTime <= 0.0f)
 		{
 			RemainingTime = 0.0f;
-			CompleteDungeon(false); // 시간 초과로 실패
+			CompleteDungeon(false); // ?�간 초과�??�패
 		}
 
 		OnDungeonTimeUpdate.Broadcast(RemainingTime, CurrentDungeon->TimeLimit);
@@ -350,7 +350,7 @@ bool UHarmoniaDungeonComponent::ValidateRequirements(const UDungeonDataAsset* Du
 
 	const FDungeonRequirement& Req = DungeonData->Requirements;
 
-	// 레벨 확인
+	// ?�벨 ?�인
 	int32 PlayerLevel = GetPlayerLevel();
 	if (PlayerLevel < Req.MinLevel)
 	{
@@ -358,27 +358,27 @@ bool UHarmoniaDungeonComponent::ValidateRequirements(const UDungeonDataAsset* Du
 		return false;
 	}
 	
-	// 파티 크기 확인
+	// ?�티 ?�기 ?�인
 	int32 PartySize = GetPartySize();
 	if (PartySize < Req.MinPartySize || PartySize > Req.MaxPartySize)
 	{
 		return false;
 	}
 
-	// 필요 아이템 확인
+	// ?�요 ?�이???�인
 	if (!HasRequiredItems(Req.RequiredItemIDs))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ValidateRequirements: Missing required items"));
 		return false;
 	}
 
-	// 필요 퀘스트 확인
-	// Note: 퀘스트 시스템이 구현되면 여기서 확인
-	// 현재는 RequiredQuestIDs가 비어있으면 통과
+	// ?�요 ?�스???�인
+	// Note: ?�스???�스?�이 구현?�면 ?�기???�인
+	// ?�재??RequiredQuestIDs가 비어?�으�??�과
 	if (Req.RequiredQuestIDs.Num() > 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ValidateRequirements: Quest validation not yet implemented"));
-		// TODO: 퀘스트 시스템 구현 후 연동
+		// TODO: ?�스???�스??구현 ???�동
 	}
 
 	return true;
@@ -391,16 +391,16 @@ int32 UHarmoniaDungeonComponent::CalculateScore() const
 		return 0;
 	}
 
-	int32 Score = 10000; // 기본 점수
+	int32 Score = 10000; // 기본 ?�수
 
-	// 시간 보너스
+	// ?�간 보너??
 	if (CurrentDungeon->TimeLimit > 0.0f)
 	{
 		float TimeRatio = RemainingTime / CurrentDungeon->TimeLimit;
 		Score += FMath::RoundToInt(5000.0f * TimeRatio);
 	}
 
-	// 난이도 보너스
+	// ?�이??보너??
 	switch (CurrentDifficulty)
 	{
 	case EDungeonDifficulty::Normal:
@@ -420,13 +420,13 @@ int32 UHarmoniaDungeonComponent::CalculateScore() const
 		break;
 	}
 
-	// 챌린지 모디파이어 보너스
+	// 챌린지 모디?�이??보너??
 	for (const FDungeonChallengeModifier& Modifier : ActiveChallengeModifiers)
 	{
 		Score = FMath::RoundToInt(Score * Modifier.ScoreMultiplier);
 	}
 
-	// 무한 던전 층수 보너스
+	// 무한 ?�전 층수 보너??
 	if (CurrentDungeon->DungeonType == EDungeonType::Infinite)
 	{
 		Score += CurrentFloor * 1000;
@@ -442,7 +442,7 @@ int32 UHarmoniaDungeonComponent::GetPlayerLevel() const
 		return ProgressionComponent->CurrentLevel;
 	}
 	
-	// 프로그레션 컴포넌트가 없으면 기본값 1 반환
+	// ?�로그레??컴포?�트가 ?�으�?기본�?1 반환
 	return 1;
 }
 
@@ -450,7 +450,7 @@ bool UHarmoniaDungeonComponent::HasRequiredItems(const TArray<FName>& ItemIDs) c
 {
 	if (ItemIDs.Num() == 0)
 	{
-		return true; // 필요 아이템이 없으면 통과
+		return true; // ?�요 ?�이?�이 ?�으�??�과
 	}
 
 	if (!InventoryComponent)
@@ -483,13 +483,13 @@ bool UHarmoniaDungeonComponent::ConsumeRequiredItems(const TArray<FName>& ItemID
 		return false;
 	}
 
-	// 먼저 모든 아이템이 있는지 확인
+	// 먼�? 모든 ?�이?�이 ?�는지 ?�인
 	if (!HasRequiredItems(ItemIDs))
 	{
 		return false;
 	}
 
-	// 아이템 소비
+	// ?�이???�비
 	for (const FName& ItemID : ItemIDs)
 	{
 		FHarmoniaID HarmoniaID(ItemID);

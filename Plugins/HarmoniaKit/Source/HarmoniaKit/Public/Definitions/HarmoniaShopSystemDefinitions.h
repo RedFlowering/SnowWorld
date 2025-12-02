@@ -16,24 +16,24 @@
 UENUM(BlueprintType)
 enum class EHarmoniaCurrencyType : uint8
 {
-	None			UMETA(DisplayName = "None"),			// 없음
+	None			UMETA(DisplayName = "None"),			// ?�음
 	
 	// Economy currencies
 	Gold			UMETA(DisplayName = "Gold"),			// 기본 골드
-	Premium			UMETA(DisplayName = "Premium"),			// 프리미엄 재화 (캐시)
-	Honor			UMETA(DisplayName = "Honor"),			// 명예 포인트
-	Arena			UMETA(DisplayName = "Arena"),			// 아레나 포인트
-	Guild			UMETA(DisplayName = "Guild"),			// 길드 포인트
-	Event			UMETA(DisplayName = "Event"),			// 이벤트 재화
-	Reputation		UMETA(DisplayName = "Reputation"),		// 평판 포인트
+	Premium			UMETA(DisplayName = "Premium"),			// ?�리미엄 ?�화 (캐시)
+	Honor			UMETA(DisplayName = "Honor"),			// 명예 ?�인??
+	Arena			UMETA(DisplayName = "Arena"),			// ?�레???�인??
+	Guild			UMETA(DisplayName = "Guild"),			// 길드 ?�인??
+	Event			UMETA(DisplayName = "Event"),			// ?�벤???�화
+	Reputation		UMETA(DisplayName = "Reputation"),		// ?�판 ?�인??
 	
 	// Death Penalty currencies
-	MemoryEssence		UMETA(DisplayName = "Memory Essence"),	// 기억의 정수
-	SoulCrystals		UMETA(DisplayName = "Soul Crystals"),	// 영혼 수정
-	ForgottenKnowledge	UMETA(DisplayName = "Forgotten Knowledge"),	// 잊혀진 지식
-	TimeFragments		UMETA(DisplayName = "Time Fragments"),	// 시간 파편
+	MemoryEssence		UMETA(DisplayName = "Memory Essence"),	// 기억???�수
+	SoulCrystals		UMETA(DisplayName = "Soul Crystals"),	// ?�혼 ?�정
+	ForgottenKnowledge	UMETA(DisplayName = "Forgotten Knowledge"),	// ?��?�?지??
+	TimeFragments		UMETA(DisplayName = "Time Fragments"),	// ?�간 ?�편
 	
-	Custom			UMETA(DisplayName = "Custom"),			// 커스텀 (태그로 지정)
+	Custom			UMETA(DisplayName = "Custom"),			// 커스?� (?�그�?지??
 	MAX				UMETA(Hidden)
 };
 
@@ -46,15 +46,15 @@ using ECurrencyType = EHarmoniaCurrencyType;
 UENUM(BlueprintType)
 enum class EHarmoniaShopType : uint8
 {
-	General			UMETA(DisplayName = "General"),			// 잡화점
-	Weapon			UMETA(DisplayName = "Weapon"),			// 무기상점
-	Armor			UMETA(DisplayName = "Armor"),			// 방어구상점
-	Consumable		UMETA(DisplayName = "Consumable"),		// 소비품
-	Material		UMETA(DisplayName = "Material"),		// 재료상점
-	Premium			UMETA(DisplayName = "Premium"),			// 프리미엄 샵
-	Guild			UMETA(DisplayName = "Guild"),			// 길드 상점
-	Event			UMETA(DisplayName = "Event"),			// 이벤트 상점
-	Auction			UMETA(DisplayName = "Auction"),			// 경매장
+	General			UMETA(DisplayName = "General"),			// ?�화??
+	Weapon			UMETA(DisplayName = "Weapon"),			// 무기?�점
+	Armor			UMETA(DisplayName = "Armor"),			// 방어구상??
+	Consumable		UMETA(DisplayName = "Consumable"),		// ?�비??
+	Material		UMETA(DisplayName = "Material"),		// ?�료?�점
+	Premium			UMETA(DisplayName = "Premium"),			// ?�리미엄 ??
+	Guild			UMETA(DisplayName = "Guild"),			// 길드 ?�점
+	Event			UMETA(DisplayName = "Event"),			// ?�벤???�점
+	Auction			UMETA(DisplayName = "Auction"),			// 경매??
 	MAX				UMETA(Hidden)
 };
 
@@ -83,9 +83,9 @@ UENUM(BlueprintType)
 enum class ETransactionType : uint8
 {
 	Buy				UMETA(DisplayName = "Buy"),				// 구매
-	Sell			UMETA(DisplayName = "Sell"),			// 판매
+	Sell			UMETA(DisplayName = "Sell"),			// ?�매
 	Trade			UMETA(DisplayName = "Trade"),			// 교환
-	Refund			UMETA(DisplayName = "Refund"),			// 환불
+	Refund			UMETA(DisplayName = "Refund"),			// ?�불
 	MAX				UMETA(Hidden)
 };
 
@@ -135,7 +135,7 @@ struct HARMONIAKIT_API FHarmoniaCurrencyCost
  * Currency definition
  */
 USTRUCT(BlueprintType)
-struct FCurrencyDefinition : public FTableRowBase
+struct FHarmoniaCurrencyData : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -159,7 +159,7 @@ struct FCurrencyDefinition : public FTableRowBase
  * Shop item data
  */
 USTRUCT(BlueprintType)
-struct FShopItemData : public FTableRowBase
+struct FHarmoniaShopItemData : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -228,7 +228,7 @@ struct FShopItemData : public FTableRowBase
  * Shop definition
  */
 USTRUCT(BlueprintType)
-struct FShopDefinition : public FTableRowBase
+struct FHarmoniaShopData : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -263,7 +263,7 @@ struct FShopDefinition : public FTableRowBase
 	float SellPriceModifier = 0.5f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop|Items")
-	TArray<FShopItemData> Items;
+	TArray<FHarmoniaShopItemData> Items;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop|Requirements")
 	int32 RequiredPlayerLevel = 0;
@@ -397,7 +397,7 @@ struct FTransactionRecord
 // Type aliases for consistent naming with subsystems
 // ============================================================================
 
-using FHarmoniaShopItem = FShopItemData;
-using FHarmoniaShopDefinition = FShopDefinition;
+using FHarmoniaShopItem = FHarmoniaShopItemData;
+using FHarmoniaShopDefinition = FHarmoniaShopData;
 using FHarmoniaTradeOffer = FTradeOffer;
 using FHarmoniaTransactionRecord = FTransactionRecord;

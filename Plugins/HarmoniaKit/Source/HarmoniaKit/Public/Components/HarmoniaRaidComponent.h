@@ -8,59 +8,59 @@
 #include "HarmoniaRaidComponent.generated.h"
 
 /**
- * 레이드 멤버 정보
+ * ?�이??멤버 ?�보
  */
 USTRUCT(BlueprintType)
 struct FRaidMemberInfo
 {
 	GENERATED_BODY()
 
-	/** 플레이어 ID */
+	/** ?�레?�어 ID */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	FString PlayerID;
 
-	/** 플레이어 이름 */
+	/** ?�레?�어 ?�름 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	FString PlayerName;
 
-	/** 역할 */
+	/** ??�� */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	ERaidRole Role = ERaidRole::DPS;
 
-	/** 준비 상태 */
+	/** 준�??�태 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	bool bIsReady = false;
 
-	/** 생존 여부 */
+	/** ?�존 ?��? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	bool bIsAlive = true;
 
-	/** 남은 부활 횟수 */
+	/** ?��? 부???�수 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	int32 RemainingRevives = 0;
 };
 
 /**
- * 레이드 페이즈 정보
+ * ?�이???�이�??�보
  */
 USTRUCT(BlueprintType)
 struct FRaidPhaseInfo
 {
 	GENERATED_BODY()
 
-	/** 페이즈 번호 */
+	/** ?�이�?번호 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	int32 PhaseNumber = 1;
 
-	/** 페이즈 이름 */
+	/** ?�이�??�름 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	FText PhaseName;
 
-	/** 보스 체력 임계값 (%) */
+	/** 보스 체력 ?�계�?(%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	float HealthThreshold = 100.0f;
 
-	/** 페이즈 설명 */
+	/** ?�이�??�명 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	FText PhaseDescription;
 };
@@ -72,8 +72,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnRaidMemberDied, const FString&, 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRaidWipe, int32, CurrentPhase);
 
 /**
- * 레이드 컴포넌트
- * 레이드 전투를 관리하는 컴포넌트
+ * ?�이??컴포?�트
+ * ?�이???�투�?관리하??컴포?�트
  */
 UCLASS(ClassGroup = (Harmonia), meta = (BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaRaidComponent : public UActorComponent
@@ -87,7 +87,7 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	//~ 델리게이트
+	//~ ?�리게이??
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Raid")
 	FOnRaidMemberJoined OnRaidMemberJoined;
 
@@ -103,17 +103,17 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Raid")
 	FOnRaidWipe OnRaidWipe;
 
-	//~ 멤버 관리
+	//~ 멤버 관�?
 
-	/** 멤버 추가 */
+	/** 멤버 추�? */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Raid")
 	bool AddMember(const FRaidMemberInfo& MemberInfo);
 
-	/** 멤버 제거 */
+	/** 멤버 ?�거 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Raid")
 	bool RemoveMember(const FString& PlayerID);
 
-	/** 멤버 정보 조회 */
+	/** 멤버 ?�보 조회 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Raid")
 	FRaidMemberInfo GetMemberInfo(const FString& PlayerID) const;
 
@@ -121,96 +121,96 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Raid")
 	TArray<FRaidMemberInfo> GetAllMembers() const;
 
-	/** 역할별 멤버 조회 */
+	/** ??���?멤버 조회 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Raid")
 	TArray<FRaidMemberInfo> GetMembersByRole(ERaidRole Role) const;
 
-	/** 공격대 크기 */
+	/** 공격?� ?�기 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Raid")
 	int32 GetRaidSize() const { return RaidMembers.Num(); }
 
-	//~ 준비 상태
+	//~ 준�??�태
 
-	/** 준비 완료 */
+	/** 준�??�료 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Raid")
 	void SetMemberReady(const FString& PlayerID, bool bReady);
 
-	/** 모든 멤버 준비 확인 */
+	/** 모든 멤버 준�??�인 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Raid")
 	bool AreAllMembersReady() const;
 
-	/** 준비된 멤버 수 */
+	/** 준비된 멤버 ??*/
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Raid")
 	int32 GetReadyMemberCount() const;
 
-	//~ 페이즈 관리
+	//~ ?�이�?관�?
 
-	/** 현재 페이즈 */
+	/** ?�재 ?�이�?*/
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Raid")
 	int32 GetCurrentPhase() const { return CurrentPhase; }
 
-	/** 페이즈 전환 */
+	/** ?�이�??�환 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Raid")
 	void AdvanceToNextPhase();
 
-	/** 페이즈 정보 조회 */
+	/** ?�이�??�보 조회 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Raid")
 	FRaidPhaseInfo GetPhaseInfo(int32 PhaseNumber) const;
 
-	//~ 전투 관리
+	//~ ?�투 관�?
 
-	/** 멤버 사망 처리 */
+	/** 멤버 ?�망 처리 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Raid")
 	void OnMemberDeath(const FString& PlayerID);
 
-	/** 멤버 부활 */
+	/** 멤버 부??*/
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Raid")
 	bool ReviveMember(const FString& PlayerID);
 
-	/** 생존 멤버 수 */
+	/** ?�존 멤버 ??*/
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Raid")
 	int32 GetAliveMemberCount() const;
 
-	/** 전멸 체크 */
+	/** ?�멸 체크 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Raid")
 	bool IsWiped() const;
 
-	//~ 역할 구성 검증
+	//~ ??�� 구성 검�?
 
-	/** 역할 구성 확인 */
+	/** ??�� 구성 ?�인 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Raid")
 	bool ValidateRoleComposition(const URaidDataAsset* RaidData) const;
 
-	/** 역할별 인원 수 */
+	/** ??���??�원 ??*/
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Raid")
 	TMap<ERaidRole, int32> GetRoleDistribution() const;
 
 protected:
-	/** 레이드 멤버 목록 */
+	/** ?�이??멤버 목록 */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Raid")
 	TMap<FString, FRaidMemberInfo> RaidMembers;
 
-	/** 현재 페이즈 */
+	/** ?�재 ?�이�?*/
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Raid")
 	int32 CurrentPhase;
 
-	/** 페이즈 정보 목록 */
+	/** ?�이�??�보 목록 */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Raid")
 	TArray<FRaidPhaseInfo> PhaseInfos;
 
-	/** 전역 부활 제한 */
+	/** ?�역 부???�한 */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Raid")
 	int32 GlobalReviveLimit;
 
-	/** 사용된 부활 횟수 */
+	/** ?�용??부???�수 */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Raid")
 	int32 UsedRevives;
 
-	/** 레이드 데이터 */
+	/** ?�이???�이??*/
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Raid")
 	const URaidDataAsset* CurrentRaidData;
 
 private:
-	/** 전멸 처리 */
+	/** ?�멸 처리 */
 	void ProcessWipe();
 };

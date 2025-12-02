@@ -55,7 +55,7 @@ void UHarmoniaMusicWidget::UpdateInstrumentDisplay(EInstrumentType InstrumentTyp
 	if (InstrumentTierText)
 	{
 		InstrumentTierText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaMusic", "InstrumentTier", "등급 {0}"),
+			NSLOCTEXT("HarmoniaMusic", "InstrumentTier", "?�급 {0}"),
 			FText::AsNumber(InstrumentTier)));
 	}
 
@@ -201,14 +201,14 @@ void UHarmoniaMusicWidget::ShowPerformanceResult(EPerformanceQuality Quality, in
 	if (FinalScoreText)
 	{
 		FinalScoreText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaMusic", "FinalScore", "점수: {0}"),
+			NSLOCTEXT("HarmoniaMusic", "FinalScore", "?�수: {0}"),
 			FText::AsNumber(FinalScore)));
 	}
 
 	if (MaxComboText)
 	{
 		MaxComboText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaMusic", "MaxCombo", "최대 콤보: {0}"),
+			NSLOCTEXT("HarmoniaMusic", "MaxCombo", "최�? 콤보: {0}"),
 			FText::AsNumber(MaxCombo)));
 	}
 
@@ -273,19 +273,19 @@ FText UHarmoniaMusicWidget::GetInstrumentTypeName(EInstrumentType Type) const
 	case EInstrumentType::Lute:
 		return NSLOCTEXT("HarmoniaMusic", "InstrumentLute", "류트");
 	case EInstrumentType::Flute:
-		return NSLOCTEXT("HarmoniaMusic", "InstrumentFlute", "플루트");
+		return NSLOCTEXT("HarmoniaMusic", "InstrumentFlute", "?�루??);
 	case EInstrumentType::Harp:
-		return NSLOCTEXT("HarmoniaMusic", "InstrumentHarp", "하프");
+		return NSLOCTEXT("HarmoniaMusic", "InstrumentHarp", "?�프");
 	case EInstrumentType::Drum:
-		return NSLOCTEXT("HarmoniaMusic", "InstrumentDrum", "드럼");
+		return NSLOCTEXT("HarmoniaMusic", "InstrumentDrum", "?�럼");
 	case EInstrumentType::Horn:
-		return NSLOCTEXT("HarmoniaMusic", "InstrumentHorn", "호른");
+		return NSLOCTEXT("HarmoniaMusic", "InstrumentHorn", "?�른");
 	case EInstrumentType::Violin:
-		return NSLOCTEXT("HarmoniaMusic", "InstrumentViolin", "바이올린");
+		return NSLOCTEXT("HarmoniaMusic", "InstrumentViolin", "바이?�린");
 	case EInstrumentType::Piano:
-		return NSLOCTEXT("HarmoniaMusic", "InstrumentPiano", "피아노");
+		return NSLOCTEXT("HarmoniaMusic", "InstrumentPiano", "?�아??);
 	case EInstrumentType::Guitar:
-		return NSLOCTEXT("HarmoniaMusic", "InstrumentGuitar", "기타");
+		return NSLOCTEXT("HarmoniaMusic", "InstrumentGuitar", "기�?");
 	default:
 		return FText::GetEmpty();
 	}
@@ -296,17 +296,17 @@ FText UHarmoniaMusicWidget::GetGenreText(EMusicGenre Genre) const
 	switch (Genre)
 	{
 	case EMusicGenre::Classical:
-		return NSLOCTEXT("HarmoniaMusic", "GenreClassical", "클래식");
+		return NSLOCTEXT("HarmoniaMusic", "GenreClassical", "?�래??);
 	case EMusicGenre::Folk:
 		return NSLOCTEXT("HarmoniaMusic", "GenreFolk", "민속");
 	case EMusicGenre::Battle:
-		return NSLOCTEXT("HarmoniaMusic", "GenreBattle", "전투");
+		return NSLOCTEXT("HarmoniaMusic", "GenreBattle", "?�투");
 	case EMusicGenre::Healing:
 		return NSLOCTEXT("HarmoniaMusic", "GenreHealing", "치유");
 	case EMusicGenre::Buff:
 		return NSLOCTEXT("HarmoniaMusic", "GenreBuff", "버프");
 	case EMusicGenre::Debuff:
-		return NSLOCTEXT("HarmoniaMusic", "GenreDebuff", "디버프");
+		return NSLOCTEXT("HarmoniaMusic", "GenreDebuff", "?�버??);
 	default:
 		return FText::GetEmpty();
 	}
@@ -317,17 +317,17 @@ FText UHarmoniaMusicWidget::GetQualityText(EPerformanceQuality Quality) const
 	switch (Quality)
 	{
 	case EPerformanceQuality::Poor:
-		return NSLOCTEXT("HarmoniaMusic", "QualityPoor", "부족");
+		return NSLOCTEXT("HarmoniaMusic", "QualityPoor", "부�?);
 	case EPerformanceQuality::Fair:
 		return NSLOCTEXT("HarmoniaMusic", "QualityFair", "보통");
 	case EPerformanceQuality::Good:
 		return NSLOCTEXT("HarmoniaMusic", "QualityGood", "좋음");
 	case EPerformanceQuality::Great:
-		return NSLOCTEXT("HarmoniaMusic", "QualityGreat", "훌륭함");
+		return NSLOCTEXT("HarmoniaMusic", "QualityGreat", "?��???);
 	case EPerformanceQuality::Perfect:
-		return NSLOCTEXT("HarmoniaMusic", "QualityPerfect", "완벽");
+		return NSLOCTEXT("HarmoniaMusic", "QualityPerfect", "?�벽");
 	case EPerformanceQuality::Legendary:
-		return NSLOCTEXT("HarmoniaMusic", "QualityLegendary", "전설");
+		return NSLOCTEXT("HarmoniaMusic", "QualityLegendary", "?�설");
 	default:
 		return FText::GetEmpty();
 	}
@@ -358,7 +358,7 @@ FText UHarmoniaMusicWidget::GetDifficultyText(int32 Difficulty) const
 {
 	if (Difficulty <= 2)
 	{
-		return NSLOCTEXT("HarmoniaMusic", "DifficultyEasy", "쉬움");
+		return NSLOCTEXT("HarmoniaMusic", "DifficultyEasy", "?��?");
 	}
 	else if (Difficulty <= 4)
 	{
@@ -366,15 +366,15 @@ FText UHarmoniaMusicWidget::GetDifficultyText(int32 Difficulty) const
 	}
 	else if (Difficulty <= 6)
 	{
-		return NSLOCTEXT("HarmoniaMusic", "DifficultyHard", "어려움");
+		return NSLOCTEXT("HarmoniaMusic", "DifficultyHard", "?�려?�");
 	}
 	else if (Difficulty <= 8)
 	{
-		return NSLOCTEXT("HarmoniaMusic", "DifficultyExpert", "전문가");
+		return NSLOCTEXT("HarmoniaMusic", "DifficultyExpert", "?�문가");
 	}
 	else
 	{
-		return NSLOCTEXT("HarmoniaMusic", "DifficultyMaster", "마스터");
+		return NSLOCTEXT("HarmoniaMusic", "DifficultyMaster", "마스??);
 	}
 }
 
@@ -384,40 +384,40 @@ FText UHarmoniaMusicWidget::FormatBuffEffects(const FMusicBuffEffect& BuffEffect
 
 	if (BuffEffect.HealthRegenPerSecond > 0.0f)
 	{
-		Effects.Add(FString::Printf(TEXT("체력 재생 +%.1f/초"), BuffEffect.HealthRegenPerSecond));
+		Effects.Add(FString::Printf(TEXT("체력 ?�생 +%.1f/�?), BuffEffect.HealthRegenPerSecond));
 	}
 	if (BuffEffect.ManaRegenPerSecond > 0.0f)
 	{
-		Effects.Add(FString::Printf(TEXT("마나 재생 +%.1f/초"), BuffEffect.ManaRegenPerSecond));
+		Effects.Add(FString::Printf(TEXT("마나 ?�생 +%.1f/�?), BuffEffect.ManaRegenPerSecond));
 	}
 	if (BuffEffect.StaminaRegenPerSecond > 0.0f)
 	{
-		Effects.Add(FString::Printf(TEXT("스태미나 재생 +%.1f/초"), BuffEffect.StaminaRegenPerSecond));
+		Effects.Add(FString::Printf(TEXT("?�태미나 ?�생 +%.1f/�?), BuffEffect.StaminaRegenPerSecond));
 	}
 	if (BuffEffect.AttackBonus > 0.0f)
 	{
-		Effects.Add(FString::Printf(TEXT("공격력 +%.0f%%"), BuffEffect.AttackBonus));
+		Effects.Add(FString::Printf(TEXT("공격??+%.0f%%"), BuffEffect.AttackBonus));
 	}
 	if (BuffEffect.DefenseBonus > 0.0f)
 	{
-		Effects.Add(FString::Printf(TEXT("방어력 +%.0f%%"), BuffEffect.DefenseBonus));
+		Effects.Add(FString::Printf(TEXT("방어??+%.0f%%"), BuffEffect.DefenseBonus));
 	}
 	if (BuffEffect.SpeedBonus > 0.0f)
 	{
-		Effects.Add(FString::Printf(TEXT("이동속도 +%.0f%%"), BuffEffect.SpeedBonus));
+		Effects.Add(FString::Printf(TEXT("?�동?�도 +%.0f%%"), BuffEffect.SpeedBonus));
 	}
 	if (BuffEffect.CriticalChanceBonus > 0.0f)
 	{
-		Effects.Add(FString::Printf(TEXT("크리티컬 +%.0f%%"), BuffEffect.CriticalChanceBonus));
+		Effects.Add(FString::Printf(TEXT("?�리?�컬 +%.0f%%"), BuffEffect.CriticalChanceBonus));
 	}
 	if (BuffEffect.CooldownReduction > 0.0f)
 	{
-		Effects.Add(FString::Printf(TEXT("쿨다운 감소 %.0f%%"), BuffEffect.CooldownReduction));
+		Effects.Add(FString::Printf(TEXT("쿨다??감소 %.0f%%"), BuffEffect.CooldownReduction));
 	}
 
 	if (Effects.Num() == 0)
 	{
-		return NSLOCTEXT("HarmoniaMusic", "NoBuffEffect", "효과 없음");
+		return NSLOCTEXT("HarmoniaMusic", "NoBuffEffect", "?�과 ?�음");
 	}
 
 	return FText::FromString(FString::Join(Effects, TEXT("\n")));

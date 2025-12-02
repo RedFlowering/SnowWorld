@@ -127,7 +127,7 @@ bool UHarmoniaCraftingComponent::StartCrafting(FHarmoniaID RecipeId)
 	}
 
 	// Get recipe data
-	FCraftingRecipeData RecipeData;
+	FHarmoniaCraftingRecipeData RecipeData;
 	if (!GetRecipeData(RecipeId, RecipeData))
 	{
 		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("UHarmoniaCraftingComponent::StartCrafting - Recipe not found: %s"), *RecipeId.ToString());
@@ -226,7 +226,7 @@ void UHarmoniaCraftingComponent::CancelCrafting()
 	// Refund materials based on progress (less progress = more refund)
 	if (bRefundMaterialsOnCancel)
 	{
-		FCraftingRecipeData RecipeData;
+		FHarmoniaCraftingRecipeData RecipeData;
 		if (GetRecipeData(RecipeId, RecipeData))
 		{
 			float Progress = ActiveSession.GetProgress();
@@ -275,7 +275,7 @@ bool UHarmoniaCraftingComponent::CanCraftRecipe(FHarmoniaID RecipeId, TArray<FCr
 	OutMissingMaterials.Empty();
 
 	// Get recipe data
-	FCraftingRecipeData RecipeData;
+	FHarmoniaCraftingRecipeData RecipeData;
 	if (!GetRecipeData(RecipeId, RecipeData))
 	{
 		return false;
@@ -312,7 +312,7 @@ bool UHarmoniaCraftingComponent::CanCraftRecipe(FHarmoniaID RecipeId, TArray<FCr
 	return OutMissingMaterials.Num() == 0;
 }
 
-bool UHarmoniaCraftingComponent::GetRecipeData(FHarmoniaID RecipeId, FCraftingRecipeData& OutRecipeData) const
+bool UHarmoniaCraftingComponent::GetRecipeData(FHarmoniaID RecipeId, FHarmoniaCraftingRecipeData& OutRecipeData) const
 {
 	if (!RecipeDataTable)
 	{
@@ -322,7 +322,7 @@ bool UHarmoniaCraftingComponent::GetRecipeData(FHarmoniaID RecipeId, FCraftingRe
 
 	// Find recipe by row name
 	static const FString ContextString(TEXT("GetRecipeData"));
-	FCraftingRecipeData* FoundRecipe = RecipeDataTable->FindRow<FCraftingRecipeData>(RecipeId.Id, ContextString, false);
+	FHarmoniaCraftingRecipeData* FoundRecipe = RecipeDataTable->FindRow<FHarmoniaCraftingRecipeData>(RecipeId.Id, ContextString, false);
 
 	if (FoundRecipe)
 	{
@@ -333,9 +333,9 @@ bool UHarmoniaCraftingComponent::GetRecipeData(FHarmoniaID RecipeId, FCraftingRe
 	return false;
 }
 
-TArray<FCraftingRecipeData> UHarmoniaCraftingComponent::GetAvailableRecipes(FGameplayTag CategoryTag) const
+TArray<FHarmoniaCraftingRecipeData> UHarmoniaCraftingComponent::GetAvailableRecipes(FGameplayTag CategoryTag) const
 {
-	TArray<FCraftingRecipeData> AvailableRecipes;
+	TArray<FHarmoniaCraftingRecipeData> AvailableRecipes;
 
 	if (!RecipeDataTable)
 	{
@@ -343,10 +343,10 @@ TArray<FCraftingRecipeData> UHarmoniaCraftingComponent::GetAvailableRecipes(FGam
 	}
 
 	// Get all recipes
-	TArray<FCraftingRecipeData*> AllRecipes;
-	RecipeDataTable->GetAllRows<FCraftingRecipeData>(TEXT("GetAvailableRecipes"), AllRecipes);
+	TArray<FHarmoniaCraftingRecipeData*> AllRecipes;
+	RecipeDataTable->GetAllRows<FHarmoniaCraftingRecipeData>(TEXT("GetAvailableRecipes"), AllRecipes);
 
-	for (FCraftingRecipeData* Recipe : AllRecipes)
+	for (FHarmoniaCraftingRecipeData* Recipe : AllRecipes)
 	{
 		if (!Recipe)
 		{
@@ -394,7 +394,7 @@ bool UHarmoniaCraftingComponent::LearnRecipe(FHarmoniaID RecipeId)
 	}
 
 	// Verify recipe exists
-	FCraftingRecipeData RecipeData;
+	FHarmoniaCraftingRecipeData RecipeData;
 	if (!GetRecipeData(RecipeId, RecipeData))
 	{
 		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("UHarmoniaCraftingComponent::LearnRecipe - Recipe not found: %s"), *RecipeId.ToString());
@@ -431,10 +431,10 @@ void UHarmoniaCraftingComponent::ForgetRecipe(FHarmoniaID RecipeId)
 //~ Grade System
 //~==============================================
 
-bool UHarmoniaCraftingComponent::GetGradeConfig(EItemGrade Grade, FItemGradeConfig& OutGradeConfig) const
+bool UHarmoniaCraftingComponent::GetGradeConfig(EItemGrade Grade, FHarmoniaItemGradeConfig& OutGradeConfig) const
 {
 	// Use cached lookup for O(1) performance
-	const FItemGradeConfig* Config = GradeConfigCache.Find(Grade);
+	const FHarmoniaItemGradeConfig* Config = GradeConfigCache.Find(Grade);
 	if (Config)
 	{
 		OutGradeConfig = *Config;
@@ -446,7 +446,7 @@ bool UHarmoniaCraftingComponent::GetGradeConfig(EItemGrade Grade, FItemGradeConf
 
 FLinearColor UHarmoniaCraftingComponent::GetGradeColor(EItemGrade Grade) const
 {
-	FItemGradeConfig GradeConfig;
+	FHarmoniaItemGradeConfig GradeConfig;
 	if (GetGradeConfig(Grade, GradeConfig))
 	{
 		return GradeConfig.GradeColor;
@@ -467,7 +467,7 @@ FLinearColor UHarmoniaCraftingComponent::GetGradeColor(EItemGrade Grade) const
 
 FText UHarmoniaCraftingComponent::GetGradeDisplayName(EItemGrade Grade) const
 {
-	FItemGradeConfig GradeConfig;
+	FHarmoniaItemGradeConfig GradeConfig;
 	if (GetGradeConfig(Grade, GradeConfig))
 	{
 		return GradeConfig.DisplayName;
@@ -498,7 +498,7 @@ void UHarmoniaCraftingComponent::CompleteCrafting()
 	}
 
 	// Get recipe data
-	FCraftingRecipeData RecipeData;
+	FHarmoniaCraftingRecipeData RecipeData;
 	if (!GetRecipeData(ActiveSession.RecipeId, RecipeData))
 	{
 		UE_LOG(LogHarmoniaCrafting, Error, TEXT("UHarmoniaCraftingComponent::CompleteCrafting - Recipe not found: %s"), *ActiveSession.RecipeId.ToString());
@@ -600,7 +600,7 @@ bool UHarmoniaCraftingComponent::ConsumeMaterials(const TArray<FCraftingMaterial
 	return true;
 }
 
-ECraftingResult UHarmoniaCraftingComponent::DetermineCraftingResult(const FCraftingRecipeData& Recipe) const
+ECraftingResult UHarmoniaCraftingComponent::DetermineCraftingResult(const FHarmoniaCraftingRecipeData& Recipe) const
 {
 	// Roll for critical success first
 	if (Recipe.CriticalSuccessChance > 0.0f)
@@ -694,7 +694,7 @@ void UHarmoniaCraftingComponent::StopCraftingAnimation()
 	}
 }
 
-bool UHarmoniaCraftingComponent::MeetsRecipeRequirements(const FCraftingRecipeData& Recipe) const
+bool UHarmoniaCraftingComponent::MeetsRecipeRequirements(const FHarmoniaCraftingRecipeData& Recipe) const
 {
 	// Check level requirement
 	int32 CharacterLevel = GetCharacterLevel();
@@ -789,10 +789,10 @@ void UHarmoniaCraftingComponent::ClearCurrentStation()
 	UE_LOG(LogHarmoniaCrafting, Log, TEXT("UHarmoniaCraftingComponent::ClearCurrentStation - Station cleared"));
 }
 
-bool UHarmoniaCraftingComponent::GetStationData(ECraftingStationType StationType, FCraftingStationData& OutStationData) const
+bool UHarmoniaCraftingComponent::GetStationData(ECraftingStationType StationType, FHarmoniaCraftingStationData& OutStationData) const
 {
 	// Use cached lookup for O(1) performance
-	const FCraftingStationData* Station = StationDataCache.Find(StationType);
+	const FHarmoniaCraftingStationData* Station = StationDataCache.Find(StationType);
 	if (Station)
 	{
 		OutStationData = *Station;
@@ -802,7 +802,7 @@ bool UHarmoniaCraftingComponent::GetStationData(ECraftingStationType StationType
 	return false;
 }
 
-bool UHarmoniaCraftingComponent::CheckStationRequirement(const FCraftingRecipeData& RecipeData) const
+bool UHarmoniaCraftingComponent::CheckStationRequirement(const FHarmoniaCraftingRecipeData& RecipeData) const
 {
 	// If recipe doesn't require a station, it can be crafted anywhere
 	if (RecipeData.RequiredStation == ECraftingStationType::None)
@@ -835,9 +835,9 @@ bool UHarmoniaCraftingComponent::CheckStationRequirement(const FCraftingRecipeDa
 	return true;
 }
 
-TArray<FCraftingRecipeData> UHarmoniaCraftingComponent::GetRecipesForCurrentStation(FGameplayTag CategoryTag) const
+TArray<FHarmoniaCraftingRecipeData> UHarmoniaCraftingComponent::GetRecipesForCurrentStation(FGameplayTag CategoryTag) const
 {
-	TArray<FCraftingRecipeData> AvailableRecipes;
+	TArray<FHarmoniaCraftingRecipeData> AvailableRecipes;
 
 	if (!RecipeDataTable)
 	{
@@ -845,10 +845,10 @@ TArray<FCraftingRecipeData> UHarmoniaCraftingComponent::GetRecipesForCurrentStat
 	}
 
 	// Get all recipes
-	TArray<FCraftingRecipeData*> AllRecipes;
-	RecipeDataTable->GetAllRows<FCraftingRecipeData>(TEXT("GetRecipesForCurrentStation"), AllRecipes);
+	TArray<FHarmoniaCraftingRecipeData*> AllRecipes;
+	RecipeDataTable->GetAllRows<FHarmoniaCraftingRecipeData>(TEXT("GetRecipesForCurrentStation"), AllRecipes);
 
-	for (FCraftingRecipeData* Recipe : AllRecipes)
+	for (FHarmoniaCraftingRecipeData* Recipe : AllRecipes)
 	{
 		if (!Recipe)
 		{
@@ -964,7 +964,7 @@ bool UHarmoniaCraftingComponent::ServerLearnRecipe_Validate(FHarmoniaID RecipeId
 	}
 
 	// Verify recipe exists in data table
-	FCraftingRecipeData RecipeData;
+	FHarmoniaCraftingRecipeData RecipeData;
 	if (!GetRecipeData(RecipeId, RecipeData))
 	{
 		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] Player %s: Attempted to learn non-existent recipe %s"),
@@ -1057,9 +1057,9 @@ void UHarmoniaCraftingComponent::CacheConfigurationData()
 	GradeConfigCache.Empty();
 	if (GradeConfigDataTable)
 	{
-		TArray<FItemGradeConfig*> AllGradeConfigs;
-		GradeConfigDataTable->GetAllRows<FItemGradeConfig>(TEXT("CacheGradeConfig"), AllGradeConfigs);
-		for (FItemGradeConfig* Config : AllGradeConfigs)
+		TArray<FHarmoniaItemGradeConfig*> AllGradeConfigs;
+		GradeConfigDataTable->GetAllRows<FHarmoniaItemGradeConfig>(TEXT("CacheGradeConfig"), AllGradeConfigs);
+		for (FHarmoniaItemGradeConfig* Config : AllGradeConfigs)
 		{
 			if (Config)
 			{
@@ -1073,9 +1073,9 @@ void UHarmoniaCraftingComponent::CacheConfigurationData()
 	StationDataCache.Empty();
 	if (StationDataTable)
 	{
-		TArray<FCraftingStationData*> AllStations;
-		StationDataTable->GetAllRows<FCraftingStationData>(TEXT("CacheStationData"), AllStations);
-		for (FCraftingStationData* Station : AllStations)
+		TArray<FHarmoniaCraftingStationData*> AllStations;
+		StationDataTable->GetAllRows<FHarmoniaCraftingStationData>(TEXT("CacheStationData"), AllStations);
+		for (FHarmoniaCraftingStationData* Station : AllStations)
 		{
 			if (Station)
 			{
@@ -1150,7 +1150,7 @@ bool UHarmoniaCraftingComponent::ServerSetCurrentStation_Validate(ECraftingStati
 	}
 
 	// Validate station type exists in data
-	FCraftingStationData StationData;
+	FHarmoniaCraftingStationData StationData;
 	if (!GetStationData(StationType, StationData))
 	{
 		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStation: Invalid StationType %d"), (int32)StationType);
@@ -1187,7 +1187,7 @@ bool UHarmoniaCraftingComponent::ServerSetCurrentStationWithActor_Validate(AActo
 	}
 
 	// Validate station type exists
-	FCraftingStationData StationData;
+	FHarmoniaCraftingStationData StationData;
 	if (!GetStationData(StationType, StationData))
 	{
 		UE_LOG(LogHarmoniaCrafting, Warning, TEXT("[ANTI-CHEAT] ServerSetCurrentStationWithActor: Invalid StationType %d"), (int32)StationType);
@@ -1278,10 +1278,10 @@ void UHarmoniaCraftingComponent::Debug_LearnAllRecipes()
 		return;
 	}
 
-	TArray<FCraftingRecipeData*> AllRecipes;
-	RecipeDataTable->GetAllRows<FCraftingRecipeData>(TEXT("Debug_LearnAllRecipes"), AllRecipes);
+	TArray<FHarmoniaCraftingRecipeData*> AllRecipes;
+	RecipeDataTable->GetAllRows<FHarmoniaCraftingRecipeData>(TEXT("Debug_LearnAllRecipes"), AllRecipes);
 
-	for (FCraftingRecipeData* Recipe : AllRecipes)
+	for (FHarmoniaCraftingRecipeData* Recipe : AllRecipes)
 	{
 		if (Recipe)
 		{

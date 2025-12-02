@@ -38,7 +38,7 @@ enum class ECosmeticRarity : uint8
  * Cosmetic item definition
  */
 USTRUCT(BlueprintType)
-struct FHarmoniaCosmeticItem : public FTableRowBase
+struct FHarmoniaCosmeticItemData : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -78,7 +78,7 @@ struct FHarmoniaCosmeticItem : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cosmetic")
 	TSoftObjectPtr<UParticleSystem> Particle;
 
-	FHarmoniaCosmeticItem()
+	FHarmoniaCosmeticItemData()
 		: CosmeticId()
 		, DisplayName()
 		, Description()

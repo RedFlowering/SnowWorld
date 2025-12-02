@@ -27,7 +27,7 @@ public:
 	int32 MaxSockets = 3;
 
 	// Pity System Settings
-	/** 기본 천장 ?�계�?*/
+	/** 기본 천장 ?�계�?*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Pity", meta = (ClampMin = "1"))
 	int32 BasePityThreshold = 10;
 
@@ -35,14 +35,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Pity", meta = (ClampMin = "0"))
 	int32 PityThresholdPerLevel = 1;
 
-	/** ?�패???�공�?보너??(0.0 = 비활?�화) */
+	/** ?�패???�공�?보너??(0.0 = 비활?�화) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Pity", meta = (ClampMin = "0.0", ClampMax = "0.1"))
 	float PityBonusPerFailure = 0.01f;
 
 	// Enhancement Level Definitions
 	/** 기본 강화 ?�벨 ?�의 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|Levels")
-	TArray<FEnhancementLevelConfig> DefaultEnhancementLevels;
+	TArray<FHarmoniaEnhancementLevelConfig> DefaultEnhancementLevels;
 
 	// Enchantment Definitions
 	/** 기본 마법부???�의 */
@@ -59,11 +59,11 @@ public:
 	int64 BaseCurrencyCost = 1000;
 
 	// UI Settings
-	/** 강화 결과 ?�시 ?�간 (�? */
+	/** 강화 결과 ?�시 ?�간 (�? */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|UI", meta = (ClampMin = "0.0"))
 	float ResultDisplayDuration = 2.0f;
 
-	/** 강화 ?�니메이???�생 ?�간 (�? */
+	/** 강화 ?�니메이???�생 ?�간 (�? */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhancement|UI", meta = (ClampMin = "0.0"))
 	float EnhancementAnimationDuration = 1.5f;
 
@@ -86,7 +86,7 @@ public:
 		InitializeDefaultLevels();
 	}
 
-	/** 기본 강화 레벨 초기화 */
+	/** 기본 강화 ?�벨 초기??*/
 	void InitializeDefaultLevels()
 	{
 		DefaultEnhancementLevels.Reset();
@@ -94,7 +94,7 @@ public:
 		// +1 ~ +5: High success rate, no penalties
 		for (int32 i = 1; i <= 5; ++i)
 		{
-			FEnhancementLevelConfig Level;
+			FHarmoniaEnhancementLevelConfig Level;
 			Level.Level = i;
 			Level.SuccessChance = 1.0f - (i * 0.05f);  // 95% -> 75%
 			Level.GreatSuccessChance = 0.1f;
@@ -108,7 +108,7 @@ public:
 		// +6 ~ +10: Medium success rate, downgrade possible
 		for (int32 i = 6; i <= 10; ++i)
 		{
-			FEnhancementLevelConfig Level;
+			FHarmoniaEnhancementLevelConfig Level;
 			Level.Level = i;
 			Level.SuccessChance = 0.7f - ((i - 6) * 0.05f);  // 70% -> 50%
 			Level.GreatSuccessChance = 0.05f;
@@ -122,7 +122,7 @@ public:
 		// +11 ~ +15: Low success rate, destruction possible
 		for (int32 i = 11; i <= 15; ++i)
 		{
-			FEnhancementLevelConfig Level;
+			FHarmoniaEnhancementLevelConfig Level;
 			Level.Level = i;
 			Level.SuccessChance = 0.45f - ((i - 11) * 0.05f);  // 45% -> 25%
 			Level.GreatSuccessChance = 0.02f;

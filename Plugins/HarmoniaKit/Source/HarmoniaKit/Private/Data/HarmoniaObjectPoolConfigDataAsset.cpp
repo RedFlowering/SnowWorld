@@ -4,7 +4,7 @@
 
 UHarmoniaObjectPoolConfigDataAsset::UHarmoniaObjectPoolConfigDataAsset()
 {
-	// 기본값은 구조체에서 초기화됨
+	// 기본값�? 구조체에??초기?�됨
 }
 
 bool UHarmoniaObjectPoolConfigDataAsset::GetPoolConfigByTag(FGameplayTag PoolTag, FHarmoniaPoolConfig& OutConfig) const

@@ -38,7 +38,7 @@ void UHarmoniaGatheringWidget::UpdateToolDisplay(EGatheringToolType ToolType, in
 	if (ToolTierText)
 	{
 		ToolTierText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaGathering", "ToolTier", "등급 {0}"),
+			NSLOCTEXT("HarmoniaGathering", "ToolTier", "?�급 {0}"),
 			FText::AsNumber(ToolTier)));
 	}
 
@@ -97,7 +97,7 @@ void UHarmoniaGatheringWidget::ShowResourceInfo(const FGatheringResourceData& Re
 	if (RequiredLevelText)
 	{
 		RequiredLevelText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaGathering", "RequiredLevel", "필요 레벨: {0}"),
+			NSLOCTEXT("HarmoniaGathering", "RequiredLevel", "?�요 ?�벨: {0}"),
 			FText::AsNumber(ResourceData.MinGatheringLevel)));
 	}
 }
@@ -122,7 +122,7 @@ void UHarmoniaGatheringWidget::ShowGatheredResult(const FName& ResourceName, int
 		if (bCritical)
 		{
 			GatheredResultText->SetText(FText::Format(
-				NSLOCTEXT("HarmoniaGathering", "CriticalGather", "★ 크리티컬! {0} x{1} ★"),
+				NSLOCTEXT("HarmoniaGathering", "CriticalGather", "???�리?�컬! {0} x{1} ??),
 				FText::FromName(ResourceName),
 				FText::AsNumber(Amount)));
 			GatheredResultText->SetColorAndOpacity(FLinearColor(1.0f, 0.84f, 0.0f)); // Gold
@@ -143,13 +143,13 @@ FText UHarmoniaGatheringWidget::GetToolTypeName(EGatheringToolType ToolType) con
 	switch (ToolType)
 	{
 	case EGatheringToolType::None:
-		return NSLOCTEXT("HarmoniaGathering", "ToolNone", "없음");
+		return NSLOCTEXT("HarmoniaGathering", "ToolNone", "?�음");
 	case EGatheringToolType::Pickaxe:
-		return NSLOCTEXT("HarmoniaGathering", "ToolPickaxe", "곡괭이");
+		return NSLOCTEXT("HarmoniaGathering", "ToolPickaxe", "곡괭??);
 	case EGatheringToolType::Axe:
-		return NSLOCTEXT("HarmoniaGathering", "ToolAxe", "도끼");
+		return NSLOCTEXT("HarmoniaGathering", "ToolAxe", "?�끼");
 	case EGatheringToolType::Sickle:
-		return NSLOCTEXT("HarmoniaGathering", "ToolSickle", "낫");
+		return NSLOCTEXT("HarmoniaGathering", "ToolSickle", "??);
 	case EGatheringToolType::Hammer:
 		return NSLOCTEXT("HarmoniaGathering", "ToolHammer", "망치");
 	default:
@@ -164,17 +164,17 @@ FText UHarmoniaGatheringWidget::GetResourceTypeName(EGatheringResourceType Resou
 	case EGatheringResourceType::Mineral:
 		return NSLOCTEXT("HarmoniaGathering", "TypeMineral", "광물");
 	case EGatheringResourceType::Herb:
-		return NSLOCTEXT("HarmoniaGathering", "TypeHerb", "약초");
+		return NSLOCTEXT("HarmoniaGathering", "TypeHerb", "?�초");
 	case EGatheringResourceType::Wood:
 		return NSLOCTEXT("HarmoniaGathering", "TypeWood", "목재");
 	case EGatheringResourceType::Fiber:
-		return NSLOCTEXT("HarmoniaGathering", "TypeFiber", "섬유");
+		return NSLOCTEXT("HarmoniaGathering", "TypeFiber", "?�유");
 	case EGatheringResourceType::Stone:
-		return NSLOCTEXT("HarmoniaGathering", "TypeStone", "석재");
+		return NSLOCTEXT("HarmoniaGathering", "TypeStone", "?�재");
 	case EGatheringResourceType::Crystal:
-		return NSLOCTEXT("HarmoniaGathering", "TypeCrystal", "크리스탈");
+		return NSLOCTEXT("HarmoniaGathering", "TypeCrystal", "?�리?�탈");
 	case EGatheringResourceType::Flower:
-		return NSLOCTEXT("HarmoniaGathering", "TypeFlower", "꽃");
+		return NSLOCTEXT("HarmoniaGathering", "TypeFlower", "�?);
 	case EGatheringResourceType::Mushroom:
 		return NSLOCTEXT("HarmoniaGathering", "TypeMushroom", "버섯");
 	default:
@@ -187,15 +187,15 @@ FText UHarmoniaGatheringWidget::GetRarityText(EGatheringRarity Rarity) const
 	switch (Rarity)
 	{
 	case EGatheringRarity::Common:
-		return NSLOCTEXT("HarmoniaGathering", "RarityCommon", "일반");
+		return NSLOCTEXT("HarmoniaGathering", "RarityCommon", "?�반");
 	case EGatheringRarity::Uncommon:
 		return NSLOCTEXT("HarmoniaGathering", "RarityUncommon", "고급");
 	case EGatheringRarity::Rare:
-		return NSLOCTEXT("HarmoniaGathering", "RarityRare", "희귀");
+		return NSLOCTEXT("HarmoniaGathering", "RarityRare", "?��?");
 	case EGatheringRarity::Epic:
-		return NSLOCTEXT("HarmoniaGathering", "RarityEpic", "영웅");
+		return NSLOCTEXT("HarmoniaGathering", "RarityEpic", "?�웅");
 	case EGatheringRarity::Legendary:
-		return NSLOCTEXT("HarmoniaGathering", "RarityLegendary", "전설");
+		return NSLOCTEXT("HarmoniaGathering", "RarityLegendary", "?�설");
 	default:
 		return FText::GetEmpty();
 	}

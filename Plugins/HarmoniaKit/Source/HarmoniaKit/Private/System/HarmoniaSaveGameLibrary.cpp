@@ -85,7 +85,7 @@ FString UHarmoniaSaveGameLibrary::GetPlayerSteamID(APlayerController* PlayerCont
 		}
 	}
 
-	// 온라인 서브시스템을 사용할 수 없는 경우 PlayerState의 PlayerId 사용
+	// ?�라???�브?�스?�을 ?�용?????�는 경우 PlayerState??PlayerId ?�용
 	if (APlayerState* PS = PlayerController->PlayerState)
 	{
 		return FString::Printf(TEXT("Player_%d"), PS->GetPlayerId());
@@ -101,6 +101,6 @@ bool UHarmoniaSaveGameLibrary::IsServerOwner(APlayerController* PlayerController
 		return false;
 	}
 
-	// 리슨 서버에서는 첫 번째 플레이어가 서버 소유주
+	// 리슨 ?�버?�서??�?번째 ?�레?�어가 ?�버 ?�유�?
 	return PlayerController->GetLocalPlayer() && PlayerController->GetLocalPlayer()->GetControllerId() == 0;
 }

@@ -16,15 +16,15 @@ class UDataTable;
 /**
  * Delegates for quest events
  */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestAdded, FHarmoniaID, QuestId, const FQuestData&, QuestData);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestStarted, FHarmoniaID, QuestId, const FQuestData&, QuestData);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestAdded, FHarmoniaID, QuestId, const FHarmoniaQuestData&, QuestData);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestStarted, FHarmoniaID, QuestId, const FHarmoniaQuestData&, QuestData);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnQuestObjectiveUpdated, FHarmoniaID, QuestId, int32, ObjectiveIndex, const FQuestObjective&, Objective);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestReadyToComplete, FHarmoniaID, QuestId, const FQuestData&, QuestData);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnQuestCompleted, FHarmoniaID, QuestId, const FQuestData&, QuestData, const TArray<FQuestReward>&, Rewards);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestFailed, FHarmoniaID, QuestId, const FQuestData&, QuestData);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestAbandoned, FHarmoniaID, QuestId, const FQuestData&, QuestData);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestReadyToComplete, FHarmoniaID, QuestId, const FHarmoniaQuestData&, QuestData);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnQuestCompleted, FHarmoniaID, QuestId, const FHarmoniaQuestData&, QuestData, const TArray<FQuestReward>&, Rewards);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestFailed, FHarmoniaID, QuestId, const FHarmoniaQuestData&, QuestData);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestAbandoned, FHarmoniaID, QuestId, const FHarmoniaQuestData&, QuestData);
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestUnlocked, FHarmoniaID, QuestId, const FQuestData&, QuestData);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestUnlocked, FHarmoniaID, QuestId, const FHarmoniaQuestData&, QuestData);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestEventTriggered, FHarmoniaID, QuestId, const FQuestEvent&, Event);
 
 /**
@@ -153,7 +153,7 @@ public:
 	 * @return True if quest was found
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Quest")
-	bool GetQuestData(FHarmoniaID QuestId, FQuestData& OutQuestData) const;
+	bool GetQuestData(FHarmoniaID QuestId, FHarmoniaQuestData& OutQuestData) const;
 
 	/**
 	 * Get active quest progress
@@ -426,12 +426,12 @@ protected:
 	/**
 	 * Update statistics on quest completion
 	 */
-	void UpdateQuestStatistics(FHarmoniaID QuestId, const FQuestData& QuestData, float CompletionTime);
+	void UpdateQuestStatistics(FHarmoniaID QuestId, const FHarmoniaQuestData& QuestData, float CompletionTime);
 
 	/**
 	 * Create or update quest log entry
 	 */
-	void UpdateQuestLog(FHarmoniaID QuestId, const FQuestData& QuestData, bool bCompleted);
+	void UpdateQuestLog(FHarmoniaID QuestId, const FHarmoniaQuestData& QuestData, bool bCompleted);
 
 	//~==============================================
 	//~ Quest Party System

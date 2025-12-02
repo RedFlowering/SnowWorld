@@ -21,7 +21,7 @@ enum class EItemCategory : uint8
 
 // Item basic property structure
 USTRUCT(BlueprintType)
-struct FItemData : public FTableRowBase
+struct FHarmoniaItemData : public FTableRowBase
 {
     GENERATED_BODY()
 
@@ -62,7 +62,7 @@ struct FItemData : public FTableRowBase
 
 // Item-specific stats
 USTRUCT(BlueprintType)
-struct FItemStatData : public FTableRowBase
+struct FHarmoniaItemStatData : public FTableRowBase
 {
     GENERATED_BODY()
 

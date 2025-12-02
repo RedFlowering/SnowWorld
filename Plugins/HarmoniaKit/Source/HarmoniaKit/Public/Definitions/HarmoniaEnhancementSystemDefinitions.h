@@ -155,7 +155,7 @@ enum class ERepairKitType : uint8
  * Enhancement level configuration
  */
 USTRUCT(BlueprintType)
-struct FEnhancementLevelConfig : public FTableRowBase
+struct FHarmoniaEnhancementLevelConfig : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -239,7 +239,7 @@ struct FSocketData
  * Gem data (DataTable row)
  */
 USTRUCT(BlueprintType)
-struct FGemData : public FTableRowBase
+struct FHarmoniaGemData : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -338,7 +338,7 @@ struct FReforgeStatEntry
  * Reforge configuration (DataTable row)
  */
 USTRUCT(BlueprintType)
-struct FReforgeConfig : public FTableRowBase
+struct FHarmoniaReforgeConfig : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -406,7 +406,7 @@ struct FTranscendenceMaterial
  * Transcendence configuration (DataTable row)
  */
 USTRUCT(BlueprintType)
-struct FTranscendenceConfig : public FTableRowBase
+struct FHarmoniaTranscendenceConfig : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -484,7 +484,7 @@ struct FTransmogData
  * Repair configuration
  */
 USTRUCT(BlueprintType)
-struct FRepairConfig : public FTableRowBase
+struct FHarmoniaRepairConfig : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -513,7 +513,7 @@ struct FRepairConfig : public FTableRowBase
  * Repair kit data (DataTable row)
  */
 USTRUCT(BlueprintType)
-struct FRepairKitData : public FTableRowBase
+struct FHarmoniaRepairKitData : public FTableRowBase
 {
 	GENERATED_BODY()
 

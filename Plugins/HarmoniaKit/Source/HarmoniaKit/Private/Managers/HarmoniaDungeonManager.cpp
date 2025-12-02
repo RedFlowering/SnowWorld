@@ -12,7 +12,7 @@ void UHarmoniaDungeonManager::Initialize(FSubsystemCollectionBase& Collection)
 
 void UHarmoniaDungeonManager::Deinitialize()
 {
-	// 모든 인스턴스 정리
+	// 모든 ?�스?�스 ?�리
 	ActiveInstances.Empty();
 	MatchmakingQueue.Empty();
 
@@ -141,12 +141,12 @@ void UHarmoniaDungeonManager::StartMatchmaking(const FString& PlayerID, FName Du
 		return;
 	}
 
-	// 간단한 매칭: 바로 인스턴스 생성
+	// 간단??매칭: 바로 ?�스?�스 ?�성
 	FGuid InstanceID = CreateDungeonInstance(DungeonData, Difficulty);
 	AddPlayerToInstance(InstanceID, PlayerID);
 	MatchmakingQueue.Add(PlayerID, InstanceID);
 
-	// 실제 구현에서는 대기 큐에 추가하고 주기적으로 매칭 처리
+	// ?�제 구현?�서???��??�에 추�??�고 주기?�으�?매칭 처리
 }
 
 void UHarmoniaDungeonManager::CancelMatchmaking(const FString& PlayerID)
@@ -180,19 +180,19 @@ void UHarmoniaDungeonManager::SubmitGlobalRanking(FName DungeonID, const FDungeo
 	FDungeonRankingArray& RankingArray = GlobalRankings.FindOrAdd(DungeonID);
 	RankingArray.Rankings.Add(Entry);
 
-	// 점수 순으로 정렬
+	// ?�수 ?�으�??�렬
 	RankingArray.Rankings.Sort([](const FDungeonRankingEntry& A, const FDungeonRankingEntry& B)
 	{
 		return A.Score > B.Score;
 	});
 
-	// 상위 1000개만 유지
+	// ?�위 1000개만 ?��?
 	if (RankingArray.Rankings.Num() > 1000)
 	{
 		RankingArray.Rankings.SetNum(1000);
 	}
 
-	// 통계 업데이트
+	// ?�계 ?�데?�트
 	int32& ClearCount = DungeonClearCounts.FindOrAdd(DungeonID);
 	ClearCount++;
 
@@ -206,7 +206,7 @@ TArray<FDungeonRankingEntry> UHarmoniaDungeonManager::GetSeasonRankings(FName Du
 
 	if (const FDungeonRankingArray* RankingArray = GlobalRankings.Find(DungeonID))
 	{
-		// 시즌별 필터링
+		// ?�즌�??�터�?
 		for (const FDungeonRankingEntry& Entry : RankingArray->Rankings)
 		{
 			if (Entry.SeasonID == SeasonID)
@@ -299,7 +299,7 @@ void UHarmoniaDungeonManager::CleanupExpiredInstances()
 
 	for (const auto& Pair : ActiveInstances)
 	{
-		// 24시간 이상 지난 인스턴스 제거
+		// 24?�간 ?�상 지???�스?�스 ?�거
 		FTimespan Elapsed = Now - Pair.Value.CreationTime;
 		if (Elapsed.GetTotalHours() > 24.0)
 		{
@@ -316,5 +316,5 @@ void UHarmoniaDungeonManager::CleanupExpiredInstances()
 void UHarmoniaDungeonManager::ProcessMatchmaking()
 {
 	// 매칭 로직 구현
-	// 같은 던전, 난이도를 원하는 플레이어들을 그룹화하여 인스턴스 생성
+	// 같�? ?�전, ?�이?��? ?�하???�레?�어?�을 그룹?�하???�스?�스 ?�성
 }

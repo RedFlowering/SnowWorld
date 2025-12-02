@@ -8,8 +8,8 @@
 #include "HarmoniaDeathPenaltyConfigAsset.generated.h"
 
 /**
- * 사망 페널티 설정 데이터 에셋
- * 사망 시 통화 드롭, 메모리 에코, 난이도 조절 등을 정의
+ * ?�망 ?�널???�정 ?�이???�셋
+ * ?�망 ???�화 ?�롭, 메모�??�코, ?�이??조절 ?�을 ?�의
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaDeathPenaltyConfigAsset : public UDataAsset
@@ -19,42 +19,42 @@ class HARMONIAKIT_API UHarmoniaDeathPenaltyConfigAsset : public UDataAsset
 public:
 	UHarmoniaDeathPenaltyConfigAsset();
 
-	//~ 기본 설정
-	/** 사망 페널티 활성화 여부 */
+	//~ 기본 ?�정
+	/** ?�망 ?�널???�성???��? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty")
 	bool bEnableDeathPenalty;
 
-	/** 메모리 에코 마커 표시 여부 */
+	/** 메모�??�코 마커 ?�시 ?��? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty|Memory Echo")
 	bool bShowMemoryEchoMarker;
 
-	/** 메모리 에코까지의 거리 표시 여부 */
+	/** 메모�??�코까�???거리 ?�시 ?��? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty|Memory Echo")
 	bool bShowDistanceToMemoryEcho;
 
-	/** 메모리 에코 마커 색상 */
+	/** 메모�??�코 마커 ?�상 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty|Memory Echo|Visual")
 	FLinearColor MemoryEchoMarkerColor;
 
-	/** 난이도 배율 (드롭/손실률에 적용) */
+	/** ?�이??배율 (?�롭/?�실률에 ?�용) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty|Difficulty", meta = (ClampMin = "0.0", ClampMax = "5.0"))
 	float DifficultyMultiplier;
 
-	//~ 상세 설정
-	/** 전체 사망 페널티 설정 */
+	//~ ?�세 ?�정
+	/** ?�체 ?�망 ?�널???�정 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty|Config")
 	FHarmoniaDeathPenaltyConfig Config;
 
-	//~ 유틸리티 함수
-	/** 특정 통화의 드롭 비율 반환 */
+	//~ ?�틸리티 ?�수
+	/** ?�정 ?�화???�롭 비율 반환 */
 	UFUNCTION(BlueprintPure, Category = "Death Penalty")
 	float GetCurrencyDropPercentage(EHarmoniaCurrencyType CurrencyType) const;
 
-	/** 특정 통화의 영구 손실 비율 반환 */
+	/** ?�정 ?�화???�구 ?�실 비율 반환 */
 	UFUNCTION(BlueprintPure, Category = "Death Penalty")
 	float GetCurrencyPermanentLossPercentage(EHarmoniaCurrencyType CurrencyType) const;
 
-	/** 특정 통화에 대한 드롭 설정이 있는지 확인 */
+	/** ?�정 ?�화???�???�롭 ?�정???�는지 ?�인 */
 	UFUNCTION(BlueprintPure, Category = "Death Penalty")
 	bool HasCurrencyDropConfig(EHarmoniaCurrencyType CurrencyType) const;
 

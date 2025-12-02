@@ -45,7 +45,7 @@ UHarmoniaDDAConfigDataAsset::UHarmoniaDDAConfigDataAsset()
 	StandardProfile.BaseParameters.ItemDropRateMultiplier = 1.0f;
 	StandardProfile.BaseParameters.AIDelayBetweenAttacks = 0.0f;
 	
-	// Skilled - ?�려?�
+	// Skilled - ?�려?�?
 	SkilledProfile.ProfileName = TEXT("Skilled");
 	SkilledProfile.BaseParameters.EnemyHealthMultiplier = 1.15f;
 	SkilledProfile.BaseParameters.EnemyDamageMultiplier = 1.2f;
@@ -58,7 +58,7 @@ UHarmoniaDDAConfigDataAsset::UHarmoniaDDAConfigDataAsset()
 	SkilledProfile.BaseParameters.ItemDropRateMultiplier = 1.1f;
 	SkilledProfile.BaseParameters.AIDelayBetweenAttacks = 0.0f;
 	
-	// Master - 가???�려?�
+	// Master - 가???�려?�?
 	MasterProfile.ProfileName = TEXT("Master");
 	MasterProfile.BaseParameters.EnemyHealthMultiplier = 1.3f;
 	MasterProfile.BaseParameters.EnemyDamageMultiplier = 1.4f;

@@ -31,14 +31,14 @@ void UHarmoniaShopSubsystem::SetConfigDataAsset(UHarmoniaShopConfigDataAsset* In
 
 	if (ConfigAsset)
 	{
-		for (const FShopDefinition& Shop : ConfigAsset->DefaultShops)
+		for (const FHarmoniaShopData& Shop : ConfigAsset->DefaultShops)
 		{
 			RegisterShop(Shop);
 		}
 	}
 }
 
-void UHarmoniaShopSubsystem::RegisterShop(const FShopDefinition& Shop)
+void UHarmoniaShopSubsystem::RegisterShop(const FHarmoniaShopData& Shop)
 {
 	if (Shop.ShopID.IsNone())
 	{
@@ -63,9 +63,9 @@ void UHarmoniaShopSubsystem::UnregisterShop(FName ShopID)
 	}
 }
 
-bool UHarmoniaShopSubsystem::GetShop(FName ShopID, FShopDefinition& OutShop) const
+bool UHarmoniaShopSubsystem::GetShop(FName ShopID, FHarmoniaShopData& OutShop) const
 {
-	if (const FShopDefinition* Found = Shops.Find(ShopID))
+	if (const FHarmoniaShopData* Found = Shops.Find(ShopID))
 	{
 		OutShop = *Found;
 		return true;
@@ -73,16 +73,16 @@ bool UHarmoniaShopSubsystem::GetShop(FName ShopID, FShopDefinition& OutShop) con
 	return false;
 }
 
-TArray<FShopDefinition> UHarmoniaShopSubsystem::GetAllShops() const
+TArray<FHarmoniaShopData> UHarmoniaShopSubsystem::GetAllShops() const
 {
-	TArray<FShopDefinition> Result;
+	TArray<FHarmoniaShopData> Result;
 	Shops.GenerateValueArray(Result);
 	return Result;
 }
 
-TArray<FShopDefinition> UHarmoniaShopSubsystem::GetShopsByType(EHarmoniaShopType Type) const
+TArray<FHarmoniaShopData> UHarmoniaShopSubsystem::GetShopsByType(EHarmoniaShopType Type) const
 {
-	TArray<FShopDefinition> Result;
+	TArray<FHarmoniaShopData> Result;
 	for (const auto& Pair : Shops)
 	{
 		if (Pair.Value.ShopType == Type)
@@ -95,7 +95,7 @@ TArray<FShopDefinition> UHarmoniaShopSubsystem::GetShopsByType(EHarmoniaShopType
 
 void UHarmoniaShopSubsystem::OpenShop(FName ShopID)
 {
-	if (FShopDefinition* Shop = Shops.Find(ShopID))
+	if (FHarmoniaShopData* Shop = Shops.Find(ShopID))
 	{
 		Shop->bIsOpen = true;
 		OnShopOpened.Broadcast(ShopID);
@@ -104,33 +104,33 @@ void UHarmoniaShopSubsystem::OpenShop(FName ShopID)
 
 void UHarmoniaShopSubsystem::CloseShop(FName ShopID)
 {
-	if (FShopDefinition* Shop = Shops.Find(ShopID))
+	if (FHarmoniaShopData* Shop = Shops.Find(ShopID))
 	{
 		Shop->bIsOpen = false;
 		OnShopClosed.Broadcast(ShopID);
 	}
 }
 
-TArray<FShopItemData> UHarmoniaShopSubsystem::GetShopItems(FName ShopID) const
+TArray<FHarmoniaShopItemData> UHarmoniaShopSubsystem::GetShopItems(FName ShopID) const
 {
-	if (const FShopDefinition* Shop = Shops.Find(ShopID))
+	if (const FHarmoniaShopData* Shop = Shops.Find(ShopID))
 	{
 		return Shop->Items;
 	}
-	return TArray<FShopItemData>();
+	return TArray<FHarmoniaShopItemData>();
 }
 
-TArray<FShopItemData> UHarmoniaShopSubsystem::GetAvailableItems(APlayerController* Player, FName ShopID) const
+TArray<FHarmoniaShopItemData> UHarmoniaShopSubsystem::GetAvailableItems(APlayerController* Player, FName ShopID) const
 {
-	TArray<FShopItemData> Result;
+	TArray<FHarmoniaShopItemData> Result;
 
-	const FShopDefinition* Shop = Shops.Find(ShopID);
+	const FHarmoniaShopData* Shop = Shops.Find(ShopID);
 	if (!Shop || !Player)
 	{
 		return Result;
 	}
 
-	for (const FShopItemData& Item : Shop->Items)
+	for (const FHarmoniaShopItemData& Item : Shop->Items)
 	{
 		EHarmoniaShopItemAvailability Availability = GetItemAvailability(Player, ShopID, Item.ShopItemID);
 		if (Availability == EHarmoniaShopItemAvailability::Available ||
@@ -145,14 +145,14 @@ TArray<FShopItemData> UHarmoniaShopSubsystem::GetAvailableItems(APlayerControlle
 
 EHarmoniaShopItemAvailability UHarmoniaShopSubsystem::GetItemAvailability(APlayerController* Player, FName ShopID, FName ShopItemID) const
 {
-	const FShopDefinition* Shop = Shops.Find(ShopID);
+	const FHarmoniaShopData* Shop = Shops.Find(ShopID);
 	if (!Shop || !Player)
 	{
 		return EHarmoniaShopItemAvailability::NotUnlocked;
 	}
 
-	const FShopItemData* Item = nullptr;
-	for (const FShopItemData& ShopItem : Shop->Items)
+	const FHarmoniaShopItemData* Item = nullptr;
+	for (const FHarmoniaShopItemData& ShopItem : Shop->Items)
 	{
 		if (ShopItem.ShopItemID == ShopItemID)
 		{
@@ -206,14 +206,14 @@ TArray<FHarmoniaCurrencyCost> UHarmoniaShopSubsystem::GetFinalBuyPrice(APlayerCo
 {
 	TArray<FHarmoniaCurrencyCost> Result;
 
-	const FShopDefinition* Shop = Shops.Find(ShopID);
+	const FHarmoniaShopData* Shop = Shops.Find(ShopID);
 	if (!Shop)
 	{
 		return Result;
 	}
 
-	const FShopItemData* Item = nullptr;
-	for (const FShopItemData& ShopItem : Shop->Items)
+	const FHarmoniaShopItemData* Item = nullptr;
+	for (const FHarmoniaShopItemData& ShopItem : Shop->Items)
 	{
 		if (ShopItem.ShopItemID == ShopItemID)
 		{
@@ -248,14 +248,14 @@ TArray<FHarmoniaCurrencyCost> UHarmoniaShopSubsystem::GetFinalSellPrice(APlayerC
 {
 	TArray<FHarmoniaCurrencyCost> Result;
 
-	const FShopDefinition* Shop = Shops.Find(ShopID);
+	const FHarmoniaShopData* Shop = Shops.Find(ShopID);
 	if (!Shop)
 	{
 		return Result;
 	}
 
 	// Find matching item for sell price reference
-	for (const FShopItemData& Item : Shop->Items)
+	for (const FHarmoniaShopItemData& Item : Shop->Items)
 	{
 		if (Item.ItemTag == ItemTag)
 		{
@@ -293,14 +293,14 @@ bool UHarmoniaShopSubsystem::PurchaseItem(APlayerController* Player, FName ShopI
 		return false;
 	}
 
-	FShopDefinition* Shop = Shops.Find(ShopID);
+	FHarmoniaShopData* Shop = Shops.Find(ShopID);
 	if (!Shop)
 	{
 		return false;
 	}
 
-	FShopItemData* Item = nullptr;
-	for (FShopItemData& ShopItem : Shop->Items)
+	FHarmoniaShopItemData* Item = nullptr;
+	for (FHarmoniaShopItemData& ShopItem : Shop->Items)
 	{
 		if (ShopItem.ShopItemID == ShopItemID)
 		{
@@ -367,7 +367,7 @@ bool UHarmoniaShopSubsystem::SellItem(APlayerController* Player, FName ShopID, F
 		return false;
 	}
 
-	FShopDefinition* Shop = Shops.Find(ShopID);
+	FHarmoniaShopData* Shop = Shops.Find(ShopID);
 	if (!Shop || !Shop->bCanSellItems)
 	{
 		return false;
@@ -672,13 +672,13 @@ TArray<FTransactionRecord> UHarmoniaShopSubsystem::GetTransactionHistory(APlayer
 
 void UHarmoniaShopSubsystem::ProcessRestock(FName ShopID)
 {
-	FShopDefinition* Shop = Shops.Find(ShopID);
+	FHarmoniaShopData* Shop = Shops.Find(ShopID);
 	if (!Shop)
 	{
 		return;
 	}
 
-	for (FShopItemData& Item : Shop->Items)
+	for (FHarmoniaShopItemData& Item : Shop->Items)
 	{
 		if (Item.MaxStock >= 0 && Item.RestockTime > 0.0f)
 		{

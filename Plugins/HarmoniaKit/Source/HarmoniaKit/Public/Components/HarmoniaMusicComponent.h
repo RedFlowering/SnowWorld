@@ -16,8 +16,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnMusicBuffApplied, AActor*, Tar
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnRhythmNoteHit, int32, NoteIndex, bool, bPerfect);
 
 /**
- * 음악/연주 시스템 컴포넌트
- * 악기 연주, 버프 제공, 리듬 미니게임
+ * ?�악/?�주 ?�스??컴포?�트
+ * ?�기 ?�주, 버프 ?�공, 리듬 미니게임
  */
 UCLASS(ClassGroup=(HarmoniaKit), meta=(BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaMusicComponent : public UHarmoniaBaseLifeContentComponent
@@ -34,70 +34,70 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	// ====================================
-	// 연주 기본 기능
+	// ?�주 기본 기능
 	// ====================================
 
-	/** 연주 시작 */
+	/** ?�주 ?�작 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Music")
 	bool StartPerformance(FName MusicID);
 
-	/** 연주 취소 */
+	/** ?�주 취소 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Music")
 	void CancelPerformance();
 
-	/** 연주 중인지 확인 */
+	/** ?�주 중인지 ?�인 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Music")
 	bool IsPerforming() const { return bIsPerforming; }
 
-	/** 현재 연주 진행도 (0-1) */
+	/** ?�재 ?�주 진행??(0-1) */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Music")
 	float GetPerformanceProgress() const;
 
-	/** 곡을 연주할 수 있는지 확인 */
+	/** 곡을 ?�주?????�는지 ?�인 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Music")
 	bool CanPerformMusic(FName MusicID) const;
 
 	// ====================================
-	// 악기 관리
+	// ?�기 관�?
 	// ====================================
 
-	/** 악기 장착 */
+	/** ?�기 ?�착 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Music")
 	void EquipInstrument(const FInstrumentData& Instrument);
 
-	/** 악기 해제 */
+	/** ?�기 ?�제 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Music")
 	void UnequipInstrument();
 
-	/** 현재 장착된 악기 */
+	/** ?�재 ?�착???�기 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Music")
 	FInstrumentData GetEquippedInstrument() const { return EquippedInstrument; }
 
-	/** 악기가 장착되어 있는지 확인 */
+	/** ?�기가 ?�착?�어 ?�는지 ?�인 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Music")
 	bool HasInstrumentEquipped() const;
 
-	/** 악기 내구도 감소 */
+	/** ?�기 ?�구??감소 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Music")
 	void ReduceInstrumentDurability(int32 Amount);
 
 	// ====================================
-	// 악보 관리
+	// ?�보 관�?
 	// ====================================
 
-	/** 악보 배우기 */
+	/** ?�보 배우�?*/
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Music")
 	void LearnMusicSheet(FName MusicID);
 
-	/** 악보를 알고 있는지 확인 */
+	/** ?�보�??�고 ?�는지 ?�인 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Music")
 	bool IsMusicSheetKnown(FName MusicID) const;
 
-	/** 알고 있는 모든 악보 */
+	/** ?�고 ?�는 모든 ?�보 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Music")
 	TArray<FName> GetKnownMusicSheets() const { return KnownMusicSheets; }
 
-	/** 악보 정보 가져오기 */
+	/** ?�보 ?�보 가?�오�?*/
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Music")
 	bool GetMusicSheetData(FName MusicID, FMusicSheetData& OutMusicSheet) const;
 
@@ -105,167 +105,167 @@ public:
 	// 리듬 미니게임
 	// ====================================
 
-	/** 리듬 노트 생성 */
+	/** 리듬 ?�트 ?�성 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Music")
 	TArray<FRhythmNote> GenerateRhythmNotes(FName MusicID, int32 NoteCount);
 
-	/** 리듬 노트 입력 */
+	/** 리듬 ?�트 ?�력 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Music")
 	bool HitRhythmNote(int32 NoteIndex, float InputTime, bool& bPerfectHit);
 
-	/** 현재 미니게임 점수 */
+	/** ?�재 미니게임 ?�수 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Music")
 	float GetMinigameScore() const { return MinigameScore; }
 
 	// ====================================
-	// 레벨 및 경험치 시스템
+	// ?�벨 �?경험�??�스??
 	// ====================================
 
-	/** 연주 경험치 획득 */
+	/** ?�주 경험�??�득 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Music")
 	void AddPerformanceExperience(int32 Amount);
 
-	/** 현재 연주 레벨 */
+	/** ?�재 ?�주 ?�벨 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Music")
 	int32 GetPerformanceLevel() const { return PerformanceLevel; }
 
 	// ====================================
-	// 특성 시스템
+	// ?�성 ?�스??
 	// ====================================
 
-	/** 특성 추가 */
+	/** ?�성 추�? */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Music")
 	void AddTrait(const FPerformanceTrait& Trait);
 
-	/** 특성 제거 */
+	/** ?�성 ?�거 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Music")
 	void RemoveTrait(FName TraitName);
 
-	/** 모든 특성 가져오기 */
+	/** 모든 ?�성 가?�오�?*/
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Music")
 	TArray<FPerformanceTrait> GetAllTraits() const { return ActiveTraits; }
 
 	// ====================================
-	// 이벤트
+	// ?�벤??
 	// ====================================
 
-	/** 연주 시작 이벤트 */
+	/** ?�주 ?�작 ?�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Music")
 	FOnPerformanceStarted OnPerformanceStarted;
 
-	/** 연주 취소 이벤트 */
+	/** ?�주 취소 ?�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Music")
 	FOnPerformanceCancelled OnPerformanceCancelled;
 
-	/** 연주 완료 이벤트 */
+	/** ?�주 ?�료 ?�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Music")
 	FOnPerformanceCompleted OnPerformanceCompleted;
 
-	/** 레벨업 이벤트 */
+	/** ?�벨???�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Music")
 	FOnPerformanceLevelUp OnPerformanceLevelUp;
 
-	/** 악보 습득 이벤트 */
+	/** ?�보 ?�득 ?�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Music")
 	FOnMusicSheetLearned OnMusicSheetLearned;
 
-	/** 음악 버프 적용 이벤트 */
+	/** ?�악 버프 ?�용 ?�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Music")
 	FOnMusicBuffApplied OnMusicBuffApplied;
 
-	/** 리듬 노트 히트 이벤트 */
+	/** 리듬 ?�트 ?�트 ?�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Music")
 	FOnRhythmNoteHit OnRhythmNoteHit;
 
 	// ====================================
-	// 설정
+	// ?�정
 	// ====================================
 
-	/** 악보 데이터베이스 */
+	/** ?�보 ?�이?�베?�스 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music Settings")
 	TMap<FName, FMusicSheetData> MusicSheetDatabase;
 
-	/** 기본 연주 성공률 (%) */
+	/** 기본 ?�주 ?�공�?(%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music Settings")
 	float BaseSuccessRate = 70.0f;
 
-	/** 미니게임 사용 여부 */
+	/** 미니게임 ?�용 ?��? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music Settings")
 	bool bUseMinigame = true;
 
 private:
-	/** 연주 중 플래그 */
+	/** ?�주 �??�래�?*/
 	UPROPERTY()
 	bool bIsPerforming = false;
 
-	/** 현재 연주 중인 곡 */
+	/** ?�재 ?�주 중인 �?*/
 	UPROPERTY()
 	FName CurrentMusicID;
 
-	/** 연주 시작 시간 */
+	/** ?�주 ?�작 ?�간 */
 	UPROPERTY()
 	float PerformanceStartTime = 0.0f;
 
-	/** 연주 완료까지 필요한 시간 */
+	/** ?�주 ?�료까�? ?�요???�간 */
 	UPROPERTY()
 	float RequiredPerformanceTime = 0.0f;
 
-	/** 장착된 악기 */
+	/** ?�착???�기 */
 	UPROPERTY()
 	FInstrumentData EquippedInstrument;
 
-	/** 연주 레벨 */
+	/** ?�주 ?�벨 */
 	UPROPERTY()
 	int32 PerformanceLevel = 1;
 
-	/** 알고 있는 악보 */
+	/** ?�고 ?�는 ?�보 */
 	UPROPERTY()
 	TArray<FName> KnownMusicSheets;
 
-	/** 활성화된 특성 목록 */
+	/** ?�성?�된 ?�성 목록 */
 	UPROPERTY()
 	TArray<FPerformanceTrait> ActiveTraits;
 
-	/** 현재 리듬 노트 */
+	/** ?�재 리듬 ?�트 */
 	UPROPERTY()
 	TArray<FRhythmNote> CurrentRhythmNotes;
 
-	/** 미니게임 점수 */
+	/** 미니게임 ?�수 */
 	UPROPERTY()
 	float MinigameScore = 0.0f;
 
-	/** 완벽한 노트 수 */
+	/** ?�벽???�트 ??*/
 	UPROPERTY()
 	int32 PerfectNoteCount = 0;
 
-	/** 총 노트 수 */
+	/** �??�트 ??*/
 	UPROPERTY()
 	int32 TotalNoteCount = 0;
 
-	/** 연주 완료 처리 */
+	/** ?�주 ?�료 처리 */
 	void CompletePerformance();
 
-	/** 연주 결과 계산 */
+	/** ?�주 결과 계산 */
 	FPerformanceResult CalculatePerformanceResult(const FMusicSheetData& MusicSheet);
 
-	/** 연주 품질 결정 */
+	/** ?�주 ?�질 결정 */
 	EPerformanceQuality DeterminePerformanceQuality(int32 Difficulty, float Score);
 
-	/** 버프 효과 적용 */
+	/** 버프 ?�과 ?�용 */
 	void ApplyMusicBuff(const FMusicBuffEffect& BuffEffect);
 
-	/** 주변 액터에게 버프 적용 */
+	/** 주�? ?�터?�게 버프 ?�용 */
 	int32 ApplyBuffToNearbyActors(const FMusicBuffEffect& BuffEffect);
 
-	/** 레벨 체크 및 처리 */
+	/** ?�벨 체크 �?처리 */
 	void CheckAndProcessLevelUp();
 
-	/** 총 품질 보너스 계산 */
+	/** �??�질 보너??계산 */
 	float GetTotalQualityBonus() const;
 
-	/** 총 버프 효과 보너스 계산 */
+	/** �?버프 ?�과 보너??계산 */
 	float GetTotalBuffEffectBonus() const;
 
-	/** 총 범위 보너스 계산 */
+	/** �?범위 보너??계산 */
 	float GetTotalRangeBonus() const;
 };

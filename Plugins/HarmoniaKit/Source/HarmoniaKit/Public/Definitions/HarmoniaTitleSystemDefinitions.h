@@ -24,7 +24,7 @@ enum class ETitleRarity : uint8
  * Title definition
  */
 USTRUCT(BlueprintType)
-struct FHarmoniaTitleDefinition : public FTableRowBase
+struct FHarmoniaTitleData : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -48,7 +48,7 @@ struct FHarmoniaTitleDefinition : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Title")
 	ETitleRarity Rarity = ETitleRarity::Common;
 
-	FHarmoniaTitleDefinition()
+	FHarmoniaTitleData()
 		: TitleId()
 		, DisplayText()
 		, Description()

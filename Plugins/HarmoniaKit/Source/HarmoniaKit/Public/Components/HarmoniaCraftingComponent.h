@@ -96,11 +96,11 @@ protected:
 
 	/** Cached grade configurations for fast O(1) lookups */
 	UPROPERTY()
-	TMap<EItemGrade, FItemGradeConfig> GradeConfigCache;
+	TMap<EItemGrade, FHarmoniaItemGradeConfig> GradeConfigCache;
 
 	/** Cached station data for fast O(1) lookups */
 	UPROPERTY()
-	TMap<ECraftingStationType, FCraftingStationData> StationDataCache;
+	TMap<ECraftingStationType, FHarmoniaCraftingStationData> StationDataCache;
 
 	UFUNCTION()
 	void OnRep_ActiveSession();
@@ -142,7 +142,7 @@ public:
 	 * @return True if recipe was found
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Crafting")
-	bool GetRecipeData(FHarmoniaID RecipeId, FCraftingRecipeData& OutRecipeData) const;
+	bool GetRecipeData(FHarmoniaID RecipeId, FHarmoniaCraftingRecipeData& OutRecipeData) const;
 
 	/**
 	 * Get all available recipes (optionally filtered by category)
@@ -150,7 +150,7 @@ public:
 	 * @return Array of recipe data
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Crafting")
-	TArray<FCraftingRecipeData> GetAvailableRecipes(FGameplayTag CategoryTag = FGameplayTag()) const;
+	TArray<FHarmoniaCraftingRecipeData> GetAvailableRecipes(FGameplayTag CategoryTag = FGameplayTag()) const;
 
 	/**
 	 * Get current crafting progress (0.0 to 1.0)
@@ -216,7 +216,7 @@ public:
 	 * @return True if station data was found
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Crafting|Station")
-	bool GetStationData(ECraftingStationType StationType, FCraftingStationData& OutStationData) const;
+	bool GetStationData(ECraftingStationType StationType, FHarmoniaCraftingStationData& OutStationData) const;
 
 	/**
 	 * Check if current station meets recipe requirements
@@ -224,7 +224,7 @@ public:
 	 * @return True if station requirements are met
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Crafting|Station")
-	bool CheckStationRequirement(const FCraftingRecipeData& RecipeData) const;
+	bool CheckStationRequirement(const FHarmoniaCraftingRecipeData& RecipeData) const;
 
 	/**
 	 * Get all recipes available at current station
@@ -232,7 +232,7 @@ public:
 	 * @return Array of recipe data
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Crafting|Station")
-	TArray<FCraftingRecipeData> GetRecipesForCurrentStation(FGameplayTag CategoryTag = FGameplayTag()) const;
+	TArray<FHarmoniaCraftingRecipeData> GetRecipesForCurrentStation(FGameplayTag CategoryTag = FGameplayTag()) const;
 
 	//~==============================================
 	//~ Recipe Learning System
@@ -277,7 +277,7 @@ public:
 	 * @return True if grade config was found
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Crafting|Grade")
-	bool GetGradeConfig(EItemGrade Grade, FItemGradeConfig& OutGradeConfig) const;
+	bool GetGradeConfig(EItemGrade Grade, FHarmoniaItemGradeConfig& OutGradeConfig) const;
 
 	/**
 	 * Get grade color for UI
@@ -328,7 +328,7 @@ protected:
 	 * @param Recipe - Recipe being crafted
 	 * @return Crafting result (Success, Failure, CriticalSuccess)
 	 */
-	ECraftingResult DetermineCraftingResult(const FCraftingRecipeData& Recipe) const;
+	ECraftingResult DetermineCraftingResult(const FHarmoniaCraftingRecipeData& Recipe) const;
 
 	/**
 	 * Distribute crafting results to inventory
@@ -352,7 +352,7 @@ protected:
 	 * @param Recipe - Recipe to check
 	 * @return True if player meets requirements
 	 */
-	bool MeetsRecipeRequirements(const FCraftingRecipeData& Recipe) const;
+	bool MeetsRecipeRequirements(const FHarmoniaCraftingRecipeData& Recipe) const;
 
 	//~==============================================
 	//~ Server/Client RPCs

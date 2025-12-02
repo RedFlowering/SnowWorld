@@ -86,7 +86,7 @@ void UHarmoniaFarmingWidget::ShowPlotDetails(FName PlotID, ECropGrowthStage Grow
 	if (MoistureText)
 	{
 		MoistureText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaFarming", "MoistureLevel", "수분: {0}%"),
+			NSLOCTEXT("HarmoniaFarming", "MoistureLevel", "?�분: {0}%"),
 			FText::AsNumber(FMath::RoundToInt(Moisture * 100.0f))));
 	}
 
@@ -100,12 +100,12 @@ void UHarmoniaFarmingWidget::ShowPlotDetails(FName PlotID, ECropGrowthStage Grow
 	{
 		if (bHasFertilizer)
 		{
-			FertilizerStatusText->SetText(NSLOCTEXT("HarmoniaFarming", "HasFertilizer", "비료 적용됨"));
+			FertilizerStatusText->SetText(NSLOCTEXT("HarmoniaFarming", "HasFertilizer", "비료 ?�용??));
 			FertilizerStatusText->SetColorAndOpacity(FLinearColor::Green);
 		}
 		else
 		{
-			FertilizerStatusText->SetText(NSLOCTEXT("HarmoniaFarming", "NoFertilizer", "비료 없음"));
+			FertilizerStatusText->SetText(NSLOCTEXT("HarmoniaFarming", "NoFertilizer", "비료 ?�음"));
 			FertilizerStatusText->SetColorAndOpacity(FLinearColor::Gray);
 		}
 	}
@@ -141,7 +141,7 @@ void UHarmoniaFarmingWidget::ShowCropInfo(const FText& CropName, ECropType CropT
 	{
 		const int32 Hours = FMath::RoundToInt(GrowthTime / 3600.0f);
 		CropGrowthTimeText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaFarming", "GrowthTime", "성장 시간: {0}시간"),
+			NSLOCTEXT("HarmoniaFarming", "GrowthTime", "?�장 ?�간: {0}?�간"),
 			FText::AsNumber(Hours)));
 	}
 
@@ -149,12 +149,12 @@ void UHarmoniaFarmingWidget::ShowCropInfo(const FText& CropName, ECropType CropT
 	{
 		if (bReharvestable)
 		{
-			CropReharvestText->SetText(NSLOCTEXT("HarmoniaFarming", "Reharvestable", "재수확 가능"));
+			CropReharvestText->SetText(NSLOCTEXT("HarmoniaFarming", "Reharvestable", "?�수??가??));
 			CropReharvestText->SetColorAndOpacity(FLinearColor::Green);
 		}
 		else
 		{
-			CropReharvestText->SetText(NSLOCTEXT("HarmoniaFarming", "SingleHarvest", "1회 수확"));
+			CropReharvestText->SetText(NSLOCTEXT("HarmoniaFarming", "SingleHarvest", "1???�확"));
 			CropReharvestText->SetColorAndOpacity(FLinearColor::Gray);
 		}
 	}
@@ -184,7 +184,7 @@ void UHarmoniaFarmingWidget::ShowHarvestResult(const FText& CropName, int32 Yiel
 	if (HarvestYieldText)
 	{
 		HarvestYieldText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaFarming", "HarvestYield", "수확량: x{0}"),
+			NSLOCTEXT("HarmoniaFarming", "HarvestYield", "?�확?? x{0}"),
 			FText::AsNumber(Yield)));
 	}
 
@@ -195,7 +195,7 @@ void UHarmoniaFarmingWidget::ShowHarvestResult(const FText& CropName, int32 Yiel
 
 		if (QualityScore >= 90.0f)
 		{
-			QualityRating = NSLOCTEXT("HarmoniaFarming", "QualityPerfect", "최고급");
+			QualityRating = NSLOCTEXT("HarmoniaFarming", "QualityPerfect", "최고�?);
 			QualityColor = FLinearColor(1.0f, 0.84f, 0.0f); // Gold
 		}
 		else if (QualityScore >= 70.0f)
@@ -210,12 +210,12 @@ void UHarmoniaFarmingWidget::ShowHarvestResult(const FText& CropName, int32 Yiel
 		}
 		else
 		{
-			QualityRating = NSLOCTEXT("HarmoniaFarming", "QualityLow", "저급");
+			QualityRating = NSLOCTEXT("HarmoniaFarming", "QualityLow", "?��?);
 			QualityColor = FLinearColor::Gray;
 		}
 
 		HarvestQualityText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaFarming", "QualityFormat", "품질: {0} ({1}점)"),
+			NSLOCTEXT("HarmoniaFarming", "QualityFormat", "?�질: {0} ({1}??"),
 			QualityRating,
 			FText::AsNumber(FMath::RoundToInt(QualityScore))));
 		HarvestQualityText->SetColorAndOpacity(QualityColor);
@@ -226,7 +226,7 @@ void UHarmoniaFarmingWidget::ShowHarvestResult(const FText& CropName, int32 Yiel
 		if (bGotSeeds && SeedAmount > 0)
 		{
 			HarvestSeedText->SetText(FText::Format(
-				NSLOCTEXT("HarmoniaFarming", "SeedObtained", "씨앗 획득: x{0}"),
+				NSLOCTEXT("HarmoniaFarming", "SeedObtained", "?�앗 ?�득: x{0}"),
 				FText::AsNumber(SeedAmount)));
 			HarvestSeedText->SetVisibility(ESlateVisibility::Visible);
 		}
@@ -260,7 +260,7 @@ void UHarmoniaFarmingWidget::UpdateWeatherStatus(bool bIsRaining)
 	{
 		if (bIsRaining)
 		{
-			WeatherStatusText->SetText(NSLOCTEXT("HarmoniaFarming", "WeatherRaining", "비"));
+			WeatherStatusText->SetText(NSLOCTEXT("HarmoniaFarming", "WeatherRaining", "�?));
 			WeatherStatusText->SetColorAndOpacity(FLinearColor(0.0f, 0.5f, 1.0f));
 		}
 		else
@@ -276,17 +276,17 @@ FText UHarmoniaFarmingWidget::GetGrowthStageText(ECropGrowthStage Stage) const
 	switch (Stage)
 	{
 	case ECropGrowthStage::Seed:
-		return NSLOCTEXT("HarmoniaFarming", "StageSeed", "씨앗");
+		return NSLOCTEXT("HarmoniaFarming", "StageSeed", "?�앗");
 	case ECropGrowthStage::Sprout:
-		return NSLOCTEXT("HarmoniaFarming", "StageSprout", "싹");
+		return NSLOCTEXT("HarmoniaFarming", "StageSprout", "??);
 	case ECropGrowthStage::Growing:
-		return NSLOCTEXT("HarmoniaFarming", "StageGrowing", "성장 중");
+		return NSLOCTEXT("HarmoniaFarming", "StageGrowing", "?�장 �?);
 	case ECropGrowthStage::Mature:
-		return NSLOCTEXT("HarmoniaFarming", "StageMature", "성숙");
+		return NSLOCTEXT("HarmoniaFarming", "StageMature", "?�숙");
 	case ECropGrowthStage::Harvest:
-		return NSLOCTEXT("HarmoniaFarming", "StageHarvest", "수확 가능");
+		return NSLOCTEXT("HarmoniaFarming", "StageHarvest", "?�확 가??);
 	case ECropGrowthStage::Withered:
-		return NSLOCTEXT("HarmoniaFarming", "StageWithered", "시들음");
+		return NSLOCTEXT("HarmoniaFarming", "StageWithered", "?�들??);
 	default:
 		return FText::GetEmpty();
 	}
@@ -297,15 +297,15 @@ FText UHarmoniaFarmingWidget::GetSoilQualityText(ESoilQuality Quality) const
 	switch (Quality)
 	{
 	case ESoilQuality::Poor:
-		return NSLOCTEXT("HarmoniaFarming", "SoilPoor", "척박함");
+		return NSLOCTEXT("HarmoniaFarming", "SoilPoor", "척박??);
 	case ESoilQuality::Normal:
 		return NSLOCTEXT("HarmoniaFarming", "SoilNormal", "보통");
 	case ESoilQuality::Good:
-		return NSLOCTEXT("HarmoniaFarming", "SoilGood", "비옥함");
+		return NSLOCTEXT("HarmoniaFarming", "SoilGood", "비옥??);
 	case ESoilQuality::Excellent:
-		return NSLOCTEXT("HarmoniaFarming", "SoilExcellent", "훌륭함");
+		return NSLOCTEXT("HarmoniaFarming", "SoilExcellent", "?��???);
 	case ESoilQuality::Perfect:
-		return NSLOCTEXT("HarmoniaFarming", "SoilPerfect", "완벽함");
+		return NSLOCTEXT("HarmoniaFarming", "SoilPerfect", "?�벽??);
 	default:
 		return FText::GetEmpty();
 	}
@@ -341,11 +341,11 @@ FText UHarmoniaFarmingWidget::GetCropTypeText(ECropType Type) const
 	case ECropType::Grain:
 		return NSLOCTEXT("HarmoniaFarming", "TypeGrain", "곡물");
 	case ECropType::Herb:
-		return NSLOCTEXT("HarmoniaFarming", "TypeHerb", "약초");
+		return NSLOCTEXT("HarmoniaFarming", "TypeHerb", "?�초");
 	case ECropType::Flower:
-		return NSLOCTEXT("HarmoniaFarming", "TypeFlower", "꽃");
+		return NSLOCTEXT("HarmoniaFarming", "TypeFlower", "�?);
 	case ECropType::Tree:
-		return NSLOCTEXT("HarmoniaFarming", "TypeTree", "나무");
+		return NSLOCTEXT("HarmoniaFarming", "TypeTree", "?�무");
 	default:
 		return FText::GetEmpty();
 	}
@@ -356,11 +356,11 @@ FText UHarmoniaFarmingWidget::GetSeasonText(ESeason Season) const
 	switch (Season)
 	{
 	case ESeason::Spring:
-		return NSLOCTEXT("HarmoniaFarming", "SeasonSpring", "봄");
+		return NSLOCTEXT("HarmoniaFarming", "SeasonSpring", "�?);
 	case ESeason::Summer:
-		return NSLOCTEXT("HarmoniaFarming", "SeasonSummer", "여름");
+		return NSLOCTEXT("HarmoniaFarming", "SeasonSummer", "?�름");
 	case ESeason::Autumn:
-		return NSLOCTEXT("HarmoniaFarming", "SeasonAutumn", "가을");
+		return NSLOCTEXT("HarmoniaFarming", "SeasonAutumn", "가??);
 	case ESeason::Winter:
 		return NSLOCTEXT("HarmoniaFarming", "SeasonWinter", "겨울");
 	case ESeason::AllSeasons:

@@ -8,7 +8,7 @@
 #include "HarmoniaFishingSystemDefinitions.generated.h"
 
 /**
- * 물고기 희귀도
+ * 물고�??��???
  */
 UENUM(BlueprintType)
 enum class EFishRarity : uint8
@@ -21,19 +21,19 @@ enum class EFishRarity : uint8
 };
 
 /**
- * 낚시 미니게임 타입
+ * ?�시 미니게임 ?�??
  */
 UENUM(BlueprintType)
 enum class EFishingMinigameType : uint8
 {
-	TimingBased		UMETA(DisplayName = "Timing Based"),		// 타이밍 맞추기
-	BarBalance		UMETA(DisplayName = "Bar Balance"),		// 바 균형 유지
-	QuickTimeEvent	UMETA(DisplayName = "Quick Time Event"),	// QTE 이벤트
-	ReelTension		UMETA(DisplayName = "Reel Tension")		// 릴 장력 관리
+	TimingBased		UMETA(DisplayName = "Timing Based"),		// ?�?�밍 맞추�?
+	BarBalance		UMETA(DisplayName = "Bar Balance"),		// �?균형 ?��?
+	QuickTimeEvent	UMETA(DisplayName = "Quick Time Event"),	// QTE ?�벤??
+	ReelTension		UMETA(DisplayName = "Reel Tension")		// �??�력 관�?
 };
 
 /**
- * 낚시터 타입
+ * ?�시???�??
  */
 UENUM(BlueprintType)
 enum class EFishingSpotType : uint8
@@ -42,34 +42,34 @@ enum class EFishingSpotType : uint8
 	Lake		UMETA(DisplayName = "Lake"),
 	Ocean		UMETA(DisplayName = "Ocean"),
 	Pond		UMETA(DisplayName = "Pond"),
-	Special		UMETA(DisplayName = "Special")		// 특별한 낚시터
+	Special		UMETA(DisplayName = "Special")		// ?�별???�시??
 };
 
 /**
- * 물고기 데이터
+ * 물고�??�이??
  */
 USTRUCT(BlueprintType)
 struct FFishData
 {
 	GENERATED_BODY()
 
-	/** 물고기 이름 */
+	/** 물고�??�름 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
 	FName FishName;
 
-	/** 물고기 설명 */
+	/** 물고�??�명 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
 	FText Description;
 
-	/** 희귀도 */
+	/** ?��???*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
 	EFishRarity Rarity = EFishRarity::Common;
 
-	/** 최소 크기 (cm) */
+	/** 최소 ?�기 (cm) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
 	float MinSize = 10.0f;
 
-	/** 최대 크기 (cm) */
+	/** 최�? ?�기 (cm) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
 	float MaxSize = 50.0f;
 
@@ -77,90 +77,90 @@ struct FFishData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
 	float MinWeight = 0.5f;
 
-	/** 최대 무게 (kg) */
+	/** 최�? 무게 (kg) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
 	float MaxWeight = 5.0f;
 
-	/** 판매 가격 */
+	/** ?�매 가�?*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
 	int32 BasePrice = 10;
 
-	/** 물고기 메시 */
+	/** 물고�?메시 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
 	TSoftObjectPtr<UStaticMesh> FishMesh;
 
-	/** 물고기 아이콘 */
+	/** 물고�??�이�?*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
 	TSoftObjectPtr<UTexture2D> Icon;
 
-	/** 출현 시간 (24시간 기준, -1이면 항상) */
+	/** 출현 ?�간 (24?�간 기�?, -1?�면 ??��) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
 	int32 AppearStartHour = -1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
 	int32 AppearEndHour = -1;
 
-	/** 출현 날씨 (비어있으면 모든 날씨) */
+	/** 출현 ?�씨 (비어?�으�?모든 ?�씨) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
 	TArray<FName> RequiredWeather;
 
-	/** 출현 계절 (비어있으면 모든 계절) */
+	/** 출현 계절 (비어?�으�?모든 계절) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
 	TArray<FName> RequiredSeasons;
 };
 
 /**
- * 낚시터 스폰 테이블
+ * ?�시???�폰 ?�이�?
  */
 USTRUCT(BlueprintType)
 struct FFishingSpotSpawnEntry
 {
 	GENERATED_BODY()
 
-	/** 물고기 ID */
+	/** 물고�?ID */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn")
 	FName FishID;
 
-	/** 스폰 확률 (0-100) */
+	/** ?�폰 ?�률 (0-100) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn")
 	float SpawnChance = 10.0f;
 
-	/** 최소 레벨 요구사항 */
+	/** 최소 ?�벨 ?�구?�항 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn")
 	int32 MinFishingLevel = 1;
 };
 
 /**
- * 낚시 미니게임 설정
+ * ?�시 미니게임 ?�정
  */
 USTRUCT(BlueprintType)
 struct FFishingMinigameSettings
 {
 	GENERATED_BODY()
 
-	/** 미니게임 타입 */
+	/** 미니게임 ?�??*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Minigame")
 	EFishingMinigameType MinigameType = EFishingMinigameType::TimingBased;
 
-	/** 난이도 (1-10) */
+	/** ?�이??(1-10) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Minigame")
 	int32 Difficulty = 5;
 
-	/** 제한시간 (초) */
+	/** ?�한?�간 (�? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Minigame")
 	float TimeLimit = 30.0f;
 
-	/** 성공 보너스 배율 */
+	/** ?�공 보너??배율 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Minigame")
 	float SuccessBonus = 1.2f;
 
-	/** 완벽 성공 보너스 배율 */
+	/** ?�벽 ?�공 보너??배율 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Minigame")
 	float PerfectBonus = 1.5f;
 };
 
 /**
- * 낚시터 데이터 에셋
+ * ?�시???�이???�셋
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UFishingSpotData : public UDataAsset
@@ -168,40 +168,40 @@ class HARMONIAKIT_API UFishingSpotData : public UDataAsset
 	GENERATED_BODY()
 
 public:
-	/** 낚시터 이름 */
+	/** ?�시???�름 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fishing Spot")
 	FText SpotName;
 
-	/** 낚시터 타입 */
+	/** ?�시???�??*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fishing Spot")
 	EFishingSpotType SpotType = EFishingSpotType::River;
 
-	/** 스폰 테이블 */
+	/** ?�폰 ?�이�?*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fishing Spot")
 	TArray<FFishingSpotSpawnEntry> SpawnTable;
 
-	/** 최소 레벨 요구사항 */
+	/** 최소 ?�벨 ?�구?�항 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fishing Spot")
 	int32 MinimumFishingLevel = 1;
 
-	/** 미니게임 설정 */
+	/** 미니게임 ?�정 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fishing Spot")
 	FFishingMinigameSettings MinigameSettings;
 };
 
 /**
- * 잡은 물고기 정보
+ * ?��? 물고�??�보
  */
 USTRUCT(BlueprintType)
 struct FCaughtFish
 {
 	GENERATED_BODY()
 
-	/** 물고기 ID */
+	/** 물고�?ID */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caught Fish")
 	FName FishID;
 
-	/** 크기 */
+	/** ?�기 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caught Fish")
 	float Size = 0.0f;
 
@@ -209,49 +209,49 @@ struct FCaughtFish
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caught Fish")
 	float Weight = 0.0f;
 
-	/** 잡은 시간 */
+	/** ?��? ?�간 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caught Fish")
 	FDateTime CaughtTime;
 
-	/** 잡은 위치 */
+	/** ?��? ?�치 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caught Fish")
 	FVector CaughtLocation;
 
-	/** 품질 점수 (0-100) */
+	/** ?�질 ?�수 (0-100) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caught Fish")
 	float QualityScore = 50.0f;
 };
 
 /**
- * 물고기 데이터 테이블 Row
- * 에디터에서 DataTable로 물고기 데이터를 관리할 때 사용
+ * 물고�??�이???�이�?Row
+ * ?�디?�에??DataTable�?물고�??�이?��? 관리할 ???�용
  */
 USTRUCT(BlueprintType)
 struct HARMONIAKIT_API FFishDataTableRow : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	/** 물고기 ID */
+	/** 물고�?ID */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
 	FName FishID;
 
-	/** 표시 이름 */
+	/** ?�시 ?�름 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
 	FText DisplayName;
 
-	/** 설명 */
+	/** ?�명 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
 	FText Description;
 
-	/** 희귀도 */
+	/** ?��???*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish")
 	EFishRarity Rarity = EFishRarity::Common;
 
-	/** 최소 크기 (cm) */
+	/** 최소 ?�기 (cm) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Size")
 	float MinSize = 10.0f;
 
-	/** 최대 크기 (cm) */
+	/** 최�? ?�기 (cm) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Size")
 	float MaxSize = 50.0f;
 
@@ -259,19 +259,19 @@ struct HARMONIAKIT_API FFishDataTableRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Size")
 	float MinWeight = 0.5f;
 
-	/** 최대 무게 (kg) */
+	/** 최�? 무게 (kg) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Size")
 	float MaxWeight = 5.0f;
 
-	/** 기본 판매 가격 */
+	/** 기본 ?�매 가�?*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Economy")
 	int32 BasePrice = 10;
 
-	/** 낚았을 때 획득 경험치 */
+	/** ?�았?????�득 경험�?*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Economy")
 	int32 ExperienceGain = 5;
 
-	/** 아이콘 */
+	/** ?�이�?*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Visual")
 	TSoftObjectPtr<UTexture2D> Icon;
 
@@ -279,27 +279,27 @@ struct HARMONIAKIT_API FFishDataTableRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Visual")
 	TSoftObjectPtr<UStaticMesh> Mesh;
 
-	/** 출현 가능한 낚시터 타입 */
+	/** 출현 가?�한 ?�시???�??*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Spawn")
 	TArray<EFishingSpotType> ValidSpotTypes;
 
-	/** 최소 낚시 레벨 요구사항 */
+	/** 최소 ?�시 ?�벨 ?�구?�항 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Spawn")
 	int32 MinFishingLevel = 1;
 
-	/** 출현 시작 시간 (0-23, -1이면 항상) */
+	/** 출현 ?�작 ?�간 (0-23, -1?�면 ??��) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Spawn")
 	int32 AppearStartHour = -1;
 
-	/** 출현 종료 시간 (0-23, -1이면 항상) */
+	/** 출현 종료 ?�간 (0-23, -1?�면 ??��) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Spawn")
 	int32 AppearEndHour = -1;
 
-	/** 필요 날씨 조건 (비어있으면 모든 날씨) */
+	/** ?�요 ?�씨 조건 (비어?�으�?모든 ?�씨) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Spawn")
 	TArray<FName> RequiredWeather;
 
-	/** 필요 계절 (비어있으면 모든 계절) */
+	/** ?�요 계절 (비어?�으�?모든 계절) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fish|Spawn")
 	TArray<FName> RequiredSeasons;
 };

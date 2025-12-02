@@ -8,7 +8,7 @@ UHarmoniaGatheringComponent::UHarmoniaGatheringComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = false;
 
-	// 기본 레벨 초기화
+	// 기본 ?�벨 초기??
 	GatheringLevels.Add(EGatheringResourceType::Mineral, 1);
 	GatheringLevels.Add(EGatheringResourceType::Herb, 1);
 	GatheringLevels.Add(EGatheringResourceType::Wood, 1);
@@ -18,7 +18,7 @@ UHarmoniaGatheringComponent::UHarmoniaGatheringComponent()
 	GatheringLevels.Add(EGatheringResourceType::Flower, 1);
 	GatheringLevels.Add(EGatheringResourceType::Mushroom, 1);
 
-	// 경험치 초기화
+	// 경험�?초기??
 	GatheringExperience.Add(EGatheringResourceType::Mineral, 0);
 	GatheringExperience.Add(EGatheringResourceType::Herb, 0);
 	GatheringExperience.Add(EGatheringResourceType::Wood, 0);
@@ -73,14 +73,14 @@ bool UHarmoniaGatheringComponent::StartGathering(FName ResourceID, AActor* Targe
 
 	const FGatheringResourceData& ResourceData = ResourceDatabase[ResourceID];
 
-	// 레벨 체크
+	// ?�벨 체크
 	int32 CurrentLevel = GetGatheringLevel(ResourceData.ResourceType);
 	if (CurrentLevel < ResourceData.MinGatheringLevel)
 	{
 		return false;
 	}
 
-	// 도구 체크
+	// ?�구 체크
 	if (ResourceData.RequiredTool != EGatheringToolType::None)
 	{
 		if (!HasToolEquipped() || EquippedTool.ToolType != ResourceData.RequiredTool)
@@ -142,14 +142,14 @@ bool UHarmoniaGatheringComponent::CanGatherResource(FName ResourceID) const
 
 	const FGatheringResourceData& ResourceData = ResourceDatabase[ResourceID];
 
-	// 레벨 체크
+	// ?�벨 체크
 	int32 CurrentLevel = GetGatheringLevel(ResourceData.ResourceType);
 	if (CurrentLevel < ResourceData.MinGatheringLevel)
 	{
 		return false;
 	}
 
-	// 도구 체크
+	// ?�구 체크
 	if (ResourceData.RequiredTool != EGatheringToolType::None)
 	{
 		if (!HasToolEquipped() || EquippedTool.ToolType != ResourceData.RequiredTool)
@@ -192,7 +192,7 @@ void UHarmoniaGatheringComponent::ReduceToolDurability(int32 Amount)
 
 	OnToolDurabilityChanged.Broadcast(EquippedTool.ToolName, EquippedTool.Durability);
 
-	// 내구도가 0이 되면 도구 해제
+	// ?�구?��? 0???�면 ?�구 ?�제
 	if (EquippedTool.Durability <= 0)
 	{
 		UnequipTool();
@@ -260,13 +260,13 @@ float UHarmoniaGatheringComponent::GetTotalGatheringSpeedBonus() const
 {
 	float TotalBonus = 0.0f;
 
-	// 특성 보너스
+	// ?�성 보너??
 	for (const FGatheringTrait& Trait : ActiveTraits)
 	{
 		TotalBonus += Trait.GatheringSpeedBonus;
 	}
 
-	// 도구 보너스
+	// ?�구 보너??
 	if (HasToolEquipped())
 	{
 		TotalBonus += (EquippedTool.GatheringSpeedMultiplier - 1.0f) * 100.0f;
@@ -279,13 +279,13 @@ float UHarmoniaGatheringComponent::GetTotalYieldBonus() const
 {
 	float TotalBonus = 0.0f;
 
-	// 특성 보너스
+	// ?�성 보너??
 	for (const FGatheringTrait& Trait : ActiveTraits)
 	{
 		TotalBonus += Trait.YieldBonus;
 	}
 
-	// 도구 보너스
+	// ?�구 보너??
 	if (HasToolEquipped())
 	{
 		TotalBonus += EquippedTool.YieldBonus * 100.0f;
@@ -319,15 +319,15 @@ void UHarmoniaGatheringComponent::CompleteGathering()
 	// 채집 결과 계산
 	FGatheringResult Result = CalculateGatheringResult(ResourceData);
 
-	// 경험치 획득
+	// 경험�??�득
 	AddGatheringExperience(Result.Experience, ResourceData.ResourceType);
 
-	// 도구 내구도 감소
+	// ?�구 ?�구??감소
 	if (HasToolEquipped())
 	{
 		int32 DurabilityLoss = 1;
 		
-		// 특성으로 내구도 감소율 적용
+		// ?�성?�로 ?�구??감소???�용
 		for (const FGatheringTrait& Trait : ActiveTraits)
 		{
 			DurabilityLoss = FMath::CeilToInt(DurabilityLoss * (1.0f - Trait.DurabilityReduction / 100.0f));
@@ -350,11 +350,11 @@ FGatheringResult UHarmoniaGatheringComponent::CalculateGatheringResult(const FGa
 	FGatheringResult Result;
 	Result.ResourceID = CurrentResourceID;
 
-	// 크리티컬 체크
+	// ?�리?�컬 체크
 	float CritChance = GetCriticalChance();
 	Result.bCriticalGather = FMath::FRand() * 100.0f <= CritChance;
 
-	// 획득량 계산
+	// ?�득??계산
 	int32 BaseYield = FMath::RandRange(ResourceData.MinYield, ResourceData.MaxYield);
 	float YieldMultiplier = 1.0f + (GetTotalYieldBonus() / 100.0f);
 
@@ -365,7 +365,7 @@ FGatheringResult UHarmoniaGatheringComponent::CalculateGatheringResult(const FGa
 
 	Result.Quantity = FMath::CeilToInt(BaseYield * YieldMultiplier);
 
-	// 경험치 계산
+	// 경험�?계산
 	float ExpMultiplier = 1.0f;
 	for (const FGatheringTrait& Trait : ActiveTraits)
 	{

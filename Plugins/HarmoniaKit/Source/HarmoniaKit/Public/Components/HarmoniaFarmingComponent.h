@@ -15,8 +15,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFertilizerApplied, FName, CropID
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFarmingLevelUp, int32, NewLevel, int32, SkillPoints);
 
 /**
- * 농사 시스템 컴포넌트
- * 작물 재배, 성장 관리, 수확 처리
+ * ?�사 ?�스??컴포?�트
+ * ?�물 ?�배, ?�장 관�? ?�확 처리
  */
 UCLASS(ClassGroup=(HarmoniaKit), meta=(BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaFarmingComponent : public UHarmoniaBaseLifeContentComponent
@@ -33,170 +33,170 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	// ====================================
-	// 농사 기본 기능
+	// ?�사 기본 기능
 	// ====================================
 
-	/** 작물 심기 */
+	/** ?�물 ?�기 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Farming")
 	bool PlantCrop(FName CropID, FName PlotID);
 
-	/** 작물 수확 */
+	/** ?�물 ?�확 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Farming")
 	FHarvestResult HarvestCrop(FName PlotID);
 
-	/** 작물에 물주기 */
+	/** ?�물??물주�?*/
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Farming")
 	bool WaterCrop(FName PlotID);
 
-	/** 비료 사용 */
+	/** 비료 ?�용 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Farming")
 	bool ApplyFertilizer(FName PlotID, const FFertilizerData& Fertilizer);
 
-	/** 작물 제거 */
+	/** ?�물 ?�거 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Farming")
 	void RemoveCrop(FName PlotID);
 
-	/** 작물 정보 가져오기 */
+	/** ?�물 ?�보 가?�오�?*/
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Farming")
 	bool GetCropInstance(FName PlotID, FCropInstance& OutCrop) const;
 
-	/** 수확 가능 여부 확인 */
+	/** ?�확 가???��? ?�인 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Farming")
 	bool CanHarvest(FName PlotID) const;
 
 	// ====================================
-	// 밭 관리
+	// �?관�?
 	// ====================================
 
-	/** 밭 추가 */
+	/** �?추�? */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Farming")
 	void AddFarmPlot(FName PlotID, const FSoilData& SoilData);
 
-	/** 밭 제거 */
+	/** �??�거 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Farming")
 	void RemoveFarmPlot(FName PlotID);
 
-	/** 모든 밭 가져오기 */
+	/** 모든 �?가?�오�?*/
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Farming")
 	TArray<FName> GetAllPlots() const;
 
-	/** 빈 밭 가져오기 */
+	/** �?�?가?�오�?*/
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Farming")
 	TArray<FName> GetEmptyPlots() const;
 
 	// ====================================
-	// 레벨 및 경험치 시스템
+	// ?�벨 �?경험�??�스??
 	// ====================================
 
-	/** 농사 경험치 획득 */
+	/** ?�사 경험�??�득 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Farming")
 	void AddFarmingExperience(int32 Amount);
 
-	/** 현재 농사 레벨 */
+	/** ?�재 ?�사 ?�벨 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Farming")
 	int32 GetFarmingLevel() const { return FarmingLevel; }
 
 	// ====================================
-	// 계절 시스템
+	// 계절 ?�스??
 	// ====================================
 
-	/** 현재 계절 설정 */
+	/** ?�재 계절 ?�정 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Farming")
 	void SetCurrentSeason(ESeason Season);
 
-	/** 현재 계절 가져오기 */
+	/** ?�재 계절 가?�오�?*/
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Farming")
 	ESeason GetCurrentSeason() const { return CurrentSeason; }
 
-	/** 작물이 현재 계절에 자랄 수 있는지 확인 */
+	/** ?�물???�재 계절???�랄 ???�는지 ?�인 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Farming")
 	bool CanGrowInCurrentSeason(FName CropID) const;
 
 	// ====================================
-	// 이벤트
+	// ?�벤??
 	// ====================================
 
-	/** 작물 심기 이벤트 */
+	/** ?�물 ?�기 ?�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Farming")
 	FOnCropPlanted OnCropPlanted;
 
-	/** 작물 성장 단계 변경 이벤트 */
+	/** ?�물 ?�장 ?�계 변�??�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Farming")
 	FOnCropGrowthStageChanged OnCropGrowthStageChanged;
 
-	/** 작물 수확 이벤트 */
+	/** ?�물 ?�확 ?�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Farming")
 	FOnCropHarvested OnCropHarvested;
 
-	/** 작물 물주기 이벤트 */
+	/** ?�물 물주�??�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Farming")
 	FOnCropWatered OnCropWatered;
 
-	/** 비료 사용 이벤트 */
+	/** 비료 ?�용 ?�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Farming")
 	FOnFertilizerApplied OnFertilizerApplied;
 
-	/** 레벨업 이벤트 */
+	/** ?�벨???�벤??*/
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Farming")
 	FOnFarmingLevelUp OnFarmingLevelUp;
 
 	// ====================================
-	// 설정
+	// ?�정
 	// ====================================
 
-	/** 작물 데이터베이스 */
+	/** ?�물 ?�이?�베?�스 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Farming Settings")
 	TMap<FName, FCropData> CropDatabase;
 
-	/** 물주기 수분 증가량 */
+	/** 물주�??�분 증�???*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Farming Settings")
 	float WaterMoistureIncrease = 30.0f;
 
-	/** 시간당 수분 감소율 */
+	/** ?�간???�분 감소??*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Farming Settings")
 	float MoistureDecayPerHour = 10.0f;
 
-	/** 물 부족 페널티 (성장 속도 감소, %) */
+	/** �?부�??�널??(?�장 ?�도 감소, %) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Farming Settings")
 	float LowMoisturePenalty = 50.0f;
 
-	/** 씨앗 획득 확률 (%) */
+	/** ?�앗 ?�득 ?�률 (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Farming Settings")
 	float SeedDropChance = 30.0f;
 
 private:
-	/** 농사 레벨 */
+	/** ?�사 ?�벨 */
 	UPROPERTY()
 	int32 FarmingLevel = 1;
 
-	/** 밭 목록 (플롯 ID -> 작물 인스턴스) */
+	/** �?목록 (?�롯 ID -> ?�물 ?�스?�스) */
 	UPROPERTY()
 	TMap<FName, FCropInstance> FarmPlots;
 
-	/** 밭 토양 데이터 */
+	/** �??�양 ?�이??*/
 	UPROPERTY()
 	TMap<FName, FSoilData> PlotSoilData;
 
-	/** 현재 계절 */
+	/** ?�재 계절 */
 	UPROPERTY()
 	ESeason CurrentSeason = ESeason::Spring;
 
-	/** 마지막 업데이트 시간 */
+	/** 마�?�??�데?�트 ?�간 */
 	UPROPERTY()
 	FDateTime LastUpdateTime;
 
-	/** 작물 성장 업데이트 */
+	/** ?�물 ?�장 ?�데?�트 */
 	void UpdateCropGrowth(FName PlotID, FCropInstance& Crop);
 
-	/** 작물 품질 계산 */
+	/** ?�물 ?�질 계산 */
 	float CalculateCropQuality(const FCropInstance& Crop, const FCropData& CropData) const;
 
-	/** 수확 결과 계산 */
+	/** ?�확 결과 계산 */
 	FHarvestResult CalculateHarvestResult(const FCropInstance& Crop, const FCropData& CropData);
 
-	/** 레벨 체크 및 처리 */
+	/** ?�벨 체크 �?처리 */
 	void CheckAndProcessLevelUp();
 
-	/** 작물이 성장 가능한지 확인 */
+	/** ?�물???�장 가?�한지 ?�인 */
 	bool CanCropGrow(const FCropInstance& Crop, const FCropData& CropData) const;
 };

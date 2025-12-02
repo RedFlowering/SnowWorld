@@ -22,7 +22,7 @@ public:
 
 	/** Default affixes to register */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Affixes")
-	TArray<FAffixDefinition> DefaultAffixes;
+	TArray<FHarmoniaAffixData> DefaultAffixes;
 
 	// ============================================================================
 	// Rarity Settings
@@ -30,7 +30,7 @@ public:
 
 	/** Rarity weights and affix counts */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rarity")
-	TArray<FRarityWeight> RarityWeights;
+	TArray<FHarmoniaRarityWeight> RarityWeights;
 
 	// ============================================================================
 	// Rarity Colors

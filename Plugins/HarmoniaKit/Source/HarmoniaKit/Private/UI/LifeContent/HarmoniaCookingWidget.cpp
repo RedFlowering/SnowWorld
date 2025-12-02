@@ -73,7 +73,7 @@ void UHarmoniaCookingWidget::ShowRecipeDetails(FName RecipeID, const FText& Reci
 	if (CookingTimeText)
 	{
 		CookingTimeText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaCooking", "CookingTime", "조리 시간: {0}초"),
+			NSLOCTEXT("HarmoniaCooking", "CookingTime", "조리 ?�간: {0}�?),
 			FText::AsNumber(FMath::RoundToInt(CookingTime))));
 	}
 
@@ -86,7 +86,7 @@ void UHarmoniaCookingWidget::ShowRecipeDetails(FName RecipeID, const FText& Reci
 			IngredientsStr += Ingredients[i].ToString();
 		}
 		IngredientsText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaCooking", "Ingredients", "재료: {0}"),
+			NSLOCTEXT("HarmoniaCooking", "Ingredients", "?�료: {0}"),
 			FText::FromString(IngredientsStr)));
 	}
 }
@@ -129,14 +129,14 @@ void UHarmoniaCookingWidget::UpdateCookingProgress(float Progress, float Remaini
 		if (Minutes > 0)
 		{
 			RemainingTimeText->SetText(FText::Format(
-				NSLOCTEXT("HarmoniaCooking", "RemainingTimeMinSec", "{0}분 {1}초"),
+				NSLOCTEXT("HarmoniaCooking", "RemainingTimeMinSec", "{0}�?{1}�?),
 				FText::AsNumber(Minutes),
 				FText::AsNumber(Secs)));
 		}
 		else
 		{
 			RemainingTimeText->SetText(FText::Format(
-				NSLOCTEXT("HarmoniaCooking", "RemainingTimeSec", "{0}초"),
+				NSLOCTEXT("HarmoniaCooking", "RemainingTimeSec", "{0}�?),
 				FText::AsNumber(Secs)));
 		}
 	}
@@ -184,7 +184,7 @@ FText UHarmoniaCookingWidget::GetCookingMethodText(ECookingMethod Method) const
 	switch (Method)
 	{
 	case ECookingMethod::Boiling:
-		return NSLOCTEXT("HarmoniaCooking", "MethodBoiling", "끓이기");
+		return NSLOCTEXT("HarmoniaCooking", "MethodBoiling", "?�이�?);
 	case ECookingMethod::Frying:
 		return NSLOCTEXT("HarmoniaCooking", "MethodFrying", "굽기");
 	case ECookingMethod::Grilling:
@@ -192,11 +192,11 @@ FText UHarmoniaCookingWidget::GetCookingMethodText(ECookingMethod Method) const
 	case ECookingMethod::Steaming:
 		return NSLOCTEXT("HarmoniaCooking", "MethodSteaming", "찌기");
 	case ECookingMethod::Baking:
-		return NSLOCTEXT("HarmoniaCooking", "MethodBaking", "베이킹");
+		return NSLOCTEXT("HarmoniaCooking", "MethodBaking", "베이??);
 	case ECookingMethod::Mixing:
-		return NSLOCTEXT("HarmoniaCooking", "MethodMixing", "섞기");
+		return NSLOCTEXT("HarmoniaCooking", "MethodMixing", "?�기");
 	case ECookingMethod::Roasting:
-		return NSLOCTEXT("HarmoniaCooking", "MethodRoasting", "로스팅");
+		return NSLOCTEXT("HarmoniaCooking", "MethodRoasting", "로스??);
 	default:
 		return FText::GetEmpty();
 	}
@@ -207,15 +207,15 @@ FText UHarmoniaCookingWidget::GetQualityText(ECookingQuality Quality) const
 	switch (Quality)
 	{
 	case ECookingQuality::Failed:
-		return NSLOCTEXT("HarmoniaCooking", "QualityFailed", "실패작");
+		return NSLOCTEXT("HarmoniaCooking", "QualityFailed", "?�패??);
 	case ECookingQuality::Poor:
-		return NSLOCTEXT("HarmoniaCooking", "QualityPoor", "조악함");
+		return NSLOCTEXT("HarmoniaCooking", "QualityPoor", "조악??);
 	case ECookingQuality::Normal:
 		return NSLOCTEXT("HarmoniaCooking", "QualityNormal", "보통");
 	case ECookingQuality::Good:
 		return NSLOCTEXT("HarmoniaCooking", "QualityGood", "좋음");
 	case ECookingQuality::Excellent:
-		return NSLOCTEXT("HarmoniaCooking", "QualityExcellent", "훌륭함");
+		return NSLOCTEXT("HarmoniaCooking", "QualityExcellent", "?��???);
 	case ECookingQuality::Masterpiece:
 		return NSLOCTEXT("HarmoniaCooking", "QualityMasterpiece", "걸작");
 	default:
@@ -258,27 +258,27 @@ FText UHarmoniaCookingWidget::FormatBuffEffects(const FFoodBuffEffect& BuffEffec
 	}
 	if (BuffEffect.StaminaRestore > 0.0f)
 	{
-		Effects.Add(FString::Printf(TEXT("스태미나 +%.0f"), BuffEffect.StaminaRestore));
+		Effects.Add(FString::Printf(TEXT("?�태미나 +%.0f"), BuffEffect.StaminaRestore));
 	}
 	if (BuffEffect.AttackBonus > 0.0f)
 	{
-		Effects.Add(FString::Printf(TEXT("공격력 +%.0f%%"), BuffEffect.AttackBonus));
+		Effects.Add(FString::Printf(TEXT("공격??+%.0f%%"), BuffEffect.AttackBonus));
 	}
 	if (BuffEffect.DefenseBonus > 0.0f)
 	{
-		Effects.Add(FString::Printf(TEXT("방어력 +%.0f%%"), BuffEffect.DefenseBonus));
+		Effects.Add(FString::Printf(TEXT("방어??+%.0f%%"), BuffEffect.DefenseBonus));
 	}
 	if (BuffEffect.SpeedBonus > 0.0f)
 	{
-		Effects.Add(FString::Printf(TEXT("이동속도 +%.0f%%"), BuffEffect.SpeedBonus));
+		Effects.Add(FString::Printf(TEXT("?�동?�도 +%.0f%%"), BuffEffect.SpeedBonus));
 	}
 	if (BuffEffect.CriticalChanceBonus > 0.0f)
 	{
-		Effects.Add(FString::Printf(TEXT("크리티컬 +%.0f%%"), BuffEffect.CriticalChanceBonus));
+		Effects.Add(FString::Printf(TEXT("?�리?�컬 +%.0f%%"), BuffEffect.CriticalChanceBonus));
 	}
 	if (BuffEffect.ExperienceBonus > 0.0f)
 	{
-		Effects.Add(FString::Printf(TEXT("경험치 +%.0f%%"), BuffEffect.ExperienceBonus));
+		Effects.Add(FString::Printf(TEXT("경험�?+%.0f%%"), BuffEffect.ExperienceBonus));
 	}
 
 	return FText::FromString(FString::Join(Effects, TEXT("\n")));

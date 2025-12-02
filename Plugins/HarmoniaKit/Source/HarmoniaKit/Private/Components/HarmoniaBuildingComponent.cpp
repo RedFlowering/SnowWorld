@@ -16,7 +16,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 
-// 로그용
+// 로그??
 DEFINE_LOG_CATEGORY_STATIC(LogBuildingSystem, Log, All);
 
 UHarmoniaBuildingComponent::UHarmoniaBuildingComponent()
@@ -36,7 +36,7 @@ void UHarmoniaBuildingComponent::BeginPlay()
 		CachedPC = Cast<APlayerController>(OwnerPawn->GetController());
 	}
 
-	// BuildingInstanceManager 가져오기 (WorldSubsystem)
+	// BuildingInstanceManager 가?�오�?(WorldSubsystem)
 	if (UWorld* World = GetWorld())
 	{
 		InstanceManager = World->GetSubsystem<UHarmoniaBuildingInstanceManager>();
@@ -175,11 +175,11 @@ void UHarmoniaBuildingComponent::SetBuildingMode(EBuildingMode NewMode)
 void UHarmoniaBuildingComponent::SetSelectedPart(FName PartID)
 {
 	SelectedPartID = PartID;
-	CurrentRotationYaw = 0.0f; // 회전 초기화
+	CurrentRotationYaw = 0.0f; // ?�전 초기??
 
 	if (PreviewActor)
 	{
-		if (FBuildingPartData* PartData = GetCurrentPartData())
+		if (FHarmoniaBuildingPartData* PartData = GetCurrentPartData())
 		{
 			PreviewActor->ApplyPreviewData(*PartData);
 			UE_LOG(LogBuildingSystem, Log, TEXT("Selected Part: %s"), *PartID.ToString());
@@ -208,7 +208,7 @@ void UHarmoniaBuildingComponent::SpawnPreviewActor()
 
 	if (PreviewActor)
 	{
-		if (FBuildingPartData* PartData = GetCurrentPartData())
+		if (FHarmoniaBuildingPartData* PartData = GetCurrentPartData())
 		{
 			PreviewActor->ApplyPreviewData(*PartData);
 		}
@@ -246,7 +246,7 @@ bool UHarmoniaBuildingComponent::ValidatePlacement(FVector& OutLocation, FRotato
 	if (!CachedPC)
 		return false;
 
-	// 카메라 위치와 방향 가져오기
+	// 카메???�치?� 방향 가?�오�?
 	FVector CameraLocation;
 	FRotator CameraRotation;
 	CachedPC->GetPlayerViewPoint(CameraLocation, CameraRotation);
@@ -254,7 +254,7 @@ bool UHarmoniaBuildingComponent::ValidatePlacement(FVector& OutLocation, FRotato
 	FVector TraceStart = CameraLocation;
 	FVector TraceEnd = CameraLocation + (CameraRotation.Vector() * MaxPlacementDistance);
 
-	// 레이캐스트 수행
+	// ?�이캐스???�행
 	FHitResult HitResult;
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(GetOwner());
@@ -273,14 +273,14 @@ bool UHarmoniaBuildingComponent::ValidatePlacement(FVector& OutLocation, FRotato
 
 	if (!bHit)
 	{
-		// 히트하지 않으면 최대 거리에 배치
+		// ?�트?��? ?�으�?최�? 거리??배치
 		OutLocation = TraceEnd;
 		OutRotation = FRotator(0.0f, CameraRotation.Yaw + CurrentRotationYaw, 0.0f);
 		UE_LOG(LogBuildingSystem, Warning, TEXT("Cannot place: No valid surface found"));
 		return false;
 	}
 
-	// 지형 경사 검사
+	// 지??경사 검??
 	if (bCheckTerrainSlope)
 	{
 		FVector SurfaceNormal = HitResult.Normal;
@@ -296,7 +296,7 @@ bool UHarmoniaBuildingComponent::ValidatePlacement(FVector& OutLocation, FRotato
 		}
 	}
 
-	// 그리드 스냅 적용
+	// 그리???�냅 ?�용
 	FVector SnappedLocation = HitResult.Location;
 	if (bUseGridSnapping && GridSize > 0.0f)
 	{
@@ -308,16 +308,16 @@ bool UHarmoniaBuildingComponent::ValidatePlacement(FVector& OutLocation, FRotato
 	OutLocation = SnappedLocation;
 	OutRotation = FRotator(0.0f, CameraRotation.Yaw + CurrentRotationYaw, 0.0f);
 
-	// 스냅 포인트 검사 (다른 건축물과의 연결)
+	// ?�냅 ?�인??검??(?�른 건축물과???�결)
 	if (InstanceManager && bPreferSnapPoints)
 	{
-		FBuildingPartData* PartData = GetCurrentPartData();
+		FHarmoniaBuildingPartData* PartData = GetCurrentPartData();
 		if (PartData)
 		{
 			FVector SnapLocation;
 			FRotator SnapRotation;
 
-			// 주변 스냅 포인트 찾기
+			// 주�? ?�냅 ?�인??찾기
 			bool bFoundSnap = InstanceManager->FindNearbySnapPoint(
 				OutLocation,
 				PartData->PartType,
@@ -328,7 +328,7 @@ bool UHarmoniaBuildingComponent::ValidatePlacement(FVector& OutLocation, FRotato
 
 			if (bFoundSnap)
 			{
-				// 스냅 포인트로 위치 조정
+				// ?�냅 ?�인?�로 ?�치 조정
 				OutLocation = SnapLocation;
 				OutRotation = SnapRotation;
 				UE_LOG(LogBuildingSystem, Log, TEXT("Snapped to nearby building"));
@@ -336,22 +336,22 @@ bool UHarmoniaBuildingComponent::ValidatePlacement(FVector& OutLocation, FRotato
 		}
 	}
 
-	// 충돌 검사 (다른 건축물과 겹치는지)
+	// 충돌 검??(?�른 건축물과 겹치?��?)
 	if (InstanceManager)
 	{
-		FBuildingPartData* PartData = GetCurrentPartData();
+		FHarmoniaBuildingPartData* PartData = GetCurrentPartData();
 		if (PartData && PartData->BoundsExtent.SizeSquared() > 0.0f)
 		{
-			// 건축물 간 최소 거리 (BoundsExtent의 평균값 사용)
+			// 건축�?�?최소 거리 (BoundsExtent???�균�??�용)
 			float MinDistance = (PartData->BoundsExtent.X + PartData->BoundsExtent.Y) * 0.5f;
 
-			// 기존 건축물과의 충돌 검사
+			// 기존 건축물과??충돌 검??
 			bool bHasOverlap = InstanceManager->CheckBuildingOverlap(OutLocation, OutRotation, PartData->BoundsExtent, PartData->PartType, MinDistance);
 
 			if (bHasOverlap)
 			{
 				UE_LOG(LogBuildingSystem, Warning, TEXT("Cannot place: Overlaps with existing building"));
-				return false; // 충돌 발생 - 배치 불가
+				return false; // 충돌 발생 - 배치 불�?
 			}
 		}
 	}
@@ -380,14 +380,14 @@ void UHarmoniaBuildingComponent::PlaceCurrentPart()
 	if (GetOwner()->HasAuthority())
 	{
 		// Server: Perform placement directly
-		FBuildingPartData* PartData = GetCurrentPartData();
+		FHarmoniaBuildingPartData* PartData = GetCurrentPartData();
 		if (!PartData)
 		{
 			UE_LOG(LogBuildingSystem, Warning, TEXT("Cannot place: Part data not found"));
 			return;
 		}
 
-		// 자원 검사 및 소비 (Server-only)
+		// ?�원 검??�??�비 (Server-only)
 		if (!CheckAndConsumeResources(*PartData))
 		{
 			UE_LOG(LogBuildingSystem, Warning, TEXT("Cannot place: Insufficient resources"));
@@ -400,7 +400,7 @@ void UHarmoniaBuildingComponent::PlaceCurrentPart()
 			return;
 		}
 
-		// 건축물 배치
+		// 건축�?배치
 		FGuid BuildingGuid = InstanceManager->PlaceBuilding(*PartData, Location, Rotation, GetOwner());
 
 		if (BuildingGuid.IsValid())
@@ -408,7 +408,7 @@ void UHarmoniaBuildingComponent::PlaceCurrentPart()
 			UE_LOG(LogBuildingSystem, Log, TEXT("Building placed successfully: %s at %s"),
 				*PartData->ID.ToString(), *Location.ToString());
 
-			// 프리뷰 리셋 (계속 건축 모드 유지)
+			// ?�리�?리셋 (계속 건축 모드 ?��?)
 			DestroyPreviewActor();
 			SpawnPreviewActor();
 		}
@@ -424,7 +424,7 @@ void UHarmoniaBuildingComponent::PlaceCurrentPart()
 	}
 }
 
-bool UHarmoniaBuildingComponent::CheckAndConsumeResources(const FBuildingPartData& PartData)
+bool UHarmoniaBuildingComponent::CheckAndConsumeResources(const FHarmoniaBuildingPartData& PartData)
 {
 	// Server-only execution
 	if (!UHarmoniaCoreBFL::IsComponentServerAuthoritative(this))
@@ -436,10 +436,10 @@ bool UHarmoniaBuildingComponent::CheckAndConsumeResources(const FBuildingPartDat
 	if (!InventoryComponent)
 	{
 		UE_LOG(LogBuildingSystem, Warning, TEXT("InventoryComponent not found, skipping resource check"));
-		return true; // 인벤토리가 없으면 무료로 건축 허용 (디버그용)
+		return true; // ?�벤?�리가 ?�으�?무료�?건축 ?�용 (?�버그용)
 	}
 
-	// 1단계: 모든 필요 자원을 확인
+	// 1?�계: 모든 ?�요 ?�원???�인
 	for (const FBuildingResourceCost& Cost : PartData.RequiredResources)
 	{
 		int32 CurrentCount = InventoryComponent->GetTotalCount(Cost.Item);
@@ -451,8 +451,8 @@ bool UHarmoniaBuildingComponent::CheckAndConsumeResources(const FBuildingPartDat
 		}
 	}
 
-	// 2단계: 모든 자원 소비 (실패 시 롤백 지원)
-	TArray<FBuildingResourceCost> ConsumedResources; // 롤백용 추적
+	// 2?�계: 모든 ?�원 ?�비 (?�패 ??롤백 지??
+	TArray<FBuildingResourceCost> ConsumedResources; // 롤백??추적
 
 	for (const FBuildingResourceCost& Cost : PartData.RequiredResources)
 	{
@@ -461,7 +461,7 @@ bool UHarmoniaBuildingComponent::CheckAndConsumeResources(const FBuildingPartDat
 		{
 			UE_LOG(LogBuildingSystem, Error, TEXT("Failed to remove item: %s - Rolling back consumed resources"), *Cost.Item.Id.ToString());
 
-			// 롤백: 이미 제거된 아이템들을 복구
+			// 롤백: ?��? ?�거???�이?�들??복구
 			for (const FBuildingResourceCost& ConsumedCost : ConsumedResources)
 			{
 				InventoryComponent->AddItem(ConsumedCost.Item, ConsumedCost.Count, 0.0f);
@@ -480,7 +480,7 @@ bool UHarmoniaBuildingComponent::CheckAndConsumeResources(const FBuildingPartDat
 	return true;
 }
 
-FBuildingPartData* UHarmoniaBuildingComponent::GetCurrentPartData() const
+FHarmoniaBuildingPartData* UHarmoniaBuildingComponent::GetCurrentPartData() const
 {
 	if (SelectedPartID.IsNone())
 		return nullptr;
@@ -491,8 +491,8 @@ FBuildingPartData* UHarmoniaBuildingComponent::GetCurrentPartData() const
 		return nullptr;
 	}
 
-	// DataTable에서 PartID로 조회
-	FBuildingPartData* PartData = CachedBuildingDataTable->FindRow<FBuildingPartData>(SelectedPartID, TEXT("GetCurrentPartData"));
+	// DataTable?�서 PartID�?조회
+	FHarmoniaBuildingPartData* PartData = CachedBuildingDataTable->FindRow<FHarmoniaBuildingPartData>(SelectedPartID, TEXT("GetCurrentPartData"));
 
 	if (!PartData)
 	{
@@ -545,7 +545,7 @@ void UHarmoniaBuildingComponent::HandleRotateAction()
 {
 	if (PreviewActor)
 	{
-		CurrentRotationYaw += 90.0f; // 90도씩 회전
+		CurrentRotationYaw += 90.0f; // 90?�씩 ?�전
 		if (CurrentRotationYaw >= 360.0f)
 		{
 			CurrentRotationYaw -= 360.0f;
@@ -611,7 +611,7 @@ bool UHarmoniaBuildingComponent::ServerSetSelectedPart_Validate(FName PartID)
 		return false;
 	}
 
-	FBuildingPartData* PartData = CachedBuildingDataTable->FindRow<FBuildingPartData>(PartID, TEXT("ServerSetSelectedPart_Validate"));
+	FHarmoniaBuildingPartData* PartData = CachedBuildingDataTable->FindRow<FHarmoniaBuildingPartData>(PartID, TEXT("ServerSetSelectedPart_Validate"));
 	if (!PartData)
 	{
 		UE_LOG(LogBuildingSystem, Warning, TEXT("[ANTI-CHEAT] ServerSetSelectedPart: Invalid PartID %s"), *PartID.ToString());
@@ -630,7 +630,7 @@ void UHarmoniaBuildingComponent::ServerPlacePart_Implementation(const FVector& L
 		return;
 	}
 
-	FBuildingPartData* PartData = CachedBuildingDataTable->FindRow<FBuildingPartData>(PartID, TEXT("ServerPlacePart"));
+	FHarmoniaBuildingPartData* PartData = CachedBuildingDataTable->FindRow<FHarmoniaBuildingPartData>(PartID, TEXT("ServerPlacePart"));
 	if (!PartData)
 	{
 		UE_LOG(LogBuildingSystem, Warning, TEXT("ServerPlacePart: Part data not found"));
@@ -691,7 +691,7 @@ bool UHarmoniaBuildingComponent::ServerPlacePart_Validate(const FVector& Locatio
 		return false;
 	}
 
-	FBuildingPartData* PartData = CachedBuildingDataTable->FindRow<FBuildingPartData>(PartID, TEXT("ServerPlacePart_Validate"));
+	FHarmoniaBuildingPartData* PartData = CachedBuildingDataTable->FindRow<FHarmoniaBuildingPartData>(PartID, TEXT("ServerPlacePart_Validate"));
 	if (!PartData)
 	{
 		UE_LOG(LogBuildingSystem, Warning, TEXT("[ANTI-CHEAT] ServerPlacePart: Invalid PartID %s"), *PartID.ToString());

@@ -50,11 +50,11 @@ public:
 
 	/** Register enhancement level data */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Enhancement")
-	void RegisterEnhancementLevel(const FEnhancementLevelConfig& Level);
+	void RegisterEnhancementLevel(const FHarmoniaEnhancementLevelConfig& Level);
 
 	/** Get enhancement level data */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Enhancement")
-	bool GetEnhancementLevel(int32 Level, FEnhancementLevelConfig& OutLevel) const;
+	bool GetEnhancementLevel(int32 Level, FHarmoniaEnhancementLevelConfig& OutLevel) const;
 
 	/** Get max enhancement level */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Enhancement")
@@ -217,12 +217,12 @@ protected:
 	bool ConsumeCurrency(APlayerController* Player, int64 Amount);
 
 	/** Roll enhancement result */
-	EEnhancementResult RollEnhancementResult(const FEnhancementLevelConfig& Level, bool bPityActive, bool bUseProtection);
+	EEnhancementResult RollEnhancementResult(const FHarmoniaEnhancementLevelConfig& Level, bool bPityActive, bool bUseProtection);
 
 private:
 	/** Enhancement level data */
 	UPROPERTY()
-	TMap<int32, FEnhancementLevelConfig> EnhancementLevels;
+	TMap<int32, FHarmoniaEnhancementLevelConfig> EnhancementLevels;
 
 	/** Registered enchantments */
 	UPROPERTY()

@@ -22,7 +22,7 @@ public:
 
 	/** Default recipes to register on startup */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recipes")
-	TArray<FCraftingRecipeData> DefaultRecipes;
+	TArray<FHarmoniaCraftingRecipeData> DefaultRecipes;
 
 	// ============================================================================
 	// Difficulty Penalties

@@ -9,12 +9,12 @@
 class UAnimMontage;
 
 /**
- * FComboAttackData
+ * FHarmoniaComboAttackData
  *
  * Defines data for a single attack in a combo sequence
  */
 USTRUCT(BlueprintType)
-struct FComboAttackData : public FTableRowBase
+struct FHarmoniaComboAttackData : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -98,11 +98,11 @@ protected:
 
 	// Returns the current combo data
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Ability")
-	FComboAttackData GetCurrentComboData() const;
+	FHarmoniaComboAttackData GetCurrentComboData() const;
 
 	// Returns the next combo data (or empty if at the end)
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Ability")
-	FComboAttackData GetNextComboData() const;
+	FHarmoniaComboAttackData GetNextComboData() const;
 
 	// Returns whether there is valid current combo data
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Ability")

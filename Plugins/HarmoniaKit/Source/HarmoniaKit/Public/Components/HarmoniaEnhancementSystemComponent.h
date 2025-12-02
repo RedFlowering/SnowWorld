@@ -58,7 +58,7 @@ public:
 
 	/** Get enhancement level config */
 	UFUNCTION(BlueprintPure, Category = "Enhancement")
-	bool GetEnhancementLevelConfig(int32 Level, FEnhancementLevelConfig& OutConfig) const;
+	bool GetEnhancementLevelConfig(int32 Level, FHarmoniaEnhancementLevelConfig& OutConfig) const;
 
 	/** Get total stat multiplier for item (base * enhancement * transcendence) */
 	UFUNCTION(BlueprintPure, Category = "Enhancement")
@@ -94,11 +94,11 @@ public:
 
 	/** Get gem data */
 	UFUNCTION(BlueprintPure, Category = "Enhancement|Sockets")
-	bool GetGemData(FHarmoniaID GemId, FGemData& OutData) const;
+	bool GetGemData(FHarmoniaID GemId, FHarmoniaGemData& OutData) const;
 
 	/** Get all gems in item */
 	UFUNCTION(BlueprintCallable, Category = "Enhancement|Sockets")
-	void GetInsertedGems(FGuid ItemGUID, TArray<FGemData>& OutGems) const;
+	void GetInsertedGems(FGuid ItemGUID, TArray<FHarmoniaGemData>& OutGems) const;
 
 	// ============================================================================
 	// Reforge System (Stat Rerolling)
@@ -114,7 +114,7 @@ public:
 
 	/** Get reforge config for item grade */
 	UFUNCTION(BlueprintPure, Category = "Enhancement|Reforge")
-	bool GetReforgeConfig(EItemGrade ItemGrade, FReforgeConfig& OutConfig) const;
+	bool GetReforgeConfig(EItemGrade ItemGrade, FHarmoniaReforgeConfig& OutConfig) const;
 
 	/** Lock reforge stat (prevent reroll on this stat) */
 	UFUNCTION(BlueprintCallable, Category = "Enhancement|Reforge")
@@ -134,7 +134,7 @@ public:
 
 	/** Get transcendence config */
 	UFUNCTION(BlueprintPure, Category = "Enhancement|Transcendence")
-	bool GetTranscendenceConfig(ETranscendenceTier Tier, FTranscendenceConfig& OutConfig) const;
+	bool GetTranscendenceConfig(ETranscendenceTier Tier, FHarmoniaTranscendenceConfig& OutConfig) const;
 
 	// ============================================================================
 	// Transmog System (Appearance Override)
@@ -190,11 +190,11 @@ public:
 
 	/** Get repair config */
 	UFUNCTION(BlueprintPure, Category = "Enhancement|Repair")
-	bool GetRepairConfig(EItemGrade ItemGrade, FRepairConfig& OutConfig) const;
+	bool GetRepairConfig(EItemGrade ItemGrade, FHarmoniaRepairConfig& OutConfig) const;
 
 	/** Get repair kit data */
 	UFUNCTION(BlueprintPure, Category = "Enhancement|Repair")
-	bool GetRepairKitData(FHarmoniaID RepairKitId, FRepairKitData& OutData) const;
+	bool GetRepairKitData(FHarmoniaID RepairKitId, FHarmoniaRepairKitData& OutData) const;
 
 	/** Can use repair kit on item? */
 	UFUNCTION(BlueprintCallable, Category = "Enhancement|Repair")
@@ -225,7 +225,7 @@ public:
 	bool ItemExists(FGuid ItemGUID) const;
 
 	/** Get item base data */
-	bool GetItemBaseData(FHarmoniaID ItemId, FEquipmentData& OutData) const;
+	bool GetItemBaseData(FHarmoniaID ItemId, FHarmoniaEquipmentData& OutData) const;
 
 	// ============================================================================
 	// Events
@@ -373,13 +373,13 @@ protected:
 	// ============================================================================
 
 	/** Roll enhancement result */
-	EEnhancementResult RollEnhancementResult(const FEnhancementLevelConfig& Config, bool bUseProtection) const;
+	EEnhancementResult RollEnhancementResult(const FHarmoniaEnhancementLevelConfig& Config, bool bUseProtection) const;
 
 	/** Apply enhancement to item */
 	void ApplyEnhancement(FEnhancedItemData& ItemData, int32 NewLevel);
 
 	/** Roll reforge stats */
-	TArray<FReforgeStatEntry> RollReforgeStats(const FReforgeConfig& Config) const;
+	TArray<FReforgeStatEntry> RollReforgeStats(const FHarmoniaReforgeConfig& Config) const;
 
 	/** Consume materials from inventory */
 	bool ConsumeMaterials(const TMap<FHarmoniaID, int32>& Materials);

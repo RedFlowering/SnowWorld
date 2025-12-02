@@ -7,11 +7,11 @@
 #include "HarmoniaGameModeExample.generated.h"
 
 /**
- * Harmonia 게임모드 예제
+ * Harmonia 게임모드 ?�제
  * 
- * 이 게임모드는 HarmoniaCheatManager를 자동으로 활성화합니다.
- * 프로젝트의 게임모드를 이 클래스에서 상속받거나,
- * 기존 게임모드의 CheatClass를 UHarmoniaCheatManager로 설정하세요.
+ * ??게임모드??HarmoniaCheatManager�??�동?�로 ?�성?�합?�다.
+ * ?�로?�트??게임모드�????�래?�에???�속받거??
+ * 기존 게임모드??CheatClass�?UHarmoniaCheatManager�??�정?�세??
  */
 UCLASS()
 class HARMONIAKIT_API AHarmoniaGameModeExample : public AGameModeBase
@@ -25,7 +25,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	/**
-	 * 치트가 활성화되었는지 확인
+	 * 치트가 ?�성?�되?�는지 ?�인
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cheat")
 	bool IsCheatsEnabled() const;

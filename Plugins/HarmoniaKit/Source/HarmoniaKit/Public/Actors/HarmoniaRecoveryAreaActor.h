@@ -15,19 +15,19 @@ class UGameplayEffect;
 /**
  * AHarmoniaRecoveryAreaActor
  *
- * 설치형 회복 구역 Actor (Life Luminescence용)
- * 범위 내 플레이어를 지속적으로 회복
+ * ?�치???�복 구역 Actor (Life Luminescence??
+ * 범위 ???�레?�어�?지?�적?�로 ?�복
  *
  * 주요 기능:
- * - 범위 기반 회복 (Sphere Component)
- * - 주기적 회복 틱 (Tick Interval)
- * - 시간 제한 (Duration)
- * - VFX/SFX 재생
- * - 멀티플레이어 지원
+ * - 범위 기반 ?�복 (Sphere Component)
+ * - 주기???�복 ??(Tick Interval)
+ * - ?�간 ?�한 (Duration)
+ * - VFX/SFX ?�생
+ * - 멀?�플?�이??지??
  *
- * 재사용 가능성:
- * - 독 구역, 버프 구역 등으로 확장 가능
- * - 설정 기반 동작
+ * ?�사??가?�성:
+ * - ??구역, 버프 구역 ?�으�??�장 가??
+ * - ?�정 기반 ?�작
  */
 UCLASS(Blueprintable)
 class HARMONIAKIT_API AHarmoniaRecoveryAreaActor : public AActor
@@ -43,83 +43,83 @@ protected:
 
 public:
 	/**
-	 * 회복 구역 초기화
-	 * @param Config 회복 구역 설정
+	 * ?�복 구역 초기??
+	 * @param Config ?�복 구역 ?�정
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Recovery Area")
 	void InitializeRecoveryArea(const FHarmoniaDeployableRecoveryConfig& Config);
 
 	/**
-	 * 회복 구역 활성화
+	 * ?�복 구역 ?�성??
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Recovery Area")
 	void ActivateRecoveryArea();
 
 	/**
-	 * 회복 구역 비활성화
+	 * ?�복 구역 비활?�화
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Recovery Area")
 	void DeactivateRecoveryArea();
 
 	/**
-	 * 회복 틱 실행
+	 * ?�복 ???�행
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Recovery Area")
 	void PerformRecoveryTick();
 
 	/**
-	 * 회복 구역 내 액터들 가져오기
+	 * ?�복 구역 ???�터??가?�오�?
 	 */
 	UFUNCTION(BlueprintPure, Category = "Recovery Area")
 	TArray<AActor*> GetActorsInRecoveryArea() const;
 
 	/**
-	 * 회복 구역 종료
+	 * ?�복 구역 종료
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Recovery Area")
 	void ExpireRecoveryArea();
 
 protected:
 	/**
-	 * Actor 진입 이벤트
+	 * Actor 진입 ?�벤??
 	 */
 	UFUNCTION()
 	void OnActorEnterRecoveryArea(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	/**
-	 * Actor 이탈 이벤트
+	 * Actor ?�탈 ?�벤??
 	 */
 	UFUNCTION()
 	void OnActorLeaveRecoveryArea(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 protected:
-	/** 회복 구역 범위 */
+	/** ?�복 구역 범위 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Recovery Area")
 	TObjectPtr<USphereComponent> RecoveryAreaSphere;
 
-	/** VFX 컴포넌트 */
+	/** VFX 컴포?�트 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Recovery Area")
 	TObjectPtr<UNiagaraComponent> AreaVFXComponent;
 
-	/** SFX 컴포넌트 (루프) */
+	/** SFX 컴포?�트 (루프) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Recovery Area")
 	TObjectPtr<UAudioComponent> AreaAudioComponent;
 
-	/** 회복 구역 설정 */
+	/** ?�복 구역 ?�정 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Area")
 	FHarmoniaDeployableRecoveryConfig RecoveryConfig;
 
-	/** 회복 틱 타이머 */
+	/** ?�복 ???�?�머 */
 	FTimerHandle RecoveryTickTimerHandle;
 
-	/** 만료 타이머 */
+	/** 만료 ?�?�머 */
 	FTimerHandle ExpirationTimerHandle;
 
-	/** 활성화 여부 */
+	/** ?�성???��? */
 	UPROPERTY(BlueprintReadOnly, Category = "Recovery Area")
 	bool bIsActive = false;
 
-	/** 회복 구역 내 액터들 */
+	/** ?�복 구역 ???�터??*/
 	UPROPERTY()
 	TSet<TObjectPtr<AActor>> ActorsInArea;
 };

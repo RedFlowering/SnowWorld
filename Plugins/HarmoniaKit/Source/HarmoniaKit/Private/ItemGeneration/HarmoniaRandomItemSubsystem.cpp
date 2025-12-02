@@ -19,14 +19,14 @@ void UHarmoniaRandomItemSubsystem::SetConfigDataAsset(UHarmoniaRandomItemConfigD
 
 	if (ConfigAsset)
 	{
-		for (const FAffixDefinition& Affix : ConfigAsset->DefaultAffixes)
+		for (const FHarmoniaAffixData& Affix : ConfigAsset->DefaultAffixes)
 		{
 			RegisterAffix(Affix);
 		}
 	}
 }
 
-void UHarmoniaRandomItemSubsystem::RegisterAffix(const FAffixDefinition& Affix)
+void UHarmoniaRandomItemSubsystem::RegisterAffix(const FHarmoniaAffixData& Affix)
 {
 	if (!Affix.AffixId.IsValid())
 	{
@@ -41,9 +41,9 @@ void UHarmoniaRandomItemSubsystem::UnregisterAffix(FName AffixID)
 	Affixes.Remove(AffixID);
 }
 
-bool UHarmoniaRandomItemSubsystem::GetAffix(FName AffixID, FAffixDefinition& OutAffix) const
+bool UHarmoniaRandomItemSubsystem::GetAffix(FName AffixID, FHarmoniaAffixData& OutAffix) const
 {
-	if (const FAffixDefinition* Found = Affixes.Find(AffixID))
+	if (const FHarmoniaAffixData* Found = Affixes.Find(AffixID))
 	{
 		OutAffix = *Found;
 		return true;
@@ -51,16 +51,16 @@ bool UHarmoniaRandomItemSubsystem::GetAffix(FName AffixID, FAffixDefinition& Out
 	return false;
 }
 
-TArray<FAffixDefinition> UHarmoniaRandomItemSubsystem::GetAllAffixes() const
+TArray<FHarmoniaAffixData> UHarmoniaRandomItemSubsystem::GetAllAffixes() const
 {
-	TArray<FAffixDefinition> Result;
+	TArray<FHarmoniaAffixData> Result;
 	Affixes.GenerateValueArray(Result);
 	return Result;
 }
 
-TArray<FAffixDefinition> UHarmoniaRandomItemSubsystem::GetAffixesByType(EAffixType Type) const
+TArray<FHarmoniaAffixData> UHarmoniaRandomItemSubsystem::GetAffixesByType(EAffixType Type) const
 {
-	TArray<FAffixDefinition> Result;
+	TArray<FHarmoniaAffixData> Result;
 	for (const auto& Pair : Affixes)
 	{
 		if (Pair.Value.Type == Type)
@@ -84,8 +84,8 @@ FGeneratedItemData UHarmoniaRandomItemSubsystem::GenerateItem(const FItemGenerat
 	int32 PrefixCount = FMath::RandRange(0, FMath::Min(AffixCount, 3));
 	for (int32 i = 0; i < PrefixCount; ++i)
 	{
-		TArray<FAffixDefinition> ValidPrefixes = GetValidAffixes(EAffixType::Prefix, EAffixType::Prefix, Settings.ItemLevel, Settings.ExcludedItemTags);
-		if (const FAffixDefinition* SelectedAffix = SelectWeightedAffix(ValidPrefixes))
+		TArray<FHarmoniaAffixData> ValidPrefixes = GetValidAffixes(EAffixType::Prefix, EAffixType::Prefix, Settings.ItemLevel, Settings.ExcludedItemTags);
+		if (const FHarmoniaAffixData* SelectedAffix = SelectWeightedAffix(ValidPrefixes))
 		{
 			Item.Affixes.Add(RollAffix(*SelectedAffix));
 		}
@@ -95,8 +95,8 @@ FGeneratedItemData UHarmoniaRandomItemSubsystem::GenerateItem(const FItemGenerat
 	int32 SuffixCount = AffixCount - PrefixCount;
 	for (int32 i = 0; i < SuffixCount; ++i)
 	{
-		TArray<FAffixDefinition> ValidSuffixes = GetValidAffixes(EAffixType::Suffix, EAffixType::Suffix, Settings.ItemLevel, Settings.ExcludedItemTags);
-		if (const FAffixDefinition* SelectedAffix = SelectWeightedAffix(ValidSuffixes))
+		TArray<FHarmoniaAffixData> ValidSuffixes = GetValidAffixes(EAffixType::Suffix, EAffixType::Suffix, Settings.ItemLevel, Settings.ExcludedItemTags);
+		if (const FHarmoniaAffixData* SelectedAffix = SelectWeightedAffix(ValidSuffixes))
 		{
 			Item.Affixes.Add(RollAffix(*SelectedAffix));
 		}
@@ -168,7 +168,7 @@ TArray<FAffixStatModifier> UHarmoniaRandomItemSubsystem::GetCombinedModifiers(co
 	for (const FAppliedAffix& Affix : Item.Affixes)
 	{
 		// Get affix definition and add its modifiers
-		FAffixDefinition AffixDef;
+		FHarmoniaAffixData AffixDef;
 		if (GetAffix(Affix.AffixId.GetID(), AffixDef))
 		{
 			Combined.Append(AffixDef.StatModifiers);
@@ -184,7 +184,7 @@ FText UHarmoniaRandomItemSubsystem::GenerateItemName(const FGeneratedItemData& I
 	
 	for (const FAppliedAffix& Affix : Item.Affixes)
 	{
-		FAffixDefinition AffixDef;
+		FHarmoniaAffixData AffixDef;
 		if (GetAffix(Affix.AffixId.GetID(), AffixDef))
 		{
 			if (Affix.Type == EAffixType::Prefix)
@@ -203,7 +203,7 @@ FText UHarmoniaRandomItemSubsystem::GenerateItemName(const FGeneratedItemData& I
 
 FText UHarmoniaRandomItemSubsystem::GetAffixDescription(const FAppliedAffix& Affix) const
 {
-	FAffixDefinition AffixDef;
+	FHarmoniaAffixData AffixDef;
 	if (GetAffix(Affix.AffixId.GetID(), AffixDef))
 	{
 		return AffixDef.DisplayName;
@@ -211,7 +211,7 @@ FText UHarmoniaRandomItemSubsystem::GetAffixDescription(const FAppliedAffix& Aff
 	return FText::GetEmpty();
 }
 
-FAppliedAffix UHarmoniaRandomItemSubsystem::RollAffix(const FAffixDefinition& Affix) const
+FAppliedAffix UHarmoniaRandomItemSubsystem::RollAffix(const FHarmoniaAffixData& Affix) const
 {
 	FAppliedAffix Applied;
 	Applied.AffixId = Affix.AffixId;
@@ -227,13 +227,13 @@ FAppliedAffix UHarmoniaRandomItemSubsystem::RollAffix(const FAffixDefinition& Af
 	return Applied;
 }
 
-TArray<FAffixDefinition> UHarmoniaRandomItemSubsystem::GetValidAffixes(EAffixType Type, EAffixType Slot, int32 ItemLevel, const FGameplayTagContainer& ExcludedTags) const
+TArray<FHarmoniaAffixData> UHarmoniaRandomItemSubsystem::GetValidAffixes(EAffixType Type, EAffixType Slot, int32 ItemLevel, const FGameplayTagContainer& ExcludedTags) const
 {
-	TArray<FAffixDefinition> ValidAffixes;
+	TArray<FHarmoniaAffixData> ValidAffixes;
 	
 	for (const auto& Pair : Affixes)
 	{
-		const FAffixDefinition& Affix = Pair.Value;
+		const FHarmoniaAffixData& Affix = Pair.Value;
 		
 		// Check type
 		if (Affix.Type != Type)
@@ -259,7 +259,7 @@ TArray<FAffixDefinition> UHarmoniaRandomItemSubsystem::GetValidAffixes(EAffixTyp
 	return ValidAffixes;
 }
 
-const FAffixDefinition* UHarmoniaRandomItemSubsystem::SelectWeightedAffix(const TArray<FAffixDefinition>& ValidAffixes) const
+const FHarmoniaAffixData* UHarmoniaRandomItemSubsystem::SelectWeightedAffix(const TArray<FHarmoniaAffixData>& ValidAffixes) const
 {
 	if (ValidAffixes.Num() == 0)
 	{
@@ -268,7 +268,7 @@ const FAffixDefinition* UHarmoniaRandomItemSubsystem::SelectWeightedAffix(const 
 	
 	// Calculate total weight
 	int32 TotalWeight = 0;
-	for (const FAffixDefinition& Affix : ValidAffixes)
+	for (const FHarmoniaAffixData& Affix : ValidAffixes)
 	{
 		TotalWeight += Affix.Weight;
 	}
@@ -282,7 +282,7 @@ const FAffixDefinition* UHarmoniaRandomItemSubsystem::SelectWeightedAffix(const 
 	int32 Roll = FMath::RandRange(0, TotalWeight - 1);
 	int32 CurrentWeight = 0;
 	
-	for (const FAffixDefinition& Affix : ValidAffixes)
+	for (const FHarmoniaAffixData& Affix : ValidAffixes)
 	{
 		CurrentWeight += Affix.Weight;
 		if (Roll < CurrentWeight)
@@ -360,8 +360,8 @@ bool UHarmoniaRandomItemSubsystem::RerollAffixes(FGeneratedItemData& Item, bool 
 
 bool UHarmoniaRandomItemSubsystem::AddRandomAffix(FGeneratedItemData& Item, EAffixType Type)
 {
-	TArray<FAffixDefinition> ValidAffixes = GetValidAffixes(Type, Type, Item.ItemLevel, FGameplayTagContainer());
-	if (const FAffixDefinition* SelectedAffix = SelectWeightedAffix(ValidAffixes))
+	TArray<FHarmoniaAffixData> ValidAffixes = GetValidAffixes(Type, Type, Item.ItemLevel, FGameplayTagContainer());
+	if (const FHarmoniaAffixData* SelectedAffix = SelectWeightedAffix(ValidAffixes))
 	{
 		Item.Affixes.Add(RollAffix(*SelectedAffix));
 		UpdateCombinedModifiers(Item);

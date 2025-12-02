@@ -8,15 +8,15 @@ AHarmoniaBuildingPreviewActor::AHarmoniaBuildingPreviewActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	// 메시 컴포넌트 생성
+	// 메시 컴포?�트 ?�성
 	PreviewMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PreviewMesh"));
 	RootComponent = PreviewMeshComponent;
 
-	// 콜리전 비활성화 (프리뷰는 충돌하지 않음)
+	// 콜리??비활?�화 (?�리뷰는 충돌?��? ?�음)
 	PreviewMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	PreviewMeshComponent->SetCastShadow(false);
 
-	// 반투명 설정
+	// 반투�??�정
 	PreviewMeshComponent->SetRenderCustomDepth(false);
 }
 
@@ -24,18 +24,18 @@ void AHarmoniaBuildingPreviewActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 초기 상태는 유효하지 않음으로 설정
+	// 초기 ?�태???�효?��? ?�음?�로 ?�정
 	SetIsPlacementValid(false);
 }
 
-void AHarmoniaBuildingPreviewActor::ApplyPreviewData(const FBuildingPartData& PartData)
+void AHarmoniaBuildingPreviewActor::ApplyPreviewData(const FHarmoniaBuildingPartData& PartData)
 {
 	CurrentPartData = PartData;
 
 	if (!PreviewMeshComponent)
 		return;
 
-	// 메시 설정
+	// 메시 ?�정
 	if (PartData.PreviewMesh.Mesh)
 	{
 		PreviewMeshComponent->SetStaticMesh(PartData.PreviewMesh.Mesh);
@@ -55,7 +55,7 @@ void AHarmoniaBuildingPreviewActor::SetIsPlacementValid(bool bIsValid)
 	if (!PreviewMeshComponent)
 		return;
 
-	// 머티리얼 변경 (모든 머티리얼 슬롯에 적용)
+	// 머티리얼 변�?(모든 머티리얼 ?�롯???�용)
 	UMaterialInterface* MaterialToUse = bIsValid ? ValidPlacementMaterial : InvalidPlacementMaterial;
 	if (MaterialToUse)
 	{

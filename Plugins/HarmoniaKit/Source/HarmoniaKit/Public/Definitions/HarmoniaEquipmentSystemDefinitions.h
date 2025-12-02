@@ -77,7 +77,7 @@ struct FEquipmentStatModifier
  * Equipment data (DataTable row)
  */
 USTRUCT(BlueprintType)
-struct FEquipmentData : public FTableRowBase
+struct FHarmoniaEquipmentData : public FTableRowBase
 {
 	GENERATED_BODY()
 

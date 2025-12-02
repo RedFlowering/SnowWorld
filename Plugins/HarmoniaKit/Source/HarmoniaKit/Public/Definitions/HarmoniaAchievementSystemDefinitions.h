@@ -13,9 +13,9 @@
 UENUM(BlueprintType)
 enum class EAchievementState : uint8
 {
-	Locked			UMETA(DisplayName = "Locked"),			// 잠김
-	Unlocked		UMETA(DisplayName = "Unlocked"),		// 해금됨
-	Hidden			UMETA(DisplayName = "Hidden"),			// 숨겨짐 (조건 달성 전까지 보이지 않음)
+	Locked			UMETA(DisplayName = "Locked"),			// ?��?
+	Unlocked		UMETA(DisplayName = "Unlocked"),		// ?�금??
+	Hidden			UMETA(DisplayName = "Hidden"),			// ?�겨�?(조건 ?�성 ?�까지 보이지 ?�음)
 	MAX				UMETA(Hidden)
 };
 
@@ -25,8 +25,8 @@ enum class EAchievementState : uint8
 UENUM(BlueprintType)
 enum class EAchievementType : uint8
 {
-	Standard		UMETA(DisplayName = "Standard"),		// 일반 업적 (단발성)
-	Progressive		UMETA(DisplayName = "Progressive"),		// 진행형 업적 (누적 카운트)
+	Standard		UMETA(DisplayName = "Standard"),		// ?�반 ?�적 (?�발??
+	Progressive		UMETA(DisplayName = "Progressive"),		// 진행???�적 (?�적 카운??
 	MAX				UMETA(Hidden)
 };
 
@@ -35,7 +35,7 @@ enum class EAchievementType : uint8
  * Defines the static data for an achievement
  */
 USTRUCT(BlueprintType)
-struct FHarmoniaAchievementDefinition : public FTableRowBase
+struct FHarmoniaAchievementData : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -75,7 +75,7 @@ struct FHarmoniaAchievementDefinition : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Achievement")
 	FGameplayTagContainer RewardTags;
 
-	FHarmoniaAchievementDefinition()
+	FHarmoniaAchievementData()
 		: AchievementId()
 		, DisplayName()
 		, Description()
