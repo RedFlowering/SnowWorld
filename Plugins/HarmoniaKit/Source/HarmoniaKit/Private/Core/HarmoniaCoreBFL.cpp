@@ -98,7 +98,7 @@ UAbilitySystemComponent* UHarmoniaCoreBFL::GetASC(AActor* Actor)
 
 bool UHarmoniaCoreBFL::HasASC(const AActor* Actor)
 {
-	// const_cast??UAbilitySystemGlobals API가 non-const�??�구?�기 ?�문
+	// const_cast because UAbilitySystemGlobals API requires non-const
 	return GetASC(const_cast<AActor*>(Actor)) != nullptr;
 }
 

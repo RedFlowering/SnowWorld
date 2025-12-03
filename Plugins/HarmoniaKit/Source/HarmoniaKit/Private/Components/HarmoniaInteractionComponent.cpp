@@ -14,7 +14,7 @@ void UHarmoniaInteractionComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-    // 매니?� 캐싱 ?�득
+    // Cache manager reference
     InteractionManager = UHarmoniaCoreBFL::GetGameInstanceSubsystem<UHarmoniaInteractionManager>(this);
 }
 
@@ -34,21 +34,21 @@ void UHarmoniaInteractionComponent::Interact()
 
 	if (InteractionManager && Target)
 	{
-		// ?�터?�션 컨텍?�트 ?�성
+		// Create interaction context
 		FHarmoniaInteractionContext Context;
 		Context.Interactor = GetOwner();
 		Context.Interactable = Target;
-		Context.InteractionType = EHarmoniaInteractionType::Custom; // ?��? ?�황??맞게
+		Context.InteractionType = EHarmoniaInteractionType::Custom; // Set based on situation
 
-		// 매니?�?�게 ?�터?�션 ?�청
+		// Request interaction from manager
 		if (GetOwner() && GetOwner()->HasAuthority())
 		{
-			// ?�버?�서??바로 처리
+			// Process directly on server
 			InteractionManager->TryInteract(Context);
 		}
 		else
 		{
-			// ?�라?�언?�에?�는 RPC ?�출
+			// Call RPC on client
 			Server_TryInteract(Context);
 		}
 	}
@@ -74,7 +74,7 @@ bool UHarmoniaInteractionComponent::Server_TryInteract_Validate(const FHarmoniaI
 
         if (Dist <= MaxDistance)
         {
-            // ?�공?? 거리?� ??검�?
+            // Success - perform distance and other checks
 
             return true;
         }

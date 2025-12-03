@@ -38,19 +38,19 @@ bool UHarmoniaMusicComponent::StartPerformance(FName MusicID)
 
 	const FMusicSheetData& MusicSheet = MusicSheetDatabase[MusicID];
 
-	// ?�벨 체크
+	// Check level
 	if (PerformanceLevel < MusicSheet.MinPerformanceLevel)
 	{
 		return false;
 	}
 
-	// ?�보�??�고 ?�는지 ?�인
+	// Check if holding sheet music
 	if (MusicSheet.bHidden && !IsMusicSheetKnown(MusicID))
 	{
 		return false;
 	}
 
-	// ?�기 체크
+	// Check instrument
 	if (MusicSheet.RequiredInstruments.Num() > 0)
 	{
 		if (!HasInstrumentEquipped())
@@ -295,27 +295,27 @@ void UHarmoniaMusicComponent::CompletePerformance()
 
 	const FMusicSheetData& MusicSheet = MusicSheetDatabase[CurrentMusicID];
 
-	// ?�주 결과 계산
+	// Calculate performance result
 	FPerformanceResult Result = CalculatePerformanceResult(MusicSheet);
 
-	// 경험�??�득
+	// Gain experience
 	AddPerformanceExperience(Result.Experience);
 
-	// ?�보 ?�득
+	// Gain gold
 	LearnMusicSheet(CurrentMusicID);
 
-	// ?�기 ?�구??감소
+	// Decrease instrument durability
 	if (HasInstrumentEquipped())
 	{
 		ReduceInstrumentDurability(1);
 	}
 
-	// 버프 ?�용
+	// Apply buff
 	Result.AffectedActorCount = ApplyBuffToNearbyActors(Result.AppliedBuff);
 
 	OnPerformanceCompleted.Broadcast(Result);
 
-	// ?�주 종료
+	// End performance
 	bIsPerforming = false;
 	CurrentMusicID = NAME_None;
 	CurrentRhythmNotes.Empty();
@@ -327,7 +327,7 @@ FPerformanceResult UHarmoniaMusicComponent::CalculatePerformanceResult(const FMu
 	FPerformanceResult Result;
 	Result.MusicID = CurrentMusicID;
 
-	// 미니게임 ?�수 계산
+	// Calculate minigame score
 	float FinalScore = 0.0f;
 	if (bUseMinigame && TotalNoteCount > 0)
 	{
@@ -336,16 +336,16 @@ FPerformanceResult UHarmoniaMusicComponent::CalculatePerformanceResult(const FMu
 	}
 	else
 	{
-		// 미니게임 ?�이 ?�동 계산
+		// Auto-calculate without minigame
 		float SuccessRate = BaseSuccessRate + GetTotalQualityBonus();
 		FinalScore = FMath::Clamp(SuccessRate, 0.0f, 100.0f);
 	}
 
-	// ?�질 결정
+	// Determine quality
 	Result.Quality = DeterminePerformanceQuality(MusicSheet.Difficulty, FinalScore);
 	Result.bPerfect = Result.Quality == EPerformanceQuality::Legendary;
 
-	// 버프 ?�과 계산
+	// Calculate buff effect
 	Result.AppliedBuff = MusicSheet.BuffEffect;
 
 	float QualityMultiplier = 1.0f;
@@ -356,7 +356,7 @@ FPerformanceResult UHarmoniaMusicComponent::CalculatePerformanceResult(const FMu
 
 	float BuffMultiplier = QualityMultiplier * (1.0f + GetTotalBuffEffectBonus() / 100.0f);
 
-	// 버프 ?�과??배율 ?�용
+	// Apply multiplier to buff effect
 	Result.AppliedBuff.HealthRegenPerSecond *= BuffMultiplier;
 	Result.AppliedBuff.ManaRegenPerSecond *= BuffMultiplier;
 	Result.AppliedBuff.StaminaRegenPerSecond *= BuffMultiplier;
@@ -370,7 +370,7 @@ FPerformanceResult UHarmoniaMusicComponent::CalculatePerformanceResult(const FMu
 	// 범위 보너??
 	Result.AppliedBuff.EffectRadius *= (1.0f + GetTotalRangeBonus() / 100.0f);
 
-	// ?�코�?체크
+	// Check encore
 	for (const FPerformanceTrait& Trait : ActiveTraits)
 	{
 		if (FMath::FRand() * 100.0f <= Trait.EncoreChance)
@@ -394,7 +394,7 @@ FPerformanceResult UHarmoniaMusicComponent::CalculatePerformanceResult(const FMu
 
 EPerformanceQuality UHarmoniaMusicComponent::DeterminePerformanceQuality(int32 Difficulty, float Score)
 {
-	// ?�이?�에 ?�른 ?�질 기�? 조정
+	// Adjust quality threshold based on tier
 	float LegendaryThreshold = FMath::Max(95.0f, 98.0f - (Difficulty * 0.3f));
 	float PerfectThreshold = FMath::Max(85.0f, 90.0f - (Difficulty * 0.5f));
 	float GreatThreshold = FMath::Max(70.0f, 75.0f - (Difficulty * 0.5f));
@@ -429,8 +429,8 @@ EPerformanceQuality UHarmoniaMusicComponent::DeterminePerformanceQuality(int32 D
 
 void UHarmoniaMusicComponent::ApplyMusicBuff(const FMusicBuffEffect& BuffEffect)
 {
-	// 개별 ?�터??버프 ?�용 로직
-	// ?�제 구현?� 게임??버프 ?�스?�에 ?�라 ?�라�?
+	// Individual actor buff application logic
+	// Actual implementation varies by game's buff system
 }
 
 int32 UHarmoniaMusicComponent::ApplyBuffToNearbyActors(const FMusicBuffEffect& BuffEffect)
@@ -462,20 +462,20 @@ int32 UHarmoniaMusicComponent::ApplyBuffToNearbyActors(const FMusicBuffEffect& B
 
 	for (AActor* Actor : OverlappingActors)
 	{
-		// ?�군 체크 로직 추�? ?�요
+		// Need to add ally check logic
 		if (BuffEffect.bAllyOnly)
 		{
-			// TODO: ?� ?�스?�과 ?�동?�여 ?�군?��? ?�인
+			// TODO: Integrate with team system to check if ally
 		}
 
-		// 버프 ?�용
+		// Apply buff
 		ApplyMusicBuff(BuffEffect);
 		OnMusicBuffApplied.Broadcast(Actor, BuffEffect.BuffName, BuffEffect.Duration);
 
 		AffectedCount++;
 	}
 
-	// ?�신?�게???�용
+	// Apply to self
 	if (BuffEffect.bAffectSelf)
 	{
 		ApplyMusicBuff(BuffEffect);

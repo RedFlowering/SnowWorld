@@ -85,7 +85,7 @@ FString UHarmoniaSaveGameLibrary::GetPlayerSteamID(APlayerController* PlayerCont
 		}
 	}
 
-	// ?�라???�브?�스?�을 ?�용?????�는 경우 PlayerState??PlayerId ?�용
+	// If Online Subsystem is not available, use PlayerState's PlayerId
 	if (APlayerState* PS = PlayerController->PlayerState)
 	{
 		return FString::Printf(TEXT("Player_%d"), PS->GetPlayerId());
@@ -101,6 +101,6 @@ bool UHarmoniaSaveGameLibrary::IsServerOwner(APlayerController* PlayerController
 		return false;
 	}
 
-	// 리슨 ?�버?�서??�?번째 ?�레?�어가 ?�버 ?�유�?
+	// On listen server, the first player is the server owner
 	return PlayerController->GetLocalPlayer() && PlayerController->GetLocalPlayer()->GetControllerId() == 0;
 }

@@ -232,7 +232,7 @@ void AHarmoniaRecoveryAreaActor::ExpireRecoveryArea()
 
 	DeactivateRecoveryArea();
 
-	// Actor ?�괴
+	// Destroy actor
 	Destroy();
 }
 
@@ -243,7 +243,7 @@ void AHarmoniaRecoveryAreaActor::OnActorEnterRecoveryArea(UPrimitiveComponent* O
 		return;
 	}
 
-	// Character�??�복 (?�는 HealthComponent가 ?�는 Actor)
+	// Handle Character or Actors with HealthComponent
 	if (OtherActor->IsA<ACharacter>() || OtherActor->FindComponentByClass<ULyraHealthComponent>())
 	{
 		ActorsInArea.Add(OtherActor);

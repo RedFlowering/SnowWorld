@@ -8,7 +8,7 @@ UHarmoniaGatheringComponent::UHarmoniaGatheringComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = false;
 
-	// 기본 ?�벨 초기??
+	// Default level initialization
 	GatheringLevels.Add(EGatheringResourceType::Mineral, 1);
 	GatheringLevels.Add(EGatheringResourceType::Herb, 1);
 	GatheringLevels.Add(EGatheringResourceType::Wood, 1);
@@ -73,14 +73,14 @@ bool UHarmoniaGatheringComponent::StartGathering(FName ResourceID, AActor* Targe
 
 	const FGatheringResourceData& ResourceData = ResourceDatabase[ResourceID];
 
-	// ?�벨 체크
+	// Check level
 	int32 CurrentLevel = GetGatheringLevel(ResourceData.ResourceType);
 	if (CurrentLevel < ResourceData.MinGatheringLevel)
 	{
 		return false;
 	}
 
-	// ?�구 체크
+	// Check tool
 	if (ResourceData.RequiredTool != EGatheringToolType::None)
 	{
 		if (!HasToolEquipped() || EquippedTool.ToolType != ResourceData.RequiredTool)
@@ -142,14 +142,14 @@ bool UHarmoniaGatheringComponent::CanGatherResource(FName ResourceID) const
 
 	const FGatheringResourceData& ResourceData = ResourceDatabase[ResourceID];
 
-	// ?�벨 체크
+	// Check level
 	int32 CurrentLevel = GetGatheringLevel(ResourceData.ResourceType);
 	if (CurrentLevel < ResourceData.MinGatheringLevel)
 	{
 		return false;
 	}
 
-	// ?�구 체크
+	// Check tool
 	if (ResourceData.RequiredTool != EGatheringToolType::None)
 	{
 		if (!HasToolEquipped() || EquippedTool.ToolType != ResourceData.RequiredTool)
@@ -192,7 +192,7 @@ void UHarmoniaGatheringComponent::ReduceToolDurability(int32 Amount)
 
 	OnToolDurabilityChanged.Broadcast(EquippedTool.ToolName, EquippedTool.Durability);
 
-	// ?�구?��? 0???�면 ?�구 ?�제
+	// Remove tool when durability reaches 0
 	if (EquippedTool.Durability <= 0)
 	{
 		UnequipTool();
@@ -260,13 +260,13 @@ float UHarmoniaGatheringComponent::GetTotalGatheringSpeedBonus() const
 {
 	float TotalBonus = 0.0f;
 
-	// ?�성 보너??
+	// Attribute bonus
 	for (const FGatheringTrait& Trait : ActiveTraits)
 	{
 		TotalBonus += Trait.GatheringSpeedBonus;
 	}
 
-	// ?�구 보너??
+	// Tool bonus
 	if (HasToolEquipped())
 	{
 		TotalBonus += (EquippedTool.GatheringSpeedMultiplier - 1.0f) * 100.0f;
@@ -279,13 +279,13 @@ float UHarmoniaGatheringComponent::GetTotalYieldBonus() const
 {
 	float TotalBonus = 0.0f;
 
-	// ?�성 보너??
+	// Attribute bonus
 	for (const FGatheringTrait& Trait : ActiveTraits)
 	{
 		TotalBonus += Trait.YieldBonus;
 	}
 
-	// ?�구 보너??
+	// Tool bonus
 	if (HasToolEquipped())
 	{
 		TotalBonus += EquippedTool.YieldBonus * 100.0f;
@@ -319,15 +319,15 @@ void UHarmoniaGatheringComponent::CompleteGathering()
 	// 채집 결과 계산
 	FGatheringResult Result = CalculateGatheringResult(ResourceData);
 
-	// 경험�??�득
+	// Gain experience
 	AddGatheringExperience(Result.Experience, ResourceData.ResourceType);
 
-	// ?�구 ?�구??감소
+	// Decrease tool durability
 	if (HasToolEquipped())
 	{
 		int32 DurabilityLoss = 1;
 		
-		// ?�성?�로 ?�구??감소???�용
+		// Apply attribute-based durability reduction
 		for (const FGatheringTrait& Trait : ActiveTraits)
 		{
 			DurabilityLoss = FMath::CeilToInt(DurabilityLoss * (1.0f - Trait.DurabilityReduction / 100.0f));
@@ -350,11 +350,11 @@ FGatheringResult UHarmoniaGatheringComponent::CalculateGatheringResult(const FGa
 	FGatheringResult Result;
 	Result.ResourceID = CurrentResourceID;
 
-	// ?�리?�컬 체크
+	// Critical check
 	float CritChance = GetCriticalChance();
 	Result.bCriticalGather = FMath::FRand() * 100.0f <= CritChance;
 
-	// ?�득??계산
+	// Calculate yield
 	int32 BaseYield = FMath::RandRange(ResourceData.MinYield, ResourceData.MaxYield);
 	float YieldMultiplier = 1.0f + (GetTotalYieldBonus() / 100.0f);
 

@@ -292,7 +292,7 @@ FDungeonReward UHarmoniaDungeonComponent::CalculateReward() const
 		Reward.RewardMultiplier *= Modifier.ScoreMultiplier;
 	}
 
-	// 무한 ?�전?� 층수???�라 보상 증�?
+	// Infinite dungeon increases rewards based on floor level
 	if (CurrentDungeon->DungeonType == EDungeonType::Infinite)
 	{
 		float FloorMultiplier = 1.0f + (CurrentFloor - 1) * 0.1f;
@@ -305,8 +305,8 @@ FDungeonReward UHarmoniaDungeonComponent::CalculateReward() const
 
 int32 UHarmoniaDungeonComponent::GetPartySize() const
 {
-	// ?�티 ?�스?�과 ?�동 ?�요
-	// ?�재???�시�?1 반환
+	// Requires party system integration
+	// Return 1 for now
 	return 1;
 }
 
@@ -314,8 +314,8 @@ TMap<ERaidRole, int32> UHarmoniaDungeonComponent::GetRoleComposition() const
 {
 	TMap<ERaidRole, int32> Composition;
 
-	// ?�티/?�이???�스?�과 ?�동?�여 ??���??�원 계산
-	// ?�재???�시 구현
+	// Calculate max party members in sync with party/raid system
+	// Temporary implementation
 	Composition.Add(ERaidRole::Tank, 1);
 	Composition.Add(ERaidRole::Healer, 1);
 	Composition.Add(ERaidRole::DPS, 3);
@@ -334,7 +334,7 @@ void UHarmoniaDungeonComponent::UpdateTimer(float DeltaTime)
 		if (RemainingTime <= 0.0f)
 		{
 			RemainingTime = 0.0f;
-			CompleteDungeon(false); // ?�간 초과�??�패
+			CompleteDungeon(false); // Failed due to time limit
 		}
 
 		OnDungeonTimeUpdate.Broadcast(RemainingTime, CurrentDungeon->TimeLimit);
@@ -350,7 +350,7 @@ bool UHarmoniaDungeonComponent::ValidateRequirements(const UDungeonDataAsset* Du
 
 	const FDungeonRequirement& Req = DungeonData->Requirements;
 
-	// ?�벨 ?�인
+	// Check level
 	int32 PlayerLevel = GetPlayerLevel();
 	if (PlayerLevel < Req.MinLevel)
 	{
@@ -358,27 +358,27 @@ bool UHarmoniaDungeonComponent::ValidateRequirements(const UDungeonDataAsset* Du
 		return false;
 	}
 	
-	// ?�티 ?�기 ?�인
+	// Check party size
 	int32 PartySize = GetPartySize();
 	if (PartySize < Req.MinPartySize || PartySize > Req.MaxPartySize)
 	{
 		return false;
 	}
 
-	// ?�요 ?�이???�인
+	// Check required items
 	if (!HasRequiredItems(Req.RequiredItemIDs))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ValidateRequirements: Missing required items"));
 		return false;
 	}
 
-	// ?�요 ?�스???�인
-	// Note: ?�스???�스?�이 구현?�면 ?�기???�인
-	// ?�재??RequiredQuestIDs가 비어?�으�??�과
+	// Check required quests
+	// Note: Check here once quest system is implemented
+	// Currently pass if RequiredQuestIDs is empty
 	if (Req.RequiredQuestIDs.Num() > 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ValidateRequirements: Quest validation not yet implemented"));
-		// TODO: ?�스???�스??구현 ???�동
+		// TODO: Integrate when quest system is implemented
 	}
 
 	return true;
@@ -391,16 +391,16 @@ int32 UHarmoniaDungeonComponent::CalculateScore() const
 		return 0;
 	}
 
-	int32 Score = 10000; // 기본 ?�수
+	int32 Score = 10000; // Base score
 
-	// ?�간 보너??
+	// Time bonus
 	if (CurrentDungeon->TimeLimit > 0.0f)
 	{
 		float TimeRatio = RemainingTime / CurrentDungeon->TimeLimit;
 		Score += FMath::RoundToInt(5000.0f * TimeRatio);
 	}
 
-	// ?�이??보너??
+	// Tier bonus
 	switch (CurrentDifficulty)
 	{
 	case EDungeonDifficulty::Normal:
@@ -420,13 +420,13 @@ int32 UHarmoniaDungeonComponent::CalculateScore() const
 		break;
 	}
 
-	// 챌린지 모디?�이??보너??
+	// Challenge modifier bonus
 	for (const FDungeonChallengeModifier& Modifier : ActiveChallengeModifiers)
 	{
 		Score = FMath::RoundToInt(Score * Modifier.ScoreMultiplier);
 	}
 
-	// 무한 ?�전 층수 보너??
+	// Infinite dungeon floor bonus
 	if (CurrentDungeon->DungeonType == EDungeonType::Infinite)
 	{
 		Score += CurrentFloor * 1000;
@@ -442,7 +442,7 @@ int32 UHarmoniaDungeonComponent::GetPlayerLevel() const
 		return ProgressionComponent->CurrentLevel;
 	}
 	
-	// ?�로그레??컴포?�트가 ?�으�?기본�?1 반환
+	// Return 1 if no progress component
 	return 1;
 }
 
@@ -450,7 +450,7 @@ bool UHarmoniaDungeonComponent::HasRequiredItems(const TArray<FName>& ItemIDs) c
 {
 	if (ItemIDs.Num() == 0)
 	{
-		return true; // ?�요 ?�이?�이 ?�으�??�과
+		return true; // Pass if no required items
 	}
 
 	if (!InventoryComponent)
@@ -483,13 +483,13 @@ bool UHarmoniaDungeonComponent::ConsumeRequiredItems(const TArray<FName>& ItemID
 		return false;
 	}
 
-	// 먼�? 모든 ?�이?�이 ?�는지 ?�인
+	// First check if all players exist
 	if (!HasRequiredItems(ItemIDs))
 	{
 		return false;
 	}
 
-	// ?�이???�비
+	// Reserve items
 	for (const FName& ItemID : ItemIDs)
 	{
 		FHarmoniaID HarmoniaID(ItemID);

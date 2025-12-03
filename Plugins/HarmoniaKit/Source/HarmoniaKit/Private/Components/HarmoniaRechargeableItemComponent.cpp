@@ -38,10 +38,10 @@ bool UHarmoniaRechargeableItemComponent::RegisterRecoveryItem(EHarmoniaRecoveryI
 		return false;
 	}
 
-	// ?�정 ?�록
+	// Record settings
 	RegisteredItems.Add(ItemType, Config);
 
-	// 초기 ?�태 ?�성
+	// Generate initial state
 	FHarmoniaRecoveryItemState NewState;
 	NewState.ItemType = ItemType;
 	NewState.CurrentCharges = Config.InitialCharges;
@@ -62,10 +62,10 @@ bool UHarmoniaRechargeableItemComponent::RegisterResonanceShard(EHarmoniaResonan
 		return false;
 	}
 
-	// 변???�록
+	// Record changes
 	ResonanceShardVariants.Add(Frequency, VariantConfig);
 
-	// ?�태 ?�성 (공명 ?�편?� 모두 ResonanceShard ?�??
+	// Generate state (all resonance shards use ResonanceShard type)
 	FHarmoniaRecoveryItemState NewState;
 	NewState.ItemType = EHarmoniaRecoveryItemType::ResonanceShard;
 	NewState.ShardFrequency = Frequency;
@@ -98,7 +98,7 @@ bool UHarmoniaRechargeableItemComponent::UseRecoveryItem(EHarmoniaRecoveryItemTy
 		return false;
 	}
 
-	// 충전 ?�수 찾기
+	// Find charge count
 	for (FHarmoniaRecoveryItemState& State : ItemStates)
 	{
 		if (State.ItemType == ItemType)
@@ -118,7 +118,7 @@ bool UHarmoniaRechargeableItemComponent::UseRecoveryItem(EHarmoniaRecoveryItemTy
 
 bool UHarmoniaRechargeableItemComponent::UseResonanceShard(EHarmoniaResonanceFrequency Frequency)
 {
-	// ?�당 주파?�의 공명 ?�편 찾기
+	// Find resonance shard of the frequency
 	for (FHarmoniaRecoveryItemState& State : ItemStates)
 	{
 		if (State.ItemType == EHarmoniaRecoveryItemType::ResonanceShard && State.ShardFrequency == Frequency)
@@ -152,7 +152,7 @@ bool UHarmoniaRechargeableItemComponent::CanUseRecoveryItem(EHarmoniaRecoveryIte
 		return false;
 	}
 
-	// 충전 ?�수 ?�인
+	// Check charge count
 	for (const FHarmoniaRecoveryItemState& State : ItemStates)
 	{
 		if (State.ItemType == ItemType)
@@ -235,7 +235,7 @@ int32 UHarmoniaRechargeableItemComponent::RechargeItem(EHarmoniaRecoveryItemType
 			}
 			else
 			{
-				// 지?�된 ?�만??충전
+				// Charge only specified amount
 				State.CurrentCharges = FMath::Min(State.CurrentCharges + Amount, State.MaxCharges);
 			}
 
@@ -281,7 +281,7 @@ int32 UHarmoniaRechargeableItemComponent::RechargeRechargeableItems()
 
 	for (FHarmoniaRecoveryItemState& State : ItemStates)
 	{
-		// 충전 가???��? ?�인
+		// Check if can be charged
 		const FHarmoniaRecoveryItemConfig* Config = RegisteredItems.Find(State.ItemType);
 		if (Config && Config->bRechargeableAtCheckpoint)
 		{
@@ -330,7 +330,7 @@ void UHarmoniaRechargeableItemComponent::OnCheckpointResonanceCompleted(FName Ch
 {
 	if (Result.bSuccess)
 	{
-		// 체크?�인??공명 ?�공 ??모든 충전 가?�한 ?�이??충전
+		// Charge all chargeable items when checkpoint resonance succeeds
 		int32 TotalRecharged = RechargeRechargeableItems();
 
 		UE_LOG(LogTemp, Log, TEXT("Checkpoint resonance completed. Recharged %d items at checkpoint %s"), TotalRecharged, *CheckpointID.ToString());
@@ -339,7 +339,7 @@ void UHarmoniaRechargeableItemComponent::OnCheckpointResonanceCompleted(FName Ch
 
 void UHarmoniaRechargeableItemComponent::InitializeCheckpointIntegration()
 {
-	// 체크?�인???�브?�스??가?�오�?
+	// Get checkpoint subsystem
 	if (UWorld* World = GetWorld())
 	{
 		if (UGameInstance* GameInstance = World->GetGameInstance())
@@ -348,7 +348,7 @@ void UHarmoniaRechargeableItemComponent::InitializeCheckpointIntegration()
 
 			if (CheckpointSubsystem)
 			{
-				// 공명 ?�료 ?�벤?�에 바인??
+				// Bind to resonance complete event
 				CheckpointSubsystem->OnResonanceCompleted.AddDynamic(this, &UHarmoniaRechargeableItemComponent::OnCheckpointResonanceCompleted);
 
 				UE_LOG(LogTemp, Log, TEXT("Rechargeable Item Component integrated with Checkpoint Subsystem"));
@@ -370,7 +370,7 @@ void UHarmoniaRechargeableItemComponent::LoadItemStates(const TArray<FHarmoniaRe
 {
 	ItemStates = LoadedStates;
 
-	// 로드 ???�벤??브로?�캐?�트
+	// Broadcast event on load
 	for (const FHarmoniaRecoveryItemState& State : ItemStates)
 	{
 		OnChargesChanged.Broadcast(State.ItemType, State.CurrentCharges);
@@ -401,7 +401,7 @@ void UHarmoniaRechargeableItemComponent::SetCharges(EHarmoniaRecoveryItemType It
 
 void UHarmoniaRechargeableItemComponent::OnRep_ItemStates()
 {
-	// 리플리�??�션 ??UI ?�데?�트
+	// Update UI after replication
 	for (const FHarmoniaRecoveryItemState& State : ItemStates)
 	{
 		OnChargesChanged.Broadcast(State.ItemType, State.CurrentCharges);

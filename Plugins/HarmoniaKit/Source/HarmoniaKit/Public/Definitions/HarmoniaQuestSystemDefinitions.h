@@ -119,12 +119,12 @@ UENUM(BlueprintType)
 enum class EQuestMarkerType : uint8
 {
 	Objective		UMETA(DisplayName = "Objective"),		// 주요 목표
-	Optional		UMETA(DisplayName = "Optional"),		// ?�택 목표
-	Discover		UMETA(DisplayName = "Discover"),		// ?�험 지??
-	Deliver			UMETA(DisplayName = "Deliver"),			// ?�달 지??
-	Talk			UMETA(DisplayName = "Talk"),			// ?�??NPC
+	Optional		UMETA(DisplayName = "Optional"),		// Optional objective
+	Discover		UMETA(DisplayName = "Discover"),		// Discovery objective
+	Deliver			UMETA(DisplayName = "Deliver"),			// Delivery objective
+	Talk			UMETA(DisplayName = "Talk"),			// Talk to NPC
 	Gather			UMETA(DisplayName = "Gather"),			// 채집 지??
-	Custom			UMETA(DisplayName = "Custom"),			// 커스?�
+	Custom			UMETA(DisplayName = "Custom"),			// Custom
 	MAX				UMETA(Hidden)
 };
 
@@ -134,13 +134,13 @@ enum class EQuestMarkerType : uint8
 UENUM(BlueprintType)
 enum class EQuestFailConditionType : uint8
 {
-	None			UMETA(DisplayName = "None"),			// ?�음
-	TimeLimit		UMETA(DisplayName = "Time Limit"),		// ?�간 ?�한
-	NPCDied			UMETA(DisplayName = "NPC Died"),		// NPC ?�망
-	ItemLost		UMETA(DisplayName = "Item Lost"),		// ?�이???�실
-	LocationLeft	UMETA(DisplayName = "Location Left"),	// 지???�탈
-	PlayerDied		UMETA(DisplayName = "Player Died"),		// ?�레?�어 ?�망
-	Custom			UMETA(DisplayName = "Custom"),			// 커스?� 조건
+	None			UMETA(DisplayName = "None"),			// None
+	TimeLimit		UMETA(DisplayName = "Time Limit"),		// Time limit
+	NPCDied			UMETA(DisplayName = "NPC Died"),		// NPC died
+	ItemLost		UMETA(DisplayName = "Item Lost"),		// Item lost
+	LocationLeft	UMETA(DisplayName = "Location Left"),	// Left location
+	PlayerDied		UMETA(DisplayName = "Player Died"),		// Player died
+	Custom			UMETA(DisplayName = "Custom"),			// Custom condition
 	MAX				UMETA(Hidden)
 };
 
@@ -150,12 +150,12 @@ enum class EQuestFailConditionType : uint8
 UENUM(BlueprintType)
 enum class EQuestEventTrigger : uint8
 {
-	OnStart			UMETA(DisplayName = "On Start"),		// ?�스???�작 ??
-	OnComplete		UMETA(DisplayName = "On Complete"),		// ?�스???�료 ??
-	OnFail			UMETA(DisplayName = "On Fail"),			// ?�스???�패 ??
-	OnAbandon		UMETA(DisplayName = "On Abandon"),		// ?�스???�기 ??
-	OnPhaseChange	UMETA(DisplayName = "On Phase Change"),	// ?�계 변�???
-	OnObjectiveComplete UMETA(DisplayName = "On Objective Complete"), // 목표 ?�료 ??
+	OnStart			UMETA(DisplayName = "On Start"),		// When quest starts
+	OnComplete		UMETA(DisplayName = "On Complete"),		// When quest completes
+	OnFail			UMETA(DisplayName = "On Fail"),			// When quest fails
+	OnAbandon		UMETA(DisplayName = "On Abandon"),		// When quest abandoned
+	OnPhaseChange	UMETA(DisplayName = "On Phase Change"),	// When phase changes
+	OnObjectiveComplete UMETA(DisplayName = "On Objective Complete"), // When objective completes
 	MAX				UMETA(Hidden)
 };
 
@@ -165,13 +165,13 @@ enum class EQuestEventTrigger : uint8
 UENUM(BlueprintType)
 enum class EQuestNotificationType : uint8
 {
-	QuestAdded		UMETA(DisplayName = "Quest Added"),			// ?�스??추�?
-	QuestStarted	UMETA(DisplayName = "Quest Started"),		// ?�스???�작
-	QuestCompleted	UMETA(DisplayName = "Quest Completed"),		// ?�스???�료
-	QuestFailed		UMETA(DisplayName = "Quest Failed"),		// ?�스???�패
-	ObjectiveComplete UMETA(DisplayName = "Objective Complete"),// 목표 ?�료
-	PhaseComplete	UMETA(DisplayName = "Phase Complete"),		// ?�계 ?�료
-	HintShown		UMETA(DisplayName = "Hint Shown"),			// ?�트 ?�시
+	QuestAdded		UMETA(DisplayName = "Quest Added"),			// Quest added
+	QuestStarted	UMETA(DisplayName = "Quest Started"),		// Quest started
+	QuestCompleted	UMETA(DisplayName = "Quest Completed"),		// Quest completed
+	QuestFailed		UMETA(DisplayName = "Quest Failed"),		// Quest failed
+	ObjectiveComplete UMETA(DisplayName = "Objective Complete"),// Objective complete
+	PhaseComplete	UMETA(DisplayName = "Phase Complete"),		// Phase complete
+	HintShown		UMETA(DisplayName = "Hint Shown"),			// Hint shown
 	MAX				UMETA(Hidden)
 };
 
@@ -181,13 +181,13 @@ enum class EQuestNotificationType : uint8
 UENUM(BlueprintType)
 enum class EQuestEventType : uint8
 {
-	None			UMETA(DisplayName = "None"),			// ?�음
-	SpawnActor		UMETA(DisplayName = "Spawn Actor"),		// ?�터 ?�폰
-	PlayCutscene	UMETA(DisplayName = "Play Cutscene"),	// 컷씬 ?�생
+	None			UMETA(DisplayName = "None"),			// None
+	SpawnActor		UMETA(DisplayName = "Spawn Actor"),		// Spawn actor
+	PlayCutscene	UMETA(DisplayName = "Play Cutscene"),	// Play cutscene
 	GrantReward		UMETA(DisplayName = "Grant Reward"),	// 보상 지�?
-	ModifyWorld		UMETA(DisplayName = "Modify World"),	// ?�드 변�?
-	StartQuest		UMETA(DisplayName = "Start Quest"),		// ?�스???�작
-	Custom			UMETA(DisplayName = "Custom"),			// 커스?�
+	ModifyWorld		UMETA(DisplayName = "Modify World"),	// Modify world
+	StartQuest		UMETA(DisplayName = "Start Quest"),		// Start quest
+	Custom			UMETA(DisplayName = "Custom"),			// Custom
 	MAX				UMETA(Hidden)
 };
 

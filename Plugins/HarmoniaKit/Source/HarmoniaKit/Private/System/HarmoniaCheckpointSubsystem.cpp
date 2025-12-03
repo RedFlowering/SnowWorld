@@ -20,7 +20,7 @@
 
 UHarmoniaCheckpointSubsystem::UHarmoniaCheckpointSubsystem()
 {
-	// 기본 ?�정 초기??
+	// Initialize default settings
 	CheckpointConfig = FHarmoniaCheckpointConfig();
 }
 
@@ -33,7 +33,7 @@ void UHarmoniaCheckpointSubsystem::Initialize(FSubsystemCollectionBase& Collecti
 
 void UHarmoniaCheckpointSubsystem::Deinitialize()
 {
-	// ?�?�머 ?�리
+	// Clean up timers
 	UWorld* World = GetWorld();
 	if (World)
 	{
@@ -80,7 +80,7 @@ bool UHarmoniaCheckpointSubsystem::RegisterCheckpoint(AHarmoniaCrystalResonator*
 
 	RegisteredCheckpoints.Add(CheckpointID, Checkpoint);
 
-	// 체크?�인???�이???�성
+	// Create checkpoint data
 	FHarmoniaCheckpointData Data;
 	Data.CheckpointID = CheckpointID;
 	Data.CheckpointName = Checkpoint->CheckpointName;
@@ -161,16 +161,16 @@ bool UHarmoniaCheckpointSubsystem::ActivateCheckpoint(FName CheckpointID, APlaye
 		return true;
 	}
 
-	// 체크?�인???�성??
+	// Activate checkpoint
 	Checkpoint->Activate(Player);
 
-	// ?�이???�데?�트
+	// Update data
 	if (FHarmoniaCheckpointData* Data = CheckpointDataMap.Find(CheckpointID))
 	{
 		Data->bActivated = true;
 	}
 
-	// ?�벤??브로?�캐?�트
+	// Broadcast event
 	FHarmoniaCheckpointData CheckpointData = Checkpoint->GetCheckpointData();
 	OnCheckpointActivated.Broadcast(CheckpointID, CheckpointData);
 
@@ -215,11 +215,11 @@ bool UHarmoniaCheckpointSubsystem::StartResonance(FName CheckpointID, APlayerCon
 		return false;
 	}
 
-	// 공명 ?�작
+	// Start resonance
 	ResonatingPlayers.Add(Player, CheckpointID);
 	Checkpoint->StartResonance(Player);
 
-	// 공명 ?�?�머 ?�정
+	// Set resonance timer
 	UWorld* World = GetWorld();
 	if (World)
 	{
@@ -237,7 +237,7 @@ bool UHarmoniaCheckpointSubsystem::StartResonance(FName CheckpointID, APlayerCon
 		ResonanceTimerHandles.Add(Player, TimerHandle);
 	}
 
-	// ?�벤??브로?�캐?�트
+	// Broadcast event
 	OnResonanceStarted.Broadcast(CheckpointID, Player, CheckpointConfig.ResonanceDuration);
 
 	UE_LOG(LogTemp, Log, TEXT("StartResonance: Player started resonance at checkpoint %s"), *CheckpointID.ToString());
@@ -257,7 +257,7 @@ void UHarmoniaCheckpointSubsystem::CancelResonance(APlayerController* Player, co
 		return;
 	}
 
-	// ?�?�머 취소
+	// Cancel timer
 	UWorld* World = GetWorld();
 	if (World)
 	{
@@ -268,7 +268,7 @@ void UHarmoniaCheckpointSubsystem::CancelResonance(APlayerController* Player, co
 		}
 	}
 
-	// 체크?�인?�에??공명 종료
+	// End resonance at checkpoint
 	AHarmoniaCrystalResonator* Checkpoint = FindCheckpoint(*CheckpointID);
 	if (Checkpoint)
 	{
@@ -277,11 +277,11 @@ void UHarmoniaCheckpointSubsystem::CancelResonance(APlayerController* Player, co
 
 	FName CancelledCheckpointID = *CheckpointID;
 
-	// ?�이???�리
+	// Clean up data
 	ResonatingPlayers.Remove(Player);
 	ResonanceTimerHandles.Remove(Player);
 
-	// ?�벤??브로?�캐?�트
+	// Broadcast event
 	OnResonanceCancelled.Broadcast(CancelledCheckpointID, Reason);
 
 	UE_LOG(LogTemp, Log, TEXT("CancelResonance: Player cancelled resonance at checkpoint %s. Reason: %s"),
@@ -306,30 +306,30 @@ void UHarmoniaCheckpointSubsystem::CompleteResonance(APlayerController* Player, 
 		return;
 	}
 
-	// 공명 결과 ?�성
+	// Create resonance result
 	FHarmoniaResonanceResult Result;
 	Result.bSuccess = true;
 
-	// ?�레?�어 ?�복
+	// Restore player health
 	RestorePlayerHealth(Player, CheckpointConfig.HealthRestorationRate);
 
-	// ??리스??
+	// Respawn enemies
 	if (CheckpointConfig.bRespawnEnemiesOnResonance)
 	{
 		Result.EnemiesRespawned = RespawnAllEnemies();
 	}
 
-	// ?�동 ?�??
+	// Auto save
 	if (CheckpointConfig.bAutoSaveOnResonance)
 	{
 		AutoSaveGame(Player);
 		Result.bGameSaved = true;
 	}
 
-	// 마�?�?체크?�인???�정
+	// Set last checkpoint
 	SetPlayerLastCheckpoint(Player, CheckpointID);
 
-	// 공명 주파?�별 ?�과
+	// Apply resonance frequency effects
 	AHarmoniaCrystalResonator* Checkpoint = FindCheckpoint(CheckpointID);
 	if (Checkpoint)
 	{
@@ -337,11 +337,11 @@ void UHarmoniaCheckpointSubsystem::CompleteResonance(APlayerController* Player, 
 		Checkpoint->EndResonance(Player);
 	}
 
-	// ?�이???�리
+	// Clean up data
 	ResonatingPlayers.Remove(Player);
 	ResonanceTimerHandles.Remove(Player);
 
-	// ?�벤??브로?�캐?�트
+	// Broadcast event
 	OnResonanceCompleted.Broadcast(CheckpointID, Result);
 
 	UE_LOG(LogTemp, Log, TEXT("CompleteResonance: Player completed resonance at checkpoint %s. Enemies respawned: %d, Game saved: %s"),
@@ -373,7 +373,7 @@ void UHarmoniaCheckpointSubsystem::RestorePlayerHealth(APlayerController* Player
 		return;
 	}
 
-	// 체력 ?�복
+	// Restore health
 	float MaxHealth = HealthSet->GetMaxHealth();
 	float HealthToRestore = MaxHealth * RestorationRate;
 
@@ -405,8 +405,8 @@ void UHarmoniaCheckpointSubsystem::AutoSaveGame(APlayerController* Player)
 
 void UHarmoniaCheckpointSubsystem::ApplyResonanceFrequencyEffects(APlayerController* Player, EHarmoniaResonanceFrequency Frequency)
 {
-	// �?공명 주파?�별 ?�수 ?�과 (Blueprint?�서 ?�장 가??
-	// ?? Azure = 마나 ?�복, Crimson = 공격??버프, Verdant = 체력 ?�생 ??
+	// Custom effects per resonance frequency (can be extended in Blueprint)
+	// e.g., Azure = Mana restoration, Crimson = Attack buff, Verdant = Health regeneration
 
 	UE_LOG(LogTemp, Log, TEXT("ApplyResonanceFrequencyEffects: Applied %d frequency effects to player"),
 		static_cast<int32>(Frequency));
@@ -443,17 +443,17 @@ FHarmoniaTeleportResult UHarmoniaCheckpointSubsystem::TeleportToCheckpoint(APlay
 		return Result;
 	}
 
-	// ?�레?�트 비용 계산
+	// Calculate teleport cost
 	FName CurrentCheckpointID = GetPlayerLastCheckpoint(Player);
 	Result.ResourceCost = CalculateTeleportCost(CurrentCheckpointID, DestinationCheckpointID);
 
-	// ?�울/리소??차감 로직
+	// Soul/Resource deduction logic
 	if (Result.ResourceCost > 0)
 	{
 		if (ALyraPlayerState* PS = Player->GetPlayerState<ALyraPlayerState>())
 		{
-			// HarmoniaResourceComponent ?�인 (?�는 경우)
-			// NOTE: HarmoniaResourceComponent가 구현?��? ?��? 경우 ??부분�? ?�킵?�니??
+			// Check HarmoniaResourceComponent (if exists)
+			// NOTE: Skip this section if HarmoniaResourceComponent is not implemented yet
 			TArray<UActorComponent*> ResourceComponents;
 			PS->GetComponents(UActorComponent::StaticClass(), ResourceComponents);
 			bool bResourceDeducted = false;
@@ -462,8 +462,8 @@ FHarmoniaTeleportResult UHarmoniaCheckpointSubsystem::TeleportToCheckpoint(APlay
 			{
 				if (Component->GetClass()->GetName().Contains(TEXT("ResourceComponent")))
 				{
-					// 리플?�션???�해 ConsumeResource 메서???�출 ?�도
-					// NOTE: ?�제 HarmoniaResourceComponent가 구현?�면 ?�절???�??캐스?�으�?변�?
+					// Attempt to call ConsumeResource method via reflection
+					// NOTE: Change to proper type casting when HarmoniaResourceComponent is implemented
 					UE_LOG(LogTemp, Warning, TEXT("TeleportToCheckpoint: Resource component found but not implemented yet"));
 					bResourceDeducted = true;
 					break;
@@ -472,13 +472,13 @@ FHarmoniaTeleportResult UHarmoniaCheckpointSubsystem::TeleportToCheckpoint(APlay
 
 			if (!bResourceDeducted)
 			{
-				// 리소???�스?�이 ?�는 경우 무료�??�레?�트 ?�용
+				// Allow free teleport if resource system is not available
 				UE_LOG(LogTemp, Log, TEXT("TeleportToCheckpoint: Cost %d souls (free - resource system not implemented)"), Result.ResourceCost);
 			}
 		}
 	}
 
-	// ?�레?�트 ?�행
+	// Execute teleport
 	FVector TeleportLocation = Checkpoint->GetActorLocation();
 	FRotator TeleportRotation = Checkpoint->GetActorRotation();
 
@@ -488,7 +488,7 @@ FHarmoniaTeleportResult UHarmoniaCheckpointSubsystem::TeleportToCheckpoint(APlay
 
 	Result.bSuccess = true;
 
-	// ?�벤??브로?�캐?�트
+	// Broadcast event
 	OnCheckpointTeleport.Broadcast(CurrentCheckpointID, DestinationCheckpointID, Result);
 
 	UE_LOG(LogTemp, Log, TEXT("TeleportToCheckpoint: Teleported player to checkpoint %s"), *DestinationCheckpointID.ToString());
@@ -515,13 +515,13 @@ bool UHarmoniaCheckpointSubsystem::CanTeleportToCheckpoint(APlayerController* Pl
 		return false;
 	}
 
-	// ?�투 중인지 ?�인
+	// Check if in combat
 	if (ALyraPlayerState* PS = Player->GetPlayerState<ALyraPlayerState>())
 	{
 		if (ULyraAbilitySystemComponent* ASC = PS->GetLyraAbilitySystemComponent())
 		{
-			// ?�투 관??GameplayTag ?�인
-			// Lyra?�서 ?�용?�는 ?�반?�인 ?�투 ?�그?�을 ?�인
+			// Check combat-related GameplayTags
+			// Check common combat tags used in Lyra
 			static const FName CombatTagNames[] = {
 				FName(TEXT("State.Combat")),
 				FName(TEXT("Status.Combat")),
@@ -540,7 +540,7 @@ bool UHarmoniaCheckpointSubsystem::CanTeleportToCheckpoint(APlayerController* Pl
 				}
 			}
 
-			// ?��?지�?받는 중인지???�인 (최근 5�????��?지 받음)
+			// Check if recently taking damage (received damage in last 5 seconds)
 			if (ALyraCharacter* Character = Cast<ALyraCharacter>(Player->GetPawn()))
 			{
 				const ULyraHealthSet* HealthSet = ASC->GetSet<ULyraHealthSet>();
@@ -549,14 +549,14 @@ bool UHarmoniaCheckpointSubsystem::CanTeleportToCheckpoint(APlayerController* Pl
 					float CurrentHealth = HealthSet->GetHealth();
 					float MaxHealth = HealthSet->GetMaxHealth();
 
-					// 체력??100% 미만?�면 최근???�투가 ?�었??가?�성
-					// ?��?�??�것만으로는 불충분하므�??�그 ?�인??주로 ?�용
+					// Health below 100% indicates possible recent combat
+					// This alone is insufficient, so primarily use tag checks
 				}
 			}
 		}
 	}
 
-	// 리소??충분?��? ?�인
+	// Check if resources are sufficient
 	FName CurrentCheckpointID = GetPlayerLastCheckpoint(Player);
 	int32 TeleportCost = CalculateTeleportCost(CurrentCheckpointID, DestinationCheckpointID);
 
@@ -564,7 +564,7 @@ bool UHarmoniaCheckpointSubsystem::CanTeleportToCheckpoint(APlayerController* Pl
 	{
 		if (ALyraPlayerState* PS = Player->GetPlayerState<ALyraPlayerState>())
 		{
-			// HarmoniaResourceComponent ?�인 (?�는 경우)
+			// Check HarmoniaResourceComponent (if exists)
 			TArray<UActorComponent*> ResourceComponents;
 			PS->GetComponents(UActorComponent::StaticClass(), ResourceComponents);
 			bool bHasResourceSystem = false;
@@ -574,8 +574,8 @@ bool UHarmoniaCheckpointSubsystem::CanTeleportToCheckpoint(APlayerController* Pl
 				if (Component->GetClass()->GetName().Contains(TEXT("ResourceComponent")))
 				{
 					bHasResourceSystem = true;
-					// NOTE: ?�제 HarmoniaResourceComponent가 구현?�면 ?�기??리소???�인
-					// ?�재???�스?�이 ?�으므�??�킵
+					// NOTE: Check resources here when HarmoniaResourceComponent is implemented
+					// Skip for now as no system exists
 					UE_LOG(LogTemp, Log, TEXT("CanTeleportToCheckpoint: Resource component found but not checking (not implemented)"));
 					break;
 				}
@@ -583,7 +583,7 @@ bool UHarmoniaCheckpointSubsystem::CanTeleportToCheckpoint(APlayerController* Pl
 
 			if (!bHasResourceSystem)
 			{
-				// 리소???�스?�이 ?�는 경우 무료�??�레?�트 ?�용
+				// Allow free teleport when resource system is not available
 				UE_LOG(LogTemp, Log, TEXT("CanTeleportToCheckpoint: No resource system, teleport is free"));
 			}
 		}
@@ -607,7 +607,7 @@ int32 UHarmoniaCheckpointSubsystem::CalculateTeleportCost(FName FromCheckpointID
 		return CheckpointConfig.BaseTeleportCost;
 	}
 
-	// 거리???�른 비용 계산
+	// Calculate cost based on distance
 	float Distance = FVector::Dist(FromCheckpoint->GetActorLocation(), ToCheckpoint->GetActorLocation());
 	int32 DistanceCost = FMath::FloorToInt(Distance * CheckpointConfig.TeleportCostPerDistance);
 
@@ -736,11 +736,11 @@ int32 UHarmoniaCheckpointSubsystem::RespawnAllEnemies()
 	{
 		if (Spawner && Spawner->IsValidLowLevel())
 		{
-			// 기존 몬스???�거
+			// Remove existing monsters
 			Spawner->DespawnAllMonsters();
 
-			// ?�로 ?�폰
-			// ?�포??모드???�라 ?�시 ?�폰
+			// Spawn new monsters
+			// Respawn based on spawner mode
 			if (Spawner->SpawnMode == EHarmoniaSpawnMode::Respawn || Spawner->SpawnMode == EHarmoniaSpawnMode::OnBeginPlay)
 			{
 				for (int32 i = 0; i < Spawner->MaxTotalMonsters; ++i)
@@ -764,13 +764,13 @@ int32 UHarmoniaCheckpointSubsystem::RespawnAllEnemies()
 
 void UHarmoniaCheckpointSubsystem::SaveCheckpointData()
 {
-	// 체크?�인???�브?�스?�의 ?�이?�는 HarmoniaSaveGameSubsystem???�해 ?�?�됨
+	// Checkpoint data persistence is handled by HarmoniaSaveGameSubsystem
 	UE_LOG(LogTemp, Log, TEXT("SaveCheckpointData: Checkpoint data saved"));
 }
 
 void UHarmoniaCheckpointSubsystem::LoadCheckpointData()
 {
-	// 체크?�인???�브?�스?�의 ?�이?�는 HarmoniaSaveGameSubsystem???�해 로드??
+	// Checkpoint data loading is handled by HarmoniaSaveGameSubsystem
 	UE_LOG(LogTemp, Log, TEXT("LoadCheckpointData: Checkpoint data loaded"));
 }
 
@@ -787,7 +787,7 @@ void UHarmoniaCheckpointSubsystem::ApplyCheckpointDataFromLoad(const TArray<FHar
 	{
 		CheckpointDataMap.Add(Data.CheckpointID, Data);
 
-		// 체크?�인???�터???�이???�용
+		// Apply loaded data to checkpoint actor
 		AHarmoniaCrystalResonator* Checkpoint = FindCheckpoint(Data.CheckpointID);
 		if (Checkpoint)
 		{

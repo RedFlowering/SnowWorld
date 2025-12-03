@@ -25,7 +25,7 @@
 #include "EngineUtils.h"
 #include "Misc/CRC.h"
 
-// HarmoniaKit 컴포?�트
+// HarmoniaKit components
 #include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "Components/HarmoniaInventoryComponent.h"
 #include "Components/HarmoniaBuildingComponent.h"
@@ -49,7 +49,7 @@ void UHarmoniaSaveGameSubsystem::Initialize(FSubsystemCollectionBase& Collection
 {
 	Super::Initialize(Collection);
 
-	// ?�동 ?�???�?�머 ?�작
+	// Start auto save timer
 	if (bAutoSaveEnabled && AutoSaveIntervalSeconds > 0.0f)
 	{
 		UWorld* World = GetWorld();
@@ -68,7 +68,7 @@ void UHarmoniaSaveGameSubsystem::Initialize(FSubsystemCollectionBase& Collection
 
 void UHarmoniaSaveGameSubsystem::Deinitialize()
 {
-	// ?�?�머 ?�리
+	// Timer cleanup
 	UWorld* World = GetWorld();
 	if (World)
 	{
@@ -88,7 +88,7 @@ bool UHarmoniaSaveGameSubsystem::SaveGame(const FString& SaveSlotName, bool bUse
 		return false;
 	}
 
-	// ???�이�?게임 객체 ?�성 ?�는 기존 �??�용
+	// Create new save game object or use existing
 	if (!CurrentSaveGame)
 	{
 		CurrentSaveGame = Cast<UHarmoniaSaveGame>(UGameplayStatics::CreateSaveGameObject(UHarmoniaSaveGame::StaticClass()));
@@ -101,11 +101,11 @@ bool UHarmoniaSaveGameSubsystem::SaveGame(const FString& SaveSlotName, bool bUse
 		return false;
 	}
 
-	// ?�이�?게임 메�??�이???�정
+	// Set save game metadata
 	CurrentSaveGame->SaveSlotName = SaveSlotName;
 	CurrentSaveGame->LastSaveTimestamp = FDateTime::Now();
 
-	// 모든 ?�레?�어 ?�이???�??
+	// Collect all player data
 	for (FConstPlayerControllerIterator Iterator = World->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
 		APlayerController* PC = Iterator->Get();
@@ -113,7 +113,7 @@ bool UHarmoniaSaveGameSubsystem::SaveGame(const FString& SaveSlotName, bool bUse
 		{
 			SavePlayerData(PC, CurrentSaveGame);
 
-			// �?번째 ?�레?�어�??�버 ?�유주로 ?�정
+			// Set first player as server owner
 			if (IsServerOwner(PC))
 			{
 				CurrentSaveGame->ServerOwnerSteamID = GetSteamIDForPlayer(PC);
@@ -121,10 +121,10 @@ bool UHarmoniaSaveGameSubsystem::SaveGame(const FString& SaveSlotName, bool bUse
 		}
 	}
 
-	// ?�드 ?�이???�??(빌딩 ??
+	// World data collection (buildings, etc.)
 	SaveWorldData(CurrentSaveGame);
 
-	// 로컬???�??
+	// Save to local storage
 	bool bSaveSuccess = UGameplayStatics::SaveGameToSlot(CurrentSaveGame, SaveSlotName, SaveGameUserIndex);
 
 	if (!bSaveSuccess)
@@ -136,10 +136,10 @@ bool UHarmoniaSaveGameSubsystem::SaveGame(const FString& SaveSlotName, bool bUse
 
 	UE_LOG(LogTemp, Log, TEXT("SaveGame: Successfully saved to local slot %s"), *SaveSlotName);
 
-	// ?��? ?�라?�드???�??
+	// Save to Steam Cloud
 	if (bUseSteamCloud)
 	{
-		// ?�이�??�이?��? 바이?�리�?직렬??
+		// Serialize save data to binary
 		FBufferArchive SaveData;
 		CurrentSaveGame->Serialize(SaveData);
 		if (SaveData.Num() > 0)
@@ -189,7 +189,7 @@ bool UHarmoniaSaveGameSubsystem::LoadGame(const FString& SaveSlotName, bool bUse
 
 	UHarmoniaSaveGame* LoadedSaveGame = nullptr;
 
-	// ?��? ?�라?�드?�서 먼�? 로드 ?�도
+	// Try loading from Steam Cloud first
 	if (bUseSteamCloud)
 	{
 		TArray<uint8> CloudData;
@@ -237,7 +237,7 @@ bool UHarmoniaSaveGameSubsystem::LoadGame(const FString& SaveSlotName, bool bUse
 		}
 	}
 
-	// ?��? ?�라?�드?�서 로드 ?�패 ??로컬?�서 로드
+	// If Steam Cloud load failed, load from local storage
 	if (!LoadedSaveGame)
 	{
 		if (UGameplayStatics::DoesSaveGameExist(SaveSlotName, SaveGameUserIndex))
@@ -281,7 +281,7 @@ bool UHarmoniaSaveGameSubsystem::LoadGame(const FString& SaveSlotName, bool bUse
 
 	CurrentSaveGame = LoadedSaveGame;
 
-	// 모든 ?�레?�어 ?�이??로드
+	// Load all player data
 	for (FConstPlayerControllerIterator Iterator = World->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
 		APlayerController* PC = Iterator->Get();
@@ -291,7 +291,7 @@ bool UHarmoniaSaveGameSubsystem::LoadGame(const FString& SaveSlotName, bool bUse
 		}
 	}
 
-	// ?�드 ?�이??로드
+	// Load world data
 	LoadWorldData(LoadedSaveGame);
 
 	OnLoadGameComplete.Broadcast(EHarmoniaSaveGameResult::Success, LoadedSaveGame);
@@ -314,7 +314,7 @@ bool UHarmoniaSaveGameSubsystem::DeleteSaveGame(const FString& SaveSlotName, boo
 				FUniqueNetIdPtr UniqueId = Identity->GetUniquePlayerId(0);
 				if (UniqueId.IsValid())
 				{
-					// ?��? ?�라?�드?�서 ?�일 ??��
+					// Delete file from Steam Cloud
 					FString CloudFileName = SaveSlotName + TEXT(".sav");
 					UserCloud->DeleteUserFile(*UniqueId, CloudFileName, true, true);
 				}
@@ -368,7 +368,7 @@ void UHarmoniaSaveGameSubsystem::SetAutoSaveInterval(float IntervalInSeconds)
 {
 	AutoSaveIntervalSeconds = FMath::Max(0.0f, IntervalInSeconds);
 
-	// ?�?�머 ?�시??
+	// Restart timer
 	if (bAutoSaveEnabled && AutoSaveIntervalSeconds > 0.0f)
 	{
 		SetAutoSaveEnabled(false);
@@ -391,32 +391,32 @@ void UHarmoniaSaveGameSubsystem::SavePlayerData(APlayerController* PlayerControl
 
 	FHarmoniaPlayerSaveData PlayerData;
 
-	// ?��? ID ?�??
+	// Collect Steam ID
 	PlayerData.SteamID = GetSteamIDForPlayer(PlayerController);
 	PlayerData.PlayerName = LyraPS->GetPlayerName();
 
-	// ?�레?�어 ?�치 �??�전 ?�??
+	// Collect player location and rotation
 	if (APawn* Pawn = PlayerController->GetPawn())
 	{
 		PlayerData.PlayerLocation = Pawn->GetActorLocation();
 		PlayerData.PlayerRotation = Pawn->GetActorRotation();
 	}
 
-	// ?�레?�어 ?�성 ?�??
+	// Collect player attributes
 	SavePlayerAttributes(LyraPS, PlayerData.Attributes);
 
-	// ?�벤?�리 ?�??- 먼�? Lyra ?�벤?�리 ?�도
+	// Collect inventory - try Lyra inventory first
 	if (ULyraInventoryManagerComponent* InventoryComp = LyraPS->FindComponentByClass<ULyraInventoryManagerComponent>())
 	{
 		SaveInventory(InventoryComp, PlayerData.InventoryItems);
 	}
-	// HarmoniaInventoryComponent??별도 처리 ?�요 ??추�?
+	// HarmoniaInventoryComponent needs separate handling - TODO
 
-	// ?�탯 ?�그 ?�??
+	// Collect stat tags
 	// Note: StatTags are saved in the SaveGame structure directly
 	// PlayerData.StatTags is populated during the save process
 
-	// 마�?�?체크?�인???�??
+	// Collect last checkpoint
 	UGameInstance* GameInstance = GetGameInstance();
 	if (GameInstance)
 	{
@@ -426,7 +426,7 @@ void UHarmoniaSaveGameSubsystem::SavePlayerData(APlayerController* PlayerControl
 		}
 	}
 
-	// ?�???�간
+	// Save time
 	PlayerData.LastSaveTime = FDateTime::Now();
 
 	// SaveGame??추�?
@@ -446,7 +446,7 @@ void UHarmoniaSaveGameSubsystem::LoadPlayerData(APlayerController* PlayerControl
 		return;
 	}
 
-	// ?��? ID�??�레?�어 ?�이??찾기
+	// Find player data by Steam ID
 	FString SteamID = GetSteamIDForPlayer(PlayerController);
 	FHarmoniaPlayerSaveData PlayerData;
 
@@ -456,29 +456,29 @@ void UHarmoniaSaveGameSubsystem::LoadPlayerData(APlayerController* PlayerControl
 		return;
 	}
 
-	// ?�레?�어 ?�치 �??�전 로드
+	// Load player location and rotation
 	if (APawn* Pawn = PlayerController->GetPawn())
 	{
 		Pawn->SetActorLocation(PlayerData.PlayerLocation);
 		Pawn->SetActorRotation(PlayerData.PlayerRotation);
 	}
 
-	// ?�레?�어 ?�성 로드
+	// Load player attributes
 	LoadPlayerAttributes(LyraPS, PlayerData.Attributes);
 
-	// ?�벤?�리 로드
+	// Load inventory
 	if (ULyraInventoryManagerComponent* InventoryComp = LyraPS->FindComponentByClass<ULyraInventoryManagerComponent>())
 	{
 		LoadInventory(InventoryComp, PlayerData.InventoryItems);
 	}
 
-	// ?�탯 ?�그 로드
+	// Load stat tags
 	for (const FGameplayTag& Tag : PlayerData.StatTags)
 	{
 		LyraPS->AddStatTagStack(Tag, 1);
 	}
 
-	// 마�?�?체크?�인??로드
+	// Load last checkpoint
 	UGameInstance* GameInstance = GetGameInstance();
 	if (GameInstance && !PlayerData.LastCheckpointID.IsNone())
 	{
@@ -506,10 +506,10 @@ void UHarmoniaSaveGameSubsystem::SaveWorldData(UHarmoniaSaveGame* SaveGameObject
 
 	FHarmoniaWorldSaveData& WorldData = SaveGameObject->WorldData;
 
-	// ===== 빌딩 ?�이???�??=====
+	// ===== Building data collection =====
 	if (UHarmoniaBuildingInstanceManager* BuildingManager = World->GetSubsystem<UHarmoniaBuildingInstanceManager>())
 	{
-		// BuildingManager?�서 배치??건물 ?�보�?가?��? ?�??
+		// Get placed building info from BuildingManager
 		TArray<FBuildingInstanceMetadata> AllBuildings;
 		BuildingManager->GetAllBuildingMetadata(AllBuildings);
 
@@ -528,36 +528,36 @@ void UHarmoniaSaveGameSubsystem::SaveWorldData(UHarmoniaSaveGame* SaveGameObject
 		UE_LOG(LogTemp, Log, TEXT("SaveWorldData: Saved %d buildings"), WorldData.PlacedBuildings.Num());
 	}
 
-	// ===== ?�드 ?�성 ?�보 ?�??=====
+	// ===== World generation info collection =====
 	UGameInstance* GameInstance = GetGameInstance();
 	if (GameInstance)
 	{
 		if (UHarmoniaWorldGeneratorSubsystem* WorldGenSubsystem = GameInstance->GetSubsystem<UHarmoniaWorldGeneratorSubsystem>())
 		{
-			// ?�즌 ?�보 ?�??
+			// Collect season info
 			WorldData.CurrentSeason = static_cast<uint8>(WorldGenSubsystem->GetCurrentSeason());
 			WorldData.SeasonProgress = WorldGenSubsystem->GetSeasonProgress();
 
-			// ?�씨 ?�보 ?�??
+			// Collect weather info
 			WorldData.CurrentWeatherType = static_cast<uint8>(WorldGenSubsystem->GetCurrentWeather());
 
-			// ?�간 ?�보 ?�??
+			// Collect time info
 			WorldData.CurrentGameHour = WorldGenSubsystem->GetCurrentGameTime();
-			WorldData.CurrentGameDay = 0; // WorldGenSubsystem?�서 Day ?�보??별도�??�음
+			WorldData.CurrentGameDay = 0; // WorldGenSubsystem has separate Day info
 
 			UE_LOG(LogTemp, Log, TEXT("SaveWorldData: Saved world generator data (Season: %d, Weather: %d, Time: %.2f)"),
 				WorldData.CurrentSeason, WorldData.CurrentWeatherType, WorldData.CurrentGameHour);
 		}
 	}
 
-	// ===== ?�간/?�씨 ?�스???�??(TimeWeatherManager) =====
+	// ===== Time/Weather system collection (TimeWeatherManager) =====
 	if (UHarmoniaTimeWeatherManager* TimeWeatherManager = World->GetSubsystem<UHarmoniaTimeWeatherManager>())
 	{
-		// ?�재 ?�씨 ?�보
+		// Current weather info
 		WorldData.CurrentWeatherType = static_cast<uint8>(TimeWeatherManager->GetCurrentWeather());
 		WorldData.WeatherIntensity = TimeWeatherManager->GetCurrentWeatherIntensity();
 
-		// ?�재 ?�간 ?�보 (??�?
+		// Current time info (Noon)
 		WorldData.CurrentGameHour = static_cast<float>(TimeWeatherManager->GetCurrentHour()) +
 									(TimeWeatherManager->GetCurrentMinute() / 60.0f);
 		WorldData.CurrentTimeOfDay = static_cast<uint8>(TimeWeatherManager->GetCurrentTimeOfDay());
@@ -566,27 +566,27 @@ void UHarmoniaSaveGameSubsystem::SaveWorldData(UHarmoniaSaveGame* SaveGameObject
 			WorldData.CurrentWeatherType, WorldData.WeatherIntensity, WorldData.CurrentGameHour);
 	}
 
-	// ===== 리소???�드 ?�태 ?�??=====
-	// NOTE: HarmoniaResourceManager가 ?�직 구현?��? ?�았?�니??
-	// TODO: HarmoniaResourceManager 구현 ???�래 코드�??�성?�하?�요.
+	// ===== Resource node state collection =====
+	// NOTE: HarmoniaResourceManager is not yet implemented
+	// TODO: Implement code below when HarmoniaResourceManager is ready.
 	// if (UHarmoniaResourceManager* ResourceManager = World->GetSubsystem<UHarmoniaResourceManager>())
 	// {
 	//     ResourceManager->SaveResourceNodeStates(WorldData.ResourceNodeStates);
 	//     UE_LOG(LogTemp, Log, TEXT("SaveWorldData: Saved %d resource nodes"), WorldData.ResourceNodeStates.Num());
 	// }
 
-	// ===== POI 진행 ?�태 ?�??=====
-	// NOTE: HarmoniaPOIManager가 ?�직 구현?��? ?�았?�니??
-	// TODO: HarmoniaPOIManager 구현 ???�래 코드�??�성?�하?�요.
+	// ===== POI progress state collection =====
+	// NOTE: HarmoniaPOIManager is not yet implemented
+	// TODO: Implement code below when HarmoniaPOIManager is ready.
 	// if (UHarmoniaPOIManager* POIManager = World->GetSubsystem<UHarmoniaPOIManager>())
 	// {
 	//     POIManager->SavePOIStates(WorldData.POIStates);
 	//     UE_LOG(LogTemp, Log, TEXT("SaveWorldData: Saved %d POI states"), WorldData.POIStates.Num());
 	// }
 
-	// ===== ?�동 ?�성 ?�드 ?�이???�??=====
-	// NOTE: Manual world generation 기능???�직 구현?��? ?�았?�니??
-	// TODO: ?�동 ?�성 ?�드 지??구현 ???�래 코드�??�성?�하?�요.
+	// ===== Manual world generation data collection =====
+	// NOTE: Manual world generation feature is not yet implemented
+	// TODO: Implement code below when manual world generation support is ready.
 	// if (!WorldData.bIsAutomaticallyGenerated)
 	// {
 	//     // Save all manually placed world objects (trees, rocks, etc.)
@@ -597,7 +597,7 @@ void UHarmoniaSaveGameSubsystem::SaveWorldData(UHarmoniaSaveGame* SaveGameObject
 	//     }
 	// }
 
-	// ===== 체크?�인???�이???�??=====
+	// ===== Checkpoint data collection =====
 	if (GameInstance)
 	{
 		if (UHarmoniaCheckpointSubsystem* CheckpointSubsystem = GameInstance->GetSubsystem<UHarmoniaCheckpointSubsystem>())
@@ -630,7 +630,7 @@ void UHarmoniaSaveGameSubsystem::LoadWorldData(const UHarmoniaSaveGame* SaveGame
 
 	const FHarmoniaWorldSaveData& WorldData = SaveGameObject->WorldData;
 
-	// ===== 빌딩 ?�이??로드 =====
+	// ===== Building data load =====
 	if (UHarmoniaBuildingInstanceManager* BuildingManager = World->GetSubsystem<UHarmoniaBuildingInstanceManager>())
 	{
 		// BuildingDataTable을 HarmoniaLoadManager에서 가져오기
@@ -653,7 +653,7 @@ void UHarmoniaSaveGameSubsystem::LoadWorldData(const UHarmoniaSaveGame* SaveGame
 						*PartData,
 						Building.Location,
 						Building.Rotation,
-						nullptr // Owner??별도�?복원 ?�요
+						nullptr // Owner needs separate restoration
 					);
 
 					if (RestoredGuid.IsValid())
@@ -676,26 +676,26 @@ void UHarmoniaSaveGameSubsystem::LoadWorldData(const UHarmoniaSaveGame* SaveGame
 		}
 	}
 
-	// ===== ?�드 ?�성 ?�보 로드 (WorldGeneratorSubsystem) =====
+	// ===== World generation info load (WorldGeneratorSubsystem) =====
 	UGameInstance* GameInstance = GetGameInstance();
 	if (GameInstance)
 	{
 		if (UHarmoniaWorldGeneratorSubsystem* WorldGenSubsystem = GameInstance->GetSubsystem<UHarmoniaWorldGeneratorSubsystem>())
 		{
-			// ?�즌 ?�보 복원
+			// Restore season info
 			WorldGenSubsystem->SetCurrentSeason(static_cast<ESeasonType>(WorldData.CurrentSeason), false);
 
-			// ?�씨 ?�보 복원
+			// Restore weather info
 			WorldGenSubsystem->ChangeWeather(static_cast<EWeatherType>(WorldData.CurrentWeatherType), 0.0f);
 
-			// ?�간 ?�보 복원
+			// Restore time info
 			WorldGenSubsystem->SetCurrentGameTime(WorldData.CurrentGameHour);
 
 			UE_LOG(LogTemp, Log, TEXT("LoadWorldData: Restored world generator data (Season: %d, Weather: %d, Time: %.2f)"),
 				WorldData.CurrentSeason, WorldData.CurrentWeatherType, WorldData.CurrentGameHour);
 
-			// NOTE: Manual world generation 기능?� ?�직 구현?��? ?�았?�니??
-			// TODO: ?�동 ?�성 ?�드 지??구현 ???�래 코드�??�성?�하?�요.
+			// NOTE: Manual world generation feature is not yet implemented
+			// TODO: Implement code below when manual world generation support is ready.
 			// if (!WorldData.bIsAutomaticallyGenerated && WorldData.ManualObjectLocations.Num() > 0)
 			// {
 			//     WorldGenSubsystem->LoadManualWorldObjects(WorldData.ManualObjectLocations);
@@ -704,37 +704,37 @@ void UHarmoniaSaveGameSubsystem::LoadWorldData(const UHarmoniaSaveGame* SaveGame
 		}
 	}
 
-	// ===== ?�간/?�씨 ?�스??로드 (TimeWeatherManager) =====
-	// TimeWeatherManager??delegate ?�스?�만 ?�공?��?�? WorldGeneratorSubsystem?�서 ?��? 처리??
-	// ?�요 ??추�? ?�보 복원
+	// ===== Time/Weather system load (TimeWeatherManager) =====
+	// TimeWeatherManager provides only delegate system, actual handling in WorldGeneratorSubsystem
+	// Additional info restore if needed
 	if (UHarmoniaTimeWeatherManager* TimeWeatherManager = World->GetSubsystem<UHarmoniaTimeWeatherManager>())
 	{
-		// TimeWeatherManager???�재 ?�태�??�?�된 값으�?브로?�캐?�트
-		// (?�제 ?�태 변경�? WorldGeneratorSubsystem?�서 처리)
+		// Broadcast loaded values to TimeWeatherManager's current state
+		// (Actual state change handled in WorldGeneratorSubsystem)
 		UE_LOG(LogTemp, Log, TEXT("LoadWorldData: TimeWeatherManager is ready for state synchronization"));
 	}
 
-	// ===== 리소???�드 ?�태 로드 =====
-	// NOTE: HarmoniaResourceManager가 ?�직 구현?��? ?�았?�니??
-	// TODO: HarmoniaResourceManager 구현 ???�래 코드�??�성?�하?�요.
+	// ===== Resource node state load =====
+	// NOTE: HarmoniaResourceManager is not yet implemented
+	// TODO: Implement code below when HarmoniaResourceManager is ready.
 	// if (UHarmoniaResourceManager* ResourceManager = World->GetSubsystem<UHarmoniaResourceManager>())
 	// {
 	//     ResourceManager->LoadResourceNodeStates(WorldData.ResourceNodeStates);
 	//     UE_LOG(LogTemp, Log, TEXT("LoadWorldData: Restored %d resource nodes"), WorldData.ResourceNodeStates.Num());
 	// }
 
-	// ===== POI 진행 ?�태 로드 =====
-	// NOTE: HarmoniaPOIManager가 ?�직 구현?��? ?�았?�니??
-	// TODO: HarmoniaPOIManager 구현 ???�래 코드�??�성?�하?�요.
+	// ===== POI progress state load =====
+	// NOTE: HarmoniaPOIManager is not yet implemented
+	// TODO: Implement code below when HarmoniaPOIManager is ready.
 	// if (UHarmoniaPOIManager* POIManager = World->GetSubsystem<UHarmoniaPOIManager>())
 	// {
 	//     POIManager->LoadPOIStates(WorldData.POIStates);
 	//     UE_LOG(LogTemp, Log, TEXT("LoadWorldData: Restored %d POI states"), WorldData.POIStates.Num());
 	// }
 
-	// ===== 변경된 바이???�이??로드 =====
-	// NOTE: Biome modification 기능???�직 구현?��? ?�았?�니??
-	// TODO: Biome modification 지??구현 ???�래 코드�??�성?�하?�요.
+	// ===== Modified biome data load =====
+	// NOTE: Biome modification feature is not yet implemented
+	// TODO: Implement code below when biome modification support is ready.
 	// if (GameInstance && WorldData.ModifiedBiomeIndices.Num() > 0)
 	// {
 	//     if (UHarmoniaWorldGeneratorSubsystem* WorldGenSubsystem = GameInstance->GetSubsystem<UHarmoniaWorldGeneratorSubsystem>())
@@ -744,7 +744,7 @@ void UHarmoniaSaveGameSubsystem::LoadWorldData(const UHarmoniaSaveGame* SaveGame
 	//     }
 	// }
 
-	// ===== 체크?�인???�이??로드 =====
+	// ===== Checkpoint data load =====
 	if (GameInstance)
 	{
 		if (UHarmoniaCheckpointSubsystem* CheckpointSubsystem = GameInstance->GetSubsystem<UHarmoniaCheckpointSubsystem>())
@@ -776,7 +776,7 @@ void UHarmoniaSaveGameSubsystem::SavePlayerAttributes(ALyraPlayerState* PlayerSt
 		return;
 	}
 
-	// HarmoniaAttributeSet ?�용
+		// Using HarmoniaAttributeSet
 	if (const UHarmoniaAttributeSet* HarmoniaAttrs = ASC->GetSet<UHarmoniaAttributeSet>())
 	{
 		OutAttributes.Health = HarmoniaAttrs->GetHealth();
@@ -792,7 +792,7 @@ void UHarmoniaSaveGameSubsystem::SavePlayerAttributes(ALyraPlayerState* PlayerSt
 		return;
 	}
 
-	// 기본 LyraAttributeSet ?�용 (?�백)
+		// Using base LyraAttributeSet (fallback)
 	if (const ULyraHealthSet* HealthSet = ASC->GetSet<ULyraHealthSet>())
 	{
 		OutAttributes.Health = HealthSet->GetHealth();
@@ -818,7 +818,7 @@ void UHarmoniaSaveGameSubsystem::LoadPlayerAttributes(ALyraPlayerState* PlayerSt
 		return;
 	}
 
-	// HarmoniaAttributeSet ?�용
+		// Using HarmoniaAttributeSet
 	if (const UHarmoniaAttributeSet* HarmoniaAttrs = ASC->GetSet<UHarmoniaAttributeSet>())
 	{
 		ASC->SetNumericAttributeBase(HarmoniaAttrs->GetHealthAttribute(), Attributes.Health);
@@ -834,7 +834,7 @@ void UHarmoniaSaveGameSubsystem::LoadPlayerAttributes(ALyraPlayerState* PlayerSt
 		return;
 	}
 
-	// 기본 LyraAttributeSet ?�용 (?�백)
+		// Using base LyraAttributeSet (fallback)
 	if (const ULyraHealthSet* HealthSet = ASC->GetSet<ULyraHealthSet>())
 	{
 		ASC->SetNumericAttributeBase(HealthSet->GetHealthAttribute(), Attributes.Health);
@@ -866,15 +866,15 @@ void UHarmoniaSaveGameSubsystem::SaveInventory(ULyraInventoryManagerComponent* I
 
 		FHarmoniaSavedInventoryItem SavedItem;
 
-		// ?�이???�의 경로 ?�??
+		// Item definition path
 		TSubclassOf<ULyraInventoryItemDefinition> ItemDef = Item->GetItemDef();
 		if (ItemDef)
 		{
 			SavedItem.ItemDefinitionPath = FSoftObjectPath(ItemDef.Get());
 		}
 
-		// ?�택 개수??FLyraInventoryEntry?�서 가?��????��?�?
-		// ?�재 API로는 직접 ?�근???�려?��?�?기본�??�용
+		// Stack count from FLyraInventoryEntry
+		// Direct access is difficult with current API, using default
 		SavedItem.StackCount = 1;
 
 		OutItems.Add(SavedItem);
@@ -888,12 +888,12 @@ void UHarmoniaSaveGameSubsystem::LoadInventory(ULyraInventoryManagerComponent* I
 		return;
 	}
 
-	// ?�이??로드
+	// Load items
 	for (const FHarmoniaSavedInventoryItem& SavedItem : Items)
 	{
 		if (UClass* ItemDefClass = Cast<UClass>(SavedItem.ItemDefinitionPath.TryLoad()))
 		{
-			// ?�이??추�?
+			// Add item
 			InventoryComponent->AddItemDefinition(TSubclassOf<ULyraInventoryItemDefinition>(ItemDefClass), SavedItem.StackCount);
 		}
 	}
@@ -906,7 +906,7 @@ FString UHarmoniaSaveGameSubsystem::GetSteamIDForPlayer(APlayerController* Playe
 		return FString();
 	}
 
-	// ?�라???�브?�스?�에??UniqueNetId 가?�오�?
+	// Get UniqueNetId from Online Subsystem
 	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
 	if (OnlineSub)
 	{
@@ -923,7 +923,7 @@ FString UHarmoniaSaveGameSubsystem::GetSteamIDForPlayer(APlayerController* Playe
 		}
 	}
 
-	// ?�라???�브?�스?�을 ?�용?????�는 경우 PlayerState??PlayerId ?�용
+	// If Online Subsystem is not available, use PlayerState's PlayerId
 	if (APlayerState* PS = PlayerController->PlayerState)
 	{
 		return FString::Printf(TEXT("Player_%d"), PS->GetPlayerId());
@@ -939,7 +939,7 @@ bool UHarmoniaSaveGameSubsystem::IsServerOwner(APlayerController* PlayerControll
 		return false;
 	}
 
-	// 리슨 ?�버?�서??�?번째 ?�레?�어가 ?�버 ?�유�?
+	// On listen server, the first player is the server owner
 	return PlayerController->GetLocalPlayer() && PlayerController->GetLocalPlayer()->GetControllerId() == 0;
 }
 
@@ -969,7 +969,7 @@ bool UHarmoniaSaveGameSubsystem::SaveToSteamCloud(const FString& SaveSlotName, c
 
 	FString CloudFileName = SaveSlotName + TEXT(".sav");
 
-	// ?��? ?�라?�드???�일 ?�기
+	// Write file to Steam Cloud
 	TArray<uint8> MutableSaveData = SaveData;
 	bool bSuccess = UserCloud->WriteUserFile(*UniqueId, CloudFileName, MutableSaveData);
 
@@ -1011,11 +1011,11 @@ bool UHarmoniaSaveGameSubsystem::LoadFromSteamCloud(const FString& SaveSlotName,
 
 	FString CloudFileName = SaveSlotName + TEXT(".sav");
 
-	// ?��? ?�라?�드 ?�일 목록 가?�오�?(?�기??
+	// Get Steam Cloud file list (sync)
 	TArray<FCloudFileHeader> FileHeaders;
 	UserCloud->GetUserFileList(*UniqueId, FileHeaders);
 
-	// ?�일 존재 ?��? ?�인
+	// Check if file exists
 	bool bFileExists = false;
 	for (const FCloudFileHeader& Header : FileHeaders)
 	{
@@ -1032,12 +1032,12 @@ bool UHarmoniaSaveGameSubsystem::LoadFromSteamCloud(const FString& SaveSlotName,
 		return false;
 	}
 
-	// ?�일 ?�기
+	// Read file
 	bool bSuccess = UserCloud->ReadUserFile(*UniqueId, CloudFileName);
 
 	if (bSuccess)
 	{
-		// ?�일 ?�이??가?�오�?
+		// Get file size
 		UserCloud->GetFileContents(*UniqueId, CloudFileName, OutSaveData);
 		UE_LOG(LogTemp, Log, TEXT("LoadFromSteamCloud: Successfully read %s from Steam Cloud"), *CloudFileName);
 		return true;
@@ -1057,7 +1057,7 @@ void UHarmoniaSaveGameSubsystem::OnAutoSaveTimer()
 		return;
 	}
 
-	// 게임??진행 중일 ?�만 ?�동 ?�??
+	// Only auto-save when game is in progress
 	if (World->GetAuthGameMode())
 	{
 		UE_LOG(LogTemp, Log, TEXT("AutoSave: Saving game..."));

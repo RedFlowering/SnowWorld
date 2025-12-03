@@ -24,7 +24,7 @@ bool UHarmoniaRaidComponent::AddMember(const FRaidMemberInfo& MemberInfo)
 		return false;
 	}
 
-	// ?�이???�원 ?�한 ?�인
+	// Check raid member limit
 	if (CurrentRaidData)
 	{
 		if (RaidMembers.Num() >= CurrentRaidData->MaxRaidSize)
@@ -150,7 +150,7 @@ void UHarmoniaRaidComponent::OnMemberDeath(const FString& PlayerID)
 		Member->bIsAlive = false;
 		OnRaidMemberDied.Broadcast(PlayerID, Member->RemainingRevives);
 
-		// ?�멸 체크
+		// Check annihilation
 		if (IsWiped())
 		{
 			ProcessWipe();
@@ -166,7 +166,7 @@ bool UHarmoniaRaidComponent::ReviveMember(const FString& PlayerID)
 		return false;
 	}
 
-	// 부??가???��? ?�인
+	// Check if resurrection is possible
 	if (Member->RemainingRevives <= 0 && UsedRevives >= GlobalReviveLimit)
 	{
 		return false;
@@ -174,7 +174,7 @@ bool UHarmoniaRaidComponent::ReviveMember(const FString& PlayerID)
 
 	Member->bIsAlive = true;
 
-	// 부???�수 차감
+	// Deduct resurrection count
 	if (Member->RemainingRevives > 0)
 	{
 		Member->RemainingRevives--;
@@ -214,14 +214,14 @@ bool UHarmoniaRaidComponent::ValidateRoleComposition(const URaidDataAsset* RaidD
 		return false;
 	}
 
-	// 최소/최�? ?�원 ?�인
+	// Check min/max members
 	int32 RaidSize = GetRaidSize();
 	if (RaidSize < RaidData->MinRaidSize || RaidSize > RaidData->MaxRaidSize)
 	{
 		return false;
 	}
 
-	// ??�� 구성 ?�인
+	// Check role composition
 	TMap<ERaidRole, int32> CurrentDistribution = GetRoleDistribution();
 
 	for (const auto& Pair : RaidData->RecommendedRoleComposition)
@@ -229,7 +229,7 @@ bool UHarmoniaRaidComponent::ValidateRoleComposition(const URaidDataAsset* RaidD
 		const int32* CurrentCount = CurrentDistribution.Find(Pair.Key);
 		if (!CurrentCount || *CurrentCount < Pair.Value)
 		{
-			// 권장 ??�� 부�?
+			// Recommended role shortage
 			UE_LOG(LogTemp, Warning, TEXT("Insufficient role: %d"), static_cast<int32>(Pair.Key));
 		}
 	}
@@ -256,13 +256,13 @@ void UHarmoniaRaidComponent::ProcessWipe()
 
 	UE_LOG(LogTemp, Log, TEXT("Raid wiped at phase %d"), CurrentPhase);
 
-	// 모든 멤버 부???�태 초기??
+	// Initialize all member resurrection status
 	for (auto& Pair : RaidMembers)
 	{
 		Pair.Value.bIsAlive = true;
 	}
 
-	// ?�이�?초기??
+	// Initialize timer
 	CurrentPhase = 0;
 	UsedRevives = 0;
 }

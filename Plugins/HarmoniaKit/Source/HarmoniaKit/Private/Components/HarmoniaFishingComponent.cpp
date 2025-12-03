@@ -37,7 +37,7 @@ bool UHarmoniaFishingComponent::StartFishing(UFishingSpotData* FishingSpot)
 		return false;
 	}
 
-	// ?�벨 체크 (base class??Level ?�용)
+	// Check level (using base class Level)
 	if (Level < FishingSpot->MinimumFishingLevel)
 	{
 		return false;
@@ -48,10 +48,10 @@ bool UHarmoniaFishingComponent::StartFishing(UFishingSpotData* FishingSpot)
 	bMinigameActive = false;
 	FishingStartTime = GetWorld()->GetTimeSeconds();
 
-	// 물고기�? 물기까�? ?�덤 ?�간 ?�정
+	// Set random time until fish bites
 	TimeUntilBite = FMath::RandRange(MinBiteTime, MaxBiteTime);
 
-	// ???�성??
+	// Activate rod
 	SetComponentTickEnabled(true);
 
 	OnFishingStarted.Broadcast(FishingSpot);
@@ -99,16 +99,16 @@ void UHarmoniaFishingComponent::CompleteFishingMinigame(bool bSuccess, float Per
 
 	if (bSuccess)
 	{
-		// 물고�??�택 �??�성
+		// Select fish and calculate
 		FCaughtFish CaughtFish = SelectFishFromSpawnTable();
 
-		// ?�능 ?�수???�라 ?�질 조정
+		// Adjust quality based on skill factor
 		CaughtFish.QualityScore = FMath::Clamp(PerformanceScore * 100.0f, 0.0f, 100.0f);
 
-		// ?�벽???�기?��? ?�인
+		// Check if perfect timing
 		bool bPerfectCatch = PerformanceScore >= 0.95f;
 
-		// ?�감???�록
+		// Record to encyclopedia
 		RegisterFishToCollection(CaughtFish);
 
 		// 경험�?계산
@@ -132,7 +132,7 @@ void UHarmoniaFishingComponent::CompleteFishingMinigame(bool bSuccess, float Per
 		OnFishEscaped.Broadcast();
 	}
 
-	// ?�시 종료
+	// End fishing
 	CancelFishing();
 }
 
@@ -143,7 +143,7 @@ void UHarmoniaFishingComponent::RegisterFishToCollection(const FCaughtFish& Fish
 {
 	FishCollection.Add(Fish);
 
-	// 최고 기록 ?�데?�트
+	// Update best record
 	if (!BestCatchRecords.Contains(Fish.FishID))
 	{
 		BestCatchRecords.Add(Fish.FishID, Fish);
@@ -151,7 +151,7 @@ void UHarmoniaFishingComponent::RegisterFishToCollection(const FCaughtFish& Fish
 	else
 	{
 		FCaughtFish& BestRecord = BestCatchRecords[Fish.FishID];
-		// 무게 기�??�로 최고 기록 갱신
+		// Update best record based on weight
 		if (Fish.Weight > BestRecord.Weight)
 		{
 			BestRecord = Fish;
@@ -176,7 +176,7 @@ FCaughtFish UHarmoniaFishingComponent::SelectFishFromSpawnTable()
 		return FCaughtFish();
 	}
 
-	// ?�벨 ?�구?�항??만족?�는 물고기만 ?�터�?(base class??Level ?�용)
+	// Filter fish that meet level requirements (using base class Level)
 	TArray<FFishingSpotSpawnEntry> ValidFish;
 	for (const FFishingSpotSpawnEntry& Entry : CurrentFishingSpot->SpawnTable)
 	{
@@ -191,7 +191,7 @@ FCaughtFish UHarmoniaFishingComponent::SelectFishFromSpawnTable()
 		return FCaughtFish();
 	}
 
-	// ?�률 기반 ?�택
+	// Probability-based selection
 	float TotalWeight = 0.0f;
 	for (const FFishingSpotSpawnEntry& Entry : ValidFish)
 	{
@@ -206,7 +206,7 @@ FCaughtFish UHarmoniaFishingComponent::SelectFishFromSpawnTable()
 		CurrentWeight += Entry.SpawnChance;
 		if (RandomValue <= CurrentWeight)
 		{
-			// 물고�??�이??찾기
+			// Find fish data
 			if (const FFishData* FishData = FishDatabase.Find(Entry.FishID))
 			{
 				return GenerateFish(Entry.FishID, *FishData);
@@ -214,7 +214,7 @@ FCaughtFish UHarmoniaFishingComponent::SelectFishFromSpawnTable()
 		}
 	}
 
-	// ?�백: �?번째 물고�??�택
+	// Fallback: Select first fish
 	if (const FFishData* FishData = FishDatabase.Find(ValidFish[0].FishID))
 	{
 		return GenerateFish(ValidFish[0].FishID, *FishData);
@@ -236,7 +236,7 @@ FCaughtFish UHarmoniaFishingComponent::GenerateFish(FName FishID, const FFishDat
 		Result.CaughtLocation = Owner->GetActorLocation();
 	}
 
-	Result.QualityScore = 50.0f; // 기본�? 미니게임 ?�능???�라 조정
+	Result.QualityScore = 50.0f; // Default, adjust based on minigame performance
 
 	return Result;
 }
