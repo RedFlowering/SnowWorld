@@ -1,4 +1,4 @@
-// Copyright RedFlowering. All Rights Reserved.
+﻿// Copyright RedFlowering. All Rights Reserved.
 
 #include "Actors/HarmoniaWaypointActor.h"
 #include "Components/SphereComponent.h"

@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+ï»¿// Copyright 2025 Snow Game Studio.
 
 #include "HarmoniaLoadManagerEditorModule.h"
 #include "Modules/ModuleManager.h"
@@ -22,7 +22,7 @@ void FHarmoniaLoadManagerEditor::HandleObjectPreSave(UObject* Object, FObjectPre
 {
     if (Object != nullptr)
     {
-        // ÀúÀåµÈ °´Ã¼°¡ Harmonia RegistryÀÏ ¶§¸¸ Ã³¸®
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼ï¿½ï¿½ Harmonia Registryï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
         if (const UHarmoniaRegistryAsset* Registry = Cast<UHarmoniaRegistryAsset>(Object))
         {
             FHarmoniaMacroGenerator::ValidateAndGenerate(Registry);

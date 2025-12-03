@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "Animation/AnimNotifyState_MeleeComboWindow.h"
 #include "Components/HarmoniaMeleeCombatComponent.h"

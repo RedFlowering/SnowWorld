@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -15,11 +15,11 @@
 UENUM(BlueprintType)
 enum class EItemRarity : uint8
 {
-	Common			UMETA(DisplayName = "Common"),			// ?�반
+	Common			UMETA(DisplayName = "Common"),			// ?�반
 	Uncommon		UMETA(DisplayName = "Uncommon"),		// 고급
-	Rare			UMETA(DisplayName = "Rare"),			// ?��?
-	Epic			UMETA(DisplayName = "Epic"),			// ?�웅
-	Legendary		UMETA(DisplayName = "Legendary"),		// ?�설
+	Rare			UMETA(DisplayName = "Rare"),			// ?��?
+	Epic			UMETA(DisplayName = "Epic"),			// ?�웅
+	Legendary		UMETA(DisplayName = "Legendary"),		// ?�설
 	MAX				UMETA(Hidden)
 };
 
@@ -32,9 +32,9 @@ using EHarmoniaItemRarity = EItemRarity;
 UENUM(BlueprintType)
 enum class EAffixType : uint8
 {
-	Prefix			UMETA(DisplayName = "Prefix"),			// ?�두??
-	Suffix			UMETA(DisplayName = "Suffix"),			// ?��???
-	Implicit		UMETA(DisplayName = "Implicit"),		// ?�시??(기본 부??
+	Prefix			UMETA(DisplayName = "Prefix"),			// ?�두??
+	Suffix			UMETA(DisplayName = "Suffix"),			// ?��???
+	Implicit		UMETA(DisplayName = "Implicit"),		// ?�시??(기본 부??
 	Enchant			UMETA(DisplayName = "Enchant"),			// 마법부??
 	MAX				UMETA(Hidden)
 };
@@ -48,9 +48,9 @@ using EHarmoniaAffixType = EAffixType;
 UENUM(BlueprintType)
 enum class EAffixModifierType : uint8
 {
-	Flat			UMETA(DisplayName = "Flat"),			// 고정�?(?? +50 공격??
-	Percent			UMETA(DisplayName = "Percent"),			// ?�센??(?? +10% 공격??
-	Multiplier		UMETA(DisplayName = "Multiplier"),		// 배율 (?? 1.5x ?�해)
+	Flat			UMETA(DisplayName = "Flat"),			// 고정�?(?? +50 공격??
+	Percent			UMETA(DisplayName = "Percent"),			// ?�센??(?? +10% 공격??
+	Multiplier		UMETA(DisplayName = "Multiplier"),		// 배율 (?? 1.5x ?�해)
 	MAX				UMETA(Hidden)
 };
 

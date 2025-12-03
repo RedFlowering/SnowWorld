@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+ï»¿// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -7,20 +7,20 @@
 class UHarmoniaObjectManager;
 class UHarmoniaFarmingManager;
 class UHarmoniaBuildingManager;
-// ÇÊ¿ä¿¡ µû¶ó Ãß°¡
+// ï¿½Ê¿ä¿¡ ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½
 
 /**
- * ¿ùµå »ý¼º±â ¡æ ÇÏ¸ð´Ï¾Æ ¸Å´ÏÀú ¿ÀºêÁ§Æ® µî·Ï º¸Á¶ ÇÔ¼ö ÁýÇÕ
+ * ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ï¸ï¿½Ï¾ï¿½ ï¿½Å´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½ï¿½
  */
 class HarmoniaWorldIntegrationHelper
 {
 public:
     /**
-     * ¿ùµå »ý¼º °á°ú¸¦ ÇÏ¸ð´Ï¾Æ °¢ ¸Å´ÏÀú¿¡ µî·Ï
-     * @param WorldObjects   - »ý¼ºµÈ ¿ÀºêÁ§Æ® ¸®½ºÆ®
-     * @param ObjectManager  - ¿ÀºêÁ§Æ® ÀüÃ¼ °ü¸® ¸Å´ÏÀú
-     * @param FarmingManager - ÆÄ¹Ö Àü¿ë ¸Å´ÏÀú(¼±ÅÃ)
-     * @param BuildingManager- °ÇÃà Àü¿ë ¸Å´ÏÀú(¼±ÅÃ)
+     * ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ï¸ï¿½Ï¾ï¿½ ï¿½ï¿½ ï¿½Å´ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
+     * @param WorldObjects   - ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½Æ®
+     * @param ObjectManager  - ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½ ï¿½Å´ï¿½ï¿½ï¿½
+     * @param FarmingManager - ï¿½Ä¹ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Å´ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½)
+     * @param BuildingManager- ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Å´ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½)
      */
 	static void RegisterWorldObjectsToManagers(const TArray<FWorldObjectData>& WorldObjects/*, UHarmoniaObjectManager* ObjectManager,
 												UHarmoniaFarmingManager* FarmingManager = nullptr, UHarmoniaBuildingManager* BuildingManager = nullptr*/);

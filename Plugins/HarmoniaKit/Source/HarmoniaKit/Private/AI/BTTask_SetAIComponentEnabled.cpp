@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "AI/BTTask_SetAIComponentEnabled.h"
 #include "AIController.h"

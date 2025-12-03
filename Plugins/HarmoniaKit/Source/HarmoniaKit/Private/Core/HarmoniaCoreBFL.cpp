@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio. All Rights Reserved.
+﻿// Copyright 2025 Snow Game Studio. All Rights Reserved.
 
 #include "Core/HarmoniaCoreBFL.h"
 #include "AbilitySystemComponent.h"
@@ -98,7 +98,7 @@ UAbilitySystemComponent* UHarmoniaCoreBFL::GetASC(AActor* Actor)
 
 bool UHarmoniaCoreBFL::HasASC(const AActor* Actor)
 {
-	// const_cast??UAbilitySystemGlobals API가 non-const�??�구?�기 ?�문
+	// const_cast??UAbilitySystemGlobals API가 non-const�??�구?�기 ?�문
 	return GetASC(const_cast<AActor*>(Actor)) != nullptr;
 }
 

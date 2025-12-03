@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "UI/HarmoniaMapWidget.h"
 #include "UI/HarmoniaMapMarkerWidget.h"

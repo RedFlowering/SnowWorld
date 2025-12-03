@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "Actors/HarmoniaBuildingPreviewActor.h"
 #include "Components/StaticMeshComponent.h"
@@ -8,15 +8,15 @@ AHarmoniaBuildingPreviewActor::AHarmoniaBuildingPreviewActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	// 메시 컴포?�트 ?�성
+	// 메시 컴포?�트 ?�성
 	PreviewMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PreviewMesh"));
 	RootComponent = PreviewMeshComponent;
 
-	// 콜리??비활?�화 (?�리뷰는 충돌?��? ?�음)
+	// 콜리??비활?�화 (?�리뷰는 충돌?��? ?�음)
 	PreviewMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	PreviewMeshComponent->SetCastShadow(false);
 
-	// 반투�??�정
+	// 반투�??�정
 	PreviewMeshComponent->SetRenderCustomDepth(false);
 }
 
@@ -24,7 +24,7 @@ void AHarmoniaBuildingPreviewActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 초기 ?�태???�효?��? ?�음?�로 ?�정
+	// 초기 ?�태???�효?��? ?�음?�로 ?�정
 	SetIsPlacementValid(false);
 }
 
@@ -35,7 +35,7 @@ void AHarmoniaBuildingPreviewActor::ApplyPreviewData(const FHarmoniaBuildingPart
 	if (!PreviewMeshComponent)
 		return;
 
-	// 메시 ?�정
+	// 메시 ?�정
 	if (PartData.PreviewMesh.Mesh)
 	{
 		PreviewMeshComponent->SetStaticMesh(PartData.PreviewMesh.Mesh);
@@ -55,7 +55,7 @@ void AHarmoniaBuildingPreviewActor::SetIsPlacementValid(bool bIsValid)
 	if (!PreviewMeshComponent)
 		return;
 
-	// 머티리얼 변�?(모든 머티리얼 ?�롯???�용)
+	// 머티리얼 변�?(모든 머티리얼 ?�롯???�용)
 	UMaterialInterface* MaterialToUse = bIsValid ? ValidPlacementMaterial : InvalidPlacementMaterial;
 	if (MaterialToUse)
 	{

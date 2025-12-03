@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "Actors/HarmoniaRecoveryAreaActor.h"
 #include "Components/SphereComponent.h"
@@ -16,7 +16,7 @@ AHarmoniaRecoveryAreaActor::AHarmoniaRecoveryAreaActor()
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 
-	// Sphere Component ?�성
+	// Sphere Component ?�성
 	RecoveryAreaSphere = CreateDefaultSubobject<USphereComponent>(TEXT("RecoveryAreaSphere"));
 	SetRootComponent(RecoveryAreaSphere);
 	RecoveryAreaSphere->SetSphereRadius(300.0f);
@@ -24,17 +24,17 @@ AHarmoniaRecoveryAreaActor::AHarmoniaRecoveryAreaActor()
 	RecoveryAreaSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
 	RecoveryAreaSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
-	// VFX Component ?�성
+	// VFX Component ?�성
 	AreaVFXComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("AreaVFXComponent"));
 	AreaVFXComponent->SetupAttachment(RootComponent);
 	AreaVFXComponent->SetAutoActivate(false);
 
-	// Audio Component ?�성
+	// Audio Component ?�성
 	AreaAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("AreaAudioComponent"));
 	AreaAudioComponent->SetupAttachment(RootComponent);
 	AreaAudioComponent->SetAutoActivate(false);
 
-	// 기본 ?�정
+	// 기본 ?�정
 	RecoveryConfig.RecoveryRadius = 300.0f;
 	RecoveryConfig.Duration = 60.0f;
 	RecoveryConfig.HealthPerTick = 5.0f;
@@ -45,17 +45,17 @@ void AHarmoniaRecoveryAreaActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Overlap ?�벤??바인??
+	// Overlap ?�벤??바인??
 	RecoveryAreaSphere->OnComponentBeginOverlap.AddDynamic(this, &AHarmoniaRecoveryAreaActor::OnActorEnterRecoveryArea);
 	RecoveryAreaSphere->OnComponentEndOverlap.AddDynamic(this, &AHarmoniaRecoveryAreaActor::OnActorLeaveRecoveryArea);
 
-	// ?�동 ?�성??
+	// ?�동 ?�성??
 	ActivateRecoveryArea();
 }
 
 void AHarmoniaRecoveryAreaActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// ?�?�머 ?�리
+	// ?�?�머 ?�리
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(RecoveryTickTimerHandle);
@@ -69,19 +69,19 @@ void AHarmoniaRecoveryAreaActor::InitializeRecoveryArea(const FHarmoniaDeployabl
 {
 	RecoveryConfig = Config;
 
-	// Sphere 반경 ?�데?�트
+	// Sphere 반경 ?�데?�트
 	if (RecoveryAreaSphere)
 	{
 		RecoveryAreaSphere->SetSphereRadius(Config.RecoveryRadius);
 	}
 
-	// VFX ?�정
+	// VFX ?�정
 	if (AreaVFXComponent && Config.AreaVFX)
 	{
 		AreaVFXComponent->SetAsset(Config.AreaVFX);
 	}
 
-	// SFX ?�정
+	// SFX ?�정
 	if (AreaAudioComponent && Config.AreaSound)
 	{
 		AreaAudioComponent->SetSound(Config.AreaSound);
@@ -97,19 +97,19 @@ void AHarmoniaRecoveryAreaActor::ActivateRecoveryArea()
 
 	bIsActive = true;
 
-	// VFX ?�성??
+	// VFX ?�성??
 	if (AreaVFXComponent)
 	{
 		AreaVFXComponent->Activate();
 	}
 
-	// SFX ?�성??
+	// SFX ?�성??
 	if (AreaAudioComponent)
 	{
 		AreaAudioComponent->Play();
 	}
 
-	// ?�복 ???�?�머 ?�작
+	// ?�복 ???�?�머 ?�작
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(
@@ -120,7 +120,7 @@ void AHarmoniaRecoveryAreaActor::ActivateRecoveryArea()
 			true
 		);
 
-		// 만료 ?�?�머 ?�정
+		// 만료 ?�?�머 ?�정
 		if (RecoveryConfig.Duration > 0.0f)
 		{
 			World->GetTimerManager().SetTimer(
@@ -146,19 +146,19 @@ void AHarmoniaRecoveryAreaActor::DeactivateRecoveryArea()
 
 	bIsActive = false;
 
-	// VFX 비활?�화
+	// VFX 비활?�화
 	if (AreaVFXComponent && AreaVFXComponent->IsActive())
 	{
 		AreaVFXComponent->Deactivate();
 	}
 
-	// SFX ?��?
+	// SFX ?��?
 	if (AreaAudioComponent && AreaAudioComponent->IsPlaying())
 	{
 		AreaAudioComponent->Stop();
 	}
 
-	// ?�?�머 ?�리
+	// ?�?�머 ?�리
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(RecoveryTickTimerHandle);
@@ -177,7 +177,7 @@ void AHarmoniaRecoveryAreaActor::PerformRecoveryTick()
 
 	int32 HealedCount = 0;
 
-	// 범위 ??모든 ?�터?�게 ?�복 ?�용
+	// 범위 ??모든 ?�터?�게 ?�복 ?�용
 	for (AActor* Actor : ActorsInArea)
 	{
 		if (!Actor || !Actor->IsValidLowLevel())
@@ -232,7 +232,7 @@ void AHarmoniaRecoveryAreaActor::ExpireRecoveryArea()
 
 	DeactivateRecoveryArea();
 
-	// Actor ?�괴
+	// Actor ?�괴
 	Destroy();
 }
 
@@ -243,7 +243,7 @@ void AHarmoniaRecoveryAreaActor::OnActorEnterRecoveryArea(UPrimitiveComponent* O
 		return;
 	}
 
-	// Character�??�복 (?�는 HealthComponent가 ?�는 Actor)
+	// Character�??�복 (?�는 HealthComponent가 ?�는 Actor)
 	if (OtherActor->IsA<ACharacter>() || OtherActor->FindComponentByClass<ULyraHealthComponent>())
 	{
 		ActorsInArea.Add(OtherActor);

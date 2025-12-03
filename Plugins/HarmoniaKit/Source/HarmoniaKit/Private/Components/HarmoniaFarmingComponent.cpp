@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Components/HarmoniaFarmingComponent.h"
 
@@ -20,7 +20,7 @@ void UHarmoniaFarmingComponent::TickComponent(float DeltaTime, ELevelTick TickTy
 	FDateTime CurrentTime = FDateTime::Now();
 	FTimespan TimeSinceLastUpdate = CurrentTime - LastUpdateTime;
 
-	// 10초마???�물 ?�장 ?�데?�트
+	// 10초마???�물 ?�장 ?�데?�트
 	if (TimeSinceLastUpdate.GetTotalSeconds() >= 10.0)
 	{
 		for (auto& PlotPair : FarmPlots)
@@ -39,13 +39,13 @@ bool UHarmoniaFarmingComponent::PlantCrop(FName CropID, FName PlotID)
 		return false;
 	}
 
-	// �?�� 존재?�는지 ?�인
+	// �?�� 존재?�는지 ?�인
 	if (!PlotSoilData.Contains(PlotID))
 	{
 		return false;
 	}
 
-	// ?��? ?�물???�는지 ?�인
+	// ?��? ?�물???�는지 ?�인
 	if (FarmPlots.Contains(PlotID))
 	{
 		return false;
@@ -53,13 +53,13 @@ bool UHarmoniaFarmingComponent::PlantCrop(FName CropID, FName PlotID)
 
 	const FCropData& CropData = CropDatabase[CropID];
 
-	// 계절 ?�인
+	// 계절 ?�인
 	if (!CanGrowInCurrentSeason(CropID))
 	{
 		return false;
 	}
 
-	// ?�물 ?�스?�스 ?�성
+	// ?�물 ?�스?�스 ?�성
 	FCropInstance NewCrop;
 	NewCrop.CropID = CropID;
 	NewCrop.CurrentStage = ECropGrowthStage::Seed;
@@ -99,15 +99,15 @@ FHarvestResult UHarmoniaFarmingComponent::HarvestCrop(FName PlotID)
 
 	const FCropData& CropData = CropDatabase[Crop.CropID];
 
-	// ?�확 결과 계산
+	// ?�확 결과 계산
 	Result = CalculateHarvestResult(Crop, CropData);
 
-	// 경험�??�득
+	// 경험�??�득
 	AddFarmingExperience(Result.Experience);
 
 	OnCropHarvested.Broadcast(Result);
 
-	// ?�수??가?�한 ?�물?��? ?�인
+	// ?�수??가?�한 ?�물?��? ?�인
 	if (CropData.bReharvestablle)
 	{
 		Crop.CurrentStage = ECropGrowthStage::Growing;
@@ -116,7 +116,7 @@ FHarvestResult UHarmoniaFarmingComponent::HarvestCrop(FName PlotID)
 	}
 	else
 	{
-		// ?�물 ?�거
+		// ?�물 ?�거
 		FarmPlots.Remove(PlotID);
 	}
 
@@ -132,7 +132,7 @@ bool UHarmoniaFarmingComponent::WaterCrop(FName PlotID)
 
 	FCropInstance& Crop = FarmPlots[PlotID];
 
-	// ?�분 증�?
+	// ?�분 증�?
 	Crop.Soil.MoistureLevel = FMath::Min(100.0f, Crop.Soil.MoistureLevel + WaterMoistureIncrease);
 	Crop.LastWateredTime = FDateTime::Now();
 
@@ -229,8 +229,8 @@ void UHarmoniaFarmingComponent::SetCurrentSeason(ESeason Season)
 {
 	CurrentSeason = Season;
 
-	// 계절??맞�? ?�는 ?�물?� ?�장 중�? ?�는 ?�널???�용 가??
-	// ?�요??구현
+	// 계절??맞�? ?�는 ?�물?� ?�장 중�? ?�는 ?�널???�용 가??
+	// ?�요??구현
 }
 
 bool UHarmoniaFarmingComponent::CanGrowInCurrentSeason(FName CropID) const
@@ -242,7 +242,7 @@ bool UHarmoniaFarmingComponent::CanGrowInCurrentSeason(FName CropID) const
 
 	const FCropData& CropData = CropDatabase[CropID];
 
-	// 모든 계절???�라???�물
+	// 모든 계절???�라???�물
 	if (CropData.GrowingSeasons.Contains(ESeason::AllSeasons))
 	{
 		return true;
@@ -260,7 +260,7 @@ void UHarmoniaFarmingComponent::UpdateCropGrowth(FName PlotID, FCropInstance& Cr
 
 	const FCropData& CropData = CropDatabase[Crop.CropID];
 
-	// ?�장 가???��? ?�인
+	// ?�장 가???��? ?�인
 	if (!CanCropGrow(Crop, CropData))
 	{
 		return;
@@ -270,11 +270,11 @@ void UHarmoniaFarmingComponent::UpdateCropGrowth(FName PlotID, FCropInstance& Cr
 	FTimespan TimeSinceStageStart = CurrentTime - Crop.StageStartTime;
 	FTimespan TimeSinceWatered = CurrentTime - Crop.LastWateredTime;
 
-	// ?�분 감소
+	// ?�분 감소
 	float HoursSinceWatered = TimeSinceWatered.GetTotalHours();
 	Crop.Soil.MoistureLevel = FMath::Max(0.0f, Crop.Soil.MoistureLevel - (MoistureDecayPerHour * HoursSinceWatered / 10.0f));
 
-	// 비료 ?�과 감소
+	// 비료 ?�과 감소
 	if (Crop.Soil.bFertilized)
 	{
 		Crop.Soil.FertilizerDuration -= TimeSinceStageStart.GetTotalSeconds();
@@ -286,7 +286,7 @@ void UHarmoniaFarmingComponent::UpdateCropGrowth(FName PlotID, FCropInstance& Cr
 		}
 	}
 
-	// ?�장 ?�도 계산
+	// ?�장 ?�도 계산
 	float GrowthSpeedMultiplier = 1.0f;
 
 	// 비료 보너??
@@ -295,13 +295,13 @@ void UHarmoniaFarmingComponent::UpdateCropGrowth(FName PlotID, FCropInstance& Cr
 		GrowthSpeedMultiplier += Crop.Soil.GrowthSpeedBonus / 100.0f;
 	}
 
-	// ?�분 ?�널??
+	// ?�분 ?�널??
 	if (Crop.Soil.MoistureLevel < 30.0f)
 	{
 		GrowthSpeedMultiplier *= (1.0f - LowMoisturePenalty / 100.0f);
 	}
 
-	// ?�장 ?�계 ?�인 �??�데?�트
+	// ?�장 ?�계 ?�인 �??�데?�트
 	ECropGrowthStage OldStage = Crop.CurrentStage;
 	ECropGrowthStage NewStage = OldStage;
 
@@ -333,12 +333,12 @@ void UHarmoniaFarmingComponent::UpdateCropGrowth(FName PlotID, FCropInstance& Cr
 		break;
 
 	case ECropGrowthStage::Mature:
-		// 바로 ?�확 가???�태�??�환
+		// 바로 ?�확 가???�태�??�환
 		NewStage = ECropGrowthStage::Harvest;
 		break;
 
 	case ECropGrowthStage::Harvest:
-		// ?�확 ?�간 초과 ?�인
+		// ?�확 ?�간 초과 ?�인
 		if (TimeSinceStageStart.GetTotalSeconds() >= CropData.HarvestWindow)
 		{
 			NewStage = ECropGrowthStage::Withered;
@@ -346,7 +346,7 @@ void UHarmoniaFarmingComponent::UpdateCropGrowth(FName PlotID, FCropInstance& Cr
 		break;
 
 	case ECropGrowthStage::Withered:
-		// ?�들?� ?�태 ?��?
+		// ?�들?� ?�태 ?��?
 		break;
 	}
 
@@ -355,7 +355,7 @@ void UHarmoniaFarmingComponent::UpdateCropGrowth(FName PlotID, FCropInstance& Cr
 		Crop.CurrentStage = NewStage;
 		Crop.StageStartTime = CurrentTime;
 
-		// ?�질 ?�수 ?�데?�트
+		// ?�질 ?�수 ?�데?�트
 		Crop.QualityScore = CalculateCropQuality(Crop, CropData);
 
 		OnCropGrowthStageChanged.Broadcast(Crop.CropID, NewStage);
@@ -366,7 +366,7 @@ float UHarmoniaFarmingComponent::CalculateCropQuality(const FCropInstance& Crop,
 {
 	float Quality = 50.0f;
 
-	// ?�분 ?�벨???�른 ?�질
+	// ?�분 ?�벨???�른 ?�질
 	if (Crop.Soil.MoistureLevel >= 70.0f)
 	{
 		Quality += 20.0f;
@@ -380,13 +380,13 @@ float UHarmoniaFarmingComponent::CalculateCropQuality(const FCropInstance& Crop,
 		Quality -= 10.0f;
 	}
 
-	// 비료 ?�용 ?��?
+	// 비료 ?�용 ?��?
 	if (Crop.Soil.bFertilized)
 	{
 		Quality += 15.0f;
 	}
 
-	// ?�양 ?�질
+	// ?�양 ?�질
 	switch (Crop.Soil.Quality)
 	{
 	case ESoilQuality::Poor:
@@ -414,11 +414,11 @@ FHarvestResult UHarmoniaFarmingComponent::CalculateHarvestResult(const FCropInst
 	Result.CropID = Crop.CropID;
 	Result.Quality = Crop.QualityScore;
 
-	// ?�확??계산
+	// ?�확??계산
 	int32 BaseYield = FMath::RandRange(CropData.MinYield, CropData.MaxYield);
 	float YieldMultiplier = 1.0f;
 
-	// ?�질 보너??
+	// ?�질 보너??
 	YieldMultiplier += (Crop.QualityScore - 50.0f) / 100.0f;
 
 	// 비료 보너??
@@ -429,10 +429,10 @@ FHarvestResult UHarmoniaFarmingComponent::CalculateHarvestResult(const FCropInst
 
 	Result.Quantity = FMath::Max(1, FMath::CeilToInt(BaseYield * YieldMultiplier));
 
-	// 경험�?계산
+	// 경험�?계산
 	Result.Experience = FMath::CeilToInt(CropData.ExperienceReward * (Crop.QualityScore / 50.0f));
 
-	// ?�앗 ?�득
+	// ?�앗 ?�득
 	if (FMath::FRand() * 100.0f <= SeedDropChance)
 	{
 		Result.bGotSeeds = true;
@@ -459,14 +459,14 @@ void UHarmoniaFarmingComponent::CheckAndProcessLevelUp()
 
 bool UHarmoniaFarmingComponent::CanCropGrow(const FCropInstance& Crop, const FCropData& CropData) const
 {
-	// 계절 ?�인
+	// 계절 ?�인
 	if (!CropData.GrowingSeasons.Contains(ESeason::AllSeasons) &&
 		!CropData.GrowingSeasons.Contains(CurrentSeason))
 	{
 		return false;
 	}
 
-	// ?�들?�으�??�장 불�?
+	// ?�들?�으�??�장 불�?
 	if (Crop.CurrentStage == ECropGrowthStage::Withered)
 	{
 		return false;

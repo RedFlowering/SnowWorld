@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+ï»¿// Copyright 2025 Snow Game Studio.
 
 #include "Components/HarmoniaSenseInteractableComponent.h"
 #include "Managers/HarmoniaInteractionManager.h"
@@ -83,7 +83,7 @@ bool UHarmoniaSenseInteractableComponent::GetInteractionConfigBySensorTag(FName 
 	{
 		if (InteractionData.Config.SensorTag == SensorTag)
 		{
-			OutData = InteractionData; // º¹»ç OK
+			OutData = InteractionData; // ï¿½ï¿½ï¿½ï¿½ OK
 			return true;
 		}
 	}

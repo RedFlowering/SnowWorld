@@ -1,15 +1,15 @@
-// Copyright 2025 Snow Game Studio.
+ï»¿// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
 #include "WorldGeneratorTypes.h"
 
-// ¼ø¼ö °¡»ó ÀÎÅÍÆäÀÌ½º. ´Ù¾çÇÑ ¿ùµå »ý¼º±â ±¸Çö¿¡ »ç¿ë
+// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì½ï¿½. ï¿½Ù¾ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
 class IWorldGenerator
 {
 public:
     virtual ~IWorldGenerator() = default;
 
-    // ÁÖ¿ä »ý¼º ÇÔ¼ö
+    // ï¿½Ö¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½
     virtual void GenerateWorldObjects(const FWorldGeneratorConfig& Config, TArray<FWorldObjectData>& OutObjects, TMap<EWorldObjectType, TSoftClassPtr<AActor>> ActorClassMap) = 0;
 };

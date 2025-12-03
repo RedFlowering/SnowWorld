@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -12,8 +12,8 @@
 UENUM(BlueprintType)
 enum class ELeaderboardSortOrder : uint8
 {
-	Ascending		UMETA(DisplayName = "Ascending"),		// ?�름차순 (??��?�록 좋음, ?? ?�?�어??
-	Descending		UMETA(DisplayName = "Descending"),		// ?�림차순 (?�을?�록 좋음, ?? ?�수)
+	Ascending		UMETA(DisplayName = "Ascending"),		// ?�름차순 (??��?�록 좋음, ?? ?�?�어??
+	Descending		UMETA(DisplayName = "Descending"),		// ?�림차순 (?�을?�록 좋음, ?? ?�수)
 	MAX				UMETA(Hidden)
 };
 
@@ -23,8 +23,8 @@ enum class ELeaderboardSortOrder : uint8
 UENUM(BlueprintType)
 enum class ELeaderboardType : uint8
 {
-	Numeric			UMETA(DisplayName = "Numeric"),			// ?�자 (?�수)
-	Time			UMETA(DisplayName = "Time"),			// ?�간 (�??�위)
+	Numeric			UMETA(DisplayName = "Numeric"),			// ?�자 (?�수)
+	Time			UMETA(DisplayName = "Time"),			// ?�간 (�??�위)
 	MAX				UMETA(Hidden)
 };
 

@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "Actors/HarmoniaCrystalResonator.h"
 #include "System/HarmoniaCheckpointSubsystem.h"
@@ -17,50 +17,50 @@ AHarmoniaCrystalResonator::AHarmoniaCrystalResonator()
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 
-	// 루트 컴포?�트
+	// 루트 컴포?�트
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
 
-	// 받침?� 메시
+	// 받침?� 메시
 	BaseMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BaseMesh"));
 	BaseMesh->SetupAttachment(SceneRoot);
 	BaseMesh->SetCollisionProfileName(TEXT("BlockAll"));
 
-	// ?�리?�탈 메시
+	// ?�리?�탈 메시
 	CrystalMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CrystalMesh"));
 	CrystalMesh->SetupAttachment(SceneRoot);
 	CrystalMesh->SetCollisionProfileName(TEXT("NoCollision"));
 
-	// ?�인???�이??
+	// ?�인???�이??
 	ResonanceLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("ResonanceLight"));
 	ResonanceLight->SetupAttachment(CrystalMesh);
 	ResonanceLight->SetIntensity(InactiveLightIntensity);
 	ResonanceLight->SetAttenuationRadius(1000.0f);
 	ResonanceLight->SetCastShadows(false);
 
-	// ?�이?��????�펙??
+	// ?�이?��????�펙??
 	ResonanceEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ResonanceEffect"));
 	ResonanceEffect->SetupAttachment(CrystalMesh);
 	ResonanceEffect->SetAutoActivate(false);
 
-	// ?�호?�용 범위
+	// ?�호?�용 범위
 	InteractionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionSphere"));
 	InteractionSphere->SetupAttachment(SceneRoot);
 	InteractionSphere->SetSphereRadius(InteractionRange);
 	InteractionSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
 
-	// ?�디??컴포?�트
+	// ?�디??컴포?�트
 	ResonanceAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("ResonanceAudio"));
 	ResonanceAudio->SetupAttachment(CrystalMesh);
 	ResonanceAudio->SetAutoActivate(false);
 
-	// 기본 �??�정
+	// 기본 �??�정
 	CheckpointID = NAME_None;
 	CheckpointName = FText::FromString(TEXT("Crystal Resonator"));
 	CheckpointDescription = FText::FromString(TEXT("A mystical crystal that resonates with ancient energies."));
 	ResonanceFrequency = EHarmoniaResonanceFrequency::Azure;
 
-	// 초기 ?�상 ?�정
+	// 초기 ?�상 ?�정
 	InitializeFrequencyColors();
 }
 
@@ -68,16 +68,16 @@ void AHarmoniaCrystalResonator::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ?�브?�스?�에 ?�록
+	// ?�브?�스?�에 ?�록
 	RegisterToSubsystem();
 
-	// ?�작 ???�동 ?�성??
+	// ?�작 ???�동 ?�성??
 	if (bStartActivated && HasAuthority())
 	{
 		SetCheckpointState(EHarmoniaCheckpointState::Activated);
 	}
 
-	// 초기 비주???�정
+	// 초기 비주???�정
 	UpdateVisuals();
 }
 
@@ -85,13 +85,13 @@ void AHarmoniaCrystalResonator::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// 공명 ?�스 ?�과
+	// 공명 ?�스 ?�과
 	if (CurrentState == EHarmoniaCheckpointState::Resonating)
 	{
 		UpdateResonancePulse(DeltaTime);
 	}
 
-	// 주�? ?�리?�탈�?공명
+	// 주�? ?�리?�탈�?공명
 	if (CurrentState != EHarmoniaCheckpointState::Inactive)
 	{
 		UpdateNearbyResonance();
@@ -100,7 +100,7 @@ void AHarmoniaCrystalResonator::Tick(float DeltaTime)
 
 void AHarmoniaCrystalResonator::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// ?�브?�스?�에???�록 ?�제
+	// ?�브?�스?�에???�록 ?�제
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{
 		if (UHarmoniaCheckpointSubsystem* CheckpointSubsystem = GameInstance->GetSubsystem<UHarmoniaCheckpointSubsystem>())
@@ -132,7 +132,7 @@ bool AHarmoniaCrystalResonator::Activate(APlayerController* Player)
 
 	if (CurrentState != EHarmoniaCheckpointState::Inactive)
 	{
-		// ?��? ?�성?�됨
+		// ?��? ?�성?�됨
 		return true;
 	}
 
@@ -252,7 +252,7 @@ void AHarmoniaCrystalResonator::OnInteract_Implementation(const FHarmoniaInterac
 {
 	OutResult.bSuccess = false;
 
-	// Context.Interactor?�서 PlayerController 가?�오�?
+	// Context.Interactor?�서 PlayerController 가?�오�?
 	APlayerController* PlayerController = nullptr;
 	if (APawn* InteractorPawn = Cast<APawn>(Context.Interactor))
 	{
@@ -281,7 +281,7 @@ void AHarmoniaCrystalResonator::OnInteract_Implementation(const FHarmoniaInterac
 		return;
 	}
 
-	// 비활?�화 ?�태�??�성??
+	// 비활?�화 ?�태�??�성??
 	if (CurrentState == EHarmoniaCheckpointState::Inactive)
 	{
 		bool bActivated = CheckpointSubsystem->ActivateCheckpoint(CheckpointID, PlayerController);
@@ -293,7 +293,7 @@ void AHarmoniaCrystalResonator::OnInteract_Implementation(const FHarmoniaInterac
 		return;
 	}
 
-	// ?�성???�태�?공명 ?�작
+	// ?�성???�태�?공명 ?�작
 	bool bResonanceStarted = CheckpointSubsystem->StartResonance(CheckpointID, PlayerController);
 	if (bResonanceStarted)
 	{
@@ -334,11 +334,11 @@ void AHarmoniaCrystalResonator::UpdateVisuals_Implementation()
 		return;
 	}
 
-	// 공명 주파???�상 ?�용
+	// 공명 주파???�상 ?�용
 	FLinearColor FrequencyColor = GetFrequencyColor();
 	ResonanceLight->SetLightColor(FrequencyColor);
 
-	// ?�태�?발광 ?�기
+	// ?�태�?발광 ?�기
 	float TargetIntensity = InactiveLightIntensity;
 	bool bShouldActivateEffect = false;
 
@@ -362,7 +362,7 @@ void AHarmoniaCrystalResonator::UpdateVisuals_Implementation()
 
 	ResonanceLight->SetIntensity(TargetIntensity);
 
-	// ?�티???�과
+	// ?�티???�과
 	if (ResonanceEffect)
 	{
 		if (bShouldActivateEffect && !ResonanceEffect->IsActive())
@@ -375,7 +375,7 @@ void AHarmoniaCrystalResonator::UpdateVisuals_Implementation()
 		}
 	}
 
-	// ?�디??
+	// ?�디??
 	if (ResonanceAudio)
 	{
 		if (CurrentState == EHarmoniaCheckpointState::Resonating)
@@ -405,9 +405,9 @@ void AHarmoniaCrystalResonator::UpdateResonancePulse(float DeltaTime)
 
 	ResonancePulseTimer += DeltaTime * ResonancePulseSpeed;
 
-	// ?�인???�스
+	// ?�인???�스
 	float PulseValue = FMath::Sin(ResonancePulseTimer);
-	PulseValue = (PulseValue + 1.0f) * 0.5f; // 0~1 범위�??�규??
+	PulseValue = (PulseValue + 1.0f) * 0.5f; // 0~1 범위�??�규??
 
 	float CurrentIntensity = FMath::Lerp(
 		ResonatingLightIntensity * 0.8f,
@@ -420,59 +420,59 @@ void AHarmoniaCrystalResonator::UpdateResonancePulse(float DeltaTime)
 
 void AHarmoniaCrystalResonator::UpdateNearbyResonance_Implementation()
 {
-	// Blueprint?�서 구현 가??
-	// 가까운 ?�른 ?�성?�된 ?�리?�탈 찾아???�결 ?�과 ?�시
+	// Blueprint?�서 구현 가??
+	// 가까운 ?�른 ?�성?�된 ?�리?�탈 찾아???�결 ?�과 ?�시
 }
 
 void AHarmoniaCrystalResonator::ApplyFrequencyEffects_Implementation()
 {
-	// Blueprint?�서 구현 가??
-	// �?공명 주파?�별 ?�수 ?�과
+	// Blueprint?�서 구현 가??
+	// �?공명 주파?�별 ?�수 ?�과
 }
 
 void AHarmoniaCrystalResonator::PlayActivationEffects_Implementation()
 {
-	// ?�성???�운??
+	// ?�성???�운??
 	if (ActivationSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, ActivationSound, GetActorLocation());
 	}
 
-	// Blueprint?�서 추�? ?�과 구현 가??
+	// Blueprint?�서 추�? ?�과 구현 가??
 }
 
 void AHarmoniaCrystalResonator::PlayResonanceStartEffects_Implementation()
 {
-	// 공명 ?�작 ?�운??
+	// 공명 ?�작 ?�운??
 	if (ResonanceStartSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, ResonanceStartSound, GetActorLocation());
 	}
 
-	// Blueprint?�서 추�? ?�과 구현 가??
+	// Blueprint?�서 추�? ?�과 구현 가??
 }
 
 void AHarmoniaCrystalResonator::PlayResonanceCompleteEffects_Implementation()
 {
-	// 공명 ?�료 ?�운??
+	// 공명 ?�료 ?�운??
 	if (ResonanceCompleteSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, ResonanceCompleteSound, GetActorLocation());
 	}
 
-	// Blueprint?�서 추�? ?�과 구현 가??
+	// Blueprint?�서 추�? ?�과 구현 가??
 }
 
 void AHarmoniaCrystalResonator::InitializeFrequencyColors()
 {
-	// 공명 주파?�별 기본 ?�상 ?�정
+	// 공명 주파?�별 기본 ?�상 ?�정
 	FrequencyColors.Empty();
-	FrequencyColors.Add(EHarmoniaResonanceFrequency::Azure, FLinearColor(0.0f, 0.5f, 1.0f)); // ?�른??
-	FrequencyColors.Add(EHarmoniaResonanceFrequency::Crimson, FLinearColor(1.0f, 0.0f, 0.2f)); // 붉�???
-	FrequencyColors.Add(EHarmoniaResonanceFrequency::Verdant, FLinearColor(0.0f, 1.0f, 0.3f)); // ?�색
+	FrequencyColors.Add(EHarmoniaResonanceFrequency::Azure, FLinearColor(0.0f, 0.5f, 1.0f)); // ?�른??
+	FrequencyColors.Add(EHarmoniaResonanceFrequency::Crimson, FLinearColor(1.0f, 0.0f, 0.2f)); // 붉�???
+	FrequencyColors.Add(EHarmoniaResonanceFrequency::Verdant, FLinearColor(0.0f, 1.0f, 0.3f)); // ?�색
 	FrequencyColors.Add(EHarmoniaResonanceFrequency::Aurum, FLinearColor(1.0f, 0.8f, 0.0f)); // 금색
 	FrequencyColors.Add(EHarmoniaResonanceFrequency::Violet, FLinearColor(0.8f, 0.0f, 1.0f)); // 보라??
-	FrequencyColors.Add(EHarmoniaResonanceFrequency::Luminous, FLinearColor(1.0f, 1.0f, 1.0f)); // ?�색
+	FrequencyColors.Add(EHarmoniaResonanceFrequency::Luminous, FLinearColor(1.0f, 1.0f, 1.0f)); // ?�색
 }
 
 #if WITH_EDITOR
@@ -482,7 +482,7 @@ void AHarmoniaCrystalResonator::PostEditChangeProperty(FPropertyChangedEvent& Pr
 
 	FName PropertyName = PropertyChangedEvent.GetPropertyName();
 
-	// CheckpointName??변경되�??�동?�로 ID ?�성
+	// CheckpointName??변경되�??�동?�로 ID ?�성
 	if (PropertyName == GET_MEMBER_NAME_CHECKED(AHarmoniaCrystalResonator, CheckpointName))
 	{
 		if (CheckpointID.IsNone() && !CheckpointName.IsEmpty())
@@ -493,7 +493,7 @@ void AHarmoniaCrystalResonator::PostEditChangeProperty(FPropertyChangedEvent& Pr
 		}
 	}
 
-	// ?�호?�용 범위 변�???구체 ?�기 ?�데?�트
+	// ?�호?�용 범위 변�???구체 ?�기 ?�데?�트
 	if (PropertyName == GET_MEMBER_NAME_CHECKED(AHarmoniaCrystalResonator, InteractionRange))
 	{
 		if (InteractionSphere)
@@ -502,7 +502,7 @@ void AHarmoniaCrystalResonator::PostEditChangeProperty(FPropertyChangedEvent& Pr
 		}
 	}
 
-	// 공명 주파??변�???비주???�데?�트
+	// 공명 주파??변�???비주???�데?�트
 	if (PropertyName == GET_MEMBER_NAME_CHECKED(AHarmoniaCrystalResonator, ResonanceFrequency))
 	{
 		UpdateVisuals();

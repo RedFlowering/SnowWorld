@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "Components/HarmoniaInventoryComponent.h"
 #include "Core/HarmoniaCoreBFL.h"
@@ -26,13 +26,13 @@ void UHarmoniaInventoryComponent::BeginPlay()
 void UHarmoniaInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	// ?�유???�너) ?�라?�언?�만 복제??
+	// ?�유???�너) ?�라?�언?�만 복제??
 	DOREPLIFETIME_CONDITION(UHarmoniaInventoryComponent, InventoryData, COND_OwnerOnly);
 }
 
 void UHarmoniaInventoryComponent::OnRep_InventoryData()
 {
-	// ?�라?�언?�에??브로?�캐?�트 �?UI ?�동 ?�데?�트
+	// ?�라?�언?�에??브로?�캐?�트 �?UI ?�동 ?�데?�트
 	OnInventoryChanged.Broadcast();
 }
 
@@ -159,7 +159,7 @@ bool UHarmoniaInventoryComponent::AddItem(const FHarmoniaID& ItemID, int32 Count
 			}
 		}
 
-		// Num != MaxSlotCount 체크??BeginPlay?�서 ?��? ?�으므�?불필??
+		// Num != MaxSlotCount 체크??BeginPlay?�서 ?��? ?�으므�?불필??
 		for (FInventorySlot& Slot : InventoryData.Slots)
 		{
 			if (Slot.Count == 0)
@@ -289,7 +289,7 @@ void UHarmoniaInventoryComponent::DropItem(int32 SlotIndex)
 	{
 		FInventorySlot& Slot = InventoryData.Slots[SlotIndex];
 
-		// ?�롯?�서 ?�이???�보�?가?�옴
+		// ?�롯?�서 ?�이???�보�?가?�옴
 		if (Slot.ItemID.IsValid() && Slot.Count != 0)
 		{
 			UDataTable* ItemDataTable = GETITEMDATATABLE();
@@ -298,7 +298,7 @@ void UHarmoniaInventoryComponent::DropItem(int32 SlotIndex)
 			{
 				FHarmoniaItemData* Item = ItemDataTable->FindRow<FHarmoniaItemData>(Slot.ItemID.Id, TEXT("FindItemRow"));
 
-				// ?�드???�이???�터 ?�폰
+				// ?�드???�이???�터 ?�폰
 				if (Item && Item->WorldActorClass)
 				{
 					AActor* OwnerActor = GetOwner();
@@ -319,7 +319,7 @@ void UHarmoniaInventoryComponent::DropItem(int32 SlotIndex)
 					}
 				}
 
-				// ?�벤?�리 ?�롯 초기??
+				// ?�벤?�리 ?�롯 초기??
 				Slot = FInventorySlot();
 			}
 		}

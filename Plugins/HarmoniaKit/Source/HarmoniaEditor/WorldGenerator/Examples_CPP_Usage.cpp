@@ -1,4 +1,4 @@
-// Copyright RedFlowering. All Rights Reserved.
+﻿// Copyright RedFlowering. All Rights Reserved.
 
 /*
  * 하모니아 월드 에디터 유틸리티 C++ 사용 예제

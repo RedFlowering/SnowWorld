@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+ï»¿// Copyright 2025 Snow Game Studio.
 
 #include "Managers/HarmoniaWorldIntegrationHelper.h"
 
@@ -13,10 +13,10 @@ void HarmoniaWorldIntegrationHelper::RegisterWorldObjectsToManagers(const TArray
 
     for (const FWorldObjectData& ObjData : WorldObjects)
     {
-        //// 1. ÀüÃ¼ ¿ÀºêÁ§Æ® ¸Å´ÏÀú¿¡ µî·Ï
+        //// 1. ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½Å´ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
         //ObjectManager->RegisterWorldObject(ObjData);
 
-        //// 2. Å¸ÀÔº° ¸Å´ÏÀú¿¡µµ µî·Ï
+        //// 2. Å¸ï¿½Ôºï¿½ ï¿½Å´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
         //switch (ObjData.ObjectType)
         //{
         //case EWorldObjectType::Resource:
@@ -33,7 +33,7 @@ void HarmoniaWorldIntegrationHelper::RegisterWorldObjectsToManagers(const TArray
         //    }
         //    break;
 
-        //    // ÇÊ¿ä ½Ã Ãß°¡ ÄÉÀÌ½º
+        //    // ï¿½Ê¿ï¿½ ï¿½ï¿½ ï¿½ß°ï¿½ ï¿½ï¿½ï¿½Ì½ï¿½
         //default:
         //    break;
         //}

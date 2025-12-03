@@ -1,10 +1,10 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "Data/HarmoniaUIConfigDataAsset.h"
 
 UHarmoniaUIConfigDataAsset::UHarmoniaUIConfigDataAsset()
 {
-	// 기본값�? 구조체에??초기?�됨
+	// 기본값�? 구조체에??초기?�됨
 }
 
 FLinearColor UHarmoniaUIConfigDataAsset::GetBorderColorForType(EHarmoniaStatusEffectType Type) const

@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Components/HarmoniaMusicComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -38,19 +38,19 @@ bool UHarmoniaMusicComponent::StartPerformance(FName MusicID)
 
 	const FMusicSheetData& MusicSheet = MusicSheetDatabase[MusicID];
 
-	// ?�벨 체크
+	// ?�벨 체크
 	if (PerformanceLevel < MusicSheet.MinPerformanceLevel)
 	{
 		return false;
 	}
 
-	// ?�보�??�고 ?�는지 ?�인
+	// ?�보�??�고 ?�는지 ?�인
 	if (MusicSheet.bHidden && !IsMusicSheetKnown(MusicID))
 	{
 		return false;
 	}
 
-	// ?�기 체크
+	// ?�기 체크
 	if (MusicSheet.RequiredInstruments.Num() > 0)
 	{
 		if (!HasInstrumentEquipped())
@@ -295,27 +295,27 @@ void UHarmoniaMusicComponent::CompletePerformance()
 
 	const FMusicSheetData& MusicSheet = MusicSheetDatabase[CurrentMusicID];
 
-	// ?�주 결과 계산
+	// ?�주 결과 계산
 	FPerformanceResult Result = CalculatePerformanceResult(MusicSheet);
 
-	// 경험�??�득
+	// 경험�??�득
 	AddPerformanceExperience(Result.Experience);
 
-	// ?�보 ?�득
+	// ?�보 ?�득
 	LearnMusicSheet(CurrentMusicID);
 
-	// ?�기 ?�구??감소
+	// ?�기 ?�구??감소
 	if (HasInstrumentEquipped())
 	{
 		ReduceInstrumentDurability(1);
 	}
 
-	// 버프 ?�용
+	// 버프 ?�용
 	Result.AffectedActorCount = ApplyBuffToNearbyActors(Result.AppliedBuff);
 
 	OnPerformanceCompleted.Broadcast(Result);
 
-	// ?�주 종료
+	// ?�주 종료
 	bIsPerforming = false;
 	CurrentMusicID = NAME_None;
 	CurrentRhythmNotes.Empty();
@@ -327,7 +327,7 @@ FPerformanceResult UHarmoniaMusicComponent::CalculatePerformanceResult(const FMu
 	FPerformanceResult Result;
 	Result.MusicID = CurrentMusicID;
 
-	// 미니게임 ?�수 계산
+	// 미니게임 ?�수 계산
 	float FinalScore = 0.0f;
 	if (bUseMinigame && TotalNoteCount > 0)
 	{
@@ -336,16 +336,16 @@ FPerformanceResult UHarmoniaMusicComponent::CalculatePerformanceResult(const FMu
 	}
 	else
 	{
-		// 미니게임 ?�이 ?�동 계산
+		// 미니게임 ?�이 ?�동 계산
 		float SuccessRate = BaseSuccessRate + GetTotalQualityBonus();
 		FinalScore = FMath::Clamp(SuccessRate, 0.0f, 100.0f);
 	}
 
-	// ?�질 결정
+	// ?�질 결정
 	Result.Quality = DeterminePerformanceQuality(MusicSheet.Difficulty, FinalScore);
 	Result.bPerfect = Result.Quality == EPerformanceQuality::Legendary;
 
-	// 버프 ?�과 계산
+	// 버프 ?�과 계산
 	Result.AppliedBuff = MusicSheet.BuffEffect;
 
 	float QualityMultiplier = 1.0f;
@@ -356,7 +356,7 @@ FPerformanceResult UHarmoniaMusicComponent::CalculatePerformanceResult(const FMu
 
 	float BuffMultiplier = QualityMultiplier * (1.0f + GetTotalBuffEffectBonus() / 100.0f);
 
-	// 버프 ?�과??배율 ?�용
+	// 버프 ?�과??배율 ?�용
 	Result.AppliedBuff.HealthRegenPerSecond *= BuffMultiplier;
 	Result.AppliedBuff.ManaRegenPerSecond *= BuffMultiplier;
 	Result.AppliedBuff.StaminaRegenPerSecond *= BuffMultiplier;
@@ -370,7 +370,7 @@ FPerformanceResult UHarmoniaMusicComponent::CalculatePerformanceResult(const FMu
 	// 범위 보너??
 	Result.AppliedBuff.EffectRadius *= (1.0f + GetTotalRangeBonus() / 100.0f);
 
-	// ?�코�?체크
+	// ?�코�?체크
 	for (const FPerformanceTrait& Trait : ActiveTraits)
 	{
 		if (FMath::FRand() * 100.0f <= Trait.EncoreChance)
@@ -380,7 +380,7 @@ FPerformanceResult UHarmoniaMusicComponent::CalculatePerformanceResult(const FMu
 		}
 	}
 
-	// 경험�?계산
+	// 경험�?계산
 	float ExpMultiplier = 1.0f;
 	for (const FPerformanceTrait& Trait : ActiveTraits)
 	{
@@ -394,7 +394,7 @@ FPerformanceResult UHarmoniaMusicComponent::CalculatePerformanceResult(const FMu
 
 EPerformanceQuality UHarmoniaMusicComponent::DeterminePerformanceQuality(int32 Difficulty, float Score)
 {
-	// ?�이?�에 ?�른 ?�질 기�? 조정
+	// ?�이?�에 ?�른 ?�질 기�? 조정
 	float LegendaryThreshold = FMath::Max(95.0f, 98.0f - (Difficulty * 0.3f));
 	float PerfectThreshold = FMath::Max(85.0f, 90.0f - (Difficulty * 0.5f));
 	float GreatThreshold = FMath::Max(70.0f, 75.0f - (Difficulty * 0.5f));
@@ -429,8 +429,8 @@ EPerformanceQuality UHarmoniaMusicComponent::DeterminePerformanceQuality(int32 D
 
 void UHarmoniaMusicComponent::ApplyMusicBuff(const FMusicBuffEffect& BuffEffect)
 {
-	// 개별 ?�터??버프 ?�용 로직
-	// ?�제 구현?� 게임??버프 ?�스?�에 ?�라 ?�라�?
+	// 개별 ?�터??버프 ?�용 로직
+	// ?�제 구현?� 게임??버프 ?�스?�에 ?�라 ?�라�?
 }
 
 int32 UHarmoniaMusicComponent::ApplyBuffToNearbyActors(const FMusicBuffEffect& BuffEffect)
@@ -462,20 +462,20 @@ int32 UHarmoniaMusicComponent::ApplyBuffToNearbyActors(const FMusicBuffEffect& B
 
 	for (AActor* Actor : OverlappingActors)
 	{
-		// ?�군 체크 로직 추�? ?�요
+		// ?�군 체크 로직 추�? ?�요
 		if (BuffEffect.bAllyOnly)
 		{
-			// TODO: ?� ?�스?�과 ?�동?�여 ?�군?��? ?�인
+			// TODO: ?� ?�스?�과 ?�동?�여 ?�군?��? ?�인
 		}
 
-		// 버프 ?�용
+		// 버프 ?�용
 		ApplyMusicBuff(BuffEffect);
 		OnMusicBuffApplied.Broadcast(Actor, BuffEffect.BuffName, BuffEffect.Duration);
 
 		AffectedCount++;
 	}
 
-	// ?�신?�게???�용
+	// ?�신?�게???�용
 	if (BuffEffect.bAffectSelf)
 	{
 		ApplyMusicBuff(BuffEffect);

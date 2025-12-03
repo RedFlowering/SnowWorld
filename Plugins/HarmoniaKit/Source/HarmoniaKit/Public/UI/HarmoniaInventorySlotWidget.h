@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+О╩©// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -43,7 +43,7 @@ public:
     TObjectPtr<UProgressBar> DurabilityBar = nullptr;
 
 protected:
-    // ╫╫╥т ╣╔юлем
+    // О©╫О©╫О©╫О©╫ О©╫О©╫О©╫О©╫О©╫О©╫
     FInventorySlot Slot = FInventorySlot();
     FInventorySlotEx SlotEx = FInventorySlotEx();
 

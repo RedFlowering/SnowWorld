@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+ï»¿// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -17,7 +17,7 @@ class IHarmoniaInteractableInterface
     GENERATED_BODY()
 
 public:
-    // ÀÎÅÍ·¢¼Ç ¿äÃ»½Ã ½ÇÇà
+    // ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ ï¿½ï¿½Ã»ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Interaction")
     void OnInteract(const FHarmoniaInteractionContext& Context, FHarmoniaInteractionResult& OutResult);
 };

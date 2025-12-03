@@ -1,4 +1,4 @@
-// Copyright RedFlowering. All Rights Reserved.
+﻿// Copyright RedFlowering. All Rights Reserved.
 
 #include "Abilities/HarmoniaGameplayAbility_Swim.h"
 #include "HarmoniaGameplayTags.h"

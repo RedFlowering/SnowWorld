@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "UI/HarmoniaRepairWidget.h"
 #include "Interfaces/IRepairStation.h"

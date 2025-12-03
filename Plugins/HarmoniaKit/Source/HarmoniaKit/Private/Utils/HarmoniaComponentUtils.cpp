@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Utils/HarmoniaComponentUtils.h"
 #include "HarmoniaLogCategories.h"

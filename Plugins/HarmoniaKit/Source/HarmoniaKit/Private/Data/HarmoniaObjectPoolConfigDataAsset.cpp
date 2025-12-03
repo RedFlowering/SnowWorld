@@ -1,10 +1,10 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "Data/HarmoniaObjectPoolConfigDataAsset.h"
 
 UHarmoniaObjectPoolConfigDataAsset::UHarmoniaObjectPoolConfigDataAsset()
 {
-	// 기본값�? 구조체에??초기?�됨
+	// 기본값�? 구조체에??초기?�됨
 }
 
 bool UHarmoniaObjectPoolConfigDataAsset::GetPoolConfigByTag(FGameplayTag PoolTag, FHarmoniaPoolConfig& OutConfig) const

@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Components/HarmoniaMapComponent.h"
 #include "System/HarmoniaMapSubsystem.h"

@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "Components/HarmoniaEnhancementSystemComponent.h"
 #include "HarmoniaLogCategories.h"
@@ -481,7 +481,7 @@ void UHarmoniaEnhancementSystemComponent::ServerInsertGem_Implementation(FGuid I
 		return;
 	}
 
-	// ?�벤?�리?�서 ???�거
+	// ?�벤?�리?�서 ???�거
 	if (InventoryComponent)
 	{
 		if (!InventoryComponent->RemoveItem(GemId, 1, -1.0f))
@@ -1811,13 +1811,13 @@ bool UHarmoniaEnhancementSystemComponent::ConsumeMaterials(const TMap<FHarmoniaI
 		return false;
 	}
 
-	// 먼�? 모든 ?�료가 ?�는지 ?�인
+	// 먼�? 모든 ?�료가 ?�는지 ?�인
 	if (!HasMaterials(Materials))
 	{
 		return false;
 	}
 
-	// ?�료 ?�비
+	// ?�료 ?�비
 	for (const auto& Pair : Materials)
 	{
 		if (!InventoryComponent->RemoveItem(Pair.Key, Pair.Value, -1.0f))
@@ -1832,8 +1832,8 @@ bool UHarmoniaEnhancementSystemComponent::ConsumeMaterials(const TMap<FHarmoniaI
 
 bool UHarmoniaEnhancementSystemComponent::ConsumeCurrency(int32 Amount)
 {
-	// ?�화 ?�스?��? 별도??Economy ?�스?�으�?구현 ?�요
-	// ?�재????�� ?�공 반환 (?�스?�용)
+	// ?�화 ?�스?��? 별도??Economy ?�스?�으�?구현 ?�요
+	// ?�재????�� ?�공 반환 (?�스?�용)
 	UE_LOG(LogHarmoniaEnhancement, Log, TEXT("ConsumeCurrency: Would consume %d currency"), Amount);
 	return true;
 }
@@ -1859,8 +1859,8 @@ bool UHarmoniaEnhancementSystemComponent::HasMaterials(const TMap<FHarmoniaID, i
 
 bool UHarmoniaEnhancementSystemComponent::HasCurrency(int32 Amount) const
 {
-	// ?�화 ?�스?��? 별도??Economy ?�스?�으�?구현 ?�요
-	// ?�재????�� true 반환 (?�스?�용)
+	// ?�화 ?�스?��? 별도??Economy ?�스?�으�?구현 ?�요
+	// ?�재????�� true 반환 (?�스?�용)
 	return true;
 }
 

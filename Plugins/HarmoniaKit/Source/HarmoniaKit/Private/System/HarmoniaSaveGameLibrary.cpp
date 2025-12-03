@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "System/HarmoniaSaveGameLibrary.h"
 #include "System/HarmoniaSaveGameSubsystem.h"
@@ -85,7 +85,7 @@ FString UHarmoniaSaveGameLibrary::GetPlayerSteamID(APlayerController* PlayerCont
 		}
 	}
 
-	// ?�라???�브?�스?�을 ?�용?????�는 경우 PlayerState??PlayerId ?�용
+	// ?�라???�브?�스?�을 ?�용?????�는 경우 PlayerState??PlayerId ?�용
 	if (APlayerState* PS = PlayerController->PlayerState)
 	{
 		return FString::Printf(TEXT("Player_%d"), PS->GetPlayerId());
@@ -101,6 +101,6 @@ bool UHarmoniaSaveGameLibrary::IsServerOwner(APlayerController* PlayerController
 		return false;
 	}
 
-	// 리슨 ?�버?�서??�?번째 ?�레?�어가 ?�버 ?�유�?
+	// 리슨 ?�버?�서??�?번째 ?�레?�어가 ?�버 ?�유�?
 	return PlayerController->GetLocalPlayer() && PlayerController->GetLocalPlayer()->GetControllerId() == 0;
 }

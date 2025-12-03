@@ -1,4 +1,4 @@
-// Copyright RedFlowering. All Rights Reserved.
+﻿// Copyright RedFlowering. All Rights Reserved.
 
 #include "WorldGenerator/HarmoniaWorldEditorUtility.h"
 #include "HarmoniaWorldGeneratorSubsystem.h"

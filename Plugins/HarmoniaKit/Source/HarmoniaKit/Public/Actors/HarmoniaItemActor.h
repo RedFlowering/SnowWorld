@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+ï»¿// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -19,7 +19,7 @@ public:
 protected:
     virtual void BeginPlay() override;
 
-    // ³×Æ®¿öÅ© µ¿±âÈ­ ¼±¾ð
+    // ï¿½ï¿½Æ®ï¿½ï¿½Å© ï¿½ï¿½ï¿½ï¿½È­ ï¿½ï¿½ï¿½ï¿½
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
@@ -40,7 +40,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Item")
     EItemCategory ItemCategory = EItemCategory::Resource;
 
-    // ¾ÆÀÌÅÛ ¹Ì¸®º¸±â(¿¡µðÅÍ¿ë)
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½Í¿ï¿½)
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Item")
     TObjectPtr<UStaticMeshComponent> PreviewMesh = nullptr;
 };

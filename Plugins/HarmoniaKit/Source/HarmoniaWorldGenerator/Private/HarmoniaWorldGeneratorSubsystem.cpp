@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+ï»¿// Copyright 2025 Snow Game Studio.
 
 #include "HarmoniaWorldGeneratorSubsystem.h"
 #include "PathfindingHelper.h"
@@ -1073,7 +1073,7 @@ void UHarmoniaWorldGeneratorSubsystem::GenerateRoads(
         FPathfindingResult PathResult;
         if (PathfindingHelper::FindRoadPath(Start, End, HeightData, Config, 20, PathResult))
         {
-            // ´Ù¸®°¡ ÇÊ¿äÇÑ ¼¼±×¸ÕÆ®µéÀ» °³º°ÀûÀ¸·Î Ã³¸®
+            // ï¿½Ù¸ï¿½ï¿½ï¿½ ï¿½Ê¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½×¸ï¿½Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
             TArray<TPair<int32, int32>> BridgeRanges;
             PathfindingHelper::DetectWaterCrossings(PathResult.PathPoints, HeightData, Config, BridgeRanges);
 
@@ -1081,7 +1081,7 @@ void UHarmoniaWorldGeneratorSubsystem::GenerateRoads(
 
             for (const TPair<int32, int32>& Bridge : BridgeRanges)
             {
-                // ´Ù¸® ÀÌÀü ÀÏ¹Ý µµ·Î ¼¼±×¸ÕÆ®
+                // ï¿½Ù¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ï¹ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½×¸ï¿½Æ®
                 if (Bridge.Key > CurrentStart)
                 {
                     FRoadSegmentData RoadSegment;
@@ -1095,7 +1095,7 @@ void UHarmoniaWorldGeneratorSubsystem::GenerateRoads(
                     OutRoadSegments.Add(RoadSegment);
                 }
 
-                // ´Ù¸® ¼¼±×¸ÕÆ®
+                // ï¿½Ù¸ï¿½ ï¿½ï¿½ï¿½×¸ï¿½Æ®
                 FRoadSegmentData BridgeSegment;
                 for (int32 j = Bridge.Key; j <= Bridge.Value; ++j)
                 {
@@ -1109,7 +1109,7 @@ void UHarmoniaWorldGeneratorSubsystem::GenerateRoads(
                 CurrentStart = Bridge.Value;
             }
 
-            // ¸¶Áö¸· ´Ù¸® ÀÌÈÄ ³²Àº µµ·Î
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ù¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             if (CurrentStart < PathResult.PathPoints.Num() - 1)
             {
                 FRoadSegmentData RoadSegment;
@@ -1123,7 +1123,7 @@ void UHarmoniaWorldGeneratorSubsystem::GenerateRoads(
                 OutRoadSegments.Add(RoadSegment);
             }
 
-            // ´Ù¸®°¡ ¾ø´Â °æ¿ì ÀüÃ¼ °æ·Î¸¦ ÇÏ³ªÀÇ ¼¼±×¸ÕÆ®·Î
+            // ï¿½Ù¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼ ï¿½ï¿½Î¸ï¿½ ï¿½Ï³ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½×¸ï¿½Æ®ï¿½ï¿½
             if (BridgeRanges.Num() == 0 && PathResult.PathPoints.Num() >= 2)
             {
                 FRoadSegmentData RoadSegment;
@@ -1165,7 +1165,7 @@ void UHarmoniaWorldGeneratorSubsystem::FindPath(
     {
         OutPath = Result.PathPoints;
 
-        // ¼±ÅÃÀû: °æ·Î ½º¹«µù Àû¿ë
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         if (OutPath.Num() > 3)
         {
             TArray<FVector> SmoothedPath;
@@ -1175,7 +1175,7 @@ void UHarmoniaWorldGeneratorSubsystem::FindPath(
     }
     else
     {
-        // A* ½ÇÆÐ ½Ã Á÷¼± °æ·Î Æú¹é
+        // A* ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         const int32 StartX = FMath::RoundToInt(Start.X / 100.f);
         const int32 StartY = FMath::RoundToInt(Start.Y / 100.f);
         const int32 EndX = FMath::RoundToInt(End.X / 100.f);

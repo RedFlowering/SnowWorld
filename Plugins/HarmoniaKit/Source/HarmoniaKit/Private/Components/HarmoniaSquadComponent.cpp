@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "Components/HarmoniaSquadComponent.h"
 #include "Core/HarmoniaCoreBFL.h"

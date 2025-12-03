@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "AI/BTTask_FleeFromTarget.h"
 #include "BehaviorTree/BlackboardComponent.h"

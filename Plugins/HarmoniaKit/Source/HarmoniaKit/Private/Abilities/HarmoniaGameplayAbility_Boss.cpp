@@ -1,4 +1,4 @@
-// Copyright 2024 Snow Game Studio.
+﻿// Copyright 2024 Snow Game Studio.
 
 #include "Abilities/HarmoniaGameplayAbility_Boss.h"
 #include "Monsters/HarmoniaBossMonster.h"

@@ -1,10 +1,10 @@
-// Copyright 2025 Snow Game Studio.
+ï»¿// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
 #include "HarmoniaInstancingSystemDefinitions.generated.h"
 
-// ÀÎ½ºÅÏ½ºµå ¿ÀºêÁ§Æ® À¯Çü
+// ï¿½Î½ï¿½ï¿½Ï½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½
 UENUM(BlueprintType)
 enum class EHarmoniaInstancedObjectType : uint8
 {
@@ -14,7 +14,7 @@ enum class EHarmoniaInstancedObjectType : uint8
     Decoration,
 };
 
-// °ø¿ë ÀÎ½ºÅÏ½º µ¥ÀÌÅÍ
+// ï¿½ï¿½ï¿½ï¿½ ï¿½Î½ï¿½ï¿½Ï½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 USTRUCT(BlueprintType)
 struct FHarmoniaInstancedObjectData
 {
@@ -22,26 +22,26 @@ struct FHarmoniaInstancedObjectData
 
     FHarmoniaInstancedObjectData() {}
 
-    // ¿ùµå ³» ÀÎ½ºÅÏ½º °íÀ¯ GUID
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Î½ï¿½ï¿½Ï½ï¿½ ï¿½ï¿½ï¿½ï¿½ GUID
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FGuid InstanceGuid;
 
-    // ÀÎ½ºÅÏ½º À¯Çü
+    // ï¿½Î½ï¿½ï¿½Ï½ï¿½ ï¿½ï¿½ï¿½ï¿½
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     EHarmoniaInstancedObjectType ObjectType = EHarmoniaInstancedObjectType::Item;
 
-    // µ¥ÀÌÅÍ ½Äº°ÀÚ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Äºï¿½ï¿½ï¿½
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FName DataId;
 
-    // °³¼ö/Ã¤Áý °¡´É È½¼ö µî
+    // ï¿½ï¿½ï¿½ï¿½/Ã¤ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ È½ï¿½ï¿½ ï¿½ï¿½
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     int32 Quantity = 1;
 
-    // ¿ùµå Æ®·£½ºÆû
+    // ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FTransform WorldTransform;
 
-    // ±âÅ¸ È®Àå µ¥ÀÌÅÍ 
-    // ÇÊ¿ä½Ã JSON µî, Ãß°¡ ±¸Á¶Ã¼ »ó¼Ó µîÀ¸·Î È®Àå °¡´É
+    // ï¿½ï¿½Å¸ È®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 
+    // ï¿½Ê¿ï¿½ï¿½ JSON ï¿½ï¿½, ï¿½ß°ï¿½ ï¿½ï¿½ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 };

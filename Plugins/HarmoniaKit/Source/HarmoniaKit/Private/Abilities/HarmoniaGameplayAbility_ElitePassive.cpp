@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Abilities/HarmoniaGameplayAbility_ElitePassive.h"
 #include "AbilitySystemComponent.h"

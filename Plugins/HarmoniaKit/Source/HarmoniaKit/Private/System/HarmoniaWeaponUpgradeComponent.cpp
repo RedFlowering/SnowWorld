@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "System/HarmoniaWeaponUpgradeComponent.h"
 #include "Net/UnrealNetwork.h"

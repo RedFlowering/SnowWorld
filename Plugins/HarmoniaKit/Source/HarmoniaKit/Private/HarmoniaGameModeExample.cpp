@@ -1,4 +1,4 @@
-// Copyright Snow Game Studio. All Rights Reserved.
+﻿// Copyright Snow Game Studio. All Rights Reserved.
 
 #include "HarmoniaGameModeExample.h"
 #include "System/HarmoniaCheatManager.h"

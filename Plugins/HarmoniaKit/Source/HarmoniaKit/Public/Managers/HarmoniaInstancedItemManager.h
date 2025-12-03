@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+ï»¿// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -11,9 +11,9 @@ class AActor;
 class AController;
 
 /**
- * ¿ÀÇÂ¿ùµå¿ë ÀÎ½ºÅÏ½º ¿ÀºêÁ§Æ® ¸Å´ÏÀú (UWorldSubsystem)
- * - µ¥ÀÌÅÍ¸¸ °ü¸® (¼­¹ö ¿À¼Ò¸®Æ¼)
- * - ÇÃ·¹ÀÌ¾î ±ÙÃ³ ÁøÀÔ ½Ã ¼­¹ö¿¡¼­ ¾×ÅÍ ½ºÆù/ÆÄ±« ¿äÃ» Ã³¸®
+ * ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½ï¿½ ï¿½Î½ï¿½ï¿½Ï½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½Å´ï¿½ï¿½ï¿½ (UWorldSubsystem)
+ * - ï¿½ï¿½ï¿½ï¿½ï¿½Í¸ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ò¸ï¿½Æ¼)
+ * - ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½Ã³ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½/ï¿½Ä±ï¿½ ï¿½ï¿½Ã» Ã³ï¿½ï¿½
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaInstancedItemManager : public UHarmoniaInstancedObjectManagerBase
@@ -21,9 +21,9 @@ class HARMONIAKIT_API UHarmoniaInstancedItemManager : public UHarmoniaInstancedO
     GENERATED_BODY()
 
 protected:
-    // ¾×ÅÍ ½ºÆù: ¾ÆÀÌÅÛ Å×ÀÌºí¿¡¼­ Å¬·¡½º Ã£¾Æ ¿ùµå¿¡ Spawn
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ìºï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ Ã£ï¿½ï¿½ ï¿½ï¿½ï¿½å¿¡ Spawn
     virtual AActor* SpawnWorldActor(const FHarmoniaInstancedObjectData& Data, AController* Requestor) override;
 
-    // ¾×ÅÍ ÆÄ±«: ÇÊ¿ä½Ã µ¥ÀÌÅÍ ¹Ý¿µ µî Ãß°¡ ±¸Çö °¡´É
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½Ä±ï¿½: ï¿½Ê¿ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ý¿ï¿½ ï¿½ï¿½ ï¿½ß°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     virtual void DestroyWorldActor(AActor* Actor) override;
 };

@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+ï»¿// Copyright 2025 Snow Game Studio.
 
 #include "Managers/HarmoniaInstancedObjectManagerBase.h"
 #include "GameFramework/Actor.h"
@@ -34,19 +34,19 @@ bool UHarmoniaInstancedObjectManagerBase::RemoveInstance(const FGuid& InstanceGu
     if (!InstanceMap.Contains(InstanceGuid))
         return false;
 
-    // Actor°¡ ½ºÆùµÈ »óÅÂ¸é ¸ÕÀú ÆÄ±«
+    // Actorï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ä±ï¿½
     SwapActorToInstance(InstanceGuid);
 
     InstanceMap.Remove(InstanceGuid);
     return true;
 }
 
-// ===== °øÅë ½º¿Ò ·ÎÁ÷ (Instance <-> Actor) =====
+// ===== ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (Instance <-> Actor) =====
 
 void UHarmoniaInstancedObjectManagerBase::OnPlayerApproachingInstance(const FGuid& InstanceGuid, AController* Requestor)
 {
-    // ÆÄ»ý¿¡¼­ ÇÊ¿äÇÏ¸é ¿À¹ö¶óÀÌµåÇÏ¿© ¼¾½º ½Ã½ºÅÛ ¿¬µ¿
-    // ±âº»: ±ÙÁ¢ ½Ã ÀÎ½ºÅÏ½º¸¦ ¾×ÅÍ·Î ½º¿Ò
+    // ï¿½Ä»ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¿ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìµï¿½ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+    // ï¿½âº»: ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Î½ï¿½ï¿½Ï½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Í·ï¿½ ï¿½ï¿½ï¿½ï¿½
     SwapInstanceToActor(InstanceGuid, Requestor);
 }
 
@@ -72,7 +72,7 @@ void UHarmoniaInstancedObjectManagerBase::SwapActorToInstance(const FGuid& Insta
     GuidToActorMap.Remove(InstanceGuid);
 }
 
-// ===== °¡»ó ÇÔ¼ö(Spawn/Destroy)´Â ÆÄ»ý ¸Å´ÏÀú¿¡¼­ ¹Ýµå½Ã ±¸Çö =====
+// ===== ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½(Spawn/Destroy)ï¿½ï¿½ ï¿½Ä»ï¿½ ï¿½Å´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ýµï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ =====
 void UHarmoniaInstancedObjectManagerBase::RegisterSpawnedActor(const FGuid& InstanceGuid, AActor* SpawnedActor)
 {
     if (InstanceGuid.IsValid() && SpawnedActor)

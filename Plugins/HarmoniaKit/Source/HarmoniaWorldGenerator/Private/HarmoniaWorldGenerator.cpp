@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+ï»¿// Copyright 2025 Snow Game Studio.
 
 #include "WorldGeneratorTypes.h"
 #include "PerlinNoiseHelper.h"
@@ -6,14 +6,14 @@
 void GenerateEarthLikeWorld(
     const FWorldGeneratorConfig& Config,
     TArray<FWorldObjectData>& OutObjects,
-    TArray<uint16>& OutHeightData, // Heightmap (Landscape ¿ë)
+    TArray<uint16>& OutHeightData, // Heightmap (Landscape ï¿½ï¿½)
     TMap<EWorldObjectType, TSoftClassPtr<AActor>> ActorClassMap
 )
 {
     int32 SizeX = Config.SizeX;
     int32 SizeY = Config.SizeY;
 
-    // 1. ÁöÇü(³ôÀÌ¸Ê) »ý¼º
+    // 1. ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½Ì¸ï¿½) ï¿½ï¿½ï¿½ï¿½
     OutHeightData.SetNumUninitialized(SizeX * SizeY);
 
     for (int32 Y = 0; Y < SizeY; ++Y)
@@ -32,7 +32,7 @@ void GenerateEarthLikeWorld(
         }
     }
 
-    // 2. ¿ÀºêÁ§Æ® ÀÚµ¿ ¹èÄ¡ (À°Áö¿¡¸¸)
+    // 2. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½Úµï¿½ ï¿½ï¿½Ä¡ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
     FRandomStream Random(Config.Seed);
     for (int32 i = 0; i < SizeX * SizeY * Config.ObjectDensity; ++i)
     {
@@ -40,7 +40,7 @@ void GenerateEarthLikeWorld(
         int32 Y = Random.RandRange(0, SizeY - 1);
         float HeightNorm = (float)OutHeightData[Y * SizeX + X] / 65535.f;
 
-        if (HeightNorm > Config.SeaLevel + 0.02f) // ¹Ù´Ù À§¸¸
+        if (HeightNorm > Config.SeaLevel + 0.02f) // ï¿½Ù´ï¿½ ï¿½ï¿½ï¿½ï¿½
         {
             FVector Location(X * 100.f, Y * 100.f, HeightNorm * Config.MaxHeight);
             EWorldObjectType ObjType = (Random.FRand() > 0.7f) ? EWorldObjectType::Tree : EWorldObjectType::Rock;

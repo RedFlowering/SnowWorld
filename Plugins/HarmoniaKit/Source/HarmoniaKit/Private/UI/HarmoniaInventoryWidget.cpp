@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "UI/HarmoniaInventoryWidget.h"
 #include "Definitions/HarmoniaInventorySystemDefinitions.h"

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 RedFlowering. All Rights Reserved.
+﻿// Copyright (c) 2025 RedFlowering. All Rights Reserved.
 
 #include "Components/HarmoniaRaidComponent.h"
 
@@ -24,7 +24,7 @@ bool UHarmoniaRaidComponent::AddMember(const FRaidMemberInfo& MemberInfo)
 		return false;
 	}
 
-	// ?�이???�원 ?�한 ?�인
+	// ?�이???�원 ?�한 ?�인
 	if (CurrentRaidData)
 	{
 		if (RaidMembers.Num() >= CurrentRaidData->MaxRaidSize)
@@ -150,7 +150,7 @@ void UHarmoniaRaidComponent::OnMemberDeath(const FString& PlayerID)
 		Member->bIsAlive = false;
 		OnRaidMemberDied.Broadcast(PlayerID, Member->RemainingRevives);
 
-		// ?�멸 체크
+		// ?�멸 체크
 		if (IsWiped())
 		{
 			ProcessWipe();
@@ -166,7 +166,7 @@ bool UHarmoniaRaidComponent::ReviveMember(const FString& PlayerID)
 		return false;
 	}
 
-	// 부??가???��? ?�인
+	// 부??가???��? ?�인
 	if (Member->RemainingRevives <= 0 && UsedRevives >= GlobalReviveLimit)
 	{
 		return false;
@@ -174,7 +174,7 @@ bool UHarmoniaRaidComponent::ReviveMember(const FString& PlayerID)
 
 	Member->bIsAlive = true;
 
-	// 부???�수 차감
+	// 부???�수 차감
 	if (Member->RemainingRevives > 0)
 	{
 		Member->RemainingRevives--;
@@ -214,14 +214,14 @@ bool UHarmoniaRaidComponent::ValidateRoleComposition(const URaidDataAsset* RaidD
 		return false;
 	}
 
-	// 최소/최�? ?�원 ?�인
+	// 최소/최�? ?�원 ?�인
 	int32 RaidSize = GetRaidSize();
 	if (RaidSize < RaidData->MinRaidSize || RaidSize > RaidData->MaxRaidSize)
 	{
 		return false;
 	}
 
-	// ??�� 구성 ?�인
+	// ??�� 구성 ?�인
 	TMap<ERaidRole, int32> CurrentDistribution = GetRoleDistribution();
 
 	for (const auto& Pair : RaidData->RecommendedRoleComposition)
@@ -229,7 +229,7 @@ bool UHarmoniaRaidComponent::ValidateRoleComposition(const URaidDataAsset* RaidD
 		const int32* CurrentCount = CurrentDistribution.Find(Pair.Key);
 		if (!CurrentCount || *CurrentCount < Pair.Value)
 		{
-			// 권장 ??�� 부�?
+			// 권장 ??�� 부�?
 			UE_LOG(LogTemp, Warning, TEXT("Insufficient role: %d"), static_cast<int32>(Pair.Key));
 		}
 	}
@@ -256,13 +256,13 @@ void UHarmoniaRaidComponent::ProcessWipe()
 
 	UE_LOG(LogTemp, Log, TEXT("Raid wiped at phase %d"), CurrentPhase);
 
-	// 모든 멤버 부???�태 초기??
+	// 모든 멤버 부???�태 초기??
 	for (auto& Pair : RaidMembers)
 	{
 		Pair.Value.bIsAlive = true;
 	}
 
-	// ?�이�?초기??
+	// ?�이�?초기??
 	CurrentPhase = 0;
 	UsedRevives = 0;
 }

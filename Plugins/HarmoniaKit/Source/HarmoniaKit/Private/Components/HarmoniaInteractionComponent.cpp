@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "Components/HarmoniaInteractionComponent.h"
 #include "Core/HarmoniaCoreBFL.h"
@@ -14,7 +14,7 @@ void UHarmoniaInteractionComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-    // 매니?� 캐싱 ?�득
+    // 매니?� 캐싱 ?�득
     InteractionManager = UHarmoniaCoreBFL::GetGameInstanceSubsystem<UHarmoniaInteractionManager>(this);
 }
 
@@ -34,21 +34,21 @@ void UHarmoniaInteractionComponent::Interact()
 
 	if (InteractionManager && Target)
 	{
-		// ?�터?�션 컨텍?�트 ?�성
+		// ?�터?�션 컨텍?�트 ?�성
 		FHarmoniaInteractionContext Context;
 		Context.Interactor = GetOwner();
 		Context.Interactable = Target;
-		Context.InteractionType = EHarmoniaInteractionType::Custom; // ?��? ?�황??맞게
+		Context.InteractionType = EHarmoniaInteractionType::Custom; // ?��? ?�황??맞게
 
-		// 매니?�?�게 ?�터?�션 ?�청
+		// 매니?�?�게 ?�터?�션 ?�청
 		if (GetOwner() && GetOwner()->HasAuthority())
 		{
-			// ?�버?�서??바로 처리
+			// ?�버?�서??바로 처리
 			InteractionManager->TryInteract(Context);
 		}
 		else
 		{
-			// ?�라?�언?�에?�는 RPC ?�출
+			// ?�라?�언?�에?�는 RPC ?�출
 			Server_TryInteract(Context);
 		}
 	}
@@ -74,7 +74,7 @@ bool UHarmoniaInteractionComponent::Server_TryInteract_Validate(const FHarmoniaI
 
         if (Dist <= MaxDistance)
         {
-            // ?�공?? 거리?� ??검�?
+            // ?�공?? 거리?� ??검�?
 
             return true;
         }

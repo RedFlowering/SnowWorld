@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -16,24 +16,24 @@
 UENUM(BlueprintType)
 enum class EHarmoniaCurrencyType : uint8
 {
-	None			UMETA(DisplayName = "None"),			// ?�음
+	None			UMETA(DisplayName = "None"),			// ?�음
 	
 	// Economy currencies
 	Gold			UMETA(DisplayName = "Gold"),			// 기본 골드
-	Premium			UMETA(DisplayName = "Premium"),			// ?�리미엄 ?�화 (캐시)
-	Honor			UMETA(DisplayName = "Honor"),			// 명예 ?�인??
-	Arena			UMETA(DisplayName = "Arena"),			// ?�레???�인??
-	Guild			UMETA(DisplayName = "Guild"),			// 길드 ?�인??
-	Event			UMETA(DisplayName = "Event"),			// ?�벤???�화
-	Reputation		UMETA(DisplayName = "Reputation"),		// ?�판 ?�인??
+	Premium			UMETA(DisplayName = "Premium"),			// ?�리미엄 ?�화 (캐시)
+	Honor			UMETA(DisplayName = "Honor"),			// 명예 ?�인??
+	Arena			UMETA(DisplayName = "Arena"),			// ?�레???�인??
+	Guild			UMETA(DisplayName = "Guild"),			// 길드 ?�인??
+	Event			UMETA(DisplayName = "Event"),			// ?�벤???�화
+	Reputation		UMETA(DisplayName = "Reputation"),		// ?�판 ?�인??
 	
 	// Death Penalty currencies
-	MemoryEssence		UMETA(DisplayName = "Memory Essence"),	// 기억???�수
-	SoulCrystals		UMETA(DisplayName = "Soul Crystals"),	// ?�혼 ?�정
-	ForgottenKnowledge	UMETA(DisplayName = "Forgotten Knowledge"),	// ?��?�?지??
-	TimeFragments		UMETA(DisplayName = "Time Fragments"),	// ?�간 ?�편
+	MemoryEssence		UMETA(DisplayName = "Memory Essence"),	// 기억???�수
+	SoulCrystals		UMETA(DisplayName = "Soul Crystals"),	// ?�혼 ?�정
+	ForgottenKnowledge	UMETA(DisplayName = "Forgotten Knowledge"),	// ?��?�?지??
+	TimeFragments		UMETA(DisplayName = "Time Fragments"),	// ?�간 ?�편
 	
-	Custom			UMETA(DisplayName = "Custom"),			// 커스?� (?�그�?지??
+	Custom			UMETA(DisplayName = "Custom"),			// 커스?� (?�그�?지??
 	MAX				UMETA(Hidden)
 };
 
@@ -46,14 +46,14 @@ using ECurrencyType = EHarmoniaCurrencyType;
 UENUM(BlueprintType)
 enum class EHarmoniaShopType : uint8
 {
-	General			UMETA(DisplayName = "General"),			// ?�화??
-	Weapon			UMETA(DisplayName = "Weapon"),			// 무기?�점
+	General			UMETA(DisplayName = "General"),			// ?�화??
+	Weapon			UMETA(DisplayName = "Weapon"),			// 무기?�점
 	Armor			UMETA(DisplayName = "Armor"),			// 방어구상??
-	Consumable		UMETA(DisplayName = "Consumable"),		// ?�비??
-	Material		UMETA(DisplayName = "Material"),		// ?�료?�점
-	Premium			UMETA(DisplayName = "Premium"),			// ?�리미엄 ??
-	Guild			UMETA(DisplayName = "Guild"),			// 길드 ?�점
-	Event			UMETA(DisplayName = "Event"),			// ?�벤???�점
+	Consumable		UMETA(DisplayName = "Consumable"),		// ?�비??
+	Material		UMETA(DisplayName = "Material"),		// ?�료?�점
+	Premium			UMETA(DisplayName = "Premium"),			// ?�리미엄 ??
+	Guild			UMETA(DisplayName = "Guild"),			// 길드 ?�점
+	Event			UMETA(DisplayName = "Event"),			// ?�벤???�점
 	Auction			UMETA(DisplayName = "Auction"),			// 경매??
 	MAX				UMETA(Hidden)
 };
@@ -83,9 +83,9 @@ UENUM(BlueprintType)
 enum class ETransactionType : uint8
 {
 	Buy				UMETA(DisplayName = "Buy"),				// 구매
-	Sell			UMETA(DisplayName = "Sell"),			// ?�매
+	Sell			UMETA(DisplayName = "Sell"),			// ?�매
 	Trade			UMETA(DisplayName = "Trade"),			// 교환
-	Refund			UMETA(DisplayName = "Refund"),			// ?�불
+	Refund			UMETA(DisplayName = "Refund"),			// ?�불
 	MAX				UMETA(Hidden)
 };
 

@@ -1,11 +1,11 @@
-// Copyright 2025 Snow Game Studio.
+ï»¿// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
 #include "Definitions/HarmoniaCoreDefinitions.h"
 #include "HarmoniaInventorySystemDefinitions.generated.h"
 
-// ÀÎº¥Åä¸® ½½·Ô
+// ï¿½Îºï¿½ï¿½ä¸® ï¿½ï¿½ï¿½ï¿½
 USTRUCT(BlueprintType)
 struct FInventorySlot
 {
@@ -14,11 +14,11 @@ struct FInventorySlot
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     int32 Index = 0;
 
-    // ¾ÆÀÌÅÛ °íÀ¯ ½Äº°ÀÚ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Äºï¿½ï¿½ï¿½
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FHarmoniaID ItemID = FHarmoniaID();
 
-    // ¼ö·®
+    // ï¿½ï¿½ï¿½ï¿½
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     int32 Count = 0;
 
@@ -31,17 +31,17 @@ struct FInventorySlot
     FInventorySlot(int32 InIndex, FHarmoniaID InId, int32 InCount, float InDurability) : Index(InIndex), ItemID(InId), Count(InCount), Durability(InDurability) {}
 };
 
-// ÀÎº¥Åä¸® ÀüÃ¼ µ¥ÀÌÅÍ
+// ï¿½Îºï¿½ï¿½ä¸® ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 USTRUCT(BlueprintType)
 struct FInventoryData
 {
     GENERATED_BODY()
 
-    // ½½·Ô ¹è¿­
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½è¿­
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TArray<FInventorySlot> Slots;
 
-    // ÀÎº¥Åä¸® ÃÖ´ë ½½·Ô °³¼ö
+    // ï¿½Îºï¿½ï¿½ä¸® ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     int32 MaxSlotCount = 20;
 

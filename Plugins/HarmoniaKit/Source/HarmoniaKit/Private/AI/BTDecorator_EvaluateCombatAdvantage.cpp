@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "AI/BTDecorator_EvaluateCombatAdvantage.h"
 #include "BehaviorTree/BlackboardComponent.h"

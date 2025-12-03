@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+ï»¿// Copyright 2025 Snow Game Studio.
 
 #include "UI/HarmoniaInventorySlotWidget.h"
 #include "UI/HarmoniaInventoryWidget.h"
@@ -13,7 +13,7 @@
 void UHarmoniaInventorySlotWidget::NativeConstruct()
 {
     Super::NativeConstruct();
-    // ÃÊ±âÈ­
+    // ï¿½Ê±ï¿½È­
     SetSlotData(FInventorySlot(), nullptr, nullptr);
 }
 
@@ -78,7 +78,7 @@ FReply UHarmoniaInventorySlotWidget::NativeOnMouseButtonDown(const FGeometry& In
 
 void UHarmoniaInventorySlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation)
 {
-    // Drag & Drop ¿ÀÆÛ·¹ÀÌ¼Ç »ý¼º
+    // Drag & Drop ï¿½ï¿½ï¿½Û·ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½ï¿½
     UInventoryDragDropOperation* DragOp = NewObject<UInventoryDragDropOperation>();
     DragOp->SourceSlotIndex = Slot.Index;
 
@@ -114,7 +114,7 @@ void UHarmoniaInventorySlotWidget::NativeOnDragCancelled(const FDragDropEvent& I
 
     if (DragOp && InventoryComponent && ParentWidget)
     {
-        // ½ÇÁ¦·Î "¹ö¸®±â" Ã³¸® (¿ùµå µå¶ø, ÀÎº¥Åä¸® »èÁ¦ µî)
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" Ã³ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½, ï¿½Îºï¿½ï¿½ä¸® ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½)
         int32 From = DragOp->SourceSlotIndex;
 
         InventoryComponent->RequestDropItem(From);

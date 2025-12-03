@@ -1,4 +1,4 @@
-// Copyright Snow Game Studio. All Rights Reserved.
+﻿// Copyright Snow Game Studio. All Rights Reserved.
 
 #pragma once
 

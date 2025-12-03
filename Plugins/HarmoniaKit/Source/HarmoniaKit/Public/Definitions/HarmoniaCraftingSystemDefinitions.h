@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -13,12 +13,12 @@
 UENUM(BlueprintType)
 enum class EItemGrade : uint8
 {
-	Common			UMETA(DisplayName = "Common"),			// ?�반
+	Common			UMETA(DisplayName = "Common"),			// ?�반
 	Uncommon		UMETA(DisplayName = "Uncommon"),		// 고급
-	Rare			UMETA(DisplayName = "Rare"),			// ?��?
-	Epic			UMETA(DisplayName = "Epic"),			// ?�웅
-	Legendary		UMETA(DisplayName = "Legendary"),		// ?�설
-	Mythic			UMETA(DisplayName = "Mythic"),			// ?�화
+	Rare			UMETA(DisplayName = "Rare"),			// ?��?
+	Epic			UMETA(DisplayName = "Epic"),			// ?�웅
+	Legendary		UMETA(DisplayName = "Legendary"),		// ?�설
+	Mythic			UMETA(DisplayName = "Mythic"),			// ?�화
 	MAX				UMETA(Hidden)
 };
 
@@ -28,9 +28,9 @@ enum class EItemGrade : uint8
 UENUM(BlueprintType)
 enum class ECraftingResult : uint8
 {
-	Success			UMETA(DisplayName = "Success"),			// ?�작 ?�공
-	Failure			UMETA(DisplayName = "Failure"),			// ?�작 ?�패
-	CriticalSuccess	UMETA(DisplayName = "Critical Success"),// ?�?�공 (추�? 보상 ??
+	Success			UMETA(DisplayName = "Success"),			// ?�작 ?�공
+	Failure			UMETA(DisplayName = "Failure"),			// ?�작 ?�패
+	CriticalSuccess	UMETA(DisplayName = "Critical Success"),// ?�?�공 (추�? 보상 ??
 	Cancelled		UMETA(DisplayName = "Cancelled")		// 취소??
 };
 
@@ -41,19 +41,19 @@ enum class ECraftingResult : uint8
 UENUM(BlueprintType)
 enum class ECraftingStationType : uint8
 {
-	None			UMETA(DisplayName = "None"),			// ?�디?�나 ?�작 가??(?�으�?
-	Anvil			UMETA(DisplayName = "Anvil"),			// ?�?�간 모루
-	Forge			UMETA(DisplayName = "Forge"),			// ?�광�?
-	WorkBench		UMETA(DisplayName = "Work Bench"),		// ?�업?�
-	CookingPot		UMETA(DisplayName = "Cooking Pot"),		// ?�리 ?�비
-	CampFire		UMETA(DisplayName = "Camp Fire"),		// 캠프?�이??
-	AlchemyTable	UMETA(DisplayName = "Alchemy Table"),	// ?�금???�이�?
-	SewingTable		UMETA(DisplayName = "Sewing Table"),	// ?�봉?�
-	TanningRack		UMETA(DisplayName = "Tanning Rack"),	// 무두�??�반
-	Loom			UMETA(DisplayName = "Loom"),			// 베�?
-	GrindStone		UMETA(DisplayName = "Grind Stone"),		// ?�돌
-	Enchanting		UMETA(DisplayName = "Enchanting"),		// 마법 부?��?
-	Custom			UMETA(DisplayName = "Custom"),			// 커스?� (?�그�?지??
+	None			UMETA(DisplayName = "None"),			// ?�디?�나 ?�작 가??(?�으�?
+	Anvil			UMETA(DisplayName = "Anvil"),			// ?�?�간 모루
+	Forge			UMETA(DisplayName = "Forge"),			// ?�광�?
+	WorkBench		UMETA(DisplayName = "Work Bench"),		// ?�업?�
+	CookingPot		UMETA(DisplayName = "Cooking Pot"),		// ?�리 ?�비
+	CampFire		UMETA(DisplayName = "Camp Fire"),		// 캠프?�이??
+	AlchemyTable	UMETA(DisplayName = "Alchemy Table"),	// ?�금???�이�?
+	SewingTable		UMETA(DisplayName = "Sewing Table"),	// ?�봉?�
+	TanningRack		UMETA(DisplayName = "Tanning Rack"),	// 무두�??�반
+	Loom			UMETA(DisplayName = "Loom"),			// 베�?
+	GrindStone		UMETA(DisplayName = "Grind Stone"),		// ?�돌
+	Enchanting		UMETA(DisplayName = "Enchanting"),		// 마법 부?��?
+	Custom			UMETA(DisplayName = "Custom"),			// 커스?� (?�그�?지??
 	MAX				UMETA(Hidden)
 };
 
@@ -63,13 +63,13 @@ enum class ECraftingStationType : uint8
 UENUM(BlueprintType)
 enum class EHarmoniaRecipeDifficulty : uint8
 {
-	Trivial			UMETA(DisplayName = "Trivial"),			// 매우 ?��?
-	Easy			UMETA(DisplayName = "Easy"),			// ?��?
+	Trivial			UMETA(DisplayName = "Trivial"),			// 매우 ?��?
+	Easy			UMETA(DisplayName = "Easy"),			// ?��?
 	Normal			UMETA(DisplayName = "Normal"),			// 보통
-	Hard			UMETA(DisplayName = "Hard"),			// ?�려?�
-	Expert			UMETA(DisplayName = "Expert"),			// ?�문가
+	Hard			UMETA(DisplayName = "Hard"),			// ?�려?�
+	Expert			UMETA(DisplayName = "Expert"),			// ?�문가
 	Master			UMETA(DisplayName = "Master"),			// 마스??
-	Legendary		UMETA(DisplayName = "Legendary"),		// ?�설
+	Legendary		UMETA(DisplayName = "Legendary"),		// ?�설
 	MAX				UMETA(Hidden)
 };
 
@@ -79,12 +79,12 @@ enum class EHarmoniaRecipeDifficulty : uint8
 UENUM(BlueprintType)
 enum class EHarmoniaCraftingResult : uint8
 {
-	Success				UMETA(DisplayName = "Success"),				// ?�작 ?�공
-	Failure				UMETA(DisplayName = "Failure"),				// ?�작 ?�패
-	CriticalSuccess		UMETA(DisplayName = "Critical Success"),	// ?�?�공 (추�? 보상 ??
+	Success				UMETA(DisplayName = "Success"),				// ?�작 ?�공
+	Failure				UMETA(DisplayName = "Failure"),				// ?�작 ?�패
+	CriticalSuccess		UMETA(DisplayName = "Critical Success"),	// ?�?�공 (추�? 보상 ??
 	Cancelled			UMETA(DisplayName = "Cancelled"),			// 취소??
-	InvalidRecipe		UMETA(DisplayName = "Invalid Recipe"),		// ?�못???�시??
-	InsufficientMaterials	UMETA(DisplayName = "Insufficient Materials"),	// ?�료 부�?
+	InvalidRecipe		UMETA(DisplayName = "Invalid Recipe"),		// ?�못???�시??
+	InsufficientMaterials	UMETA(DisplayName = "Insufficient Materials"),	// ?�료 부�?
 	MAX					UMETA(Hidden)
 };
 

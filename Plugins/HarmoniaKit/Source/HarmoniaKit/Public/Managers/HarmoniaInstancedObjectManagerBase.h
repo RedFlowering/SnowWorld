@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+ï»¿// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -12,9 +12,9 @@ class AActor;
 class AController;
 
 /**
- * ÀÎ½ºÅÏ½º ¿ÀºêÁ§Æ® º£ÀÌ½º ¸Å´ÏÀú(Ãß»ó)
- * - ÀÎ½ºÅÏ½Ì ¸Þ½Ã ¡ê ¾×ÅÍ ½º¿Ò µî °øÅë ·ÎÁ÷ Á¦°ø
- * - ½ÇÁ¦ ½ºÆù/µ¥ÀÌÅÍ È®ÀåÀº ÆÄ»ý¿¡¼­ ±¸Çö
+ * ï¿½Î½ï¿½ï¿½Ï½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½Ì½ï¿½ ï¿½Å´ï¿½ï¿½ï¿½(ï¿½ß»ï¿½)
+ * - ï¿½Î½ï¿½ï¿½Ï½ï¿½ ï¿½Þ½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+ * - ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ï¿½ï¿½ ï¿½Ä»ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
  */
 UCLASS(Abstract)
 class HARMONIAKIT_API UHarmoniaInstancedObjectManagerBase : public UWorldSubsystem
@@ -22,26 +22,26 @@ class HARMONIAKIT_API UHarmoniaInstancedObjectManagerBase : public UWorldSubsyst
     GENERATED_BODY()
 
 public:
-    // ÀÎ½ºÅÏ½º Ãß°¡/»èÁ¦ (°øÅë)
+    // ï¿½Î½ï¿½ï¿½Ï½ï¿½ ï¿½ß°ï¿½/ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½)
     FGuid AddInstance(const FHarmoniaInstancedObjectData& Data);
     bool RemoveInstance(const FGuid& InstanceGuid);
 
-    // ±ÙÁ¢/»óÈ£ÀÛ¿ë Æ®¸®°Å(¼­¹ö Only)
+    // ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½È£ï¿½Û¿ï¿½ Æ®ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ Only)
     virtual void OnPlayerApproachingInstance(const FGuid& InstanceGuid, AController* Requestor);
 
-    // (°øÅë) ÀÎ½ºÅÏ½Ì ¸Þ½Ã ¡ê ¾×ÅÍ ½º¿Ò ÇÔ¼ö
+    // (ï¿½ï¿½ï¿½ï¿½) ï¿½Î½ï¿½ï¿½Ï½ï¿½ ï¿½Þ½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½
     void SwapInstanceToActor(const FGuid& InstanceGuid, AController* Requestor);
     void SwapActorToInstance(const FGuid& InstanceGuid);
 
-    // ÆÄ»ý¿¡¼­ ½ÇÁ¦ ¾×ÅÍ ½ºÆù/ÆÄ±« ±¸Çö (Ãß»ó)
+    // ï¿½Ä»ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½/ï¿½Ä±ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ß»ï¿½)
     virtual AActor* SpawnWorldActor(const FHarmoniaInstancedObjectData& Data, AController* Requestor) PURE_VIRTUAL(UHarmoniaInstancedObjectManagerBase::SpawnWorldActor, return nullptr;);
     virtual void DestroyWorldActor(AActor * Actor) PURE_VIRTUAL(UHarmoniaInstancedObjectManagerBase::DestroyWorldActor, );
 
-    // ¾×ÅÍ-ÀÎ½ºÅÏ½º ¸ÅÇÎ µî·Ï/ÇØÁ¦
+    // ï¿½ï¿½ï¿½ï¿½-ï¿½Î½ï¿½ï¿½Ï½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½
     virtual void RegisterSpawnedActor(const FGuid& InstanceGuid, AActor* SpawnedActor);
     virtual void UnregisterSpawnedActor(const FGuid& InstanceGuid);
 
-    // (°øÅë) °ü¸®¿ë µ¥ÀÌÅÍ
+    // (ï¿½ï¿½ï¿½ï¿½) ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     TMap<FGuid, FHarmoniaInstancedObjectData> InstanceMap;
     TMap<FGuid, TWeakObjectPtr<AActor>> GuidToActorMap;
 

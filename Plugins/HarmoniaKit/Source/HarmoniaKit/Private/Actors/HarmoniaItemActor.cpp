@@ -1,16 +1,16 @@
-// Copyright 2025 Snow Game Studio.
+ï»¿// Copyright 2025 Snow Game Studio.
 
 #include "Actors/HarmoniaItemActor.h"
 #include "Net/UnrealNetwork.h"
 #include "Components/StaticMeshComponent.h"
 
-// »ý¼ºÀÚ
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 AHarmoniaItemActor::AHarmoniaItemActor()
 {
     PrimaryActorTick.bCanEverTick = false;
     bReplicates = true;
 
-    // ¿ùµå¿¡ Ç¥½ÃÇÒ ÇÁ¸®ºä ¸Þ½Ã
+    // ï¿½ï¿½ï¿½å¿¡ Ç¥ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Þ½ï¿½
     PreviewMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PreviewMesh"));
     RootComponent = PreviewMesh;
     PreviewMesh->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
@@ -21,10 +21,10 @@ AHarmoniaItemActor::AHarmoniaItemActor()
 void AHarmoniaItemActor::BeginPlay()
 {
     Super::BeginPlay();
-    // ¸Þ½Ã/ÀçÁú µî µ¿Àû ¼¼ÆÃ
+    // ï¿½Þ½ï¿½/ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 }
 
-// ³×Æ®¿öÅ© µ¿±âÈ­ ÇÁ·ÎÆÛÆ¼ ¼±¾ð
+// ï¿½ï¿½Æ®ï¿½ï¿½Å© ï¿½ï¿½ï¿½ï¿½È­ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¼ ï¿½ï¿½ï¿½ï¿½
 void AHarmoniaItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);

@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -12,12 +12,12 @@
 UENUM(BlueprintType)
 enum class ECollectionItemType : uint8
 {
-	Item			UMETA(DisplayName = "Item"),			// ?�이??
+	Item			UMETA(DisplayName = "Item"),			// ?�이??
 	Monster			UMETA(DisplayName = "Monster"),			// 몬스??
-	Location		UMETA(DisplayName = "Location"),		// 지???�소
+	Location		UMETA(DisplayName = "Location"),		// 지???�소
 	Character		UMETA(DisplayName = "Character"),		// NPC/캐릭??
-	Lore			UMETA(DisplayName = "Lore"),			// ?�야�??�정
-	Custom			UMETA(DisplayName = "Custom"),			// 커스?�
+	Lore			UMETA(DisplayName = "Lore"),			// ?�야�??�정
+	Custom			UMETA(DisplayName = "Custom"),			// 커스?�
 	MAX				UMETA(Hidden)
 };
 
@@ -27,9 +27,9 @@ enum class ECollectionItemType : uint8
 UENUM(BlueprintType)
 enum class ECollectionState : uint8
 {
-	Unknown			UMETA(DisplayName = "Unknown"),			// 미발�?
-	Seen			UMETA(DisplayName = "Seen"),			// 발견??(?�득?� ?�함)
-	Collected		UMETA(DisplayName = "Collected"),		// ?�집??
+	Unknown			UMETA(DisplayName = "Unknown"),			// 미발�?
+	Seen			UMETA(DisplayName = "Seen"),			// 발견??(?�득?� ?�함)
+	Collected		UMETA(DisplayName = "Collected"),		// ?�집??
 	MAX				UMETA(Hidden)
 };
 

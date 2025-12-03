@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "Inventory/HarmoniaInventoryFragment_StatModifiers.h"
 #include "Inventory/LyraInventoryItemInstance.h"

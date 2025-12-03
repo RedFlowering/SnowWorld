@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "Actors/HarmoniaProjectile.h"
 #include "Components/SphereComponent.h"

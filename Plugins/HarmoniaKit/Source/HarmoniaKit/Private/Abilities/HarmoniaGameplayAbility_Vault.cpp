@@ -1,4 +1,4 @@
-// Copyright RedFlowering. All Rights Reserved.
+﻿// Copyright RedFlowering. All Rights Reserved.
 
 #include "Abilities/HarmoniaGameplayAbility_Vault.h"
 #include "HarmoniaGameplayTags.h"

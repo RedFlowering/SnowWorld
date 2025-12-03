@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -13,9 +13,9 @@
 UENUM(BlueprintType)
 enum class EAchievementState : uint8
 {
-	Locked			UMETA(DisplayName = "Locked"),			// ?��?
-	Unlocked		UMETA(DisplayName = "Unlocked"),		// ?�금??
-	Hidden			UMETA(DisplayName = "Hidden"),			// ?�겨�?(조건 ?�성 ?�까지 보이지 ?�음)
+	Locked			UMETA(DisplayName = "Locked"),			// ?��?
+	Unlocked		UMETA(DisplayName = "Unlocked"),		// ?�금??
+	Hidden			UMETA(DisplayName = "Hidden"),			// ?�겨�?(조건 ?�성 ?�까지 보이지 ?�음)
 	MAX				UMETA(Hidden)
 };
 
@@ -25,8 +25,8 @@ enum class EAchievementState : uint8
 UENUM(BlueprintType)
 enum class EAchievementType : uint8
 {
-	Standard		UMETA(DisplayName = "Standard"),		// ?�반 ?�적 (?�발??
-	Progressive		UMETA(DisplayName = "Progressive"),		// 진행???�적 (?�적 카운??
+	Standard		UMETA(DisplayName = "Standard"),		// ?�반 ?�적 (?�발??
+	Progressive		UMETA(DisplayName = "Progressive"),		// 진행???�적 (?�적 카운??
 	MAX				UMETA(Hidden)
 };
 

@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "Animation/AnimNotifyState_PlayTaggedWeaponTrail.h"
 #include "System/HarmoniaEffectCacheSubsystem.h"

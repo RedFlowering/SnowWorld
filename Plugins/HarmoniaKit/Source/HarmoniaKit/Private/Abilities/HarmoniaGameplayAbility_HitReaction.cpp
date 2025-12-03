@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "Abilities/HarmoniaGameplayAbility_HitReaction.h"
 #include "HarmoniaGameplayTags.h"

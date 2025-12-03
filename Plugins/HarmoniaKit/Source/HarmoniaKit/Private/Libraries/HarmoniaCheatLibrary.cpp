@@ -1,4 +1,4 @@
-// Copyright Snow Game Studio. All Rights Reserved.
+﻿// Copyright Snow Game Studio. All Rights Reserved.
 
 #include "Libraries/HarmoniaCheatLibrary.h"
 #include "System/HarmoniaCheatManager.h"
@@ -51,7 +51,7 @@ bool UHarmoniaCheatLibrary::IsCheatsEnabled(const UObject* WorldContextObject)
 		return false;
 	}
 
-	// CheatManager가 ?�으�?치트가 ?�성?�된 �?
+	// CheatManager가 ?�으�?치트가 ?�성?�된 �?
 	return PC->CheatManager != nullptr;
 }
 
