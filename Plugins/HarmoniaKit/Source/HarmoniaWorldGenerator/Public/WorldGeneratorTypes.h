@@ -1,11 +1,27 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file WorldGeneratorTypes.h
+ * @brief 월드 생성 시스템에서 사용하는 모든 타입 정의
+ * 
+ * 이 파일에는 다음이 포함됩니다:
+ * - 월드 오브젝트 타입 (나무, 바위, 구조물 등)
+ * - Biome 타입 및 설정
+ * - 지형 생성 설정 (Perlin Noise 파라미터)
+ * - 강, 호수, 도로 생성 설정
+ * - 환경 시스템 설정 (계절, 날씨, 낮/밤)
+ * - 델리게이트 선언
+ */
+
 #pragma once
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 #include "WorldGeneratorTypes.generated.h"
 
+//=============================================================================
+// World Object Types
+//=============================================================================
 UENUM(BlueprintType)
 enum class EWorldObjectType : uint8
 {
@@ -19,9 +35,9 @@ enum class EWorldObjectType : uint8
 	OreVein     UMETA(DisplayName = "Ore Vein"),
 };
 
-/**
- * POI (Point of Interest) Types
- */
+//=============================================================================
+// POI (Point of Interest) Types
+//=============================================================================
 UENUM(BlueprintType)
 enum class EPOIType : uint8
 {

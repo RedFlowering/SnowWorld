@@ -1,5 +1,13 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file HarmoniaWorldGeneratorSubsystem.cpp
+ * @brief 월드 생성 서브시스템 구현
+ * 
+ * Perlin Noise 기반 지형 생성 및 월드 오브젝트 배치를 구현합니다.
+ * 청크 기반 처리로 에디터 프리징을 방지합니다.
+ */
+
 #include "HarmoniaWorldGeneratorSubsystem.h"
 #include "PathfindingHelper.h"
 #include "LandscapeEdit.h"

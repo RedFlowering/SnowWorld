@@ -1,5 +1,15 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file ObjectPlacementHelper.h
+ * @brief 오브젝트 배치 유틸리티 함수 정의
+ * 
+ * 월드 오브젝트 배치를 위한 유틸리티 함수를 제공합니다:
+ * - Poisson Disk Sampling 기반 균등 분포
+ * - 충돌 검사 및 최적 위치 탐색
+ * - 경계 내 유효성 검사
+ */
+
 #pragma once
 
 #include "CoreMinimal.h"

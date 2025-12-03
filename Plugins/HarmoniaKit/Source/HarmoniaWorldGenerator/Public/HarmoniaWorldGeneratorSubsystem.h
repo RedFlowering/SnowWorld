@@ -1,5 +1,17 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file HarmoniaWorldGeneratorSubsystem.h
+ * @brief 월드 생성 서브시스템 정의
+ * 
+ * 절차적 월드 생성의 메인 API를 제공합니다:
+ * - Heightmap 생성 (Perlin Noise 기반)
+ * - Biome, 강, 호수, 도로 생성
+ * - 동굴, POI, 자원 분포 생성
+ * - 환경 시스템 (계절, 날씨, 낮/밤 주기)
+ * - 비동기 생성 및 청크 기반 처리
+ */
+
 #pragma once
 
 #include "Subsystems/GameInstanceSubsystem.h"

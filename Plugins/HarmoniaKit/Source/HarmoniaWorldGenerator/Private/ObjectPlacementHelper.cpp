@@ -1,6 +1,17 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file ObjectPlacementHelper.cpp
+ * @brief 오브젝트 배치 유틸리티 함수 구현
+ * 
+ * Poisson Disk Sampling 및 충돌 검사 알고리즘을 구현합니다.
+ */
+
 #include "ObjectPlacementHelper.h"
+
+//=============================================================================
+// Placement Validation
+//=============================================================================
 
 bool ObjectPlacementHelper::IsPlacementValid(
 	const FVector& Location,

@@ -1,11 +1,21 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file WorldGeneratorTypes_Additions.h
+ * @brief 월드 생성 추가 타입 정의
+ * 
+ * WorldGeneratorTypes.h의 추가 타입들:
+ * - 청크 생성 델리게이트
+ * - Poisson Disk Sampling 설정
+ * - 파라미터 고급 설정
+ */
+
 #pragma once
 #include "WorldGeneratorTypes_Additions.generated.h"
 
-// ========================================
+//=============================================================================
 // Delegate Additions
-// ========================================
+//=============================================================================
 
 /**
  * Delegate for chunk generation

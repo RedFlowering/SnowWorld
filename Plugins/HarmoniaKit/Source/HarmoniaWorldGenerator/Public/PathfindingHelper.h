@@ -1,5 +1,15 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file PathfindingHelper.h
+ * @brief A* 경로 탐색 유틸리티 함수 정의
+ * 
+ * 도로 및 강 생성을 위한 A* 경로 탐색을 제공합니다:
+ * - 지형 경사 고려한 경로 탐색
+ * - 물 횡단 시 다리 자동 생성
+ * - 경로 세그먼트 및 메타데이터 생성
+ */
+
 #pragma once
 
 #include "CoreMinimal.h"

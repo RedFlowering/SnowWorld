@@ -1,6 +1,17 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file PathfindingHelper.cpp
+ * @brief A* 경로 탐색 유틸리티 함수 구현
+ * 
+ * 도로 및 강 생성을 위한 지형 인식 A* 알고리즘을 구현합니다.
+ */
+
 #include "PathfindingHelper.h"
+
+//=============================================================================
+// A* Pathfinding Implementation
+//=============================================================================
 
 bool PathfindingHelper::FindPath(
 	const FVector& Start,

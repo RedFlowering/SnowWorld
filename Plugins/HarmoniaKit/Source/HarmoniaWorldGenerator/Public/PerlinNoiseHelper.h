@@ -1,5 +1,15 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file PerlinNoiseHelper.h
+ * @brief Perlin Noise 유틸리티 함수 정의
+ * 
+ * 지형 생성을 위한 다양한 노이즈 함수를 제공합니다:
+ * - GetEarthLikeHeight: 다중 옥타브 Perlin Noise
+ * - GetTurbulence: 바위/절벽 지형용 터벨런스 노이즈
+ * - GetRidged: 산맥 지형용 Ridged Noise
+ */
+
 #pragma once
 
 #include "CoreMinimal.h"

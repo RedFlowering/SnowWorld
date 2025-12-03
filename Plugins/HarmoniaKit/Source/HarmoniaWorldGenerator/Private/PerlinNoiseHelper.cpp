@@ -1,6 +1,17 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file PerlinNoiseHelper.cpp
+ * @brief Perlin Noise 유틸리티 함수 구현
+ * 
+ * Ken Perlin의 개선된 노이즈 알고리즘을 기반으로 합니다.
+ */
+
 #include "PerlinNoiseHelper.h"
+
+//=============================================================================
+// Permutation Table
+//=============================================================================
 
 // Permutation table for Simplex noise (Ken Perlin's improved noise)
 const uint8 PerlinNoiseHelper::Permutation[512] = {
