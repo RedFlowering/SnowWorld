@@ -8,7 +8,7 @@ void FHarmoniaMacroGenerator::ValidateAndGenerate(const UHarmoniaRegistryAsset* 
 {
     if (ValidateConfig(Registry))
     {
-        GenerateRowIncludesHeader(Registry);
+        // GenerateRowIncludesHeader(Registry);
         GenerateMacroHeaderFromRegistry(Registry);
         GenerateFunctionLibraryFromRegistry(Registry);
     }

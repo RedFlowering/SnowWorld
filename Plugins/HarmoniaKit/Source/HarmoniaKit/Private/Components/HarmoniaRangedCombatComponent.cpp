@@ -16,29 +16,30 @@
 #include "Net/UnrealNetwork.h"
 #include "Camera/CameraComponent.h"
 #include "DrawDebugHelpers.h"
+#include "HarmoniaLoadManager.h"
 
 UHarmoniaRangedCombatComponent::UHarmoniaRangedCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	SetIsReplicated(true);
-
-	// Load default data tables
-	static ConstructorHelpers::FObjectFinder<UDataTable> WeaponDataTableFinder(TEXT("/HarmoniaKit/Data/DT_RangedWeapons"));
-	if (WeaponDataTableFinder.Succeeded())
-	{
-		WeaponDataTable = WeaponDataTableFinder.Object;
-	}
-
-	static ConstructorHelpers::FObjectFinder<UDataTable> SpellDataTableFinder(TEXT("/HarmoniaKit/Data/DT_Spells"));
-	if (SpellDataTableFinder.Succeeded())
-	{
-		SpellDataTable = SpellDataTableFinder.Object;
-	}
 }
 
 void UHarmoniaRangedCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// HarmoniaLoadManager를 통해 DataTable 로드
+	if (UHarmoniaLoadManager* LoadManager = UHarmoniaLoadManager::Get())
+	{
+		if (!WeaponDataTable)
+		{
+			WeaponDataTable = LoadManager->GetDataTableByKey(TEXT("RangedWeapons"));
+		}
+		if (!SpellDataTable)
+		{
+			SpellDataTable = LoadManager->GetDataTableByKey(TEXT("Spells"));
+		}
+	}
 
 	// Initialize ammo based on weapon data
 	FHarmoniaRangedWeaponData WeaponData;

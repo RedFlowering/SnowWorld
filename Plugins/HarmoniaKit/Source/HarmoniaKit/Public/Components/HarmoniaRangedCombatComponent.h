@@ -365,11 +365,11 @@ private:
 
 	/** Data table containing weapon configurations */
 	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat")
-	TObjectPtr<UDataTable> WeaponDataTable;
+	TObjectPtr<UDataTable> WeaponDataTable = nullptr;
 
 	/** Data table containing spell configurations */
 	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Magic")
-	TObjectPtr<UDataTable> SpellDataTable;
+	TObjectPtr<UDataTable> SpellDataTable = nullptr;
 
 	/** Default projectile class (if weapon doesn't specify) */
 	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat")
