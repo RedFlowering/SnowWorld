@@ -501,7 +501,7 @@ bool UHarmoniaBuildingInstanceManager::FindNearbySnapPoint(const FVector& Target
 		}
 
 		// Get existing building data
-		// Get existing building data
+		FHarmoniaBuildingPartData* ExistingPartData = BuildingDataTable->FindRow<FHarmoniaBuildingPartData>(ExistingBuilding.PartID, TEXT("FindNearbySnapPoint"));
 		if (!ExistingPartData || ExistingPartData->SnapPoints.Num() == 0)
 		{
 			continue;
