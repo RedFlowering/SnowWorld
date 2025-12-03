@@ -12,7 +12,7 @@ void UHarmoniaDungeonManager::Initialize(FSubsystemCollectionBase& Collection)
 
 void UHarmoniaDungeonManager::Deinitialize()
 {
-	// 모든 ?�스?�스 ?�리
+	// Clean up all instances
 	ActiveInstances.Empty();
 	MatchmakingQueue.Empty();
 
@@ -141,12 +141,12 @@ void UHarmoniaDungeonManager::StartMatchmaking(const FString& PlayerID, FName Du
 		return;
 	}
 
-	// 간단??매칭: 바로 ?�스?�스 ?�성
+	// Simple matchmaking: create instance immediately
 	FGuid InstanceID = CreateDungeonInstance(DungeonData, Difficulty);
 	AddPlayerToInstance(InstanceID, PlayerID);
 	MatchmakingQueue.Add(PlayerID, InstanceID);
 
-	// ?�제 구현?�서???��??�에 추�??�고 주기?�으�?매칭 처리
+	// In production, add to queue and process matching periodically
 }
 
 void UHarmoniaDungeonManager::CancelMatchmaking(const FString& PlayerID)
@@ -180,19 +180,19 @@ void UHarmoniaDungeonManager::SubmitGlobalRanking(FName DungeonID, const FDungeo
 	FDungeonRankingArray& RankingArray = GlobalRankings.FindOrAdd(DungeonID);
 	RankingArray.Rankings.Add(Entry);
 
-	// ?�수 ?�으�??�렬
+	// Sort by score (descending)
 	RankingArray.Rankings.Sort([](const FDungeonRankingEntry& A, const FDungeonRankingEntry& B)
 	{
 		return A.Score > B.Score;
 	});
 
-	// ?�위 1000개만 ?��?
+	// Keep only top 1000
 	if (RankingArray.Rankings.Num() > 1000)
 	{
 		RankingArray.Rankings.SetNum(1000);
 	}
 
-	// ?�계 ?�데?�트
+	// Update statistics
 	int32& ClearCount = DungeonClearCounts.FindOrAdd(DungeonID);
 	ClearCount++;
 
@@ -206,7 +206,7 @@ TArray<FDungeonRankingEntry> UHarmoniaDungeonManager::GetSeasonRankings(FName Du
 
 	if (const FDungeonRankingArray* RankingArray = GlobalRankings.Find(DungeonID))
 	{
-		// ?�즌�??�터�?
+		// Filter by season
 		for (const FDungeonRankingEntry& Entry : RankingArray->Rankings)
 		{
 			if (Entry.SeasonID == SeasonID)
@@ -299,7 +299,7 @@ void UHarmoniaDungeonManager::CleanupExpiredInstances()
 
 	for (const auto& Pair : ActiveInstances)
 	{
-		// 24?�간 ?�상 지???�스?�스 ?�거
+		// Remove instances older than 24 hours
 		FTimespan Elapsed = Now - Pair.Value.CreationTime;
 		if (Elapsed.GetTotalHours() > 24.0)
 		{
@@ -315,6 +315,6 @@ void UHarmoniaDungeonManager::CleanupExpiredInstances()
 
 void UHarmoniaDungeonManager::ProcessMatchmaking()
 {
-	// 매칭 로직 구현
-	// 같�? ?�전, ?�이?��? ?�하???�레?�어?�을 그룹?�하???�스?�스 ?�성
+	// Implement matchmaking logic
+	// Group players requesting the same dungeon and difficulty to create instances
 }

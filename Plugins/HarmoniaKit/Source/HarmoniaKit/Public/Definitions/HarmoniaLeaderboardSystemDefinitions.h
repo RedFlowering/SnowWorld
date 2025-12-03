@@ -1,5 +1,13 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file HarmoniaLeaderboardSystemDefinitions.h
+ * @brief Leaderboard system type definitions and data structures
+ * 
+ * Contains enums and structs for the leaderboard system including
+ * sort orders, value types, and entry data structures.
+ */
+
 #pragma once
 
 #include "Engine/DataTable.h"
@@ -7,24 +15,26 @@
 #include "HarmoniaLeaderboardSystemDefinitions.generated.h"
 
 /**
- * Leaderboard sort order
+ * @enum ELeaderboardSortOrder
+ * @brief Leaderboard sort order
  */
 UENUM(BlueprintType)
 enum class ELeaderboardSortOrder : uint8
 {
-	Ascending		UMETA(DisplayName = "Ascending"),		// ?�름차순 (??��?�록 좋음, ?? ?�?�어??
-	Descending		UMETA(DisplayName = "Descending"),		// ?�림차순 (?�을?�록 좋음, ?? ?�수)
+	Ascending		UMETA(DisplayName = "Ascending"),		// Ascending (lower is better, e.g. clear time)
+	Descending		UMETA(DisplayName = "Descending"),		// Descending (higher is better, e.g. score)
 	MAX				UMETA(Hidden)
 };
 
 /**
- * Leaderboard type
+ * @enum ELeaderboardType
+ * @brief Leaderboard value type
  */
 UENUM(BlueprintType)
 enum class ELeaderboardType : uint8
 {
-	Numeric			UMETA(DisplayName = "Numeric"),			// ?�자 (?�수)
-	Time			UMETA(DisplayName = "Time"),			// ?�간 (�??�위)
+	Numeric			UMETA(DisplayName = "Numeric"),			// Numeric (score)
+	Time			UMETA(DisplayName = "Time"),			// Time (in seconds)
 	MAX				UMETA(Hidden)
 };
 

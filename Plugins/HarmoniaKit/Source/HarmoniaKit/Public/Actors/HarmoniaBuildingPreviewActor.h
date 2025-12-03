@@ -8,9 +8,12 @@
 #include "HarmoniaBuildingPreviewActor.generated.h"
 
 /**
- * 건축�?배치 ???�리뷰�? ?�시?�는 ?�터
- * - 반투�?메시�?배치 ?�치�?미리 ?�인
- * - 배치 가??불�????�태???�라 ?�상 변�?
+ * @class AHarmoniaBuildingPreviewActor
+ * @brief Actor that displays building placement preview
+ * 
+ * Features:
+ * - Semi-transparent mesh showing placement location
+ * - Color changes based on placement validity
  */
 UCLASS()
 class HARMONIAKIT_API AHarmoniaBuildingPreviewActor : public AActor
@@ -24,36 +27,36 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	// ?�리�??�이???�용
+	/** Apply preview data from building part */
 	UFUNCTION(BlueprintCallable, Category = "Building Preview")
 	void ApplyPreviewData(const FHarmoniaBuildingPartData& PartData);
 
-	// 배치 가???��????�른 ?�각 ?�드�?
+	/** Update visual feedback based on placement validity */
 	UFUNCTION(BlueprintCallable, Category = "Building Preview")
 	void SetIsPlacementValid(bool bIsValid);
 
-	// ?�리�??�전
+	/** Rotate the preview */
 	UFUNCTION(BlueprintCallable, Category = "Building Preview")
 	void RotatePreview(float DeltaYaw);
 
 protected:
-	// 메시 컴포?�트
+	/** Preview mesh component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> PreviewMeshComponent = nullptr;
 
-	// 배치 가???�태 머티리얼
+	/** Material for valid placement state */
 	UPROPERTY(EditDefaultsOnly, Category = "Materials")
 	TObjectPtr<UMaterialInterface> ValidPlacementMaterial = nullptr;
 
-	// 배치 불�????�태 머티리얼
+	/** Material for invalid placement state */
 	UPROPERTY(EditDefaultsOnly, Category = "Materials")
 	TObjectPtr<UMaterialInterface> InvalidPlacementMaterial = nullptr;
 
-	// ?�재 배치 가???��?
+	/** Current placement validity state */
 	UPROPERTY(BlueprintReadOnly, Category = "State")
 	bool bIsCurrentlyValid = false;
 
-	// ?�재 ?�용???�트 ?�이??
+	/** Currently applied part data */
 	UPROPERTY(BlueprintReadOnly, Category = "State")
 	FHarmoniaBuildingPartData CurrentPartData;
 };

@@ -10,16 +10,30 @@
 #include "HarmoniaRandomItemSystemDefinitions.generated.h"
 
 /**
- * Item rarity (for random generation)
+ * @file HarmoniaRandomItemSystemDefinitions.h
+ * @brief Random item generation system definitions for procedural loot
+ * 
+ * This file contains enums and structs for the random item generation system,
+ * including rarity tiers, affixes, stat modifiers, and item templates.
+ */
+
+/**
+ * @enum EItemRarity
+ * @brief Item rarity tiers for random generation
  */
 UENUM(BlueprintType)
 enum class EItemRarity : uint8
 {
-	Common			UMETA(DisplayName = "Common"),			// ?�반
-	Uncommon		UMETA(DisplayName = "Uncommon"),		// 고급
-	Rare			UMETA(DisplayName = "Rare"),			// ?��?
-	Epic			UMETA(DisplayName = "Epic"),			// ?�웅
-	Legendary		UMETA(DisplayName = "Legendary"),		// ?�설
+	/** Common - Basic rarity tier */
+	Common			UMETA(DisplayName = "Common"),
+	/** Uncommon - Above average quality */
+	Uncommon		UMETA(DisplayName = "Uncommon"),
+	/** Rare - Scarce items with better stats */
+	Rare			UMETA(DisplayName = "Rare"),
+	/** Epic - Heroic quality items */
+	Epic			UMETA(DisplayName = "Epic"),
+	/** Legendary - Mythical tier items */
+	Legendary		UMETA(DisplayName = "Legendary"),
 	MAX				UMETA(Hidden)
 };
 
@@ -27,15 +41,20 @@ enum class EItemRarity : uint8
 using EHarmoniaItemRarity = EItemRarity;
 
 /**
- * Affix type
+ * @enum EAffixType
+ * @brief Types of affixes that can be applied to items
  */
 UENUM(BlueprintType)
 enum class EAffixType : uint8
 {
-	Prefix			UMETA(DisplayName = "Prefix"),			// ?�두??
-	Suffix			UMETA(DisplayName = "Suffix"),			// ?��???
-	Implicit		UMETA(DisplayName = "Implicit"),		// ?�시??(기본 부??
-	Enchant			UMETA(DisplayName = "Enchant"),			// 마법부??
+	/** Prefix - Affix placed before item name */
+	Prefix			UMETA(DisplayName = "Prefix"),
+	/** Suffix - Affix placed after item name */
+	Suffix			UMETA(DisplayName = "Suffix"),
+	/** Implicit - Built-in base modifier */
+	Implicit		UMETA(DisplayName = "Implicit"),
+	/** Enchant - Magical enchantment modifier */
+	Enchant			UMETA(DisplayName = "Enchant"),
 	MAX				UMETA(Hidden)
 };
 
@@ -43,14 +62,18 @@ enum class EAffixType : uint8
 using EHarmoniaAffixType = EAffixType;
 
 /**
- * Affix stat modifier type
+ * @enum EAffixModifierType
+ * @brief How affix stats are calculated
  */
 UENUM(BlueprintType)
 enum class EAffixModifierType : uint8
 {
-	Flat			UMETA(DisplayName = "Flat"),			// 고정�?(?? +50 공격??
-	Percent			UMETA(DisplayName = "Percent"),			// ?�센??(?? +10% 공격??
-	Multiplier		UMETA(DisplayName = "Multiplier"),		// 배율 (?? 1.5x ?�해)
+	/** Flat - Fixed value addition (e.g., +50 Attack) */
+	Flat			UMETA(DisplayName = "Flat"),
+	/** Percent - Percentage bonus (e.g., +10% Attack) */
+	Percent			UMETA(DisplayName = "Percent"),
+	/** Multiplier - Multiplicative factor (e.g., 1.5x Damage) */
+	Multiplier		UMETA(DisplayName = "Multiplier"),
 	MAX				UMETA(Hidden)
 };
 

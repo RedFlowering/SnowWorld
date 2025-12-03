@@ -28,7 +28,7 @@ void UHarmoniaDungeonComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 컴포?�트 참조 찾기
+	// Find component references
 	if (AActor* Owner = GetOwner())
 	{
 		ProgressionComponent = Owner->FindComponentByClass<UHarmoniaProgressionComponent>();
@@ -90,7 +90,7 @@ void UHarmoniaDungeonComponent::ExitDungeon(bool bSaveProgress)
 		return;
 	}
 
-	// 진행 중이�??�패 처리
+	// Handle as failure if in progress
 	if (CurrentDungeonState == EDungeonState::InProgress)
 	{
 		SetDungeonState(EDungeonState::Failed);
@@ -149,7 +149,7 @@ void UHarmoniaDungeonComponent::CompleteDungeon(bool bSuccess)
 	{
 		GrantDungeonReward();
 
-		// ??�� ?�록
+		// Record ranking
 		if (APlayerState* PS = Cast<APlayerState>(GetOwner()))
 		{
 			SubmitRanking(PS->GetPlayerName(), ElapsedTime, CurrentScore);
@@ -214,22 +214,22 @@ void UHarmoniaDungeonComponent::SubmitRanking(const FString& PlayerName, float C
 	NewEntry.Difficulty = CurrentDifficulty;
 	NewEntry.ClearDate = FDateTime::Now();
 
-	// ??�� 목록??추�?
+	// Add to ranking list
 	DungeonRankings.Add(NewEntry);
 
-	// ?�수 ?�으�??�렬
+	// Sort by score descending
 	DungeonRankings.Sort([](const FDungeonRankingEntry& A, const FDungeonRankingEntry& B)
 	{
 		return A.Score > B.Score;
 	});
 
-	// ?�위 100개만 ?��?
+	// Keep only top 100 entries
 	if (DungeonRankings.Num() > 100)
 	{
 		DungeonRankings.SetNum(100);
 	}
 
-	// 개인 최고 기록 갱신
+	// Update personal best record
 	if (Score > PersonalBestRecord.Score || PersonalBestRecord.Score == 0)
 	{
 		PersonalBestRecord = NewEntry;
@@ -265,8 +265,8 @@ void UHarmoniaDungeonComponent::GrantDungeonReward()
 
 	FDungeonReward Reward = CalculateReward();
 
-	// ?�제 보상 지�?로직?� 게임 ?�스?�에 ?�라 구현
-	// ?? ?�벤?�리 컴포?�트, 경험�??�스???�과 ?�동
+	// Actual reward granting logic depends on game system implementation
+	// e.g., inventory component, experience system integration
 }
 
 FDungeonReward UHarmoniaDungeonComponent::CalculateReward() const
@@ -278,13 +278,13 @@ FDungeonReward UHarmoniaDungeonComponent::CalculateReward() const
 		return Reward;
 	}
 
-	// ?�이?�별 보상 가?�오�?
+	// Get reward based on difficulty
 	if (const FDungeonReward* BaseReward = CurrentDungeon->Rewards.Find(CurrentDifficulty))
 	{
 		Reward = *BaseReward;
 	}
 
-	// 챌린지 모디?�이???�용
+	// Apply challenge modifiers
 	for (const FDungeonChallengeModifier& Modifier : ActiveChallengeModifiers)
 	{
 		Reward.ExperienceReward = FMath::RoundToInt(Reward.ExperienceReward * Modifier.ScoreMultiplier);

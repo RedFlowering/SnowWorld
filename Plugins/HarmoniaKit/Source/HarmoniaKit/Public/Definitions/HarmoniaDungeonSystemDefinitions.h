@@ -1,4 +1,10 @@
-﻿// Copyright (c) 2025 RedFlowering. All Rights Reserved.
+﻿// Copyright 2025 Snow Game Studio.
+
+/**
+ * @file HarmoniaDungeonSystemDefinitions.h
+ * @brief Dungeon system type definitions
+ * @author Harmonia Team
+ */
 
 #pragma once
 
@@ -8,20 +14,22 @@
 #include "HarmoniaDungeonSystemDefinitions.generated.h"
 
 /**
- * ?�전 ?�??
+ * @enum EDungeonType
+ * @brief Dungeon type
  */
 UENUM(BlueprintType)
 enum class EDungeonType : uint8
 {
 	None UMETA(DisplayName = "None"),
-	Instance UMETA(DisplayName = "Instance Dungeon"),		// ?�스?�스 ?�전 - ?�티??
-	Raid UMETA(DisplayName = "Raid"),						// ?�이??- ?�규모 공격?�
-	Infinite UMETA(DisplayName = "Infinite Dungeon"),		// 무한 ?�전 - 로그?�이??
-	Challenge UMETA(DisplayName = "Challenge Mode")			// 챌린지 모드 - 고난?�도 변??
+	Instance UMETA(DisplayName = "Instance Dungeon"),		// Instance dungeon - Party
+	Raid UMETA(DisplayName = "Raid"),						// Raid - Large scale
+	Infinite UMETA(DisplayName = "Infinite Dungeon"),		// Infinite dungeon - Roguelike
+	Challenge UMETA(DisplayName = "Challenge Mode")			// Challenge mode - High difficulty variant
 };
 
 /**
- * ?�전 ?�이??
+ * @enum EDungeonDifficulty
+ * @brief Dungeon difficulty
  */
 UENUM(BlueprintType)
 enum class EDungeonDifficulty : uint8
@@ -34,7 +42,8 @@ enum class EDungeonDifficulty : uint8
 };
 
 /**
- * ?�전 ?�태
+ * @enum EDungeonState
+ * @brief Dungeon state
  */
 UENUM(BlueprintType)
 enum class EDungeonState : uint8
@@ -46,7 +55,8 @@ enum class EDungeonState : uint8
 };
 
 /**
- * ?�이????��
+ * @enum ERaidRole
+ * @brief Raid role
  */
 UENUM(BlueprintType)
 enum class ERaidRole : uint8
@@ -59,158 +69,163 @@ enum class ERaidRole : uint8
 };
 
 /**
- * ?�전 보상 ?�보
+ * @struct FDungeonReward
+ * @brief Dungeon reward info
  */
 USTRUCT(BlueprintType)
 struct HARMONIAKIT_API FDungeonReward
 {
 	GENERATED_BODY()
 
-	/** 경험�?보상 */
+	/** Experience reward */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Reward")
 	int32 ExperienceReward = 0;
 
-	/** 골드 보상 */
+	/** Gold reward */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Reward")
 	int32 GoldReward = 0;
 
-	/** ?�이??보상 (?�이�?참조) */
+	/** Item rewards (item references) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Reward")
 	TArray<FName> RewardItemIDs;
 
-	/** 보상 배율 (?�이?�별) */
+	/** Reward multiplier (per difficulty) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Reward")
 	float RewardMultiplier = 1.0f;
 };
 
 /**
- * ?�전 ?�장 조건
+ * @struct FDungeonRequirement
+ * @brief Dungeon entry requirements
  */
 USTRUCT(BlueprintType)
 struct HARMONIAKIT_API FDungeonRequirement
 {
 	GENERATED_BODY()
 
-	/** 최소 ?�벨 */
+	/** Minimum level */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Requirement")
 	int32 MinLevel = 1;
 
-	/** 권장 ?�벨 */
+	/** Recommended level */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Requirement")
 	int32 RecommendedLevel = 1;
 
-	/** 최소 ?�티 ?�원 */
+	/** Minimum party size */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Requirement")
 	int32 MinPartySize = 1;
 
-	/** 최�? ?�티 ?�원 */
+	/** Maximum party size */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Requirement")
 	int32 MaxPartySize = 5;
 
-	/** ?�요 ?�이??(?�장�??? */
+	/** Required items (entry keys) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Requirement")
 	TArray<FName> RequiredItemIDs;
 
-	/** ?�요 ?�스???�료 */
+	/** Required quest completions */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Requirement")
 	TArray<FName> RequiredQuestIDs;
 };
 
 /**
- * 무한 ?�전 �??�보
+ * @struct FInfiniteDungeonFloor
+ * @brief Infinite dungeon floor info
  */
 USTRUCT(BlueprintType)
 struct HARMONIAKIT_API FInfiniteDungeonFloor
 {
 	GENERATED_BODY()
 
-	/** �?번호 */
+	/** Floor number */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Infinite")
 	int32 FloorNumber = 1;
 
-	/** 몬스???�벨 배율 */
+	/** Monster level multiplier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Infinite")
 	float MonsterLevelMultiplier = 1.0f;
 
-	/** 몬스????배율 */
+	/** Monster count multiplier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Infinite")
 	float MonsterCountMultiplier = 1.0f;
 
-	/** 보스 ?�장 ?��? */
+	/** Has boss */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Infinite")
 	bool bHasBoss = false;
 
-	/** ?�수 ?�벤???�그 */
+	/** Special event tag */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Infinite")
 	FGameplayTag EventTag;
 };
 
 /**
- * ?�전 ??�� ?�보
+ * @struct FDungeonRankingEntry
+ * @brief Dungeon ranking info
  */
 USTRUCT(BlueprintType)
 struct HARMONIAKIT_API FDungeonRankingEntry
 {
 	GENERATED_BODY()
 
-	/** ?�레?�어/?�티 ?�름 */
+	/** Player/Party name */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Ranking")
 	FString PlayerName;
 
-	/** ?�리???�간 (�? */
+	/** Clear time in seconds */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Ranking")
 	float ClearTime = 0.0f;
 
-	/** ?�수 */
+	/** Score */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Ranking")
 	int32 Score = 0;
 
-	/** ?�이??*/
+	/** Difficulty */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Ranking")
 	EDungeonDifficulty Difficulty = EDungeonDifficulty::Normal;
 
-	/** ?�리???�짜 */
+	/** Clear date */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Ranking")
 	FDateTime ClearDate;
 
-	/** ?�즌 ID */
+	/** Season ID */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Ranking")
 	int32 SeasonID = 0;
 };
 
 /**
- * 챌린지 모드 ?�정??
+ * @struct FDungeonChallengeModifier
+ * @brief Challenge mode modifier
  */
 USTRUCT(BlueprintType)
 struct HARMONIAKIT_API FDungeonChallengeModifier
 {
 	GENERATED_BODY()
 
-	/** ?�정???�름 */
+	/** Modifier name */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Challenge")
 	FText ModifierName;
 
-	/** ?�정???�명 */
+	/** Modifier description */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Challenge")
 	FText ModifierDescription;
 
-	/** 몬스??체력 배율 */
+	/** Monster health multiplier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Challenge")
 	float MonsterHealthMultiplier = 1.0f;
 
-	/** 몬스??공격??배율 */
+	/** Monster damage multiplier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Challenge")
 	float MonsterDamageMultiplier = 1.0f;
 
-	/** ?�레?�어 체력 배율 */
+	/** Player health multiplier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Challenge")
 	float PlayerHealthMultiplier = 1.0f;
 
-	/** ?�수 배율 */
+	/** Score multiplier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Challenge")
 	float ScoreMultiplier = 1.0f;
 
-	/** ?�수 ?�과 ?�그 */
+	/** Special effect tags */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Challenge")
 	FGameplayTagContainer EffectTags;
 
@@ -222,7 +237,11 @@ struct HARMONIAKIT_API FDungeonChallengeModifier
 };
 
 /**
- * ?�전 ?�보 (DataAsset)
+ * @class UDungeonDataAsset
+ * @brief DataAsset containing dungeon configuration data
+ * 
+ * Defines dungeon settings including requirements, rewards, time limits,
+ * and type-specific configurations for instance, infinite, and challenge modes.
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UDungeonDataAsset : public UPrimaryDataAsset
@@ -230,53 +249,57 @@ class HARMONIAKIT_API UDungeonDataAsset : public UPrimaryDataAsset
 	GENERATED_BODY()
 
 public:
-	/** ?�전 ID */
+	/** Unique dungeon identifier */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
 	FName DungeonID;
 
-	/** ?�전 ?�름 */
+	/** Display name of the dungeon */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
 	FText DungeonName;
 
-	/** ?�전 ?�명 */
+	/** Dungeon description text */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
 	FText DungeonDescription;
 
-	/** ?�전 ?�??*/
+	/** Type of dungeon (Instance, Infinite, Raid, Challenge) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
 	EDungeonType DungeonType = EDungeonType::Instance;
 
-	/** ?�장 조건 */
+	/** Entry requirements for this dungeon */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
 	FDungeonRequirement Requirements;
 
-	/** 보상 (?�이?�별) */
+	/** Rewards mapped by difficulty level */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
 	TMap<EDungeonDifficulty, FDungeonReward> Rewards;
 
-	/** ?�한 ?�간 (�? 0 = 무제?? */
+	/** Time limit in seconds (0 = unlimited) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
 	float TimeLimit = 0.0f;
 
-	/** ?�전 ?�벨 경로 */
+	/** Dungeon level world asset reference */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
 	TSoftObjectPtr<UWorld> DungeonLevel;
 
-	/** ?�전 ?�그 */
+	/** Gameplay tags associated with this dungeon */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
 	FGameplayTagContainer DungeonTags;
 
-	/** 무한 ?�전??�??�보 */
+	/** Floor configurations for infinite dungeon mode */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon|Infinite", meta = (EditCondition = "DungeonType == EDungeonType::Infinite"))
 	TArray<FInfiniteDungeonFloor> InfiniteFloors;
 
-	/** 챌린지 모드???�정??*/
+	/** Modifier settings for challenge mode */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon|Challenge", meta = (EditCondition = "DungeonType == EDungeonType::Challenge"))
 	TArray<FDungeonChallengeModifier> ChallengeModifiers;
 };
 
 /**
- * ?�이???�보 (DataAsset)
+ * @class URaidDataAsset
+ * @brief DataAsset extending dungeon data for raid configurations
+ * 
+ * Extends UDungeonDataAsset with raid-specific settings such as
+ * party size limits, role compositions, and boss phase configurations.
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API URaidDataAsset : public UDungeonDataAsset
@@ -284,23 +307,23 @@ class HARMONIAKIT_API URaidDataAsset : public UDungeonDataAsset
 	GENERATED_BODY()
 
 public:
-	/** 최소 공격?� ?�원 */
+	/** Minimum raid party size */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Raid")
 	int32 MinRaidSize = 10;
 
-	/** 최�? 공격?� ?�원 */
+	/** Maximum raid party size */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Raid")
 	int32 MaxRaidSize = 40;
 
-	/** 권장 ??�� 구성 */
+	/** Recommended role composition for the raid */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Raid")
 	TMap<ERaidRole, int32> RecommendedRoleComposition;
 
-	/** 부???�한 */
+	/** Number of revives allowed during the raid */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Raid")
 	int32 ReviveLimit = 3;
 
-	/** 보스 ?�이�???*/
+	/** Number of boss phases in the encounter */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Raid")
 	int32 BossPhaseCount = 1;
 };

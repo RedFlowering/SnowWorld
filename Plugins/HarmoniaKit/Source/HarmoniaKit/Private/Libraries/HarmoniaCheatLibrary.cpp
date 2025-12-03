@@ -51,7 +51,7 @@ bool UHarmoniaCheatLibrary::IsCheatsEnabled(const UObject* WorldContextObject)
 		return false;
 	}
 
-	// CheatManager가 ?�으�?치트가 ?�성?�된 �?
+	// CheatManager exists means cheats are enabled
 	return PC->CheatManager != nullptr;
 }
 

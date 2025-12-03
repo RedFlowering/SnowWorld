@@ -1,5 +1,13 @@
 ﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
+/**
+ * @file HarmoniaGatheringSystemDefinitions.h
+ * @brief Gathering system type definitions and data structures
+ * 
+ * Contains enums, structs, and data assets for the resource gathering system
+ * including resource types, gathering tools, nodes, and skill traits.
+ */
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -8,36 +16,39 @@
 #include "HarmoniaGatheringSystemDefinitions.generated.h"
 
 /**
- * 채집 ?�원 ?�??
+ * @enum EGatheringResourceType
+ * @brief Types of gathering resources
  */
 UENUM(BlueprintType)
 enum class EGatheringResourceType : uint8
 {
-	Mineral		UMETA(DisplayName = "Mineral"),		// 광물
-	Herb		UMETA(DisplayName = "Herb"),		// ?�초
-	Wood		UMETA(DisplayName = "Wood"),		// 목재
-	Fiber		UMETA(DisplayName = "Fiber"),		// ?�유
-	Stone		UMETA(DisplayName = "Stone"),		// ?�재
-	Crystal		UMETA(DisplayName = "Crystal"),		// ?�리?�탈
-	Flower		UMETA(DisplayName = "Flower"),		// �?
-	Mushroom	UMETA(DisplayName = "Mushroom")		// 버섯
+	Mineral		UMETA(DisplayName = "Mineral"),		// Minerals/Ore
+	Herb		UMETA(DisplayName = "Herb"),		// Herbs
+	Wood		UMETA(DisplayName = "Wood"),		// Lumber
+	Fiber		UMETA(DisplayName = "Fiber"),		// Fiber
+	Stone		UMETA(DisplayName = "Stone"),		// Stone
+	Crystal		UMETA(DisplayName = "Crystal"),		// Crystals
+	Flower		UMETA(DisplayName = "Flower"),		// Flowers
+	Mushroom	UMETA(DisplayName = "Mushroom")		// Mushrooms
 };
 
 /**
- * 채집 ?�구 ?�??
+ * @enum EGatheringToolType
+ * @brief Types of gathering tools
  */
 UENUM(BlueprintType)
 enum class EGatheringToolType : uint8
 {
 	None		UMETA(DisplayName = "None"),
-	Pickaxe		UMETA(DisplayName = "Pickaxe"),		// 곡괭??
-	Axe			UMETA(DisplayName = "Axe"),			// ?�끼
-	Sickle		UMETA(DisplayName = "Sickle"),		// ??
-	Hammer		UMETA(DisplayName = "Hammer")		// 망치
+	Pickaxe		UMETA(DisplayName = "Pickaxe"),		// Pickaxe
+	Axe			UMETA(DisplayName = "Axe"),			// Axe
+	Sickle		UMETA(DisplayName = "Sickle"),		// Sickle
+	Hammer		UMETA(DisplayName = "Hammer")		// Hammer
 };
 
 /**
- * 채집 ?�원 ?��???
+ * @enum EGatheringRarity
+ * @brief Rarity classification for gathering resources
  */
 UENUM(BlueprintType)
 enum class EGatheringRarity : uint8
@@ -50,276 +61,283 @@ enum class EGatheringRarity : uint8
 };
 
 /**
- * 채집 ?�원 ?�이??
+ * @struct FGatheringResourceData
+ * @brief Gathering resource data structure
  */
 USTRUCT(BlueprintType)
 struct FGatheringResourceData
 {
 	GENERATED_BODY()
 
-	/** ?�원 ?�름 */
+	/** Resource name identifier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
 	FName ResourceName;
 
-	/** ?�원 ?�명 */
+	/** Resource description */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
 	FText Description;
 
-	/** ?�원 ?�??*/
+	/** Type of resource */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
 	EGatheringResourceType ResourceType = EGatheringResourceType::Mineral;
 
-	/** ?��???*/
+	/** Rarity tier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
 	EGatheringRarity Rarity = EGatheringRarity::Common;
 
-	/** ?�요 ?�구 */
+	/** Required gathering tool */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
 	EGatheringToolType RequiredTool = EGatheringToolType::None;
 
-	/** 최소 ?�구 ?�급 */
+	/** Minimum tool tier required */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
 	int32 MinToolTier = 1;
 
-	/** 최소 채집 ?�벨 */
+	/** Minimum gathering level required */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
 	int32 MinGatheringLevel = 1;
 
-	/** 채집 ?�간 (�? */
+	/** Gathering time in seconds */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
 	float GatheringTime = 3.0f;
 
-	/** 최소 ?�득??*/
+	/** Minimum yield amount */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
 	int32 MinYield = 1;
 
-	/** 최�? ?�득??*/
+	/** Maximum yield amount */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
 	int32 MaxYield = 3;
 
-	/** ?�득 경험�?*/
+	/** Experience gained */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
 	int32 ExperienceReward = 10;
 
-	/** ?�원 메시 */
+	/** Resource mesh asset */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
 	TSoftObjectPtr<UStaticMesh> ResourceMesh;
 
-	/** ?�원 ?�이�?*/
+	/** Resource icon texture */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
 	TSoftObjectPtr<UTexture2D> Icon;
 };
 
 /**
- * 채집 ?�드 ?�이??
+ * @struct FGatheringNodeData
+ * @brief Gathering node data structure
  */
 USTRUCT(BlueprintType)
 struct FGatheringNodeData
 {
 	GENERATED_BODY()
 
-	/** ?�드 ID */
+	/** Node identifier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Node")
 	FName NodeID;
 
-	/** ?�드 ?�??*/
+	/** Node resource type */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Node")
 	EGatheringResourceType NodeType = EGatheringResourceType::Mineral;
 
-	/** ?�득 가?�한 ?�원 목록 */
+	/** List of possible resources from this node */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Node")
 	TArray<FName> PossibleResources;
 
-	/** 채집 가???�수 */
+	/** Maximum harvest count */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Node")
 	int32 MaxHarvestCount = 3;
 
-	/** 리스???�간 (�? */
+	/** Respawn time in seconds */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Node")
 	float RespawnTime = 300.0f;
 
-	/** ?�드 체력 */
+	/** Node health points */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Node")
 	float MaxHealth = 100.0f;
 
-	/** ?�드 메시 */
+	/** Node mesh asset */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Node")
 	TSoftObjectPtr<UStaticMesh> NodeMesh;
 };
 
 /**
- * 채집 ?�구 ?�이??
+ * @struct FGatheringToolData
+ * @brief Gathering tool data structure
  */
 USTRUCT(BlueprintType)
 struct FGatheringToolData
 {
 	GENERATED_BODY()
 
-	/** ?�구 ?�름 */
+	/** Tool name identifier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tool")
 	FName ToolName;
 
-	/** ?�구 ?�??*/
+	/** Type of tool */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tool")
 	EGatheringToolType ToolType = EGatheringToolType::None;
 
-	/** ?�구 ?�급 */
+	/** Tool tier level */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tool")
 	int32 ToolTier = 1;
 
-	/** 채집 ?�도 배율 */
+	/** Gathering speed multiplier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tool")
 	float GatheringSpeedMultiplier = 1.0f;
 
-	/** ?�득??보너??*/
+	/** Yield bonus amount */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tool")
 	float YieldBonus = 0.0f;
 
-	/** ?�구??*/
+	/** Current durability */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tool")
 	int32 Durability = 100;
 
-	/** 최�? ?�구??*/
+	/** Maximum durability */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tool")
 	int32 MaxDurability = 100;
 };
 
 /**
- * 채집 결과
+ * @struct FGatheringResult
+ * @brief Gathering result data
  */
 USTRUCT(BlueprintType)
 struct FGatheringResult
 {
 	GENERATED_BODY()
 
-	/** ?�득???�원 ID */
+	/** Gathered resource identifier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	FName ResourceID;
 
-	/** ?�득??*/
+	/** Quantity gathered */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	int32 Quantity = 0;
 
-	/** ?�득 경험�?*/
+	/** Experience gained */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	int32 Experience = 0;
 
-	/** ?�리?�컬 채집 ?��? */
+	/** Critical gather success flag */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	bool bCriticalGather = false;
 
-	/** 보너???�이??*/
+	/** Bonus items obtained */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	TArray<FName> BonusItems;
 };
 
 /**
- * 채집 ?�성 (?�시�??�킬)
+ * @struct FGatheringTrait
+ * @brief Gathering passive skill/trait
  */
 USTRUCT(BlueprintType)
 struct FGatheringTrait
 {
 	GENERATED_BODY()
 
-	/** ?�성 ?�름 */
+	/** Trait name identifier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	FName TraitName;
 
-	/** ?�성 ?�명 */
+	/** Trait description */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	FText Description;
 
-	/** 채집 ?�도 보너??(%) */
+	/** Gathering speed bonus percentage */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float GatheringSpeedBonus = 0.0f;
 
-	/** ?�득??보너??(%) */
+	/** Yield bonus percentage */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float YieldBonus = 0.0f;
 
-	/** ?�리?�컬 ?�률 보너??(%) */
+	/** Critical chance bonus percentage */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float CriticalChanceBonus = 0.0f;
 
-	/** 경험�?보너??(%) */
+	/** Experience bonus percentage */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float ExperienceBonus = 0.0f;
 
-	/** ?�구???�모 감소 (%) */
+	/** Durability consumption reduction percentage */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float DurabilityReduction = 0.0f;
 
-	/** ?��? ?�원 발견 ?�률 보너??(%) */
+	/** Rare resource discovery chance bonus percentage */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trait")
 	float RareResourceBonus = 0.0f;
 };
 
 /**
- * 채집 ?�원 ?�이???�이�?Row
- * ?�디?�에??DataTable�?채집 ?�원??관리할 ???�용
+ * @struct FGatheringResourceTableRow
+ * @brief Gathering resource data table row for editor DataTable management
+ * 
+ * Used for managing gathering resources in DataTable format within the editor.
  */
 USTRUCT(BlueprintType)
 struct HARMONIAKIT_API FGatheringResourceTableRow : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	/** ?�원 ID */
+	/** Resource unique identifier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
 	FName ResourceID;
 
-	/** ?�시 ?�름 */
+	/** Display name of the resource */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
 	FText DisplayName;
 
-	/** ?�명 */
+	/** Description text */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
 	FText Description;
 
-	/** ?�원 ?�??*/
+	/** Type of resource */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
 	EGatheringResourceType ResourceType = EGatheringResourceType::Mineral;
 
-	/** ?��???*/
+	/** Rarity tier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource")
 	EGatheringRarity Rarity = EGatheringRarity::Common;
 
-	/** ?�요 ?�구 ?�??*/
+	/** Required tool type */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Requirement")
 	EGatheringToolType RequiredTool = EGatheringToolType::None;
 
-	/** 최소 ?�구 ?�급 */
+	/** Minimum tool tier required */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Requirement")
 	int32 MinToolTier = 1;
 
-	/** 최소 채집 ?�벨 */
+	/** Minimum gathering level required */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Requirement")
 	int32 MinGatheringLevel = 1;
 
-	/** 채집 ?�간 (�? */
+	/** Gathering time in seconds */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Gathering")
 	float GatheringTime = 3.0f;
 
-	/** 최소 ?�득??*/
+	/** Minimum yield amount */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Gathering")
 	int32 MinYield = 1;
 
-	/** 최�? ?�득??*/
+	/** Maximum yield amount */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Gathering")
 	int32 MaxYield = 3;
 
-	/** ?�득 경험�?*/
+	/** Experience gained */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Economy")
 	int32 ExperienceGain = 5;
 
-	/** 기본 ?�매 가�?*/
+	/** Base selling price */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Economy")
 	int32 BasePrice = 5;
 
-	/** ?�이�?*/
+	/** Resource icon texture */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Visual")
 	TSoftObjectPtr<UTexture2D> Icon;
 
-	/** ?�구 ?�구???�모??*/
+	/** Tool durability consumption rate */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Resource|Gathering")
 	float ToolDurabilityConsume = 1.0f;
 };

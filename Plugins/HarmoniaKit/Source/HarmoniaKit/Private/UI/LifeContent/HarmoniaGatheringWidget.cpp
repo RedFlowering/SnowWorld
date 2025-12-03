@@ -38,7 +38,7 @@ void UHarmoniaGatheringWidget::UpdateToolDisplay(EGatheringToolType ToolType, in
 	if (ToolTierText)
 	{
 		ToolTierText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaGathering", "ToolTier", "?�급 {0}"),
+			NSLOCTEXT("HarmoniaGathering", "ToolTier", "Tier {0}"),
 			FText::AsNumber(ToolTier)));
 	}
 
@@ -97,7 +97,7 @@ void UHarmoniaGatheringWidget::ShowResourceInfo(const FGatheringResourceData& Re
 	if (RequiredLevelText)
 	{
 		RequiredLevelText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaGathering", "RequiredLevel", "?�요 ?�벨: {0}"),
+			NSLOCTEXT("HarmoniaGathering", "RequiredLevel", "Required Level: {0}"),
 			FText::AsNumber(ResourceData.MinGatheringLevel)));
 	}
 }

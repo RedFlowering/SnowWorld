@@ -481,7 +481,7 @@ void UHarmoniaEnhancementSystemComponent::ServerInsertGem_Implementation(FGuid I
 		return;
 	}
 
-	// ?�벤?�리?�서 ???�거
+	// Remove gem from inventory
 	if (InventoryComponent)
 	{
 		if (!InventoryComponent->RemoveItem(GemId, 1, -1.0f))
@@ -1811,13 +1811,13 @@ bool UHarmoniaEnhancementSystemComponent::ConsumeMaterials(const TMap<FHarmoniaI
 		return false;
 	}
 
-	// 먼�? 모든 ?�료가 ?�는지 ?�인
+	// First verify all materials are available
 	if (!HasMaterials(Materials))
 	{
 		return false;
 	}
 
-	// ?�료 ?�비
+	// Consume materials
 	for (const auto& Pair : Materials)
 	{
 		if (!InventoryComponent->RemoveItem(Pair.Key, Pair.Value, -1.0f))
@@ -1832,8 +1832,8 @@ bool UHarmoniaEnhancementSystemComponent::ConsumeMaterials(const TMap<FHarmoniaI
 
 bool UHarmoniaEnhancementSystemComponent::ConsumeCurrency(int32 Amount)
 {
-	// ?�화 ?�스?��? 별도??Economy ?�스?�으�?구현 ?�요
-	// ?�재????�� ?�공 반환 (?�스?�용)
+	// Currency system needs to be implemented with separate Economy system
+	// Currently returns success for testing
 	UE_LOG(LogHarmoniaEnhancement, Log, TEXT("ConsumeCurrency: Would consume %d currency"), Amount);
 	return true;
 }
@@ -1859,8 +1859,8 @@ bool UHarmoniaEnhancementSystemComponent::HasMaterials(const TMap<FHarmoniaID, i
 
 bool UHarmoniaEnhancementSystemComponent::HasCurrency(int32 Amount) const
 {
-	// ?�화 ?�스?��? 별도??Economy ?�스?�으�?구현 ?�요
-	// ?�재????�� true 반환 (?�스?�용)
+	// Currency system needs to be implemented with separate Economy system
+	// Currently returns true for testing
 	return true;
 }
 

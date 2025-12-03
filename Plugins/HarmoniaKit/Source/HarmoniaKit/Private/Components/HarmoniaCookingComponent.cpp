@@ -15,7 +15,7 @@ void UHarmoniaCookingComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ?�벤?�리 컴포?�트 찾기
+	// Find inventory component
 	if (AActor* Owner = GetOwner())
 	{
 		InventoryComponent = Owner->FindComponentByClass<UHarmoniaInventoryComponent>();
@@ -45,25 +45,25 @@ bool UHarmoniaCookingComponent::StartCooking(FName RecipeID)
 
 	const FCookingRecipe& Recipe = RecipeDatabase[RecipeID];
 
-	// ?�벨 체크
+	// Level check
 	if (CookingLevel < Recipe.MinCookingLevel)
 	{
 		return false;
 	}
 
-	// ?�시?��? ?�고 ?�는지 ?�인
+	// Check if recipe is known
 	if (Recipe.bHidden && !IsRecipeKnown(RecipeID))
 	{
 		return false;
 	}
 
-	// ?�료 체크
+	// Ingredient check
 	if (!HasRequiredIngredients(Recipe))
 	{
 		return false;
 	}
 
-	// ?�료 ?�비
+	// Consume ingredients
 	if (!ConsumeIngredients(Recipe))
 	{
 		return false;
@@ -115,19 +115,19 @@ bool UHarmoniaCookingComponent::CanCookRecipe(FName RecipeID) const
 
 	const FCookingRecipe& Recipe = RecipeDatabase[RecipeID];
 
-	// ?�벨 체크
+	// Level check
 	if (CookingLevel < Recipe.MinCookingLevel)
 	{
 		return false;
 	}
 
-	// ?�시?��? ?�고 ?�는지 ?�인
+	// Check if recipe is known
 	if (Recipe.bHidden && !IsRecipeKnown(RecipeID))
 	{
 		return false;
 	}
 
-	// ?�료 체크
+	// Ingredient check
 	if (!HasRequiredIngredients(Recipe))
 	{
 		return false;
@@ -145,7 +145,7 @@ bool UHarmoniaCookingComponent::ConsumeFood(FName FoodID, ECookingQuality Qualit
 
 	const FCookingRecipe& Recipe = RecipeDatabase[FoodID];
 
-	// ?�질???�른 버프 ?�과 계산
+	// Calculate buff effect based on quality
 	FFoodBuffEffect BuffEffect = Recipe.BaseBuffEffect;
 
 	float QualityMultiplier = 1.0f;
@@ -154,14 +154,14 @@ bool UHarmoniaCookingComponent::ConsumeFood(FName FoodID, ECookingQuality Qualit
 		QualityMultiplier = Recipe.QualityMultipliers[Quality];
 	}
 
-	// ?�성 보너???�용
+	// Apply trait bonus
 	float TotalBonus = 1.0f;
 	for (const FCookingTrait& Trait : ActiveTraits)
 	{
 		TotalBonus += Trait.BuffEffectBonus / 100.0f;
 	}
 
-	// 버프 ?�과??배율 ?�용
+	// Apply multiplier to buff effects
 	BuffEffect.HealthRestore *= QualityMultiplier * TotalBonus;
 	BuffEffect.ManaRestore *= QualityMultiplier * TotalBonus;
 	BuffEffect.StaminaRestore *= QualityMultiplier * TotalBonus;
@@ -171,7 +171,7 @@ bool UHarmoniaCookingComponent::ConsumeFood(FName FoodID, ECookingQuality Qualit
 	BuffEffect.CriticalChanceBonus *= QualityMultiplier * TotalBonus;
 	BuffEffect.ExperienceBonus *= QualityMultiplier * TotalBonus;
 
-	// 지?�시�?보너???�용
+	// Apply duration bonus
 	for (const FCookingTrait& Trait : ActiveTraits)
 	{
 		BuffEffect.Duration *= (1.0f + Trait.BuffDurationBonus / 100.0f);
@@ -303,21 +303,21 @@ void UHarmoniaCookingComponent::CompleteCooking()
 
 	const FCookingRecipe& Recipe = RecipeDatabase[CurrentRecipeID];
 
-	// ?�리 결과 계산
+	// Calculate cooking result
 	FCookingResult Result = CalculateCookingResult(Recipe);
 
-	// 경험�??�득
+	// Gain experience
 	if (Result.bSuccess)
 	{
 		AddCookingExperience(Result.Experience);
 
-		// ?�시?��? 처음 만든 경우 ?�감??추�?
+		// Add recipe to discovered list if cooked for the first time
 		DiscoverRecipe(CurrentRecipeID);
 	}
 
 	OnCookingCompleted.Broadcast(Result);
 
-	// ?�리 종료
+	// End cooking
 	bIsCooking = false;
 	CurrentRecipeID = NAME_None;
 	SetComponentTickEnabled(false);
@@ -328,31 +328,31 @@ FCookingResult UHarmoniaCookingComponent::CalculateCookingResult(const FCookingR
 	FCookingResult Result;
 	Result.RecipeID = CurrentRecipeID;
 
-	// ?�공�?계산
+	// Calculate success rate
 	float SuccessRate = BaseSuccessRate + GetTotalSuccessRateBonus();
 	
-	// ?�벨 차이???�른 ?�공�?조정
+	// Adjust success rate based on level difference
 	int32 LevelDiff = CookingLevel - Recipe.MinCookingLevel;
 	SuccessRate += LevelDiff * 2.0f;
 
-	// ?�이?�에 ?�른 ?�공�?조정
+	// Adjust success rate based on difficulty
 	SuccessRate -= (Recipe.Difficulty - 5) * 5.0f;
 
 	SuccessRate = FMath::Clamp(SuccessRate, 10.0f, 95.0f);
 
-	// ?�공 ?�정
+	// Determine success
 	Result.bSuccess = FMath::FRand() * 100.0f <= SuccessRate;
 
 	if (Result.bSuccess)
 	{
-		// ?�질 결정
+		// Determine quality
 		Result.Quality = DetermineCookingQuality(Recipe.Difficulty);
 		Result.bPerfect = Result.Quality == ECookingQuality::Masterpiece;
 
-		// 버프 ?�과 ?�정
+		// Set buff effect
 		Result.BuffEffect = Recipe.BaseBuffEffect;
 
-		// 경험�?계산
+		// Calculate experience
 		float ExpMultiplier = 1.0f;
 		for (const FCookingTrait& Trait : ActiveTraits)
 		{
@@ -361,7 +361,7 @@ FCookingResult UHarmoniaCookingComponent::CalculateCookingResult(const FCookingR
 
 		Result.Experience = FMath::CeilToInt(Recipe.ExperienceReward * ExpMultiplier);
 
-		// ?�벽???�리??경우 보너??
+		// Bonus for perfect cooking
 		if (Result.bPerfect)
 		{
 			Result.Experience = FMath::CeilToInt(Result.Experience * 1.5f);
@@ -381,7 +381,7 @@ ECookingQuality UHarmoniaCookingComponent::DetermineCookingQuality(int32 Difficu
 	float QualityRoll = FMath::FRand() * 100.0f;
 	float QualityBonus = GetTotalQualityBonus();
 
-	// ?�질 기�???계산 (?�이?��? ?�을?�록 ?��? ?�질 ?�성 ?�려?�)
+	// Calculate quality thresholds (higher difficulty makes higher quality harder to achieve)
 	float MasterpieceThreshold = FMath::Max(5.0f, 15.0f - QualityBonus - (Difficulty * 0.5f));
 	float ExcellentThreshold = FMath::Max(15.0f, 30.0f - QualityBonus - (Difficulty * 0.3f));
 	float GoodThreshold = FMath::Max(30.0f, 50.0f - QualityBonus);
@@ -411,17 +411,17 @@ ECookingQuality UHarmoniaCookingComponent::DetermineCookingQuality(int32 Difficu
 
 void UHarmoniaCookingComponent::ApplyBuffEffect(const FFoodBuffEffect& BuffEffect)
 {
-	// ?�택 가???��? ?�인
+	// Check if stackable
 	if (!BuffEffect.bStackable)
 	{
-		// 기존 버프 ?�거
+		// Remove existing buff
 		RemoveBuff(BuffEffect.BuffName);
 	}
 
-	// 버프 추�?
+	// Add buff
 	ActiveBuffs.Add(BuffEffect);
 
-	// ?�?�머 ?�정
+	// Set timer
 	FTimerHandle TimerHandle;
 	FTimerDelegate TimerDelegate;
 	TimerDelegate.BindUObject(this, &UHarmoniaCookingComponent::OnBuffExpired, BuffEffect.BuffName);
@@ -474,13 +474,13 @@ bool UHarmoniaCookingComponent::HasRequiredIngredients(const FCookingRecipe& Rec
 
 	for (const FCookingIngredient& Ingredient : Recipe.RequiredIngredients)
 	{
-		// ?�택???�료??건너?�
+		// Skip optional ingredients
 		if (Ingredient.bOptional)
 		{
 			continue;
 		}
 
-		// FName??FHarmoniaID�?변??(IngredientID가 ?�이??ID?� ?�일?�다�?가??
+		// Convert FName to FHarmoniaID (assuming IngredientID matches item ID)
 		FHarmoniaID ItemID(Ingredient.IngredientID);
 
 		int32 TotalCount = InventoryComponent->GetTotalCount(ItemID);
@@ -500,13 +500,13 @@ bool UHarmoniaCookingComponent::ConsumeIngredients(const FCookingRecipe& Recipe)
 		return false;
 	}
 
-	// 먼�? 모든 ?�료가 ?�는지 ?�시 ?�인 (?�시??문제 방�?)
+	// First verify all ingredients are available (prevent race condition)
 	if (!HasRequiredIngredients(Recipe))
 	{
 		return false;
 	}
 
-	// ?�료 ?�비
+	// Consume ingredients
 	for (const FCookingIngredient& Ingredient : Recipe.RequiredIngredients)
 	{
 		if (Ingredient.bOptional)
@@ -516,7 +516,7 @@ bool UHarmoniaCookingComponent::ConsumeIngredients(const FCookingRecipe& Recipe)
 
 		FHarmoniaID ItemID(Ingredient.IngredientID);
 
-		// ?�벤?�리?�서 ?�료 ?�거
+		// Remove ingredient from inventory
 		if (!InventoryComponent->RemoveItem(ItemID, Ingredient.Quantity, -1.0f))
 		{
 			UE_LOG(LogTemp, Error, TEXT("ConsumeIngredients: Failed to remove ingredient %s"), *Ingredient.IngredientID.ToString());

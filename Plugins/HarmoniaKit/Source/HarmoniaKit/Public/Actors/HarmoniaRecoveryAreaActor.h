@@ -13,21 +13,21 @@ class UAudioComponent;
 class UGameplayEffect;
 
 /**
- * AHarmoniaRecoveryAreaActor
+ * @class AHarmoniaRecoveryAreaActor
+ * @brief Deployable recovery area actor (Life Luminescence)
+ * 
+ * Continuously heals players within range.
  *
- * ?�치???�복 구역 Actor (Life Luminescence??
- * 범위 ???�레?�어�?지?�적?�로 ?�복
+ * Features:
+ * - Range-based healing (Sphere Component)
+ * - Periodic recovery ticks (Tick Interval)
+ * - Time limit (Duration)
+ * - VFX/SFX playback
+ * - Multiplayer support
  *
- * 주요 기능:
- * - 범위 기반 ?�복 (Sphere Component)
- * - 주기???�복 ??(Tick Interval)
- * - ?�간 ?�한 (Duration)
- * - VFX/SFX ?�생
- * - 멀?�플?�이??지??
- *
- * ?�사??가?�성:
- * - ??구역, 버프 구역 ?�으�??�장 가??
- * - ?�정 기반 ?�작
+ * Extensibility:
+ * - Can be extended for poison zones, buff zones, etc.
+ * - Configuration-based operation
  */
 UCLASS(Blueprintable)
 class HARMONIAKIT_API AHarmoniaRecoveryAreaActor : public AActor
@@ -43,83 +43,69 @@ protected:
 
 public:
 	/**
-	 * ?�복 구역 초기??
-	 * @param Config ?�복 구역 ?�정
+	 * Initialize recovery area
+	 * @param Config Recovery area configuration
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Recovery Area")
 	void InitializeRecoveryArea(const FHarmoniaDeployableRecoveryConfig& Config);
 
-	/**
-	 * ?�복 구역 ?�성??
-	 */
+	/** Activate the recovery area */
 	UFUNCTION(BlueprintCallable, Category = "Recovery Area")
 	void ActivateRecoveryArea();
 
-	/**
-	 * ?�복 구역 비활?�화
-	 */
+	/** Deactivate the recovery area */
 	UFUNCTION(BlueprintCallable, Category = "Recovery Area")
 	void DeactivateRecoveryArea();
 
-	/**
-	 * ?�복 ???�행
-	 */
+	/** Execute a recovery tick */
 	UFUNCTION(BlueprintCallable, Category = "Recovery Area")
 	void PerformRecoveryTick();
 
-	/**
-	 * ?�복 구역 ???�터??가?�오�?
-	 */
+	/** Get all actors currently in the recovery area */
 	UFUNCTION(BlueprintPure, Category = "Recovery Area")
 	TArray<AActor*> GetActorsInRecoveryArea() const;
 
-	/**
-	 * ?�복 구역 종료
-	 */
+	/** Expire and destroy the recovery area */
 	UFUNCTION(BlueprintCallable, Category = "Recovery Area")
 	void ExpireRecoveryArea();
 
 protected:
-	/**
-	 * Actor 진입 ?�벤??
-	 */
+	/** Called when an actor enters the recovery area */
 	UFUNCTION()
 	void OnActorEnterRecoveryArea(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-	/**
-	 * Actor ?�탈 ?�벤??
-	 */
+	/** Called when an actor leaves the recovery area */
 	UFUNCTION()
 	void OnActorLeaveRecoveryArea(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 protected:
-	/** ?�복 구역 범위 */
+	/** Recovery area sphere component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Recovery Area")
 	TObjectPtr<USphereComponent> RecoveryAreaSphere;
 
-	/** VFX 컴포?�트 */
+	/** VFX component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Recovery Area")
 	TObjectPtr<UNiagaraComponent> AreaVFXComponent;
 
-	/** SFX 컴포?�트 (루프) */
+	/** SFX component (looping) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Recovery Area")
 	TObjectPtr<UAudioComponent> AreaAudioComponent;
 
-	/** ?�복 구역 ?�정 */
+	/** Recovery area configuration */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery Area")
 	FHarmoniaDeployableRecoveryConfig RecoveryConfig;
 
-	/** ?�복 ???�?�머 */
+	/** Recovery tick timer */
 	FTimerHandle RecoveryTickTimerHandle;
 
-	/** 만료 ?�?�머 */
+	/** Expiration timer */
 	FTimerHandle ExpirationTimerHandle;
 
-	/** ?�성???��? */
+	/** Whether the area is currently active */
 	UPROPERTY(BlueprintReadOnly, Category = "Recovery Area")
 	bool bIsActive = false;
 
-	/** ?�복 구역 ???�터??*/
+	/** Actors currently within the recovery area */
 	UPROPERTY()
 	TSet<TObjectPtr<AActor>> ActorsInArea;
 };

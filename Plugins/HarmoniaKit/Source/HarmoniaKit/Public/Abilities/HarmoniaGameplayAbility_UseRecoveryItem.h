@@ -12,23 +12,23 @@ class UNiagaraComponent;
 class UGameplayEffect;
 
 /**
- * UHarmoniaGameplayAbility_UseRecoveryItem
+ * @class UHarmoniaGameplayAbility_UseRecoveryItem
+ * @brief Gameplay Ability for using recovery items
+ * 
+ * Can be reused for all recovery item types.
  *
- * ?�복 ?�이???�용 Gameplay Ability
- * 모든 ?�복 ?�이???�?�에 ?�사??가??
+ * Key Features:
+ * - Item usage validation (charge count, state, etc.)
+ * - Safe usage time implementation (cancel on movement/damage)
+ * - Apply recovery effects (instant/over time/time reversal/deployable)
+ * - VFX/SFX playback
+ * - Animation playback
+ * - Network replication
  *
- * 주요 기능:
- * - ?�이???�용 검�?(충전 ?�수, ?�태 ??
- * - ?�전 ?�간 구현 (?�동/?�격 ??취소)
- * - ?�복 ?�과 ?�용 (즉시/지???�간??��/?�치??
- * - VFX/SFX ?�생
- * - ?�니메이???�생
- * - ?�트?�크 리플리�??�션
- *
- * ?�사??가?�성:
- * - ItemType ?�라미터�?모든 ?�복 ?�이???�??처리
- * - ?�정 기반?�로 ?�작 (?�이???�리�?
- * - ?�른 ?�모???�이?�에???�장 가??
+ * Extensibility:
+ * - Handles all recovery item types via ItemType parameter
+ * - Configuration-based operation (item manager)
+ * - Extensible for other consumable items
  *
  * @see Docs/HarmoniaKit_Complete_Documentation.md Section 17.5.1 for tag configuration
  */
@@ -47,123 +47,101 @@ protected:
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 	//~End of UGameplayAbility interface
 
-	/**
-	 * ?�복 ?�이???�용 ?�작
-	 */
+	/** Start using recovery item */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	void StartUsingRecoveryItem();
 
-	/**
-	 * ?�복 ?�이???�용 ?�료
-	 */
+	/** Complete using recovery item */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	void CompleteUsingRecoveryItem();
 
-	/**
-	 * ?�복 ?�이???�용 취소
-	 */
+	/** Cancel using recovery item */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	void CancelUsingRecoveryItem(const FText& Reason);
 
-	/**
-	 * ?�복 ?�과 ?�용
-	 */
+	/** Apply recovery effects based on item type */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	void ApplyRecoveryEffects();
 
-	/**
-	 * 즉시 ?�복 ?�용
-	 */
+	/** Apply instant recovery */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	void ApplyInstantRecovery(float HealthAmount);
 
-	/**
-	 * 지???�복 ?�용 (HoT)
-	 */
+	/** Apply over time recovery (HoT) */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	void ApplyOverTimeRecovery(float HealthPerSecond, float Duration);
 
-	/**
-	 * ?�간 ??�� ?�복 ?�용 (Frozen Time Snowflake)
-	 */
+	/** Apply time reversal recovery (Frozen Time Snowflake) */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	void ApplyTimeReversalRecovery();
 
-	/**
-	 * ?�치??범위 ?�복 ?�용 (Life Luminescence)
-	 */
+	/** Deploy recovery area (Life Luminescence) */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	void DeployRecoveryArea();
 
-	/**
-	 * VFX/SFX ?�생
-	 */
+	/** Play VFX/SFX effects */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	void PlayUsageEffects();
 
-	/**
-	 * ?�동 감�? (?�용 취소??
-	 */
+	/** Movement detection (for cancel) */
 	UFUNCTION()
 	void OnOwnerMoved();
 
-	/**
-	 * ?�격 감�? (?�용 취소??
-	 */
+	/** Damage detection (for cancel) */
 	UFUNCTION()
 	void OnOwnerDamaged(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser);
 
 protected:
-	/** ?�용???�이???�??(Blueprint?�서 ?�정 ?�는 EventData�??�달) */
+	/** Item type to use (set in Blueprint or passed via EventData) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Recovery Item")
 	EHarmoniaRecoveryItemType ItemType = EHarmoniaRecoveryItemType::ResonanceShard;
 
-	/** 공명 ?�편 주파??(ResonanceShard ?�용) */
+	/** Resonance shard frequency (for ResonanceShard type) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Recovery Item")
 	EHarmoniaResonanceFrequency ShardFrequency = EHarmoniaResonanceFrequency::Azure;
 
-	/** ?�이???�정 ?�버?�이??(?�션, 비워?�면 컴포?�트 ?�정 ?�용) */
+	/** Item configuration override (optional, uses component config if empty) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Recovery Item")
 	FHarmoniaRecoveryItemConfig ConfigOverride;
 
-	/** ?�정 ?�버?�이???�용 ?��? */
+	/** Whether to use config override */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Recovery Item")
 	bool bUseConfigOverride = false;
 
-	/** ?�용 �??�용???�그 */
+	/** Tags applied while using */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Recovery Item")
 	FGameplayTagContainer UsingTags;
 
-	/** ?�용 �?블록???�그 */
+	/** Tags that block usage */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Recovery Item")
 	FGameplayTagContainer BlockedTags;
 
-	/** ?�용 ?�니메이??*/
+	/** Usage animation montage */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Recovery Item|Animation")
 	TObjectPtr<UAnimMontage> UsageAnimation;
 
-	/** 캐시??Rechargeable Item Component */
+	/** Cached rechargeable item component */
 	UPROPERTY()
 	TObjectPtr<UHarmoniaRechargeableItemComponent> RechargeableItemComponent;
 
-	/** ?�재 ?�용 중인 ?�이???�정 */
+	/** Current active item configuration */
 	UPROPERTY()
 	FHarmoniaRecoveryItemConfig CurrentConfig;
 
-	/** ?�용 ?�?�머 ?�들 */
+	/** Usage timer handle */
 	FTimerHandle UsageTimerHandle;
 
-	/** ?�동 체크 ?�?�머 ?�들 */
+	/** Movement check timer handle */
 	FTimerHandle MovementCheckTimerHandle;
 
-	/** ?�용 ?�작 ?�치 (?�동 감�??? */
+	/** Usage start location (for movement detection) */
 	FVector UsageStartLocation;
 
-	/** ?�동 감�? ?�계�?*/
+	/** Movement detection threshold */
 	UPROPERTY(EditDefaultsOnly, Category = "Recovery Item")
 	float MovementThreshold = 10.0f;
 
-	/** VFX 컴포?�트 */
+	/** VFX component */
 	UPROPERTY()
 	TObjectPtr<UNiagaraComponent> VFXComponent;
 

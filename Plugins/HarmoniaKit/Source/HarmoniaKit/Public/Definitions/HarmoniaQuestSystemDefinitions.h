@@ -1,5 +1,13 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file HarmoniaQuestSystemDefinitions.h
+ * @brief Quest system type definitions and data structures
+ * 
+ * Contains enums, structs, and data assets for the quest system
+ * including quest states, types, objectives, conditions, and rewards.
+ */
+
 #pragma once
 
 #include "Engine/DataTable.h"
@@ -10,92 +18,96 @@
 class ULevelSequence;
 
 /**
- * Quest state enum
+ * @enum EQuestState
+ * @brief Quest state types
  */
 UENUM(BlueprintType)
 enum class EQuestState : uint8
 {
-	Locked			UMETA(DisplayName = "Locked"),			// ?��? (조건 미충�?
-	Available		UMETA(DisplayName = "Available"),		// ?�락 가??
-	InProgress		UMETA(DisplayName = "In Progress"),		// 진행 �?
-	ReadyToComplete	UMETA(DisplayName = "Ready to Complete"),// ?�료 가??(목표 ?�성)
-	Completed		UMETA(DisplayName = "Completed"),		// ?�료??
-	Failed			UMETA(DisplayName = "Failed"),			// ?�패
+	Locked			UMETA(DisplayName = "Locked"),			// Locked (conditions not met)
+	Available		UMETA(DisplayName = "Available"),		// Available for acceptance
+	InProgress		UMETA(DisplayName = "In Progress"),		// In progress
+	ReadyToComplete	UMETA(DisplayName = "Ready to Complete"),// Ready to complete (objectives done)
+	Completed		UMETA(DisplayName = "Completed"),		// Completed
+	Failed			UMETA(DisplayName = "Failed"),			// Failed
 	MAX				UMETA(Hidden)
 };
 
 /**
- * Quest type enum
+ * @enum EQuestType
+ * @brief Quest type categories
  */
 UENUM(BlueprintType)
 enum class EQuestType : uint8
 {
-	Main			UMETA(DisplayName = "Main Quest"),		// 메인 ?�스??
-	Side			UMETA(DisplayName = "Side Quest"),		// ?�이???�스??
-	Daily			UMETA(DisplayName = "Daily Quest"),		// ?�일 ?�스??
-	Weekly			UMETA(DisplayName = "Weekly Quest"),	// 주간 ?�스??
-	Repeatable		UMETA(DisplayName = "Repeatable"),		// 반복 가??
-	Story			UMETA(DisplayName = "Story Quest"),		// ?�토�??�스??
-	Tutorial		UMETA(DisplayName = "Tutorial"),		// ?�토리얼
-	Achievement		UMETA(DisplayName = "Achievement"),		// ?�적
+	Main			UMETA(DisplayName = "Main Quest"),		// Main quest
+	Side			UMETA(DisplayName = "Side Quest"),		// Side quest
+	Daily			UMETA(DisplayName = "Daily Quest"),		// Daily quest
+	Weekly			UMETA(DisplayName = "Weekly Quest"),	// Weekly quest
+	Repeatable		UMETA(DisplayName = "Repeatable"),		// Repeatable quest
+	Story			UMETA(DisplayName = "Story Quest"),		// Story quest
+	Tutorial		UMETA(DisplayName = "Tutorial"),		// Tutorial
+	Achievement		UMETA(DisplayName = "Achievement"),		// Achievement
 	MAX				UMETA(Hidden)
 };
 
 /**
- * Quest objective type
+ * @enum EQuestObjectiveType
+ * @brief Quest objective types
  */
 UENUM(BlueprintType)
 enum class EQuestObjectiveType : uint8
 {
-	Kill			UMETA(DisplayName = "Kill Enemy"),		// ??처치
-	Collect			UMETA(DisplayName = "Collect Item"),	// ?�이???�집
-	Talk			UMETA(DisplayName = "Talk to NPC"),		// NPC ?�??
-	Reach			UMETA(DisplayName = "Reach Location"),	// ?�치 ?�달
-	Craft			UMETA(DisplayName = "Craft Item"),		// ?�이???�작
-	Build			UMETA(DisplayName = "Build Structure"),	// 구조�?건설
-	Equip			UMETA(DisplayName = "Equip Item"),		// ?�이???�착
-	Use				UMETA(DisplayName = "Use Item"),		// ?�이???�용
-	Gather			UMETA(DisplayName = "Gather Resource"),	// ?�원 채집
-	Deliver			UMETA(DisplayName = "Deliver Item"),	// ?�이???�달
-	Escort			UMETA(DisplayName = "Escort NPC"),		// NPC ?�위
-	Defend			UMETA(DisplayName = "Defend Location"),	// ?�치 방어
-	Discover		UMETA(DisplayName = "Discover Area"),	// 지???�험
-	Custom			UMETA(DisplayName = "Custom"),			// 커스?� (?�그 기반)
+	Kill			UMETA(DisplayName = "Kill Enemy"),		// Kill enemy
+	Collect			UMETA(DisplayName = "Collect Item"),	// Collect item
+	Talk			UMETA(DisplayName = "Talk to NPC"),		// Talk to NPC
+	Reach			UMETA(DisplayName = "Reach Location"),	// Reach location
+	Craft			UMETA(DisplayName = "Craft Item"),		// Craft item
+	Build			UMETA(DisplayName = "Build Structure"),	// Build structure
+	Equip			UMETA(DisplayName = "Equip Item"),		// Equip item
+	Use				UMETA(DisplayName = "Use Item"),		// Use item
+	Gather			UMETA(DisplayName = "Gather Resource"),	// Gather resource
+	Deliver			UMETA(DisplayName = "Deliver Item"),	// Deliver item
+	Escort			UMETA(DisplayName = "Escort NPC"),		// Escort NPC
+	Defend			UMETA(DisplayName = "Defend Location"),	// Defend location
+	Discover		UMETA(DisplayName = "Discover Area"),	// Discover area
+	Custom			UMETA(DisplayName = "Custom"),			// Custom (tag-based)
 	MAX				UMETA(Hidden)
 };
 
 /**
- * Quest condition type
- * Used for quest unlock conditions and prerequisites
+ * @enum EQuestConditionType
+ * @brief Quest condition types for unlock requirements
  */
 UENUM(BlueprintType)
 enum class EQuestConditionType : uint8
 {
-	None				UMETA(DisplayName = "None"),				// 조건 ?�음
-	QuestCompleted		UMETA(DisplayName = "Quest Completed"),		// ?�행 ?�스???�료
-	QuestNotCompleted	UMETA(DisplayName = "Quest Not Completed"),	// ?�정 ?�스??미완�?
-	Level				UMETA(DisplayName = "Level Requirement"),	// ?�벨 ?�구?�항
-	HasItem				UMETA(DisplayName = "Has Item"),			// ?�이???��?
-	HasTag				UMETA(DisplayName = "Has Tag"),				// 게임?�레???�그 ?��?
-	RecipeKnown			UMETA(DisplayName = "Recipe Known"),		// ?�시???�득
-	Custom				UMETA(DisplayName = "Custom"),				// 커스?� 조건
+	None				UMETA(DisplayName = "None"),				// No condition
+	QuestCompleted		UMETA(DisplayName = "Quest Completed"),		// Previous quest completed
+	QuestNotCompleted	UMETA(DisplayName = "Quest Not Completed"),	// Specific quest not completed
+	Level				UMETA(DisplayName = "Level Requirement"),	// Level requirement
+	HasItem				UMETA(DisplayName = "Has Item"),			// Has item
+	HasTag				UMETA(DisplayName = "Has Tag"),				// Has gameplay tag
+	RecipeKnown			UMETA(DisplayName = "Recipe Known"),		// Recipe acquired
+	Custom				UMETA(DisplayName = "Custom"),				// Custom condition
 	MAX					UMETA(Hidden)
 };
 
 /**
- * Quest reward type
+ * @enum EQuestRewardType
+ * @brief Quest reward types
  */
 UENUM(BlueprintType)
 enum class EQuestRewardType : uint8
 {
-	None			UMETA(DisplayName = "None"),			// ?�음
-	Experience		UMETA(DisplayName = "Experience"),		// 경험�?
-	Gold			UMETA(DisplayName = "Gold"),			// 골드
-	Item			UMETA(DisplayName = "Item"),			// ?�이??
-	Recipe			UMETA(DisplayName = "Recipe"),			// ?�시??
-	Tag				UMETA(DisplayName = "Gameplay Tag"),	// 게임?�레???�그
-	UnlockQuest		UMETA(DisplayName = "Unlock Quest"),	// ?�스???�금
-	Custom			UMETA(DisplayName = "Custom"),			// 커스?� 보상
+	None			UMETA(DisplayName = "None"),			// None
+	Experience		UMETA(DisplayName = "Experience"),		// Experience
+	Gold			UMETA(DisplayName = "Gold"),			// Gold
+	Item			UMETA(DisplayName = "Item"),			// Item
+	Recipe			UMETA(DisplayName = "Recipe"),			// Recipe
+	Tag				UMETA(DisplayName = "Gameplay Tag"),	// Gameplay tag
+	UnlockQuest		UMETA(DisplayName = "Unlock Quest"),	// Unlock quest
+	Custom			UMETA(DisplayName = "Custom"),			// Custom reward
 	MAX				UMETA(Hidden)
 };
 

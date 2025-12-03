@@ -10,40 +10,42 @@
 class UDungeonDataAsset;
 
 /**
- * ?�전 ?�스?�스 ?�보
+ * @struct FDungeonInstanceInfo
+ * @brief Runtime dungeon instance information
  */
 USTRUCT(BlueprintType)
 struct FDungeonInstanceInfo
 {
 	GENERATED_BODY()
 
-	/** ?�스?�스 ID */
+	/** Instance unique ID */
 	UPROPERTY(BlueprintReadOnly)
 	FGuid InstanceID;
 
-	/** ?�전 ?�이??*/
+	/** Dungeon data asset */
 	UPROPERTY(BlueprintReadOnly)
 	const UDungeonDataAsset* DungeonData = nullptr;
 
-	/** ?�이??*/
+	/** Difficulty level */
 	UPROPERTY(BlueprintReadOnly)
 	EDungeonDifficulty Difficulty = EDungeonDifficulty::Normal;
 
-	/** ?�성 ?�간 */
+	/** Creation timestamp */
 	UPROPERTY(BlueprintReadOnly)
 	FDateTime CreationTime;
 
-	/** 참여 ?�레?�어 목록 */
+	/** List of participating player IDs */
 	UPROPERTY(BlueprintReadOnly)
 	TArray<FString> PlayerIDs;
 
-	/** ?�스?�스 ?�태 */
+	/** Instance state */
 	UPROPERTY(BlueprintReadOnly)
 	EDungeonState State = EDungeonState::NotStarted;
 };
 
 /**
- * ?�전 ??�� 배열 ?�퍼 (TMap value�??�용?�기 ?�함)
+ * @struct FDungeonRankingArray
+ * @brief Dungeon ranking array wrapper (for use as TMap value)
  */
 USTRUCT(BlueprintType)
 struct FDungeonRankingArray
@@ -55,8 +57,8 @@ struct FDungeonRankingArray
 };
 
 /**
- * ?�전 매니?�
- * 게임 ?�체???�전 ?�스?�을 관리하???�브?�스??
+ * @class UHarmoniaDungeonManager
+ * @brief Dungeon manager subsystem for game-wide dungeon system management
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaDungeonManager : public UGameInstanceSubsystem
@@ -67,124 +69,124 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
-	//~ ?�전 ?�이??관�?
+	//~ Dungeon Data Management
 
-	/** ?�전 ?�이???�록 */
+	/** Register dungeon data */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Manager")
 	void RegisterDungeon(UDungeonDataAsset* DungeonData);
 
-	/** ?�전 ?�이??조회 */
+	/** Get dungeon data by ID */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon|Manager")
 	UDungeonDataAsset* GetDungeonData(FName DungeonID) const;
 
-	/** 모든 ?�전 ?�이??조회 */
+	/** Get all registered dungeons */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon|Manager")
 	TArray<UDungeonDataAsset*> GetAllDungeons() const;
 
-	/** ?�?�별 ?�전 조회 */
+	/** Get dungeons by type */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Manager")
 	TArray<UDungeonDataAsset*> GetDungeonsByType(EDungeonType DungeonType) const;
 
-	//~ ?�스?�스 관�?
+	//~ Instance Management
 
-	/** ?�전 ?�스?�스 ?�성 */
+	/** Create dungeon instance */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Manager")
 	FGuid CreateDungeonInstance(const UDungeonDataAsset* DungeonData, EDungeonDifficulty Difficulty);
 
-	/** ?�전 ?�스?�스 ?�거 */
+	/** Destroy dungeon instance */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Manager")
 	void DestroyDungeonInstance(FGuid InstanceID);
 
-	/** ?�스?�스 ?�보 조회 */
+	/** Get instance info */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon|Manager")
 	FDungeonInstanceInfo GetInstanceInfo(FGuid InstanceID) const;
 
-	/** ?�성 ?�스?�스 목록 */
+	/** Get active instance list */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon|Manager")
 	TArray<FDungeonInstanceInfo> GetActiveInstances() const;
 
-	/** ?�레?�어�??�스?�스??추�? */
+	/** Add player to instance */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Manager")
 	bool AddPlayerToInstance(FGuid InstanceID, const FString& PlayerID);
 
-	/** ?�레?�어�??�스?�스?�서 ?�거 */
+	/** Remove player from instance */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Manager")
 	bool RemovePlayerFromInstance(FGuid InstanceID, const FString& PlayerID);
 
-	//~ 매치메이??
+	//~ Matchmaking
 
-	/** ?�전 매칭 ?�작 */
+	/** Start dungeon matchmaking */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Manager")
 	void StartMatchmaking(const FString& PlayerID, FName DungeonID, EDungeonDifficulty Difficulty);
 
-	/** 매칭 취소 */
+	/** Cancel matchmaking */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Manager")
 	void CancelMatchmaking(const FString& PlayerID);
 
-	//~ 글로벌 ??��
+	//~ Global Rankings
 
-	/** 글로벌 ??�� 조회 */
+	/** Get global rankings */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Manager")
 	TArray<FDungeonRankingEntry> GetGlobalRankings(FName DungeonID, int32 TopCount = 100) const;
 
-	/** ??�� ?�록 */
+	/** Submit ranking entry */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Manager")
 	void SubmitGlobalRanking(FName DungeonID, const FDungeonRankingEntry& Entry);
 
-	/** ?�즌 ??�� 조회 */
+	/** Get season rankings */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Manager")
 	TArray<FDungeonRankingEntry> GetSeasonRankings(FName DungeonID, int32 SeasonID, int32 TopCount = 100) const;
 
-	//~ ?�벤???�전
+	//~ Event Dungeons
 
-	/** ?�벤???�전 ?�성??*/
+	/** Activate event dungeon */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Manager")
 	void ActivateEventDungeon(FName DungeonID, FDateTime StartTime, FDateTime EndTime);
 
-	/** ?�벤???�전 비활?�화 */
+	/** Deactivate event dungeon */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Manager")
 	void DeactivateEventDungeon(FName DungeonID);
 
-	/** ?�성 ?�벤???�전 목록 */
+	/** Get active event dungeons list */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon|Manager")
 	TArray<FName> GetActiveEventDungeons() const;
 
-	//~ ?�계
+	//~ Statistics
 
-	/** ?�전 ?�리???�수 */
+	/** Get dungeon clear count */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon|Manager")
 	int32 GetDungeonClearCount(FName DungeonID) const;
 
-	/** ?�균 ?�리???�간 */
+	/** Get average clear time */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon|Manager")
 	float GetAverageClearTime(FName DungeonID) const;
 
-	/** ?�리?�율 */
+	/** Get clear rate */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon|Manager")
 	float GetClearRate(FName DungeonID) const;
 
 protected:
-	/** ?�록???�전 목록 */
+	/** Registered dungeons map */
 	UPROPERTY()
 	TMap<FName, UDungeonDataAsset*> RegisteredDungeons;
 
-	/** ?�성 ?�스?�스 목록 */
+	/** Active instances map */
 	UPROPERTY()
 	TMap<FGuid, FDungeonInstanceInfo> ActiveInstances;
 
-	/** 글로벌 ??�� (?�전�? */
+	/** Global rankings by dungeon */
 	UPROPERTY()
 	TMap<FName, FDungeonRankingArray> GlobalRankings;
 
-	/** 매칭 ??*/
+	/** Matchmaking queue */
 	UPROPERTY()
 	TMap<FString, FGuid> MatchmakingQueue;
 
-	/** ?�성 ?�벤???�전 */
+	/** Active event dungeons */
 	UPROPERTY()
 	TMap<FName, FDateTime> ActiveEventDungeons;
 
-	/** ?�전 ?�계 */
+	/** Dungeon statistics */
 	UPROPERTY()
 	TMap<FName, int32> DungeonClearCounts;
 
@@ -195,9 +197,9 @@ protected:
 	TMap<FName, int32> DungeonAttemptCounts;
 
 private:
-	/** 만료???�스?�스 ?�리 */
+	/** Cleanup expired instances */
 	void CleanupExpiredInstances();
 
-	/** 매칭 처리 */
+	/** Process matchmaking queue */
 	void ProcessMatchmaking();
 };

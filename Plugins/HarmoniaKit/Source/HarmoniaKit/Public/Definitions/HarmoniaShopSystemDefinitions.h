@@ -11,29 +11,51 @@
 #include "HarmoniaShopSystemDefinitions.generated.h"
 
 /**
- * Currency type - unified currency enum for all systems (Shop, Death Penalty, etc.)
+ * @file HarmoniaShopSystemDefinitions.h
+ * @brief Shop and trading system definitions
+ * 
+ * This file contains enums and structs for the shop system,
+ * including currencies, shop types, transactions, and trading.
+ */
+
+/**
+ * @enum EHarmoniaCurrencyType
+ * @brief Unified currency types for all systems (Shop, Death Penalty, etc.)
  */
 UENUM(BlueprintType)
 enum class EHarmoniaCurrencyType : uint8
 {
-	None			UMETA(DisplayName = "None"),			// ?�음
+	/** None - No currency */
+	None			UMETA(DisplayName = "None"),
 	
 	// Economy currencies
-	Gold			UMETA(DisplayName = "Gold"),			// 기본 골드
-	Premium			UMETA(DisplayName = "Premium"),			// ?�리미엄 ?�화 (캐시)
-	Honor			UMETA(DisplayName = "Honor"),			// 명예 ?�인??
-	Arena			UMETA(DisplayName = "Arena"),			// ?�레???�인??
-	Guild			UMETA(DisplayName = "Guild"),			// 길드 ?�인??
-	Event			UMETA(DisplayName = "Event"),			// ?�벤???�화
-	Reputation		UMETA(DisplayName = "Reputation"),		// ?�판 ?�인??
+	/** Gold - Basic gold currency */
+	Gold			UMETA(DisplayName = "Gold"),
+	/** Premium - Premium currency (cash shop) */
+	Premium			UMETA(DisplayName = "Premium"),
+	/** Honor - Honor points */
+	Honor			UMETA(DisplayName = "Honor"),
+	/** Arena - Arena points */
+	Arena			UMETA(DisplayName = "Arena"),
+	/** Guild - Guild points */
+	Guild			UMETA(DisplayName = "Guild"),
+	/** Event - Event currency */
+	Event			UMETA(DisplayName = "Event"),
+	/** Reputation - Reputation points */
+	Reputation		UMETA(DisplayName = "Reputation"),
 	
 	// Death Penalty currencies
-	MemoryEssence		UMETA(DisplayName = "Memory Essence"),	// 기억???�수
-	SoulCrystals		UMETA(DisplayName = "Soul Crystals"),	// ?�혼 ?�정
-	ForgottenKnowledge	UMETA(DisplayName = "Forgotten Knowledge"),	// ?��?�?지??
-	TimeFragments		UMETA(DisplayName = "Time Fragments"),	// ?�간 ?�편
+	/** Memory Essence - Essence of memories */
+	MemoryEssence		UMETA(DisplayName = "Memory Essence"),
+	/** Soul Crystals - Crystallized soul fragments */
+	SoulCrystals		UMETA(DisplayName = "Soul Crystals"),
+	/** Forgotten Knowledge - Lost knowledge currency */
+	ForgottenKnowledge	UMETA(DisplayName = "Forgotten Knowledge"),
+	/** Time Fragments - Fragments of time */
+	TimeFragments		UMETA(DisplayName = "Time Fragments"),
 	
-	Custom			UMETA(DisplayName = "Custom"),			// 커스?� (?�그�?지??
+	/** Custom - Custom currency (tag-based) */
+	Custom			UMETA(DisplayName = "Custom"),
 	MAX				UMETA(Hidden)
 };
 
@@ -41,20 +63,30 @@ enum class EHarmoniaCurrencyType : uint8
 using ECurrencyType = EHarmoniaCurrencyType;
 
 /**
- * Shop type
+ * @enum EHarmoniaShopType
+ * @brief Types of shops available in the game
  */
 UENUM(BlueprintType)
 enum class EHarmoniaShopType : uint8
 {
-	General			UMETA(DisplayName = "General"),			// ?�화??
-	Weapon			UMETA(DisplayName = "Weapon"),			// 무기?�점
-	Armor			UMETA(DisplayName = "Armor"),			// 방어구상??
-	Consumable		UMETA(DisplayName = "Consumable"),		// ?�비??
-	Material		UMETA(DisplayName = "Material"),		// ?�료?�점
-	Premium			UMETA(DisplayName = "Premium"),			// ?�리미엄 ??
-	Guild			UMETA(DisplayName = "Guild"),			// 길드 ?�점
-	Event			UMETA(DisplayName = "Event"),			// ?�벤???�점
-	Auction			UMETA(DisplayName = "Auction"),			// 경매??
+	/** General - General goods store */
+	General			UMETA(DisplayName = "General"),
+	/** Weapon - Weapon shop */
+	Weapon			UMETA(DisplayName = "Weapon"),
+	/** Armor - Armor shop */
+	Armor			UMETA(DisplayName = "Armor"),
+	/** Consumable - Consumable items shop */
+	Consumable		UMETA(DisplayName = "Consumable"),
+	/** Material - Material shop */
+	Material		UMETA(DisplayName = "Material"),
+	/** Premium - Premium cash shop */
+	Premium			UMETA(DisplayName = "Premium"),
+	/** Guild - Guild shop */
+	Guild			UMETA(DisplayName = "Guild"),
+	/** Event - Event shop */
+	Event			UMETA(DisplayName = "Event"),
+	/** Auction - Auction house */
+	Auction			UMETA(DisplayName = "Auction"),
 	MAX				UMETA(Hidden)
 };
 
@@ -77,15 +109,20 @@ enum class EHarmoniaShopItemAvailability : uint8
 };
 
 /**
- * Transaction type
+ * @enum ETransactionType
+ * @brief Types of shop transactions
  */
 UENUM(BlueprintType)
 enum class ETransactionType : uint8
 {
-	Buy				UMETA(DisplayName = "Buy"),				// 구매
-	Sell			UMETA(DisplayName = "Sell"),			// ?�매
-	Trade			UMETA(DisplayName = "Trade"),			// 교환
-	Refund			UMETA(DisplayName = "Refund"),			// ?�불
+	/** Buy - Purchase from shop */
+	Buy				UMETA(DisplayName = "Buy"),
+	/** Sell - Sell to shop */
+	Sell			UMETA(DisplayName = "Sell"),
+	/** Trade - Player-to-player trade */
+	Trade			UMETA(DisplayName = "Trade"),
+	/** Refund - Transaction refund */
+	Refund			UMETA(DisplayName = "Refund"),
 	MAX				UMETA(Hidden)
 };
 

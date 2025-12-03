@@ -10,47 +10,49 @@
 class UDungeonDataAsset;
 
 /**
- * ?�전 체크?�인??
+ * @struct FDungeonCheckpoint
+ * @brief Dungeon checkpoint data
  */
 USTRUCT(BlueprintType)
 struct FDungeonCheckpoint
 {
 	GENERATED_BODY()
 
-	/** 체크?�인???�치 */
+	/** Checkpoint location */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	FVector Location;
 
-	/** 체크?�인???�전 */
+	/** Checkpoint rotation */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	FRotator Rotation;
 
-	/** 체크?�인???�름 */
+	/** Checkpoint name */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	FText CheckpointName;
 };
 
 /**
- * ?�전 ?�폰 ?�인??
+ * @struct FDungeonSpawnPoint
+ * @brief Dungeon spawn point data
  */
 USTRUCT(BlueprintType)
 struct FDungeonSpawnPoint
 {
 	GENERATED_BODY()
 
-	/** ?�폰 ?�치 */
+	/** Spawn transform */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	FTransform SpawnTransform;
 
-	/** ?�폰??몬스???�래??*/
+	/** Monster class to spawn */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	TSubclassOf<AActor> MonsterClass;
 
-	/** ?�폰 ?�이�?번호 */
+	/** Wave number for this spawn */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	int32 WaveNumber = 1;
 
-	/** ?�성???��? */
+	/** Whether spawn is active */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	bool bIsActive = true;
 };
@@ -62,8 +64,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerExitedDungeon, APlayerContr
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDungeonWaveCompleted, int32, WaveNumber);
 
 /**
- * ?�전 ?�스?�스 ?�터
- * ?�제 ?�전 ?�벨??배치?�어 ?�전??관리하???�터
+ * @class AHarmoniaDungeonInstance
+ * @brief Dungeon instance actor that manages actual dungeon gameplay
  */
 UCLASS()
 class HARMONIAKIT_API AHarmoniaDungeonInstance : public AActor
@@ -80,7 +82,7 @@ protected:
 public:	
 	virtual void Tick(float DeltaTime) override;
 
-	//~ ?�리게이??
+	//~ Delegates
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Dungeon")
 	FOnDungeonInstanceStarted OnDungeonInstanceStarted;
 
@@ -96,139 +98,139 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Dungeon")
 	FOnDungeonWaveCompleted OnWaveCompleted;
 
-	//~ ?�전 ?�정
+	//~ Dungeon Settings
 
-	/** ?�전 ?�이??*/
+	/** Dungeon data asset */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Settings")
 	const UDungeonDataAsset* DungeonData;
 
-	/** ?�재 ?�이??*/
+	/** Current difficulty */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Settings")
 	EDungeonDifficulty Difficulty = EDungeonDifficulty::Normal;
 
-	/** ?�장 지??*/
+	/** Entrance location */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Settings")
 	FTransform EntranceTransform;
 
-	/** 출구 지??*/
+	/** Exit location */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Settings")
 	FTransform ExitTransform;
 
-	/** 체크?�인??목록 */
+	/** Checkpoint list */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Settings")
 	TArray<FDungeonCheckpoint> Checkpoints;
 
-	/** ?�폰 ?�인??목록 */
+	/** Spawn point list */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon|Settings")
 	TArray<FDungeonSpawnPoint> SpawnPoints;
 
-	//~ ?�전 ?�어
+	//~ Dungeon Control
 
-	/** ?�전 ?�작 */
+	/** Start the dungeon */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon")
 	void StartDungeon();
 
-	/** ?�전 종료 */
+	/** End the dungeon */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon")
 	void EndDungeon(bool bSuccess);
 
-	/** ?�레?�어 ?�장 */
+	/** Handle player entering */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon")
 	void OnPlayerEnter(APlayerController* Player);
 
-	/** ?�레?�어 ?�장 */
+	/** Handle player exiting */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon")
 	void OnPlayerExit(APlayerController* Player);
 
-	/** ?�재 ?�이�??�작 */
+	/** Start a specific wave */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon")
 	void StartWave(int32 WaveNumber);
 
-	/** ?�음 ?�이브로 */
+	/** Advance to next wave */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon")
 	void AdvanceToNextWave();
 
-	//~ ?�태 조회
+	//~ State Queries
 
-	/** ?�전 진행 중인지 */
+	/** Check if dungeon is active */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon")
 	bool IsActive() const { return bIsActive; }
 
-	/** ?�재 ?�이�?*/
+	/** Get current wave number */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon")
 	int32 GetCurrentWave() const { return CurrentWave; }
 
-	/** 참�? ?�레?�어 ??*/
+	/** Get participating player count */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon")
 	int32 GetPlayerCount() const { return ActivePlayers.Num(); }
 
-	/** ?�존 몬스????*/
+	/** Get alive monster count */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon")
 	int32 GetAliveMonsterCount() const;
 
-	//~ 몬스??관�?
+	//~ Monster Management
 
-	/** 몬스???�폰 */
+	/** Spawn a monster */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon")
 	AActor* SpawnMonster(const FDungeonSpawnPoint& SpawnPoint);
 
-	/** 몬스???�록 */
+	/** Register a monster */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon")
 	void RegisterMonster(AActor* Monster);
 
-	/** 몬스???�거 */
+	/** Unregister a monster */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon")
 	void UnregisterMonster(AActor* Monster);
 
-	/** 모든 몬스???�거 */
+	/** Clear all monsters */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon")
 	void ClearAllMonsters();
 
-	//~ 무한 ?�전??
+	//~ Infinite Dungeon Mode
 
-	/** ?�음 �??�성 (무한 ?�전?? */
+	/** Generate next floor (for infinite dungeon) */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Infinite")
 	void GenerateNextFloor();
 
-	/** ?�재 �??�보 조회 */
+	/** Get current floor info */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon|Infinite")
 	FInfiniteDungeonFloor GetCurrentFloorInfo() const;
 
 protected:
-	/** ?�전 ?�성???�태 */
+	/** Whether dungeon is active */
 	UPROPERTY(BlueprintReadOnly, Category = "Dungeon")
 	bool bIsActive;
 
-	/** ?�재 ?�이�?*/
+	/** Current wave number */
 	UPROPERTY(BlueprintReadOnly, Category = "Dungeon")
 	int32 CurrentWave;
 
-	/** ?�재 �?(무한 ?�전?? */
+	/** Current floor (for infinite dungeon) */
 	UPROPERTY(BlueprintReadOnly, Category = "Dungeon")
 	int32 CurrentFloor;
 
-	/** 참�? ?�레?�어 목록 */
+	/** Active players list */
 	UPROPERTY(BlueprintReadOnly, Category = "Dungeon")
 	TArray<APlayerController*> ActivePlayers;
 
-	/** ?�폰??몬스??목록 */
+	/** Spawned monsters list */
 	UPROPERTY(BlueprintReadOnly, Category = "Dungeon")
 	TArray<AActor*> SpawnedMonsters;
 
-	/** ?�스?�스 ID */
+	/** Instance unique ID */
 	UPROPERTY(BlueprintReadOnly, Category = "Dungeon")
 	FGuid InstanceID;
 
 private:
-	/** 몬스???�폰 처리 */
+	/** Process monster spawns for wave */
 	void ProcessMonsterSpawns(int32 WaveNumber);
 
-	/** ?�이�??�료 체크 */
+	/** Check wave completion */
 	void CheckWaveCompletion();
 
-	/** ?�료 조건 체크 */
+	/** Check completion conditions */
 	void CheckCompletionConditions();
 
-	/** ?�?�머 ?�들 */
+	/** Timer handle for wave checks */
 	FTimerHandle WaveCheckTimerHandle;
 };

@@ -452,7 +452,7 @@ bool UHarmoniaBuildingComponent::CheckAndConsumeResources(const FHarmoniaBuildin
 	}
 
 	// 2단계: 모든 자원 소비 (실패 시 롤백 지원)
-	TArray<FBuildingResourceCost> ConsumedResources; // 롤백용 추적
+	TArray<FBuildingResourceCost> ConsumedResources; // Tracking for rollback
 
 	for (const FBuildingResourceCost& Cost : PartData.RequiredResources)
 	{
@@ -461,7 +461,7 @@ bool UHarmoniaBuildingComponent::CheckAndConsumeResources(const FHarmoniaBuildin
 		{
 			UE_LOG(LogBuildingSystem, Error, TEXT("Failed to remove item: %s - Rolling back consumed resources"), *Cost.Item.Id.ToString());
 
-			// 롤백: ?��? ?�거???�이?�들??복구
+			// Rollback: Restore previously removed items
 			for (const FBuildingResourceCost& ConsumedCost : ConsumedResources)
 			{
 				InventoryComponent->AddItem(ConsumedCost.Item, ConsumedCost.Count, 0.0f);
@@ -491,7 +491,7 @@ FHarmoniaBuildingPartData* UHarmoniaBuildingComponent::GetCurrentPartData() cons
 		return nullptr;
 	}
 
-	// DataTable?�서 PartID�?조회
+	// Look up PartID in DataTable
 	FHarmoniaBuildingPartData* PartData = CachedBuildingDataTable->FindRow<FHarmoniaBuildingPartData>(SelectedPartID, TEXT("GetCurrentPartData"));
 
 	if (!PartData)

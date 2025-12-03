@@ -259,7 +259,7 @@ void UHarmoniaQuestWidget::ShowQuestAcceptedNotification(const FText& QuestName)
 	if (NotificationText)
 	{
 		NotificationText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaQuest", "QuestAccepted", "?�스???�락: {0}"),
+			NSLOCTEXT("HarmoniaQuest", "QuestAccepted", "Quest Accepted: {0}"),
 			QuestName));
 		NotificationText->SetColorAndOpacity(FLinearColor::Yellow);
 	}
@@ -277,7 +277,7 @@ void UHarmoniaQuestWidget::ShowQuestCompletedNotification(const FText& QuestName
 	if (NotificationText)
 	{
 		NotificationText->SetText(FText::Format(
-			NSLOCTEXT("HarmoniaQuest", "QuestCompleted", "?�스???�료: {0}"),
+			NSLOCTEXT("HarmoniaQuest", "QuestCompleted", "Quest Completed: {0}"),
 			QuestName));
 		NotificationText->SetColorAndOpacity(FLinearColor::Green);
 	}

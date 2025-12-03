@@ -16,7 +16,7 @@ AHarmoniaRecoveryAreaActor::AHarmoniaRecoveryAreaActor()
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 
-	// Sphere Component ?�성
+	// Create Sphere Component
 	RecoveryAreaSphere = CreateDefaultSubobject<USphereComponent>(TEXT("RecoveryAreaSphere"));
 	SetRootComponent(RecoveryAreaSphere);
 	RecoveryAreaSphere->SetSphereRadius(300.0f);
@@ -24,17 +24,17 @@ AHarmoniaRecoveryAreaActor::AHarmoniaRecoveryAreaActor()
 	RecoveryAreaSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
 	RecoveryAreaSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
-	// VFX Component ?�성
+	// Create VFX Component
 	AreaVFXComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("AreaVFXComponent"));
 	AreaVFXComponent->SetupAttachment(RootComponent);
 	AreaVFXComponent->SetAutoActivate(false);
 
-	// Audio Component ?�성
+	// Create Audio Component
 	AreaAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("AreaAudioComponent"));
 	AreaAudioComponent->SetupAttachment(RootComponent);
 	AreaAudioComponent->SetAutoActivate(false);
 
-	// 기본 ?�정
+	// Default settings
 	RecoveryConfig.RecoveryRadius = 300.0f;
 	RecoveryConfig.Duration = 60.0f;
 	RecoveryConfig.HealthPerTick = 5.0f;
@@ -45,17 +45,17 @@ void AHarmoniaRecoveryAreaActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Overlap ?�벤??바인??
+	// Bind overlap events
 	RecoveryAreaSphere->OnComponentBeginOverlap.AddDynamic(this, &AHarmoniaRecoveryAreaActor::OnActorEnterRecoveryArea);
 	RecoveryAreaSphere->OnComponentEndOverlap.AddDynamic(this, &AHarmoniaRecoveryAreaActor::OnActorLeaveRecoveryArea);
 
-	// ?�동 ?�성??
+	// Auto-activate
 	ActivateRecoveryArea();
 }
 
 void AHarmoniaRecoveryAreaActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// ?�?�머 ?�리
+	// Clean up timers
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(RecoveryTickTimerHandle);
@@ -69,19 +69,19 @@ void AHarmoniaRecoveryAreaActor::InitializeRecoveryArea(const FHarmoniaDeployabl
 {
 	RecoveryConfig = Config;
 
-	// Sphere 반경 ?�데?�트
+	// Update sphere radius
 	if (RecoveryAreaSphere)
 	{
 		RecoveryAreaSphere->SetSphereRadius(Config.RecoveryRadius);
 	}
 
-	// VFX ?�정
+	// Set VFX
 	if (AreaVFXComponent && Config.AreaVFX)
 	{
 		AreaVFXComponent->SetAsset(Config.AreaVFX);
 	}
 
-	// SFX ?�정
+	// Set SFX
 	if (AreaAudioComponent && Config.AreaSound)
 	{
 		AreaAudioComponent->SetSound(Config.AreaSound);
@@ -97,19 +97,19 @@ void AHarmoniaRecoveryAreaActor::ActivateRecoveryArea()
 
 	bIsActive = true;
 
-	// VFX ?�성??
+	// Activate VFX
 	if (AreaVFXComponent)
 	{
 		AreaVFXComponent->Activate();
 	}
 
-	// SFX ?�성??
+	// Activate SFX
 	if (AreaAudioComponent)
 	{
 		AreaAudioComponent->Play();
 	}
 
-	// ?�복 ???�?�머 ?�작
+	// Start recovery tick timer
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(
@@ -120,7 +120,7 @@ void AHarmoniaRecoveryAreaActor::ActivateRecoveryArea()
 			true
 		);
 
-		// 만료 ?�?�머 ?�정
+		// Set expiration timer
 		if (RecoveryConfig.Duration > 0.0f)
 		{
 			World->GetTimerManager().SetTimer(
@@ -146,19 +146,19 @@ void AHarmoniaRecoveryAreaActor::DeactivateRecoveryArea()
 
 	bIsActive = false;
 
-	// VFX 비활?�화
+	// Deactivate VFX
 	if (AreaVFXComponent && AreaVFXComponent->IsActive())
 	{
 		AreaVFXComponent->Deactivate();
 	}
 
-	// SFX ?��?
+	// Stop SFX
 	if (AreaAudioComponent && AreaAudioComponent->IsPlaying())
 	{
 		AreaAudioComponent->Stop();
 	}
 
-	// ?�?�머 ?�리
+	// Clean up timers
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(RecoveryTickTimerHandle);
@@ -177,7 +177,7 @@ void AHarmoniaRecoveryAreaActor::PerformRecoveryTick()
 
 	int32 HealedCount = 0;
 
-	// 범위 ??모든 ?�터?�게 ?�복 ?�용
+	// Apply recovery to all actors in range
 	for (AActor* Actor : ActorsInArea)
 	{
 		if (!Actor || !Actor->IsValidLowLevel())
@@ -185,7 +185,7 @@ void AHarmoniaRecoveryAreaActor::PerformRecoveryTick()
 			continue;
 		}
 
-		// Health Component 찾기
+		// Find Health Component
 		if (ULyraHealthComponent* HealthComp = Actor->FindComponentByClass<ULyraHealthComponent>())
 		{
 			if (HealthComp->GetHealth() < HealthComp->GetMaxHealth())

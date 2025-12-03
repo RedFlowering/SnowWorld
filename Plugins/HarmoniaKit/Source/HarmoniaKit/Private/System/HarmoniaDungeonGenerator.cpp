@@ -14,19 +14,19 @@ FDungeonLayout UHarmoniaDungeonGenerator::GenerateDungeonLayout(const FDungeonGe
 
 	FRandomStream RandomStream(Layout.Seed);
 
-	// 1. �??�성
+	// 1. Generate rooms
 	Layout.Rooms = GenerateRooms(Settings, RandomStream);
 
-	// 2. �??�???�당
+	// 2. Assign room types
 	AssignRoomTypes(Layout.Rooms, Settings, RandomStream);
 
-	// 3. 복도 ?�성
+	// 3. Generate corridors
 	Layout.Corridors = GenerateCorridors(Layout.Rooms, Settings, RandomStream);
 
-	// 4. ?�이??계산
+	// 4. Calculate difficulty
 	CalculateRoomDifficulty(Layout.Rooms);
 
-	// 5. 몬스????계산
+	// 5. Calculate monster counts
 	CalculateMonsterCounts(Layout.Rooms, 1);
 
 	return Layout;
@@ -42,7 +42,7 @@ FDungeonLayout UHarmoniaDungeonGenerator::GenerateInfiniteDungeonFloor(int32 Flo
 
 	FDungeonLayout Layout = GenerateDungeonLayout(Settings, FloorNumber);
 
-	// �?번호???�른 ?�이??�?몬스????증�?
+	// Increase difficulty and monster count based on floor number
 	CalculateMonsterCounts(Layout.Rooms, FloorNumber);
 
 	return Layout;
@@ -56,7 +56,7 @@ AHarmoniaDungeonInstance* UHarmoniaDungeonGenerator::SpawnDungeonFromLayout(UObj
 		return nullptr;
 	}
 
-	// ?�전 ?�스?�스 ?�터 ?�성
+	// Create dungeon instance actor
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
@@ -72,13 +72,13 @@ AHarmoniaDungeonInstance* UHarmoniaDungeonGenerator::SpawnDungeonFromLayout(UObj
 		return nullptr;
 	}
 
-	// ?�전 ?�이???�정
+	// Set dungeon data
 	DungeonInstance->DungeonData = DungeonData;
 
-	// ?�폰 ?�인???�성 (?�이?�웃 기반)
+	// Generate spawn points (based on layout)
 	for (const FDungeonRoom& Room : Layout.Rooms)
 	{
-		// �??�?�에 ?�라 몬스???�폰 ?�인??추�?
+		// Add monster spawn points based on room type
 		if (Room.RoomType == EDungeonRoomType::Combat || Room.RoomType == EDungeonRoomType::Boss)
 		{
 			for (int32 i = 0; i < Room.MonsterCount; i++)
@@ -92,13 +92,13 @@ AHarmoniaDungeonInstance* UHarmoniaDungeonGenerator::SpawnDungeonFromLayout(UObj
 			}
 		}
 
-		// ?�작 방�? ?�장 지??
+		// Set entrance location for start room
 		if (Room.RoomType == EDungeonRoomType::Start)
 		{
 			DungeonInstance->EntranceTransform = FTransform(Room.WorldPosition);
 		}
 
-		// 출구 방�? ?�장 지??
+		// Set exit location for exit room
 		if (Room.RoomType == EDungeonRoomType::Exit)
 		{
 			DungeonInstance->ExitTransform = FTransform(Room.WorldPosition);
@@ -112,13 +112,13 @@ AHarmoniaDungeonInstance* UHarmoniaDungeonGenerator::SpawnDungeonFromLayout(UObj
 
 bool UHarmoniaDungeonGenerator::ValidateDungeonLayout(const FDungeonLayout& Layout)
 {
-	// 1. 최소 �?개수 ?�인
+	// 1. Check minimum room count
 	if (Layout.Rooms.Num() < 3)
 	{
 		return false;
 	}
 
-	// 2. ?�작 방과 출구 �??�인
+	// 2. Check for start and exit rooms
 	bool bHasStart = false;
 	bool bHasExit = false;
 
@@ -139,7 +139,7 @@ bool UHarmoniaDungeonGenerator::ValidateDungeonLayout(const FDungeonLayout& Layo
 		return false;
 	}
 
-	// 3. 모든 방이 ?�결?�어 ?�는지 ?�인
+	// 3. Check if all rooms are connected
 	if (!AreAllRoomsConnected(Layout.Rooms))
 	{
 		return false;
@@ -162,11 +162,11 @@ TArray<FDungeonRoom> UHarmoniaDungeonGenerator::GenerateRooms(const FDungeonGene
 
 		FDungeonRoom NewRoom;
 
-		// ?�덤 �??�기
+		// Random room size
 		int32 RoomWidth = RandomStream.RandRange(Settings.MinRoomSize.X, Settings.MaxRoomSize.X);
 		int32 RoomHeight = RandomStream.RandRange(Settings.MinRoomSize.Y, Settings.MaxRoomSize.Y);
 
-		// ?�덤 ?�치
+		// Random position
 		NewRoom.GridPosition = FIntPoint(
 			RandomStream.RandRange(1, Settings.DungeonSize.X - RoomWidth - 1),
 			RandomStream.RandRange(1, Settings.DungeonSize.Y - RoomHeight - 1)
@@ -179,7 +179,7 @@ TArray<FDungeonRoom> UHarmoniaDungeonGenerator::GenerateRooms(const FDungeonGene
 			0.0f
 		);
 
-		// 겹침 체크
+		// Check for overlap
 		if (!IsRoomOverlapping(NewRoom, Rooms))
 		{
 			Rooms.Add(NewRoom);
@@ -198,14 +198,14 @@ TArray<FDungeonCorridor> UHarmoniaDungeonGenerator::GenerateCorridors(const TArr
 		return Corridors;
 	}
 
-	// 최소 ?�패???�리�?모든 �??�결
+	// Connect all rooms using minimum spanning tree
 	TArray<bool> Connected;
 	Connected.SetNumZeroed(Rooms.Num());
 	Connected[0] = true;
 
 	for (int32 i = 1; i < Rooms.Num(); i++)
 	{
-		// 가??가까운 ?�결??�?찾기
+		// Find nearest connected room
 		float MinDistance = MAX_FLT;
 		int32 ClosestConnected = -1;
 
@@ -224,25 +224,25 @@ TArray<FDungeonCorridor> UHarmoniaDungeonGenerator::GenerateCorridors(const TArr
 
 		if (ClosestConnected != -1)
 		{
-			// 복도 ?�성
+			// Create corridor
 			FDungeonCorridor Corridor;
 			Corridor.StartRoom = Rooms[ClosestConnected].GridPosition;
 			Corridor.EndRoom = Rooms[i].GridPosition;
 
-			// 간단??L??복도 (?�평 -> ?�직 ?�는 ?�직 -> ?�평)
+			// Simple L-shaped corridor (horizontal -> vertical or vertical -> horizontal)
 			FVector Start = Rooms[ClosestConnected].WorldPosition;
 			FVector End = Rooms[i].WorldPosition;
 
 			if (RandomStream.FRand() > 0.5f)
 			{
-				// ?�평 먼�?
+				// Horizontal first
 				Corridor.PathPoints.Add(Start);
 				Corridor.PathPoints.Add(FVector(End.X, Start.Y, Start.Z));
 				Corridor.PathPoints.Add(End);
 			}
 			else
 			{
-				// ?�직 먼�?
+				// Vertical first
 				Corridor.PathPoints.Add(Start);
 				Corridor.PathPoints.Add(FVector(Start.X, End.Y, Start.Z));
 				Corridor.PathPoints.Add(End);
@@ -253,7 +253,7 @@ TArray<FDungeonCorridor> UHarmoniaDungeonGenerator::GenerateCorridors(const TArr
 		}
 	}
 
-	// 추�? ?�결 (루프 ?�성)
+	// Additional connections (loop creation)
 	if (Settings.bAllowLoops)
 	{
 		int32 ExtraConnections = Rooms.Num() / 5;
@@ -290,10 +290,10 @@ void UHarmoniaDungeonGenerator::AssignRoomTypes(TArray<FDungeonRoom>& Rooms, con
 		return;
 	}
 
-	// �?번째 방�? ?�작 �?
+	// First room is the start room
 	Rooms[0].RoomType = EDungeonRoomType::Start;
 
-	// 마�?�?방�? 출구??보스 �?
+	// Last room is exit or boss room
 	if (RandomStream.FRand() < Settings.BossRoomChance)
 	{
 		Rooms[Rooms.Num() - 1].RoomType = EDungeonRoomType::Boss;
@@ -303,7 +303,7 @@ void UHarmoniaDungeonGenerator::AssignRoomTypes(TArray<FDungeonRoom>& Rooms, con
 		Rooms[Rooms.Num() - 1].RoomType = EDungeonRoomType::Exit;
 	}
 
-	// ?�머지 방들
+	// Remaining rooms
 	for (int32 i = 1; i < Rooms.Num() - 1; i++)
 	{
 		float Rand = RandomStream.FRand();
@@ -350,13 +350,13 @@ bool UHarmoniaDungeonGenerator::IsRoomOverlapping(const FDungeonRoom& Room, cons
 
 TArray<FIntPoint> UHarmoniaDungeonGenerator::FindPath(FIntPoint Start, FIntPoint End, const FDungeonGenerationSettings& Settings) const
 {
-	// 간단??A* 구현 (?�후 개선 가??
+	// Simple A* implementation (can be improved later)
 	TArray<FIntPoint> Path;
 	
 	FIntPoint Current = Start;
 	Path.Add(Current);
 
-	// 맨하??거리�?간단??구현
+	// Simple Manhattan distance implementation
 	while (Current != End)
 	{
 		if (Current.X < End.X)
@@ -389,7 +389,7 @@ bool UHarmoniaDungeonGenerator::AreAllRoomsConnected(const TArray<FDungeonRoom>&
 		return false;
 	}
 
-	// BFS�??�결???�인
+	// Check connectivity using BFS
 	TSet<FIntPoint> Visited;
 	TArray<FIntPoint> Queue;
 
@@ -401,7 +401,7 @@ bool UHarmoniaDungeonGenerator::AreAllRoomsConnected(const TArray<FDungeonRoom>&
 		FIntPoint Current = Queue[0];
 		Queue.RemoveAt(0);
 
-		// ?�재 방에 ?�결??모든 �??�색
+		// Search all rooms connected to current room
 		for (const FDungeonRoom& Room : Rooms)
 		{
 			if (Room.ConnectedRooms.Contains(Current) && !Visited.Contains(Room.GridPosition))
@@ -422,7 +422,7 @@ void UHarmoniaDungeonGenerator::CalculateRoomDifficulty(TArray<FDungeonRoom>& Ro
 		return;
 	}
 
-	// ?�작 방으로�??�의 거리 기반 ?�이??
+	// Distance-based difficulty from start room
 	FVector StartPos = Rooms[0].WorldPosition;
 
 	for (FDungeonRoom& Room : Rooms)
