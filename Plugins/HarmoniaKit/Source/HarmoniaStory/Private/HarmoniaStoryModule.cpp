@@ -1,20 +1,27 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file HarmoniaStoryModule.cpp
+ * @brief HarmoniaStory 모듈 구현
+ */
+
 #include "HarmoniaStoryModule.h"
 #include "HarmoniaStoryLog.h"
 
 #define LOCTEXT_NAMESPACE "FHarmoniaStoryModule"
 
+//=============================================================================
+// Module Lifecycle
+//=============================================================================
+
 void FHarmoniaStoryModule::StartupModule()
 {
-	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
-    UE_LOG(LogHarmoniaStory, Log, TEXT("HarmoniaStory Module Started"));
+    UE_LOG(LogHarmoniaStory, Log, TEXT("[Harmonia] Story module started"));
 }
 
 void FHarmoniaStoryModule::ShutdownModule()
 {
-	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
-	// we call this function before unloading the module.
+    UE_LOG(LogHarmoniaStory, Log, TEXT("[Harmonia] Story module shutdown"));
 }
 
 #undef LOCTEXT_NAMESPACE

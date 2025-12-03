@@ -1,5 +1,13 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file HarmoniaLocalizationSubsystem.h
+ * @brief 다국어 지원 서브시스템 정의
+ * 
+ * 동적 언어 전환, 텍스트 번역, 폰트 관리,
+ * RTL 지원 등 다국어 기능을 제공합니다.
+ */
+
 #pragma once
 
 #include "CoreMinimal.h"
