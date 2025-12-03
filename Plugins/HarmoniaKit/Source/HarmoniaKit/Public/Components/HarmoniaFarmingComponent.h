@@ -1,5 +1,11 @@
 ﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
+/**
+ * @file HarmoniaFarmingComponent.h
+ * @brief Farming system component for crop cultivation and harvest management
+ * @author Harmonia Team
+ */
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -15,8 +21,11 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFertilizerApplied, FName, CropID
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFarmingLevelUp, int32, NewLevel, int32, SkillPoints);
 
 /**
- * ?�사 ?�스??컴포?�트
- * ?�물 ?�배, ?�장 관�? ?�확 처리
+ * @class UHarmoniaFarmingComponent
+ * @brief Farming system component for crop cultivation
+ * 
+ * Handles crop planting, growth management, and harvest processing.
+ * Supports seasons, soil quality, and fertilizer systems.
  */
 UCLASS(ClassGroup=(HarmoniaKit), meta=(BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaFarmingComponent : public UHarmoniaBaseLifeContentComponent
@@ -33,170 +42,171 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	// ====================================
-	// ?�사 기본 기능
+	// Farming Basic Functions
 	// ====================================
 
-	/** ?�물 ?�기 */
+	/** Plant a crop in the specified plot */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Farming")
 	bool PlantCrop(FName CropID, FName PlotID);
 
-	/** ?�물 ?�확 */
+	/** Harvest crop from plot */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Farming")
 	FHarvestResult HarvestCrop(FName PlotID);
 
-	/** ?�물??물주�?*/
+	/** Water crop in plot */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Farming")
 	bool WaterCrop(FName PlotID);
 
-	/** 비료 ?�용 */
+	/** Apply fertilizer to crop */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Farming")
 	bool ApplyFertilizer(FName PlotID, const FFertilizerData& Fertilizer);
 
-	/** ?�물 ?�거 */
+	/** Remove crop from plot */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Farming")
 	void RemoveCrop(FName PlotID);
 
-	/** ?�물 ?�보 가?�오�?*/
+	/** Get crop instance from plot */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Farming")
 	bool GetCropInstance(FName PlotID, FCropInstance& OutCrop) const;
 
-	/** ?�확 가???��? ?�인 */
+	/** Check if crop can be harvested */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Farming")
 	bool CanHarvest(FName PlotID) const;
 
 	// ====================================
-	// �?관�?
+	// Plot Management
 	// ====================================
 
-	/** �?추�? */
+	/** Add farm plot */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Farming")
 	void AddFarmPlot(FName PlotID, const FSoilData& SoilData);
 
-	/** �??�거 */
+	/** Remove farm plot */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Farming")
 	void RemoveFarmPlot(FName PlotID);
 
-	/** 모든 �?가?�오�?*/
+	/** Get all plot IDs */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Farming")
 	TArray<FName> GetAllPlots() const;
 
-	/** �?�?가?�오�?*/
+	/** Get empty (unoccupied) plots */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Farming")
 	TArray<FName> GetEmptyPlots() const;
 
 	// ====================================
-	// ?�벨 �?경험�??�스??
+	// Level & Experience System
 	// ====================================
 
-	/** ?�사 경험�??�득 */
+	/** Add farming experience */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Farming")
 	void AddFarmingExperience(int32 Amount);
 
-	/** ?�재 ?�사 ?�벨 */
+	/** Get current farming level */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Farming")
 	int32 GetFarmingLevel() const { return FarmingLevel; }
 
 	// ====================================
-	// 계절 ?�스??
+	// Season System
+	// ====================================
 	// ====================================
 
-	/** ?�재 계절 ?�정 */
+	/** Set current season */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Farming")
 	void SetCurrentSeason(ESeason Season);
 
-	/** ?�재 계절 가?�오�?*/
+	/** Get current season */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Farming")
 	ESeason GetCurrentSeason() const { return CurrentSeason; }
 
-	/** ?�물???�재 계절???�랄 ???�는지 ?�인 */
+	/** Check if crop can grow in current season */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Farming")
 	bool CanGrowInCurrentSeason(FName CropID) const;
 
 	// ====================================
-	// ?�벤??
+	// Events
 	// ====================================
 
-	/** ?�물 ?�기 ?�벤??*/
+	/** Event fired when crop is planted */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Farming")
 	FOnCropPlanted OnCropPlanted;
 
-	/** ?�물 ?�장 ?�계 변�??�벤??*/
+	/** Event fired when crop growth stage changes */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Farming")
 	FOnCropGrowthStageChanged OnCropGrowthStageChanged;
 
-	/** ?�물 ?�확 ?�벤??*/
+	/** Event fired when crop is harvested */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Farming")
 	FOnCropHarvested OnCropHarvested;
 
-	/** ?�물 물주�??�벤??*/
+	/** Event fired when crop is watered */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Farming")
 	FOnCropWatered OnCropWatered;
 
-	/** 비료 ?�용 ?�벤??*/
+	/** Event fired when fertilizer is applied */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Farming")
 	FOnFertilizerApplied OnFertilizerApplied;
 
-	/** ?�벨???�벤??*/
+	/** Event fired on level up */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Farming")
 	FOnFarmingLevelUp OnFarmingLevelUp;
 
 	// ====================================
-	// ?�정
+	// Settings
 	// ====================================
 
-	/** ?�물 ?�이?�베?�스 */
+	/** Crop database */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Farming Settings")
 	TMap<FName, FCropData> CropDatabase;
 
-	/** 물주�??�분 증�???*/
+	/** Moisture increase amount per watering */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Farming Settings")
 	float WaterMoistureIncrease = 30.0f;
 
-	/** ?�간???�분 감소??*/
+	/** Moisture decay rate per hour */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Farming Settings")
 	float MoistureDecayPerHour = 10.0f;
 
-	/** �?부�??�널??(?�장 ?�도 감소, %) */
+	/** Low moisture penalty (growth speed reduction, %) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Farming Settings")
 	float LowMoisturePenalty = 50.0f;
 
-	/** ?�앗 ?�득 ?�률 (%) */
+	/** Seed drop chance (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Farming Settings")
 	float SeedDropChance = 30.0f;
 
 private:
-	/** ?�사 ?�벨 */
+	/** Farming level */
 	UPROPERTY()
 	int32 FarmingLevel = 1;
 
-	/** �?목록 (?�롯 ID -> ?�물 ?�스?�스) */
+	/** Farm plots map (Plot ID -> Crop Instance) */
 	UPROPERTY()
 	TMap<FName, FCropInstance> FarmPlots;
 
-	/** �??�양 ?�이??*/
+	/** Plot soil data map */
 	UPROPERTY()
 	TMap<FName, FSoilData> PlotSoilData;
 
-	/** ?�재 계절 */
+	/** Current season */
 	UPROPERTY()
 	ESeason CurrentSeason = ESeason::Spring;
 
-	/** 마�?�??�데?�트 ?�간 */
+	/** Last update time */
 	UPROPERTY()
 	FDateTime LastUpdateTime;
 
-	/** ?�물 ?�장 ?�데?�트 */
+	/** Update crop growth state */
 	void UpdateCropGrowth(FName PlotID, FCropInstance& Crop);
 
-	/** ?�물 ?�질 계산 */
+	/** Calculate crop quality */
 	float CalculateCropQuality(const FCropInstance& Crop, const FCropData& CropData) const;
 
-	/** ?�확 결과 계산 */
+	/** Calculate harvest result */
 	FHarvestResult CalculateHarvestResult(const FCropInstance& Crop, const FCropData& CropData);
 
-	/** ?�벨 체크 �?처리 */
+	/** Check and process level up */
 	void CheckAndProcessLevelUp();
 
-	/** ?�물???�장 가?�한지 ?�인 */
+	/** Check if crop can grow */
 	bool CanCropGrow(const FCropInstance& Crop, const FCropData& CropData) const;
 };

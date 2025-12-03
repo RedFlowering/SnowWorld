@@ -1,5 +1,11 @@
 ﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
+/**
+ * @file HarmoniaFishingComponent.h
+ * @brief Fishing system component for minigame, catch, and progression
+ * @author Harmonia Team
+ */
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -17,8 +23,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFishEscaped);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFishingLevelUp, int32, NewLevel, int32, SkillPoints);
 
 /**
- * ?�시 ?�스??컴포?�트
- * ?�시 미니게임, 물고�??�기, ?�벨�??�스??처리
+ * @class UHarmoniaFishingComponent
+ * @brief Fishing system component for fish catching minigame
+ * 
+ * Handles fishing minigame, fish catching, and leveling system.
  * Inherits leveling, experience, and activity management from UHarmoniaBaseLifeContentComponent
  */
 UCLASS(ClassGroup=(HarmoniaKit), meta=(BlueprintSpawnableComponent))
@@ -38,174 +46,175 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	// ====================================
-	// ?�시 기본 기능
+	// Fishing Basic Functions
 	// ====================================
 
-	/** ?�시 ?�작 */
+	/** Start fishing at specified spot */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Fishing")
 	bool StartFishing(UFishingSpotData* FishingSpot);
 
-	/** ?�시 취소 */
+	/** Cancel current fishing */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Fishing")
 	void CancelFishing();
 
-	/** 물고기�? 물었?????�출 */
+	/** Called when fish bite is detected */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Fishing")
 	void OnFishBiteDetected();
 
-	/** 미니게임 ?�료 ???�출 */
+	/** Called when minigame completes */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Fishing")
 	void CompleteFishingMinigame(bool bSuccess, float PerformanceScore);
 
-	/** ?�시 중인지 ?�인 */
+	/** Check if currently fishing */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Fishing")
 	bool IsFishing() const { return bIsFishing; }
 
-	/** 미니게임 진행 중인지 ?�인 */
+	/** Check if minigame is active */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Fishing")
 	bool IsMinigameActive() const { return bMinigameActive; }
 
 	// ====================================
-	// ?�벨 �?경험�??�스??(Base class?�서 ?�속)
+	// Level & Experience System (Inherited from Base class)
 	// ====================================
 
-	/** ?�시 경험�??�득 (wrapper for base class) */
+	/** Add fishing experience (wrapper for base class) */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Fishing")
 	void AddFishingExperience(int32 Amount) { AddExperience(Amount); }
 
-	/** ?�재 ?�시 ?�벨 (wrapper for base class) */
+	/** Get current fishing level (wrapper for base class) */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Fishing")
 	int32 GetFishingLevel() const { return GetLevel(); }
 
-	/** ?�재 경험치는 base class??GetCurrentExperience() ?�용 */
-	/** ?�음 ?�벨까�? ?�요??경험치는 base class??GetExperienceForNextLevel() ?�용 */
+	/** Current experience uses base class GetCurrentExperience() */
+	/** Experience for next level uses base class GetExperienceForNextLevel() */
 
 	// ====================================
-	// 물고�??�감
+	// Fish Collection
 	// ====================================
 
-	/** 물고�??�감???�록 */
+	/** Register caught fish to collection */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Fishing")
 	void RegisterFishToCollection(const FCaughtFish& Fish);
 
-	/** ?�감???�록??물고�?목록 */
+	/** Get list of collected fish */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Fishing")
 	TArray<FCaughtFish> GetFishCollection() const { return FishCollection; }
 
-	/** ?�정 물고기의 최고 기록 */
+	/** Get best catch record for specific fish */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Fishing")
 	bool GetBestCatchRecord(FName FishID, FCaughtFish& OutBestCatch) const;
 
 	// ====================================
-	// 미니게임 관??
+	// Minigame Management
+	// ====================================
 	// ====================================
 
-	/** 미니게임 ?�??가?�오�?*/
+	/** Get current minigame type */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Fishing")
 	EFishingMinigameType GetCurrentMinigameType() const { return CurrentMinigameSettings.MinigameType; }
 
-	/** 미니게임 ?�정 가?�오�?*/
+	/** Get current minigame settings */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Fishing")
 	FFishingMinigameSettings GetCurrentMinigameSettings() const { return CurrentMinigameSettings; }
 
-	/** 미니게임 진행??(0-1) */
+	/** Get minigame progress (0-1) */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Fishing")
 	float GetMinigameProgress() const { return MinigameProgress; }
 
-	/** 미니게임 ?�이??반환 */
+	/** Get minigame difficulty */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Fishing")
 	int32 GetMinigameDifficulty() const { return CurrentMinigameSettings.Difficulty; }
 
 	// ====================================
-	// ?�벤??
+	// Events
 	// ====================================
 
-	/** ?�시 ?�작 ?�벤t */
+	/** Event fired when fishing starts */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Fishing")
 	FOnFishingStarted OnFishingStarted;
 
-	/** ?�시 취소 ?�벤??*/
+	/** Event fired when fishing is cancelled */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Fishing")
 	FOnFishingCancelled OnFishingCancelled;
 
-	/** 물고기�? 물었?????�벤??*/
+	/** Event fired when fish bites */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Fishing")
 	FOnFishBite OnFishBite;
 
-	/** 물고기�? ?�았?????�벤??*/
+	/** Event fired when fish is caught */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Fishing")
 	FOnFishCaught OnFishCaught;
 
-	/** 물고기�? ?�망갔을 ???�벤??*/
+	/** Event fired when fish escapes */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Fishing")
 	FOnFishEscaped OnFishEscaped;
 
-	/** ?�벨???�벤??*/
+	/** Event fired on level up */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Fishing")
 	FOnFishingLevelUp OnFishingLevelUp;
 
 	// ====================================
-	// ?�정
+	// Settings
 	// ====================================
 
-	/** 물고�??�이?�베?�스 */
+	/** Fish database */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fishing Settings")
 	TMap<FName, FFishData> FishDatabase;
 
-	/** 물고기�? 물기까�? 최소 ?�간 */
+	/** Minimum time until fish bites */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fishing Settings")
 	float MinBiteTime = 3.0f;
 
-	/** 물고기�? 물기까�? 최�? ?�간 */
+	/** Maximum time until fish bites */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fishing Settings")
 	float MaxBiteTime = 15.0f;
 
-	// Note: ExperienceMultiplier, BaseExperiencePerLevel?� base class???�의??
+	// Note: ExperienceMultiplier, BaseExperiencePerLevel are defined in base class
 
 private:
-	/** ?�시 �??�래�?*/
+	/** Fishing status flag */
 	UPROPERTY()
 	bool bIsFishing = false;
 
-	/** 미니게임 ?�성???�래�?*/
+	/** Minigame active flag */
 	UPROPERTY()
 	bool bMinigameActive = false;
 
-	/** ?�재 ?�시??*/
+	/** Current fishing spot */
 	UPROPERTY()
 	TObjectPtr<UFishingSpotData> CurrentFishingSpot;
 
-	/** ?�재 미니게임 ?�정 */
+	/** Current minigame settings */
 	UPROPERTY()
 	FFishingMinigameSettings CurrentMinigameSettings;
 
-	/** 미니게임 진행??*/
+	/** Minigame progress */
 	UPROPERTY()
 	float MinigameProgress = 0.0f;
 
-	/** 물고기�? 물기까�? ?��? ?�간 */
+	/** Time remaining until fish bites */
 	UPROPERTY()
 	float TimeUntilBite = 0.0f;
 
-	// Note: Level, CurrentExperience??base class???�의??
+	// Note: Level, CurrentExperience are defined in base class
 
-	/** ?��? 물고�?컬렉??*/
+	/** Caught fish collection */
 	UPROPERTY()
 	TArray<FCaughtFish> FishCollection;
 
-	/** 물고기별 최고 기록 */
+	/** Best catch records per fish type */
 	UPROPERTY()
 	TMap<FName, FCaughtFish> BestCatchRecords;
 
-	/** ?�시 ?�작 ?�간 */
+	/** Fishing start time */
 	UPROPERTY()
 	float FishingStartTime = 0.0f;
 
-	/** 물고�??�택 */
+	/** Select fish from spawn table */
 	FCaughtFish SelectFishFromSpawnTable();
 
-	/** 물고�??�성 */
+	/** Generate fish instance */
 	FCaughtFish GenerateFish(FName FishID, const FFishData& FishData);
 
-	// Note: CheckAndProcessLevelUp??base class???�의??
+	// Note: CheckAndProcessLevelUp is defined in base class
 };

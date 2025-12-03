@@ -1,5 +1,11 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file HarmoniaCollectionSystemDefinitions.h
+ * @brief Collection system type definitions
+ * @author Harmonia Team
+ */
+
 #pragma once
 
 #include "Engine/DataTable.h"
@@ -7,29 +13,31 @@
 #include "HarmoniaCollectionSystemDefinitions.generated.h"
 
 /**
- * Collection item type
+ * @enum ECollectionItemType
+ * @brief Collection item type
  */
 UENUM(BlueprintType)
 enum class ECollectionItemType : uint8
 {
-	Item			UMETA(DisplayName = "Item"),			// ?�이??
-	Monster			UMETA(DisplayName = "Monster"),			// 몬스??
-	Location		UMETA(DisplayName = "Location"),		// 지???�소
-	Character		UMETA(DisplayName = "Character"),		// NPC/캐릭??
-	Lore			UMETA(DisplayName = "Lore"),			// ?�야�??�정
-	Custom			UMETA(DisplayName = "Custom"),			// 커스?�
+	Item			UMETA(DisplayName = "Item"),			// Item
+	Monster			UMETA(DisplayName = "Monster"),			// Monster
+	Location		UMETA(DisplayName = "Location"),		// Location/Place
+	Character		UMETA(DisplayName = "Character"),		// NPC/Character
+	Lore			UMETA(DisplayName = "Lore"),			// World lore
+	Custom			UMETA(DisplayName = "Custom"),			// Custom
 	MAX				UMETA(Hidden)
 };
 
 /**
- * Collection state
+ * @enum ECollectionState
+ * @brief Collection state
  */
 UENUM(BlueprintType)
 enum class ECollectionState : uint8
 {
-	Unknown			UMETA(DisplayName = "Unknown"),			// 미발�?
-	Seen			UMETA(DisplayName = "Seen"),			// 발견??(?�득?� ?�함)
-	Collected		UMETA(DisplayName = "Collected"),		// ?�집??
+	Unknown			UMETA(DisplayName = "Unknown"),			// Undiscovered
+	Seen			UMETA(DisplayName = "Seen"),			// Discovered (not obtained)
+	Collected		UMETA(DisplayName = "Collected"),		// Collected
 	MAX				UMETA(Hidden)
 };
 

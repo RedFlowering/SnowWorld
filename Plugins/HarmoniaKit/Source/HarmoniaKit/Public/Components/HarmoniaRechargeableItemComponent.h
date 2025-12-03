@@ -1,5 +1,11 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file HarmoniaRechargeableItemComponent.h
+ * @brief Rechargeable recovery item management component
+ * @author Harmonia Team
+ */
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -19,22 +25,22 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnChargesChanged, EHarmoniaRecover
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnItemUpgraded, EHarmoniaRecoveryItemType, ItemType, int32, NewMaxCharges);
 
 /**
- * UHarmoniaRechargeableItemComponent
+ * @class UHarmoniaRechargeableItemComponent
+ * @brief Component for managing rechargeable recovery items
+ * 
+ * Generic component usable for all recovery item types.
  *
- * 충전 가?�한 ?�복 ?�이?�을 관리하??컴포?�트
- * 모든 ?�복 ?�이???�?�에 ?�사??가?�한 범용 컴포?�트
+ * Key Features:
+ * - Item charge count management
+ * - Auto recharge at checkpoints
+ * - Item usage validation
+ * - Item upgrade (increase max charges)
+ * - Network replication
+ * - Save/Load system integration
  *
- * 주요 기능:
- * - ?�이??충전 ?�수 관�?
- * - 체크?�인?�에???�동 충전
- * - ?�이???�용 검�?
- * - ?�이???�그?�이??(최�? 충전 ?�수 증�?)
- * - ?�트?�크 리플리�??�션
- * - ?�??로드 ?�스???�동
- *
- * ?�사??가?�성:
- * - ?�복 ?�이???�에??충전???�이?�에 ?�용 가??
- * - ?�전 ?�장�? 부???�큰 ???�장 가??
+ * Extensibility:
+ * - Can be used for any rechargeable item beyond recovery items
+ * - Can be extended for dungeon entry tokens, revive tokens, etc.
  */
 UCLASS(ClassGroup=(Harmonia), meta=(BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaRechargeableItemComponent : public UActorComponent
@@ -54,25 +60,25 @@ public:
 	// ============================================================================
 
 	/**
-	 * ?�복 ?�이???�록 (초기??
-	 * @param ItemType ?�이???�??
-	 * @param Config ?�이???�정
-	 * @return ?�록 ?�공 ?��?
+	 * Register recovery item (initialization)
+	 * @param ItemType Item type
+	 * @param Config Item configuration
+	 * @return Registration success status
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	bool RegisterRecoveryItem(EHarmoniaRecoveryItemType ItemType, const FHarmoniaRecoveryItemConfig& Config);
 
 	/**
-	 * 공명 ?�편 ?�록 (주파?�별)
-	 * @param Frequency 공명 주파??
-	 * @param VariantConfig ?�편 ?�정
-	 * @return ?�록 ?�공 ?��?
+	 * Register resonance shard (per frequency)
+	 * @param Frequency Resonance frequency
+	 * @param VariantConfig Shard variant configuration
+	 * @return Registration success status
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	bool RegisterResonanceShard(EHarmoniaResonanceFrequency Frequency, const FHarmoniaResonanceShardVariant& VariantConfig);
 
 	/**
-	 * ?�이???�록 ?�제
+	 * Unregister item
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	void UnregisterRecoveryItem(EHarmoniaRecoveryItemType ItemType);
@@ -82,50 +88,50 @@ public:
 	// ============================================================================
 
 	/**
-	 * ?�복 ?�이???�용 (충전 ?�수 1 ?�모)
-	 * @param ItemType ?�용???�이???�??
-	 * @return ?�용 ?�공 ?��?
+	 * Use recovery item (consumes 1 charge)
+	 * @param ItemType Item type to use
+	 * @return Usage success status
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	bool UseRecoveryItem(EHarmoniaRecoveryItemType ItemType);
 
 	/**
-	 * 공명 ?�편 ?�용 (주파?�별)
-	 * @param Frequency ?�용???�편??공명 주파??
-	 * @return ?�용 ?�공 ?��?
+	 * Use resonance shard (per frequency)
+	 * @param Frequency Resonance frequency of shard to use
+	 * @return Usage success status
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	bool UseResonanceShard(EHarmoniaResonanceFrequency Frequency);
 
 	/**
-	 * ?�이???�용 가???��? ?�인
-	 * @param ItemType ?�인???�이???�??
-	 * @param OutReason ?�용 불�??�한 ?�유 (?�패 ??
-	 * @return ?�용 가???��?
+	 * Check if item can be used
+	 * @param ItemType Item type to check
+	 * @param OutReason Reason for unavailability (on failure)
+	 * @return Whether item can be used
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Recovery Item")
 	bool CanUseRecoveryItem(EHarmoniaRecoveryItemType ItemType, FText& OutReason) const;
 
 	/**
-	 * ?��? 충전 ?�수 가?�오�?
+	 * Get remaining charges
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Recovery Item")
 	int32 GetRemainingCharges(EHarmoniaRecoveryItemType ItemType) const;
 
 	/**
-	 * 최�? 충전 ?�수 가?�오�?
+	 * Get maximum charges
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Recovery Item")
 	int32 GetMaxCharges(EHarmoniaRecoveryItemType ItemType) const;
 
 	/**
-	 * ?�이???�정 가?�오�?
+	 * Get item configuration
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Recovery Item")
 	bool GetRecoveryItemConfig(EHarmoniaRecoveryItemType ItemType, FHarmoniaRecoveryItemConfig& OutConfig) const;
 
 	/**
-	 * 공명 ?�편 ?�정 가?�오�?
+	 * Get resonance shard variant configuration
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Recovery Item")
 	bool GetResonanceShardVariant(EHarmoniaResonanceFrequency Frequency, FHarmoniaResonanceShardVariant& OutVariant) const;
@@ -135,24 +141,24 @@ public:
 	// ============================================================================
 
 	/**
-	 * ?�이??충전
-	 * @param ItemType 충전???�이???�??
-	 * @param Amount 충전???�수 (-1?�면 최�?치까지 충전)
-	 * @return 충전???�수
+	 * Recharge item
+	 * @param ItemType Item type to recharge
+	 * @param Amount Amount to recharge (-1 for full recharge)
+	 * @return Number of charges added
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	int32 RechargeItem(EHarmoniaRecoveryItemType ItemType, int32 Amount = -1);
 
 	/**
-	 * 모든 ?�이??충전 (체크?�인?�에??공명 ??
-	 * @return 충전??�??�수
+	 * Recharge all items (resonance at checkpoint, etc.)
+	 * @return Total number recharged
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	int32 RechargeAllItems();
 
 	/**
-	 * 충전 가?�한 ?�이?�만 충전
-	 * @return 충전??�??�수
+	 * Recharge only rechargeable items
+	 * @return Total number recharged
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	int32 RechargeRechargeableItems();
@@ -162,10 +168,10 @@ public:
 	// ============================================================================
 
 	/**
-	 * ?�이???�그?�이??(최�? 충전 ?�수 증�?)
-	 * @param ItemType ?�그?�이?�할 ?�이???�??
-	 * @param AdditionalMaxCharges 증�??�킬 최�? 충전 ?�수
-	 * @return ?�그?�이???�공 ?��?
+	 * Upgrade item (increase max charges)
+	 * @param ItemType Item type to upgrade
+	 * @param AdditionalMaxCharges Additional max charges
+	 * @return Upgrade success status
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	bool UpgradeItemMaxCharges(EHarmoniaRecoveryItemType ItemType, int32 AdditionalMaxCharges);
@@ -175,7 +181,7 @@ public:
 	// ============================================================================
 
 	/**
-	 * 체크?�인??공명 ?�벤???�들??
+	 * Handle checkpoint resonance event
 	 */
 	UFUNCTION()
 	void OnCheckpointResonanceCompleted(FName CheckpointID, const FHarmoniaResonanceResult& Result);
@@ -185,13 +191,13 @@ public:
 	// ============================================================================
 
 	/**
-	 * ?�이???�태 ?�???�이??가?�오�?
+	 * Get item states for save data
 	 */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Recovery Item")
 	TArray<FHarmoniaRecoveryItemState> GetItemStatesForSave() const;
 
 	/**
-	 * ?�이???�태 로드
+	 * Load item states
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Recovery Item")
 	void LoadItemStates(const TArray<FHarmoniaRecoveryItemState>& LoadedStates);
@@ -200,55 +206,55 @@ public:
 	// Events
 	// ============================================================================
 
-	/** ?�이???�용 ?�벤??*/
+	/** Item used event */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Recovery Item|Events")
 	FOnItemUsed OnItemUsed;
 
-	/** ?�이??충전 ?�벤??*/
+	/** Item recharged event */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Recovery Item|Events")
 	FOnItemRecharged OnItemRecharged;
 
-	/** 충전 ?�수 변�??�벤??*/
+	/** Charges changed event */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Recovery Item|Events")
 	FOnChargesChanged OnChargesChanged;
 
-	/** ?�이???�그?�이???�벤??*/
+	/** Item upgraded event */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Recovery Item|Events")
 	FOnItemUpgraded OnItemUpgraded;
 
 protected:
 	/**
-	 * ?�이???�록 ?��? ?�인
+	 * Check if item is registered
 	 */
 	bool IsItemRegistered(EHarmoniaRecoveryItemType ItemType) const;
 
 	/**
-	 * 충전 ?�수 변�?(?��??? 리플리�??�션 ?�함)
+	 * Set charges (internal, includes replication)
 	 */
 	void SetCharges(EHarmoniaRecoveryItemType ItemType, int32 NewCharges);
 
 	/**
-	 * 체크?�인???�브?�스??초기??
+	 * Initialize checkpoint subsystem integration
 	 */
 	void InitializeCheckpointIntegration();
 
 private:
-	/** ?�록???�복 ?�이???�정 */
+	/** Registered recovery item configurations */
 	UPROPERTY(Transient)
 	TMap<EHarmoniaRecoveryItemType, FHarmoniaRecoveryItemConfig> RegisteredItems;
 
-	/** ?�록??공명 ?�편 변??(주파?�별) */
+	/** Registered resonance shard variants (per frequency) */
 	UPROPERTY(Transient)
 	TMap<EHarmoniaResonanceFrequency, FHarmoniaResonanceShardVariant> ResonanceShardVariants;
 
-	/** ?�이?�별 ?�재 ?�태 (?�트?�크 리플리�??�션) */
+	/** Current item states (network replicated) */
 	UPROPERTY(ReplicatedUsing=OnRep_ItemStates)
 	TArray<FHarmoniaRecoveryItemState> ItemStates;
 
 	UFUNCTION()
 	void OnRep_ItemStates();
 
-	/** 체크?�인???�브?�스??캐시 */
+	/** Cached checkpoint subsystem */
 	UPROPERTY(Transient)
 	TObjectPtr<UHarmoniaCheckpointSubsystem> CheckpointSubsystem;
 };

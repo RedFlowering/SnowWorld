@@ -1,5 +1,11 @@
 ﻿// Copyright (c) 2025 RedFlowering. All Rights Reserved.
 
+/**
+ * @file HarmoniaRaidComponent.h
+ * @brief Raid combat management component
+ * @author Harmonia Team
+ */
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -8,59 +14,61 @@
 #include "HarmoniaRaidComponent.generated.h"
 
 /**
- * ?�이??멤버 ?�보
+ * @struct FRaidMemberInfo
+ * @brief Raid member information structure
  */
 USTRUCT(BlueprintType)
 struct FRaidMemberInfo
 {
 	GENERATED_BODY()
 
-	/** ?�레?�어 ID */
+	/** Player ID */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	FString PlayerID;
 
-	/** ?�레?�어 ?�름 */
+	/** Player name */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	FString PlayerName;
 
-	/** ??�� */
+	/** Role assignment */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	ERaidRole Role = ERaidRole::DPS;
 
-	/** 준�??�태 */
+	/** Ready status */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	bool bIsReady = false;
 
-	/** ?�존 ?��? */
+	/** Alive status */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	bool bIsAlive = true;
 
-	/** ?��? 부???�수 */
+	/** Remaining revive count */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	int32 RemainingRevives = 0;
 };
 
 /**
- * ?�이???�이�??�보
+ * @struct FRaidPhaseInfo
+ * @brief Raid phase information structure
  */
 USTRUCT(BlueprintType)
 struct FRaidPhaseInfo
 {
 	GENERATED_BODY()
 
-	/** ?�이�?번호 */
+	/** Phase number */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	int32 PhaseNumber = 1;
 
-	/** ?�이�??�름 */
+	/** Phase name */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	FText PhaseName;
 
-	/** 보스 체력 ?�계�?(%) */
+	/** Boss health threshold (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	float HealthThreshold = 100.0f;
 
-	/** ?�이�??�명 */
+	/** Phase description */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Raid")
 	FText PhaseDescription;
 };
@@ -72,8 +80,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnRaidMemberDied, const FString&, 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRaidWipe, int32, CurrentPhase);
 
 /**
- * ?�이??컴포?�트
- * ?�이???�투�?관리하??컴포?�트
+ * @class UHarmoniaRaidComponent
+ * @brief Raid combat management component
+ * 
+ * Manages raid battles including member management, phase transitions, and combat state.
  */
 UCLASS(ClassGroup = (Harmonia), meta = (BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaRaidComponent : public UActorComponent
@@ -87,7 +97,7 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	//~ ?�리게이??
+	//~ Delegates
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Raid")
 	FOnRaidMemberJoined OnRaidMemberJoined;
 
@@ -103,114 +113,114 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Raid")
 	FOnRaidWipe OnRaidWipe;
 
-	//~ 멤버 관�?
+	//~ Member Management
 
-	/** 멤버 추�? */
+	/** Add member to raid */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Raid")
 	bool AddMember(const FRaidMemberInfo& MemberInfo);
 
-	/** 멤버 ?�거 */
+	/** Remove member from raid */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Raid")
 	bool RemoveMember(const FString& PlayerID);
 
-	/** 멤버 ?�보 조회 */
+	/** Get member info by player ID */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Raid")
 	FRaidMemberInfo GetMemberInfo(const FString& PlayerID) const;
 
-	/** 모든 멤버 조회 */
+	/** Get all raid members */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Raid")
 	TArray<FRaidMemberInfo> GetAllMembers() const;
 
-	/** ??���?멤버 조회 */
+	/** Get members by role */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Raid")
 	TArray<FRaidMemberInfo> GetMembersByRole(ERaidRole Role) const;
 
-	/** 공격?� ?�기 */
+	/** Get raid size */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Raid")
 	int32 GetRaidSize() const { return RaidMembers.Num(); }
 
-	//~ 준�??�태
+	//~ Ready Status
 
-	/** 준�??�료 */
+	/** Set member ready status */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Raid")
 	void SetMemberReady(const FString& PlayerID, bool bReady);
 
-	/** 모든 멤버 준�??�인 */
+	/** Check if all members are ready */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Raid")
 	bool AreAllMembersReady() const;
 
-	/** 준비된 멤버 ??*/
+	/** Get count of ready members */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Raid")
 	int32 GetReadyMemberCount() const;
 
-	//~ ?�이�?관�?
+	//~ Phase Management
 
-	/** ?�재 ?�이�?*/
+	/** Get current phase */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Raid")
 	int32 GetCurrentPhase() const { return CurrentPhase; }
 
-	/** ?�이�??�환 */
+	/** Advance to next phase */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Raid")
 	void AdvanceToNextPhase();
 
-	/** ?�이�??�보 조회 */
+	/** Get phase info by number */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Raid")
 	FRaidPhaseInfo GetPhaseInfo(int32 PhaseNumber) const;
 
-	//~ ?�투 관�?
+	//~ Combat Management
 
-	/** 멤버 ?�망 처리 */
+	/** Process member death */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Raid")
 	void OnMemberDeath(const FString& PlayerID);
 
-	/** 멤버 부??*/
+	/** Revive member */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Raid")
 	bool ReviveMember(const FString& PlayerID);
 
-	/** ?�존 멤버 ??*/
+	/** Get count of alive members */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Raid")
 	int32 GetAliveMemberCount() const;
 
-	/** ?�멸 체크 */
+	/** Check if raid is wiped */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Raid")
 	bool IsWiped() const;
 
-	//~ ??�� 구성 검�?
+	//~ Role Composition Validation
 
-	/** ??�� 구성 ?�인 */
+	/** Validate role composition */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Raid")
 	bool ValidateRoleComposition(const URaidDataAsset* RaidData) const;
 
-	/** ??���??�원 ??*/
+	/** Get role distribution */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Raid")
 	TMap<ERaidRole, int32> GetRoleDistribution() const;
 
 protected:
-	/** ?�이??멤버 목록 */
+	/** Raid members map */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Raid")
 	TMap<FString, FRaidMemberInfo> RaidMembers;
 
-	/** ?�재 ?�이�?*/
+	/** Current phase number */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Raid")
 	int32 CurrentPhase;
 
-	/** ?�이�??�보 목록 */
+	/** Phase info list */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Raid")
 	TArray<FRaidPhaseInfo> PhaseInfos;
 
-	/** ?�역 부???�한 */
+	/** Global revive limit */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Raid")
 	int32 GlobalReviveLimit;
 
-	/** ?�용??부???�수 */
+	/** Used revive count */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Raid")
 	int32 UsedRevives;
 
-	/** ?�이???�이??*/
+	/** Current raid data */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Raid")
 	const URaidDataAsset* CurrentRaidData;
 
 private:
-	/** ?�멸 처리 */
+	/** Process wipe */
 	void ProcessWipe();
 };

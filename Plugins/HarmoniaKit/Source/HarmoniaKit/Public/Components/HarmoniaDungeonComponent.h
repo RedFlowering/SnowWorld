@@ -1,5 +1,11 @@
 ﻿// Copyright (c) 2025 RedFlowering. All Rights Reserved.
 
+/**
+ * @file HarmoniaDungeonComponent.h
+ * @brief Dungeon progression state management component
+ * @author Harmonia Team
+ */
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -12,7 +18,7 @@ class UHarmoniaProgressionComponent;
 class UHarmoniaInventoryComponent;
 
 /**
- * ?�전 진행 ?�태 ?�리게이??
+ * Dungeon progression state delegates
  */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDungeonStateChanged, EDungeonState, OldState, EDungeonState, NewState);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDungeonCompleted, bool, bSuccess);
@@ -21,8 +27,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInfiniteDungeonFloorChanged, int
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDungeonRankingUpdated, const FDungeonRankingEntry&, NewEntry);
 
 /**
- * ?�전 컴포?�트
- * ?�레?�어???�전 진행 ?�태�?관리하??컴포?�트
+ * @class UHarmoniaDungeonComponent
+ * @brief Dungeon component for managing player's dungeon progression state
  */
 UCLASS(ClassGroup = (Harmonia), meta = (BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaDungeonComponent : public UActorComponent
@@ -37,7 +43,7 @@ protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
-	//~ ?�리게이??
+	//~ Delegates
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Dungeon")
 	FOnDungeonStateChanged OnDungeonStateChanged;
 
@@ -53,183 +59,183 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Dungeon")
 	FOnDungeonRankingUpdated OnDungeonRankingUpdated;
 
-	//~ ?�전 진입/종료
+	//~ Dungeon Entry/Exit
 	
-	/** ?�전 ?�장 */
+	/** Enter dungeon */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon")
 	bool EnterDungeon(const UDungeonDataAsset* DungeonData, EDungeonDifficulty Difficulty);
 
-	/** ?�전 ?�장 */
+	/** Exit dungeon */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon")
 	void ExitDungeon(bool bSaveProgress = false);
 
-	/** ?�전 ?�장 가???��? ?�인 */
+	/** Check if can enter dungeon */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon")
 	bool CanEnterDungeon(const UDungeonDataAsset* DungeonData) const;
 
-	//~ ?�전 ?�태 관�?
+	//~ Dungeon State Management
 
-	/** ?�전 ?�작 */
+	/** Start dungeon */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon")
 	void StartDungeon();
 
-	/** ?�전 ?�료 */
+	/** Complete dungeon */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon")
 	void CompleteDungeon(bool bSuccess);
 
-	/** ?�전 ?�태 ?�정 */
+	/** Set dungeon state */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon")
 	void SetDungeonState(EDungeonState NewState);
 
-	/** ?�재 ?�전 ?�태 */
+	/** Get current dungeon state */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon")
 	EDungeonState GetDungeonState() const { return CurrentDungeonState; }
 
-	/** ?�전 진행 중인지 */
+	/** Check if in dungeon */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon")
 	bool IsInDungeon() const { return CurrentDungeon != nullptr; }
 
-	//~ 무한 ?�전
+	//~ Infinite Dungeon
 
-	/** ?�음 층으�??�동 */
+	/** Advance to next floor */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Infinite")
 	void AdvanceToNextFloor();
 
-	/** ?�재 �?번호 */
+	/** Get current floor number */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon|Infinite")
 	int32 GetCurrentFloor() const { return CurrentFloor; }
 
-	/** 최고 ?�달 �?*/
+	/** Get highest reached floor */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon|Infinite")
 	int32 GetHighestFloor() const { return HighestFloorReached; }
 
-	//~ 챌린지 모드
+	//~ Challenge Mode
 
-	/** 챌린지 모디?�이???�성??*/
+	/** Apply challenge modifier */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Challenge")
 	void ApplyChallengeModifier(const FDungeonChallengeModifier& Modifier);
 
-	/** ?�성?�된 모디?�이???�거 */
+	/** Remove activated modifier */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Challenge")
 	void RemoveChallengeModifier(const FDungeonChallengeModifier& Modifier);
 
-	/** ?�재 ?�성?�된 모디?�이??*/
+	/** Get currently active modifiers */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon|Challenge")
 	TArray<FDungeonChallengeModifier> GetActiveModifiers() const { return ActiveChallengeModifiers; }
 
-	//~ ??��
+	//~ Ranking
 
-	/** ??�� ?�록 */
+	/** Submit ranking */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Ranking")
 	void SubmitRanking(const FString& PlayerName, float ClearTime, int32 Score);
 
-	/** ??�� 조회 */
+	/** Get dungeon rankings */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Ranking")
 	TArray<FDungeonRankingEntry> GetDungeonRankings(int32 TopCount = 10) const;
 
-	/** ??최고 기록 */
+	/** Get personal best record */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Ranking")
 	FDungeonRankingEntry GetPersonalBest() const;
 
-	//~ 보상
+	//~ Rewards
 
-	/** 보상 지�?*/
+	/** Grant dungeon reward */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Reward")
 	void GrantDungeonReward();
 
-	/** ?�상 보상 계산 */
+	/** Calculate expected reward */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon|Reward")
 	FDungeonReward CalculateReward() const;
 
-	//~ ?�간 관�?
+	//~ Time Management
 
-	/** ?��? ?�간 */
+	/** Get remaining time */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon|Time")
 	float GetRemainingTime() const { return RemainingTime; }
 
-	/** 경과 ?�간 */
+	/** Get elapsed time */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon|Time")
 	float GetElapsedTime() const { return ElapsedTime; }
 
-	//~ ?�티/공격?�
+	//~ Party/Raid
 
-	/** ?�티 ?�기 ?�인 */
+	/** Get party size */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Dungeon|Party")
 	int32 GetPartySize() const;
 
-	/** ??���??�원 ?�인 (?�이?�용) */
+	/** Get role composition (for raids) */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Raid")
 	TMap<ERaidRole, int32> GetRoleComposition() const;
 
 protected:
-	/** ?�재 ?�전 ?�이??*/
+	/** Current dungeon data */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Dungeon")
 	const UDungeonDataAsset* CurrentDungeon;
 
-	/** ?�재 ?�이??*/
+	/** Current difficulty */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Dungeon")
 	EDungeonDifficulty CurrentDifficulty;
 
-	/** ?�재 ?�전 ?�태 */
+	/** Current dungeon state */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Dungeon")
 	EDungeonState CurrentDungeonState;
 
-	/** ?��? ?�간 */
+	/** Remaining time */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Dungeon")
 	float RemainingTime;
 
-	/** 경과 ?�간 */
+	/** Elapsed time */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Dungeon")
 	float ElapsedTime;
 
-	/** ?�재 �?(무한 ?�전?? */
+	/** Current floor (infinite dungeon) */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Dungeon")
 	int32 CurrentFloor;
 
-	/** 최고 ?�달 �?(무한 ?�전?? */
+	/** Highest reached floor (infinite dungeon) */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Dungeon")
 	int32 HighestFloorReached;
 
-	/** ?�성?�된 챌린지 모디?�이??*/
+	/** Active challenge modifiers */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Dungeon")
 	TArray<FDungeonChallengeModifier> ActiveChallengeModifiers;
 
-	/** ?�전 ??�� 목록 */
+	/** Dungeon rankings list */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Dungeon")
 	TArray<FDungeonRankingEntry> DungeonRankings;
 
-	/** ?�레?�어 개인 최고 기록 */
+	/** Player personal best record */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Dungeon")
 	FDungeonRankingEntry PersonalBestRecord;
 
-	/** ?�재 ?�수 */
+	/** Current score */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Dungeon")
 	int32 CurrentScore;
 
 private:
-	/** ?�로그레??컴포?�트 참조 (?�벨 ?�인?? */
+	/** Progression component reference (for level check) */
 	UPROPERTY()
 	TObjectPtr<UHarmoniaProgressionComponent> ProgressionComponent;
 
-	/** ?�벤?�리 컴포?�트 참조 (?�이???�인?? */
+	/** Inventory component reference (for item check) */
 	UPROPERTY()
 	TObjectPtr<UHarmoniaInventoryComponent> InventoryComponent;
 
-	/** ?�?�머 ?�데?�트 */
+	/** Update timer */
 	void UpdateTimer(float DeltaTime);
 
-	/** ?�구?�항 검�?*/
+	/** Validate requirements */
 	bool ValidateRequirements(const UDungeonDataAsset* DungeonData) const;
 
-	/** ?�수 계산 */
+	/** Calculate score */
 	int32 CalculateScore() const;
 
-	/** ?�레?�어 ?�벨 가?�오�?*/
+	/** Get player level */
 	int32 GetPlayerLevel() const;
 
-	/** ?�요 ?�이??보유 ?�인 */
+	/** Check if has required items */
 	bool HasRequiredItems(const TArray<FName>& ItemIDs) const;
 
-	/** ?�요 ?�이???�비 */
+	/** Consume required items */
 	bool ConsumeRequiredItems(const TArray<FName>& ItemIDs);
 };

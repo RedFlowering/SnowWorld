@@ -1,4 +1,10 @@
-﻿// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright 2025 Snow Game Studio.
+
+/**
+ * @file HarmoniaDeathPenaltyConfigAsset.h
+ * @brief Death penalty configuration data asset
+ * @author Harmonia Team
+ */
 
 #pragma once
 
@@ -8,8 +14,10 @@
 #include "HarmoniaDeathPenaltyConfigAsset.generated.h"
 
 /**
- * ?�망 ?�널???�정 ?�이???�셋
- * ?�망 ???�화 ?�롭, 메모�??�코, ?�이??조절 ?�을 ?�의
+ * @class UHarmoniaDeathPenaltyConfigAsset
+ * @brief Death penalty configuration data asset
+ * 
+ * Defines currency drops, memory echo, and difficulty adjustments on death.
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaDeathPenaltyConfigAsset : public UDataAsset
@@ -19,42 +27,45 @@ class HARMONIAKIT_API UHarmoniaDeathPenaltyConfigAsset : public UDataAsset
 public:
 	UHarmoniaDeathPenaltyConfigAsset();
 
-	//~ 기본 ?�정
-	/** ?�망 ?�널???�성???��? */
+	//~ Basic Settings
+	
+	/** Enable death penalty */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty")
 	bool bEnableDeathPenalty;
 
-	/** 메모�??�코 마커 ?�시 ?��? */
+	/** Show memory echo marker */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty|Memory Echo")
 	bool bShowMemoryEchoMarker;
 
-	/** 메모�??�코까�???거리 ?�시 ?��? */
+	/** Show distance to memory echo */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty|Memory Echo")
 	bool bShowDistanceToMemoryEcho;
 
-	/** 메모�??�코 마커 ?�상 */
+	/** Memory echo marker color */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty|Memory Echo|Visual")
 	FLinearColor MemoryEchoMarkerColor;
 
-	/** ?�이??배율 (?�롭/?�실률에 ?�용) */
+	/** Difficulty multiplier (applies to drop/loss rates) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty|Difficulty", meta = (ClampMin = "0.0", ClampMax = "5.0"))
 	float DifficultyMultiplier;
 
-	//~ ?�세 ?�정
-	/** ?�체 ?�망 ?�널???�정 */
+	//~ Detailed Configuration
+	
+	/** Full death penalty configuration */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death Penalty|Config")
 	FHarmoniaDeathPenaltyConfig Config;
 
-	//~ ?�틸리티 ?�수
-	/** ?�정 ?�화???�롭 비율 반환 */
+	//~ Utility Functions
+	
+	/** Get drop percentage for specific currency */
 	UFUNCTION(BlueprintPure, Category = "Death Penalty")
 	float GetCurrencyDropPercentage(EHarmoniaCurrencyType CurrencyType) const;
 
-	/** ?�정 ?�화???�구 ?�실 비율 반환 */
+	/** Get permanent loss percentage for specific currency */
 	UFUNCTION(BlueprintPure, Category = "Death Penalty")
 	float GetCurrencyPermanentLossPercentage(EHarmoniaCurrencyType CurrencyType) const;
 
-	/** ?�정 ?�화???�???�롭 ?�정???�는지 ?�인 */
+	/** Check if specific currency has drop configuration */
 	UFUNCTION(BlueprintPure, Category = "Death Penalty")
 	bool HasCurrencyDropConfig(EHarmoniaCurrencyType CurrencyType) const;
 

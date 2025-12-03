@@ -1,5 +1,11 @@
 ﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
+/**
+ * @file HarmoniaCookingComponent.h
+ * @brief Cooking system component for food preparation and buff management
+ * @author Harmonia Team
+ */
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -17,8 +23,11 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRecipeDiscovered, FName, RecipeID
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFoodConsumed, FName, FoodID, const FFoodBuffEffect&, BuffEffect);
 
 /**
- * ?�리 ?�스??컴포?�트
- * ?�식 ?�작, 버프 ?�스?? ?�시??관�?
+ * @class UHarmoniaCookingComponent
+ * @brief Cooking system component for food creation and buff management
+ * 
+ * Handles food preparation, recipe discovery, buff application and management.
+ * Provides experience-based skill progression and cooking trait system.
  */
 UCLASS(ClassGroup=(HarmoniaKit), meta=(BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaCookingComponent : public UHarmoniaBaseLifeContentComponent
@@ -35,214 +44,214 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	// ====================================
-	// ?�리 기본 기능
+	// Cooking Basic Functions
 	// ====================================
 
-	/** ?�리 ?�작 */
+	/** Start cooking a recipe */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Cooking")
 	bool StartCooking(FName RecipeID);
 
-	/** ?�리 취소 */
+	/** Cancel current cooking process */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Cooking")
 	void CancelCooking();
 
-	/** ?�리 중인지 ?�인 */
+	/** Check if currently cooking */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cooking")
 	bool IsCooking() const { return bIsCooking; }
 
-	/** ?�재 ?�리 진행??(0-1) */
+	/** Get current cooking progress (0-1) */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cooking")
 	float GetCookingProgress() const;
 
-	/** ?�시?��? ?�리?????�는지 ?�인 */
+	/** Check if recipe can be cooked now */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cooking")
 	bool CanCookRecipe(FName RecipeID) const;
 
 	// ====================================
-	// ?�식 ?�비
+	// Food Consumption
 	// ====================================
 
-	/** ?�식 먹기 */
+	/** Consume food item and apply effects */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Cooking")
 	bool ConsumeFood(FName FoodID, ECookingQuality Quality);
 
-	/** ?�재 ?�성?�된 버프 */
+	/** Get currently active food buffs */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cooking")
 	TArray<FFoodBuffEffect> GetActiveBuffs() const { return ActiveBuffs; }
 
-	/** ?�정 버프가 ?�성?�되???�는지 ?�인 */
+	/** Check if specific buff is active */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cooking")
 	bool HasBuff(FName BuffName) const;
 
-	/** 버프 ?�거 */
+	/** Remove specific buff */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Cooking")
 	void RemoveBuff(FName BuffName);
 
 	// ====================================
-	// ?�시??관�?
+	// Recipe Management
 	// ====================================
 
-	/** ?�시??발견 */
+	/** Discover a new recipe */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Cooking")
 	void DiscoverRecipe(FName RecipeID);
 
-	/** ?�시?��? ?�고 ?�는지 ?�인 */
+	/** Check if recipe is known */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cooking")
 	bool IsRecipeKnown(FName RecipeID) const;
 
-	/** ?�고 ?�는 모든 ?�시??*/
+	/** Get all known recipes */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cooking")
 	TArray<FName> GetKnownRecipes() const { return KnownRecipes; }
 
-	/** ?�시???�보 가?�오�?*/
+	/** Get recipe data by ID */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cooking")
 	bool GetRecipeData(FName RecipeID, FCookingRecipe& OutRecipe) const;
 
 	// ====================================
-	// ?�벨 �?경험�??�스??
+	// Level & Experience System
 	// ====================================
 
-	/** ?�리 경험�??�득 */
+	/** Add cooking experience */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Cooking")
 	void AddCookingExperience(int32 Amount);
 
-	/** ?�재 ?�리 ?�벨 */
+	/** Get current cooking level */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cooking")
 	int32 GetCookingLevel() const { return CookingLevel; }
 
 	// ====================================
-	// ?�성 ?�스??
+	// Trait System
 	// ====================================
 
-	/** ?�성 추�? */
+	/** Add cooking trait */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Cooking")
 	void AddTrait(const FCookingTrait& Trait);
 
-	/** ?�성 ?�거 */
+	/** Remove cooking trait */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Cooking")
 	void RemoveTrait(FName TraitName);
 
-	/** 모든 ?�성 가?�오�?*/
+	/** Get all active traits */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cooking")
 	TArray<FCookingTrait> GetAllTraits() const { return ActiveTraits; }
 
-	/** �??�리 ?�도 보너??*/
+	/** Get total cooking speed bonus from traits */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cooking")
 	float GetTotalCookingSpeedBonus() const;
 
-	/** �??�공�?보너??*/
+	/** Get total success rate bonus from traits */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cooking")
 	float GetTotalSuccessRateBonus() const;
 
-	/** �??�질 보너??*/
+	/** Get total quality bonus from traits */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Cooking")
 	float GetTotalQualityBonus() const;
 
 	// ====================================
-	// ?�벤??
+	// Events
 	// ====================================
 
-	/** ?�리 ?�작 ?�벤??*/
+	/** Event fired when cooking starts */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Cooking")
 	FOnCookingStarted OnCookingStarted;
 
-	/** ?�리 취소 ?�벤??*/
+	/** Event fired when cooking is cancelled */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Cooking")
 	FOnCookingCancelled OnCookingCancelled;
 
-	/** ?�리 ?�료 ?�벤??*/
+	/** Event fired when cooking completes */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Cooking")
 	FOnCookingCompleted OnCookingCompleted;
 
-	/** ?�벨???�벤??*/
+	/** Event fired on level up */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Cooking")
 	FOnCookingLevelUp OnCookingLevelUp;
 
-	/** ?�시??발견 ?�벤??*/
+	/** Event fired when recipe is discovered */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Cooking")
 	FOnRecipeDiscovered OnRecipeDiscovered;
 
-	/** ?�식 ??�� ?�벤??*/
+	/** Event fired when food is consumed */
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|Cooking")
 	FOnFoodConsumed OnFoodConsumed;
 
 	// ====================================
-	// ?�정
+	// Settings
 	// ====================================
 
-	/** ?�시???�이?�베?�스 */
+	/** Recipe database */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooking Settings")
 	TMap<FName, FCookingRecipe> RecipeDatabase;
 
-	/** 기본 ?�공�?(%) */
+	/** Base success rate (%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooking Settings")
 	float BaseSuccessRate = 70.0f;
 
 private:
-	/** ?�벤?�리 컴포?�트 참조 */
+	/** Reference to inventory component */
 	UPROPERTY()
 	TObjectPtr<UHarmoniaInventoryComponent> InventoryComponent;
 
-	/** ?�리 �??�래�?*/
+	/** Cooking status flag */
 	UPROPERTY()
 	bool bIsCooking = false;
 
-	/** ?�재 ?�리 중인 ?�시??*/
+	/** Currently cooking recipe ID */
 	UPROPERTY()
 	FName CurrentRecipeID;
 
-	/** ?�리 ?�작 ?�간 */
+	/** Cooking start time */
 	UPROPERTY()
 	float CookingStartTime = 0.0f;
 
-	/** ?�리 ?�료까�? ?�요???�간 */
+	/** Required time to complete cooking */
 	UPROPERTY()
 	float RequiredCookingTime = 0.0f;
 
-	/** ?�리 ?�벨 */
+	/** Current cooking level */
 	UPROPERTY()
 	int32 CookingLevel = 1;
 
-	/** ?�려�??�시??*/
+	/** List of known recipes */
 	UPROPERTY()
 	TArray<FName> KnownRecipes;
 
-	/** ?�성?�된 버프 목록 */
+	/** List of active food buffs */
 	UPROPERTY()
 	TArray<FFoodBuffEffect> ActiveBuffs;
 
-	/** 버프 ?�?�머 ?�들 */
+	/** Timer handles for buff expiration */
 	UPROPERTY()
 	TMap<FName, FTimerHandle> BuffTimerHandles;
 
-	/** ?�성?�된 ?�성 목록 */
+	/** List of active cooking traits */
 	UPROPERTY()
 	TArray<FCookingTrait> ActiveTraits;
 
-	/** ?�리 ?�료 처리 */
+	/** Process cooking completion */
 	void CompleteCooking();
 
-	/** ?�리 결과 계산 */
+	/** Calculate cooking result */
 	FCookingResult CalculateCookingResult(const FCookingRecipe& Recipe);
 
-	/** ?�리 ?�질 결정 */
+	/** Determine cooking quality */
 	ECookingQuality DetermineCookingQuality(int32 Difficulty);
 
-	/** 버프 ?�과 ?�용 */
+	/** Apply buff effect to character */
 	void ApplyBuffEffect(const FFoodBuffEffect& BuffEffect);
 
-	/** 버프 만료 처리 */
+	/** Handle buff expiration */
 	void OnBuffExpired(FName BuffName);
 
-	/** ?�벨 체크 �?처리 */
+	/** Check and process level up */
 	void CheckAndProcessLevelUp();
 
-	/** ?�리 ?�간 계산 (보너???�용) */
+	/** Calculate cooking time with bonuses */
 	float CalculateCookingTime(float BaseTime) const;
 
-	/** ?�료 보유 체크 */
+	/** Check if required ingredients are available */
 	bool HasRequiredIngredients(const FCookingRecipe& Recipe) const;
 
-	/** ?�료 ?�비 */
+	/** Consume required ingredients */
 	bool ConsumeIngredients(const FCookingRecipe& Recipe);
 };

@@ -1,5 +1,11 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file HarmoniaBuildingComponent.h
+ * @brief Building system component for construction and placement
+ * @author Harmonia Team
+ */
+
 #pragma once
 
 #include "Components/ActorComponent.h"
@@ -13,6 +19,13 @@ class UHarmoniaInventoryComponent;
 class UInputMappingContext;
 class UDataTable;
 
+/**
+ * @class UHarmoniaBuildingComponent
+ * @brief Component for building and construction system
+ * 
+ * Handles building mode control, part placement, preview actors,
+ * and resource validation for construction.
+ */
 UCLASS(ClassGroup=(Custom), meta = ( BlueprintSpawnableComponent ))
 class HARMONIAKIT_API UHarmoniaBuildingComponent : public UActorComponent
 {
@@ -21,39 +34,47 @@ class HARMONIAKIT_API UHarmoniaBuildingComponent : public UActorComponent
 public:
 	UHarmoniaBuildingComponent();
 
-	// 모드 제어 (Client requests)
+	// Mode Control (Client requests)
+
+	/** Request to enter building mode */
 	UFUNCTION(BlueprintCallable, Category = "Building")
 	void RequestEnterBuildingMode();
 
+	/** Request to exit building mode */
 	UFUNCTION(BlueprintCallable, Category = "Building")
 	void RequestExitBuildingMode();
 
+	/** Request to set building mode */
 	UFUNCTION(BlueprintCallable, Category = "Building")
 	void RequestSetBuildingMode(EBuildingMode NewMode);
 
+	/** Request to set selected building part */
 	UFUNCTION(BlueprintCallable, Category = "Building")
 	void RequestSetSelectedPart(FName PartID);
 
-	// 현재 선택된 파트 정보
+	// Current Selected Part Info
+
+	/** Get selected part ID */
 	UFUNCTION(BlueprintPure, Category = "Building")
 	FName GetSelectedPartID() const { return SelectedPartID; }
 
+	/** Get current building mode */
 	UFUNCTION(BlueprintPure, Category = "Building")
 	EBuildingMode GetCurrentMode() const { return CurrentMode; }
 
-	// Tick 처리
+	// Tick Processing
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 protected:
 	virtual void BeginPlay() override;
 
-	// 입력 처리
+	// Input Handling
 	void SetupInput();
 	void HandlePlaceAction();
 	void HandleRotateAction();
 	void HandleCancelAction();
 
-	// 프리뷰 관련 함수
+	// Preview Related Functions
 	void SpawnPreviewActor();
 	void UpdatePreviewTransform();
 	void DestroyPreviewActor();
@@ -80,24 +101,24 @@ protected:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerPlacePart(const FVector& Location, const FRotator& Rotation, FName PartID);
 
-	// 배치 처리
+	// Placement Processing
 	void PlaceCurrentPart();
 	bool ValidatePlacement(FVector& OutLocation, FRotator& OutRotation);
 
-	// 유틸 함수
+	// Utility Functions
 	FHarmoniaBuildingPartData* GetCurrentPartData() const;
 
-	// 자원 검사 (Server-only)
+	// Resource Check (Server-only)
 	bool CheckAndConsumeResources(const FHarmoniaBuildingPartData& PartData);
 
 private:
-	// 상태
+	// State
 	EBuildingMode CurrentMode = EBuildingMode::None;
 
 	UPROPERTY()
 	FName SelectedPartID;
 
-	// 캐시 참조
+	// Cached References
 	UPROPERTY()
 	TObjectPtr<APlayerController> CachedPC = nullptr;
 
@@ -110,7 +131,7 @@ private:
 	UPROPERTY()
 	TObjectPtr<UHarmoniaInventoryComponent> InventoryComponent = nullptr;
 
-	// 설정
+	// Settings
 	UPROPERTY(EditDefaultsOnly, Category = "Building")
 	TSubclassOf<AHarmoniaBuildingPreviewActor> PreviewActorClass = nullptr;
 
@@ -120,7 +141,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Building|DataTable")
 	FName BuildingDataTableKey = FName(TEXT("BuildingParts"));
 
-	// 배치 검사 설정
+	// Placement Check Settings
 	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
 	float MaxPlacementDistance = 500.0f;
 
@@ -133,26 +154,26 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
 	bool bUseGridSnapping = true;
 
-	// ?�냅 ?�인??검??반경
+	/** Snap point search radius */
 	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
 	float SnapSearchRadius = 200.0f;
 
-	// ?�냅 ?�인???�선 ?�용 ?��?
+	/** Whether to prefer snap points during placement */
 	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
 	bool bPreferSnapPoints = true;
 
-	// 최�? ?�용 지??경사 각도
+	/** Maximum allowed terrain slope angle */
 	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
 	float MaxAllowedSlope = 45.0f;
 
-	// 지??경사 검???�성???��?
+	/** Whether to check terrain slope */
 	UPROPERTY(EditDefaultsOnly, Category = "Building|Placement")
 	bool bCheckTerrainSlope = true;
 
-	// ?�재 ?�전 각도 (?�적)
+	/** Current rotation yaw angle (accumulated) */
 	float CurrentRotationYaw = 0.0f;
 
-	// 캐시??건축�??�이???�이�?
+	/** Cached building data table */
 	UPROPERTY()
 	TObjectPtr<UDataTable> CachedBuildingDataTable = nullptr;
 };

@@ -1,5 +1,11 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file HarmoniaBuildingSystemDefinitions.h
+ * @brief Building system type definitions
+ * @author Harmonia Team
+ */
+
 #pragma once
 
 #include "Engine/DataTable.h"
@@ -7,6 +13,10 @@
 
 #include "HarmoniaBuildingSystemDefinitions.generated.h"
 
+/**
+ * @enum EBuildingPartType
+ * @brief Building part type
+ */
 UENUM(BlueprintType)
 enum class EBuildingPartType : uint8
 {
@@ -19,7 +29,7 @@ enum class EBuildingPartType : uint8
     Window          UMETA(DisplayName = "Window"),
     Stairs          UMETA(DisplayName = "Stairs"),
     Fence           UMETA(DisplayName = "Fence"),
-    WallDecoration  UMETA(DisplayName = "Wall Decoration")  // 벽걸???�식??(?�자, 그림, 벽걸????
+    WallDecoration  UMETA(DisplayName = "Wall Decoration")  // Wall decorations (mirror, painting, mounted items)
 };
 
 UENUM(BlueprintType)

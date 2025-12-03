@@ -1,5 +1,11 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file HarmoniaAchievementSystemDefinitions.h
+ * @brief Achievement system type definitions
+ * @author Harmonia Team
+ */
+
 #pragma once
 
 #include "Engine/DataTable.h"
@@ -8,25 +14,27 @@
 #include "HarmoniaAchievementSystemDefinitions.generated.h"
 
 /**
- * Achievement state enum
+ * @enum EAchievementState
+ * @brief Achievement state enum
  */
 UENUM(BlueprintType)
 enum class EAchievementState : uint8
 {
-	Locked			UMETA(DisplayName = "Locked"),			// ?��?
-	Unlocked		UMETA(DisplayName = "Unlocked"),		// ?�금??
-	Hidden			UMETA(DisplayName = "Hidden"),			// ?�겨�?(조건 ?�성 ?�까지 보이지 ?�음)
+	Locked			UMETA(DisplayName = "Locked"),			// Locked
+	Unlocked		UMETA(DisplayName = "Unlocked"),		// Unlocked
+	Hidden			UMETA(DisplayName = "Hidden"),			// Hidden (not visible until condition met)
 	MAX				UMETA(Hidden)
 };
 
 /**
- * Achievement type enum
+ * @enum EAchievementType
+ * @brief Achievement type enum
  */
 UENUM(BlueprintType)
 enum class EAchievementType : uint8
 {
-	Standard		UMETA(DisplayName = "Standard"),		// ?�반 ?�적 (?�발??
-	Progressive		UMETA(DisplayName = "Progressive"),		// 진행???�적 (?�적 카운??
+	Standard		UMETA(DisplayName = "Standard"),		// Standard achievement (one-time)
+	Progressive		UMETA(DisplayName = "Progressive"),		// Progressive achievement (counter)
 	MAX				UMETA(Hidden)
 };
 

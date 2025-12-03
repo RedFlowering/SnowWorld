@@ -1,5 +1,11 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file HarmoniaSkillTreeData.h
+ * @brief Skill tree data asset for skill node definitions and unlock conditions
+ * @author Harmonia Team
+ */
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -8,8 +14,10 @@
 #include "HarmoniaSkillTreeData.generated.h"
 
 /**
- * ?�킬 ?�리 ?�이???�셋
- * ?�킬 ?�드 ?�의, ?�금 조건, 보상 ?�을 관�?
+ * @class UHarmoniaSkillTreeData
+ * @brief Skill tree data asset
+ * 
+ * Manages skill node definitions, unlock conditions, and rewards.
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaSkillTreeData : public UDataAsset
@@ -17,62 +25,66 @@ class HARMONIAKIT_API UHarmoniaSkillTreeData : public UDataAsset
 	GENERATED_BODY()
 
 public:
-	//~ ?�킬 ?�리 기본 ?�보
-	/** ?�킬 ?�리 ID */
+	//~ Skill Tree Basic Info
+	
+	/** Skill tree ID */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Tree")
 	FName TreeID;
 
-	/** ?�킬 ?�리 ?�름 */
+	/** Skill tree name */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Tree")
 	FText TreeName;
 
-	/** ?�킬 ?�리 ?�명 */
+	/** Skill tree description */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Tree")
 	FText TreeDescription;
 
-	/** ?�킬 ?�리 카테고리 */
+	/** Skill tree category */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Tree")
 	EHarmoniaSkillTreeCategory Category;
 
-	/** ?�킬 ?�리 ?�이�?*/
+	/** Skill tree icon */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Tree|Visual")
 	TSoftObjectPtr<UTexture2D> TreeIcon;
 
-	//~ ?�근 조건
-	/** ?�요 ?�래??(None?�면 모든 ?�래?? */
+	//~ Access Requirements
+	
+	/** Required class (None for all classes) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Tree|Requirements")
 	EHarmoniaCharacterClass RequiredClass = EHarmoniaCharacterClass::None;
 
-	/** 최소 ?�벨 ?�구?�항 */
+	/** Minimum level requirement */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Tree|Requirements")
 	int32 MinimumLevel = 1;
 
-	//~ ?�킬 ?�드
-	/** ?�킬 ?�리???�함??모든 ?�킬 ?�드 */
+	//~ Skill Nodes
+	
+	/** All skill nodes in this skill tree */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Tree|Nodes")
 	TArray<FHarmoniaSkillNode> SkillNodes;
 
-	//~ ?�틸리티 ?�수
-	/** ID�??�킬 ?�드 찾기 (Blueprint?? */
+	//~ Utility Functions
+	
+	/** Find skill node by ID (Blueprint) */
 	UFUNCTION(BlueprintCallable, Category = "Skill Tree", DisplayName = "Find Skill Node")
 	bool FindSkillNodeBP(FName NodeID, FHarmoniaSkillNode& OutNode);
 
-	/** ID�??�킬 ?�드 찾기 (C++?? */
+	/** Find skill node by ID (C++) */
 	FHarmoniaSkillNode* FindSkillNode(FName NodeID);
 
-	/** ?�?�별 ?�킬 ?�드 목록 반환 */
+	/** Get skill nodes by type */
 	UFUNCTION(BlueprintPure, Category = "Skill Tree")
 	TArray<FHarmoniaSkillNode> GetSkillNodesByType(EHarmoniaSkillNodeType NodeType) const;
 
-	/** 루트 ?�드 (?�행 조건 ?�는 ?�드) 목록 반환 */
+	/** Get root nodes (nodes without prerequisites) */
 	UFUNCTION(BlueprintPure, Category = "Skill Tree")
 	TArray<FHarmoniaSkillNode> GetRootNodes() const;
 
-	/** ?�정 ?�드???�식 ?�드 목록 반환 */
+	/** Get child nodes of a specific node */
 	UFUNCTION(BlueprintPure, Category = "Skill Tree")
 	TArray<FHarmoniaSkillNode> GetChildNodes(FName ParentNodeID) const;
 
-	/** ?�레?�어가 ???�킬 ?�리???�근 가?�한지 ?�인 */
+	/** Check if player can access this skill tree */
 	UFUNCTION(BlueprintPure, Category = "Skill Tree")
 	bool IsAccessible(EHarmoniaCharacterClass PlayerClass, int32 PlayerLevel) const;
 };

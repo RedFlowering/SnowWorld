@@ -2,6 +2,15 @@
 
 #pragma once
 
+/**
+ * @file HarmoniaProgressionDefinitions.h
+ * @brief Character progression system definitions
+ * @author Harmonia Team
+ * 
+ * Defines skill trees, character classes, awakening tiers,
+ * and prestige systems for character advancement.
+ */
+
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "HarmoniaProgressionDefinitions.generated.h"
@@ -11,80 +20,84 @@ class ULyraAbilitySet;
 class UTexture2D;
 
 /**
- * ?�킬 ?�리 ?�드 ?�??
+ * @enum EHarmoniaSkillNodeType
+ * @brief Skill tree node types
  */
 UENUM(BlueprintType)
 enum class EHarmoniaSkillNodeType : uint8
 {
-	// ?�시�??�킬 (stat bonuses)
+	/** Passive skill (stat bonuses) */
 	Passive UMETA(DisplayName = "Passive Skill"),
 
-	// ?�티�??�킬 (unlocks abilities)
+	/** Active skill (unlocks abilities) */
 	Active UMETA(DisplayName = "Active Skill"),
 
-	// ?�성 증�? (primary stats: Str, Dex, etc)
+	/** Attribute boost (primary stats: Str, Dex, etc) */
 	AttributeBoost UMETA(DisplayName = "Attribute Boost"),
 
-	// ?�수 ?�드 (?�래???�환, 각성 ??
+	/** Special node (class change, awakening, etc.) */
 	Special UMETA(DisplayName = "Special Node")
 };
 
 /**
- * ?�킬 ?�리 카테고리
+ * @enum EHarmoniaSkillTreeCategory
+ * @brief Skill tree categories
  */
 UENUM(BlueprintType)
 enum class EHarmoniaSkillTreeCategory : uint8
 {
-	// 무기�??�문??
+	/** Weapon specializations */
 	SwordMastery UMETA(DisplayName = "Sword Mastery"),
 	AxeMastery UMETA(DisplayName = "Axe Mastery"),
 	SpearMastery UMETA(DisplayName = "Spear Mastery"),
 	BowMastery UMETA(DisplayName = "Bow Mastery"),
 	MagicMastery UMETA(DisplayName = "Magic Mastery"),
 
-	// ?��??�별 ?�문??
+	/** Combat style specializations */
 	OffensiveCombat UMETA(DisplayName = "Offensive Combat"),
 	DefensiveCombat UMETA(DisplayName = "Defensive Combat"),
 	StealthTactics UMETA(DisplayName = "Stealth Tactics"),
 
-	// 기�?
+	/** Utility */
 	Survival UMETA(DisplayName = "Survival"),
 	Crafting UMETA(DisplayName = "Crafting"),
 	Social UMETA(DisplayName = "Social")
 };
 
 /**
- * 캐릭???�래???�??
+ * @enum EHarmoniaCharacterClass
+ * @brief Character class types
  */
 UENUM(BlueprintType)
 enum class EHarmoniaCharacterClass : uint8
 {
-	// 기본 ?�래??
+	/** Base class */
 	None UMETA(DisplayName = "No Class"),
 
-	// Tier 1 ?�래??
+	/** Tier 1 classes */
 	Warrior UMETA(DisplayName = "Warrior"),
 	Rogue UMETA(DisplayName = "Rogue"),
 	Mage UMETA(DisplayName = "Mage"),
 
-	// Tier 2 ?�래??(?�사 계열)
+	/** Tier 2 classes (Warrior branch) */
 	Berserker UMETA(DisplayName = "Berserker"),
 	Knight UMETA(DisplayName = "Knight"),
 	Paladin UMETA(DisplayName = "Paladin"),
 
-	// Tier 2 ?�래??(?�적 계열)
+	/** Tier 2 classes (Rogue branch) */
 	Assassin UMETA(DisplayName = "Assassin"),
 	Ranger UMETA(DisplayName = "Ranger"),
 	Duelist UMETA(DisplayName = "Duelist"),
 
-	// Tier 2 ?�래??(마법??계열)
+	/** Tier 2 classes (Mage branch) */
 	Sorcerer UMETA(DisplayName = "Sorcerer"),
 	Cleric UMETA(DisplayName = "Cleric"),
 	Warlock UMETA(DisplayName = "Warlock")
 };
 
 /**
- * 각성 ?�계
+ * @enum EHarmoniaAwakeningTier
+ * @brief Awakening tiers
  */
 UENUM(BlueprintType)
 enum class EHarmoniaAwakeningTier : uint8
@@ -97,66 +110,67 @@ enum class EHarmoniaAwakeningTier : uint8
 };
 
 /**
- * ?�킬 ?�드 ?�이??
+ * @struct FHarmoniaSkillNode
+ * @brief Skill node data structure
  */
 USTRUCT(BlueprintType)
 struct FHarmoniaSkillNode
 {
 	GENERATED_BODY()
 
-	/** ?�드 고유 ID */
+	/** Node unique ID */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Node")
 	FName NodeID;
 
-	/** ?�드 ?�름 */
+	/** Node name */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Node")
 	FText NodeName;
 
-	/** ?�드 ?�명 */
+	/** Node description */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Node")
 	FText NodeDescription;
 
-	/** ?�드 ?�이�?*/
+	/** Node icon */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Node")
 	TObjectPtr<UTexture2D> NodeIcon;
 
-	/** ?�드 ?�??*/
+	/** Node type */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Node")
 	EHarmoniaSkillNodeType NodeType = EHarmoniaSkillNodeType::Passive;
 
-	/** ?�킬 ?�리 카테고리 */
+	/** Skill tree category */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Node")
 	EHarmoniaSkillTreeCategory Category = EHarmoniaSkillTreeCategory::SwordMastery;
 
-	/** ?�요 ?�킬 ?�인??*/
+	/** Required skill points */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Requirements")
 	int32 RequiredSkillPoints = 1;
 
-	/** ?�요 ?�벨 */
+	/** Required level */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Requirements")
 	int32 RequiredLevel = 1;
 
-	/** ?�행 ?�드 ID??(???�드?�이 먼�? ?�금?�어???? */
+	/** Prerequisite node IDs (these nodes must be unlocked first) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Requirements")
 	TArray<FName> PrerequisiteNodeIDs;
 
-	/** ?�요 ?�래??(None?�면 ?�한 ?�음) */
+	/** Required class (None means no restriction) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Requirements")
 	EHarmoniaCharacterClass RequiredClass = EHarmoniaCharacterClass::None;
 
-	/** ?�금 ??부?�할 GameplayEffect (stat bonuses) */
+	/** Granted gameplay effects on unlock (stat bonuses) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
 	TArray<TSubclassOf<UGameplayEffect>> GrantedEffects;
 
-	/** ?�금 ??부?�할 AbilitySet (abilities) */
+	/** Granted ability set on unlock (abilities) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
 	TObjectPtr<ULyraAbilitySet> GrantedAbilitySet;
 
-	/** 최�? ?�자 가???�인??(?�벨??가?�한 ?�킬) */
+	/** Maximum investment points (for upgradeable skills) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Node")
 	int32 MaxInvestmentPoints = 1;
 
-	/** UI ?�치 (?�킬 ?�리 그래?�에?�의 좌표) */
+	/** UI position (coordinates in skill tree graph) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	FVector2D UIPosition = FVector2D::ZeroVector;
 
@@ -174,50 +188,51 @@ struct FHarmoniaSkillNode
 };
 
 /**
- * ?�래???�의 ?�이??
+ * @struct FHarmoniaClassDefinition
+ * @brief Class definition data structure
  */
 USTRUCT(BlueprintType)
 struct FHarmoniaClassDefinition
 {
 	GENERATED_BODY()
 
-	/** ?�래???�??*/
+	/** Class type */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Class")
 	EHarmoniaCharacterClass ClassType = EHarmoniaCharacterClass::None;
 
-	/** ?�래???�름 */
+	/** Class name */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Class")
 	FText ClassName;
 
-	/** ?�래???�명 */
+	/** Class description */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Class")
 	FText ClassDescription;
 
-	/** ?�래???�이�?*/
+	/** Class icon */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Class")
 	TObjectPtr<UTexture2D> ClassIcon;
 
-	/** ?�작 ?�탯 보너??(Vitality, Strength, etc) */
+	/** Starting stat bonuses (Vitality, Strength, etc) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Starting Stats")
 	TMap<FGameplayTag, float> StartingStatBonuses;
 
-	/** ?�벨?????�동 ?�탯 증�? */
+	/** Auto stat growth per level */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Progression")
 	TMap<FGameplayTag, float> StatGrowthPerLevel;
 
-	/** ?�래???�택 ??부?�되??GameplayEffect */
+	/** Granted gameplay effects on class selection */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TArray<TSubclassOf<UGameplayEffect>> ClassEffects;
 
-	/** ?�래???�택 ??부?�되??AbilitySet */
+	/** Granted ability set on class selection */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TObjectPtr<ULyraAbilitySet> ClassAbilitySet;
 
-	/** ???�래?�로 ?�직 가?�한 ?�위 ?�래?�들 */
+	/** Available advancement classes from this class */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advancement")
 	TArray<EHarmoniaCharacterClass> AdvancementClasses;
 
-	/** ?�직 ?�요 ?�벨 */
+	/** Required level for advancement */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advancement")
 	int32 RequiredLevelForAdvancement = 20;
 
@@ -229,46 +244,47 @@ struct FHarmoniaClassDefinition
 };
 
 /**
- * 각성 ?�계 ?�이??
+ * @struct FHarmoniaAwakeningDefinition
+ * @brief Awakening tier definition data structure
  */
 USTRUCT(BlueprintType)
 struct FHarmoniaAwakeningDefinition
 {
 	GENERATED_BODY()
 
-	/** 각성 ?�계 */
+	/** Awakening tier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Awakening")
 	EHarmoniaAwakeningTier Tier = EHarmoniaAwakeningTier::Base;
 
-	/** 각성 ?�름 */
+	/** Awakening name */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Awakening")
 	FText AwakeningName;
 
-	/** 각성 ?�명 */
+	/** Awakening description */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Awakening")
 	FText AwakeningDescription;
 
-	/** ?�요 ?�벨 */
+	/** Required level */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Requirements")
 	int32 RequiredLevel = 50;
 
-	/** 각성 ?�스???�그 (?�료?�야 ???�스?? */
+	/** Required quest tag (quest that must be completed) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Requirements")
 	FGameplayTag RequiredQuestTag;
 
-	/** 각성 ??부?�되???�탯 배율 */
+	/** Stat multiplier on awakening */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bonuses")
 	float StatMultiplier = 1.2f;
 
-	/** 각성 ??부?�되??GameplayEffect */
+	/** Granted gameplay effects on awakening */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bonuses")
 	TArray<TSubclassOf<UGameplayEffect>> AwakeningEffects;
 
-	/** 각성 ??부?�되??AbilitySet */
+	/** Granted ability set on awakening */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bonuses")
 	TObjectPtr<ULyraAbilitySet> AwakeningAbilitySet;
 
-	/** 각성 보상 ?�킬 ?�인??*/
+	/** Bonus skill points on awakening */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bonuses")
 	int32 BonusSkillPoints = 5;
 
@@ -282,42 +298,43 @@ struct FHarmoniaAwakeningDefinition
 };
 
 /**
- * ?�게?? ?�레?�티지 ?�이??
+ * @struct FHarmoniaPrestigeDefinition
+ * @brief New Game+ prestige data structure
  */
 USTRUCT(BlueprintType)
 struct FHarmoniaPrestigeDefinition
 {
 	GENERATED_BODY()
 
-	/** ?�레?�티지 ?�벨 (0 = 기본, 1+ = NG+) */
+	/** Prestige level (0 = base, 1+ = NG+) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prestige")
 	int32 PrestigeLevel = 0;
 
-	/** ?�요 최소 ?�벨 */
+	/** Required minimum player level */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Requirements")
 	int32 RequiredPlayerLevel = 100;
 
-	/** ???�이??배율 */
+	/** Enemy difficulty multiplier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Difficulty")
 	float EnemyDifficultyMultiplier = 1.5f;
 
-	/** 보상 배율 (경험�? 골드, ?�랍) */
+	/** Reward multiplier (experience, gold, drops) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rewards")
 	float RewardMultiplier = 2.0f;
 
-	/** ?�레?�티지 보너???�탯 ?�인??*/
+	/** Prestige bonus stat points */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rewards")
 	int32 BonusStatPoints = 10;
 
-	/** ?�레?�티지 보너???�킬 ?�인??*/
+	/** Prestige bonus skill points */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rewards")
 	int32 BonusSkillPoints = 10;
 
-	/** ?�레?�티지 ?�용 GameplayEffect */
+/** Prestige gameplay effects */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rewards")
 	TArray<TSubclassOf<UGameplayEffect>> PrestigeEffects;
 
-	/** ?�레?�티지 ?�?��?/뱃�? */
+	/** Prestige title/badge */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cosmetic")
 	FText PrestigeTitle;
 
@@ -333,7 +350,8 @@ struct FHarmoniaPrestigeDefinition
 };
 
 /**
- * ?�킬 ?�드 ?�자 ?�보 (?�트?�크 복제??
+ * @struct FSkillNodeInvestment
+ * @brief Skill node investment info (for network replication)
  */
 USTRUCT(BlueprintType)
 struct FSkillNodeInvestment
@@ -360,7 +378,8 @@ struct FSkillNodeInvestment
 };
 
 /**
- * ?�탯 배분 ?�보 (?�트?�크 복제??
+ * @struct FStatAllocation
+ * @brief Stat allocation info (for network replication)
  */
 USTRUCT(BlueprintType)
 struct FStatAllocation
@@ -386,54 +405,55 @@ struct FStatAllocation
 };
 
 /**
- * ?�레?�어 진행 ?�황 ?�???�이??
+ * @struct FHarmoniaProgressionSaveData
+ * @brief Player progression save data
  */
 USTRUCT(BlueprintType)
 struct FHarmoniaProgressionSaveData
 {
 	GENERATED_BODY()
 
-	/** ?�재 경험�?*/
+	/** Current experience */
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Progression")
 	int32 CurrentExperience = 0;
 
-	/** ?�재 ?�벨 */
+	/** Current level */
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Progression")
 	int32 CurrentLevel = 1;
 
-	/** ?�용 가?�한 ?�킬 ?�인??*/
+	/** Available skill points */
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Progression")
 	int32 AvailableSkillPoints = 0;
 
-	/** ?�용 가?�한 ?�탯 ?�인??*/
+	/** Available stat points */
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Progression")
 	int32 AvailableStatPoints = 0;
 
-	/** ?�재 ?�래??*/
+	/** Current class */
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Class")
 	EHarmoniaCharacterClass CurrentClass = EHarmoniaCharacterClass::None;
 
-	/** ?�재 각성 ?�계 */
+	/** Current awakening tier */
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Awakening")
 	EHarmoniaAwakeningTier CurrentAwakeningTier = EHarmoniaAwakeningTier::Base;
 
-	/** ?�레?�티지 ?�벨 (NG+ ?�수) */
+	/** Prestige level (NG+ count) */
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Prestige")
 	int32 PrestigeLevel = 0;
 
-	/** ?�금???�킬 ?�드 ID?�과 ?�자 ?�인??*/
+	/** Unlocked skill node IDs with invested points */
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Skills")
 	TArray<FSkillNodeInvestment> UnlockedSkillNodes;
 
-	/** 배분??주요 ?�탯 (Vitality, Strength, etc) */
+	/** Allocated main stats (Vitality, Strength, etc) */
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Stats")
 	TArray<FStatAllocation> AllocatedStats;
 
-	/** �??�득 경험�?(lifetime) */
+	/** Total experience earned (lifetime) */
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Statistics")
 	int64 TotalExperienceEarned = 0;
 
-	/** �??�벨???�수 */
+	/** Total levels gained */
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Statistics")
 	int32 TotalLevelsGained = 0;
 

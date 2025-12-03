@@ -1,5 +1,11 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file HarmoniaCraftingSystemDefinitions.h
+ * @brief Crafting system type definitions
+ * @author Harmonia Team
+ */
+
 #pragma once
 
 #include "Engine/DataTable.h"
@@ -8,83 +14,89 @@
 #include "HarmoniaCraftingSystemDefinitions.generated.h"
 
 /**
- * Item/Equipment Grade/Tier System
+ * @enum EItemGrade
+ * @brief Item/Equipment Grade/Tier System
  */
 UENUM(BlueprintType)
 enum class EItemGrade : uint8
 {
-	Common			UMETA(DisplayName = "Common"),			// ?�반
-	Uncommon		UMETA(DisplayName = "Uncommon"),		// 고급
-	Rare			UMETA(DisplayName = "Rare"),			// ?��?
-	Epic			UMETA(DisplayName = "Epic"),			// ?�웅
-	Legendary		UMETA(DisplayName = "Legendary"),		// ?�설
-	Mythic			UMETA(DisplayName = "Mythic"),			// ?�화
+	Common			UMETA(DisplayName = "Common"),			// Common
+	Uncommon		UMETA(DisplayName = "Uncommon"),		// Uncommon
+	Rare			UMETA(DisplayName = "Rare"),			// Rare
+	Epic			UMETA(DisplayName = "Epic"),			// Epic
+	Legendary		UMETA(DisplayName = "Legendary"),		// Legendary
+	Mythic			UMETA(DisplayName = "Mythic"),			// Mythic
 	MAX				UMETA(Hidden)
 };
 
 /**
- * Crafting result type
+ * @enum ECraftingResult
+ * @brief Crafting result type
  */
 UENUM(BlueprintType)
 enum class ECraftingResult : uint8
 {
-	Success			UMETA(DisplayName = "Success"),			// ?�작 ?�공
-	Failure			UMETA(DisplayName = "Failure"),			// ?�작 ?�패
-	CriticalSuccess	UMETA(DisplayName = "Critical Success"),// ?�?�공 (추�? 보상 ??
-	Cancelled		UMETA(DisplayName = "Cancelled")		// 취소??
+	Success			UMETA(DisplayName = "Success"),			// Crafting success
+	Failure			UMETA(DisplayName = "Failure"),			// Crafting failure
+	CriticalSuccess	UMETA(DisplayName = "Critical Success"),// Critical success (bonus rewards)
+	Cancelled		UMETA(DisplayName = "Cancelled")		// Cancelled
 };
 
 /**
- * Crafting station type
- * Defines where a recipe can be crafted
+ * @enum ECraftingStationType
+ * @brief Crafting station type
+ * 
+ * Defines where a recipe can be crafted.
  */
 UENUM(BlueprintType)
 enum class ECraftingStationType : uint8
 {
-	None			UMETA(DisplayName = "None"),			// ?�디?�나 ?�작 가??(?�으�?
-	Anvil			UMETA(DisplayName = "Anvil"),			// ?�?�간 모루
-	Forge			UMETA(DisplayName = "Forge"),			// ?�광�?
-	WorkBench		UMETA(DisplayName = "Work Bench"),		// ?�업?�
-	CookingPot		UMETA(DisplayName = "Cooking Pot"),		// ?�리 ?�비
-	CampFire		UMETA(DisplayName = "Camp Fire"),		// 캠프?�이??
-	AlchemyTable	UMETA(DisplayName = "Alchemy Table"),	// ?�금???�이�?
-	SewingTable		UMETA(DisplayName = "Sewing Table"),	// ?�봉?�
-	TanningRack		UMETA(DisplayName = "Tanning Rack"),	// 무두�??�반
-	Loom			UMETA(DisplayName = "Loom"),			// 베�?
-	GrindStone		UMETA(DisplayName = "Grind Stone"),		// ?�돌
-	Enchanting		UMETA(DisplayName = "Enchanting"),		// 마법 부?��?
-	Custom			UMETA(DisplayName = "Custom"),			// 커스?� (?�그�?지??
+	None			UMETA(DisplayName = "None"),			// Craft anywhere (no station required)
+	Anvil			UMETA(DisplayName = "Anvil"),			// Blacksmith anvil
+	Forge			UMETA(DisplayName = "Forge"),			// Forge/Furnace
+	WorkBench		UMETA(DisplayName = "Work Bench"),		// Work bench
+	CookingPot		UMETA(DisplayName = "Cooking Pot"),		// Cooking equipment
+	CampFire		UMETA(DisplayName = "Camp Fire"),		// Campfire
+	AlchemyTable	UMETA(DisplayName = "Alchemy Table"),	// Alchemy table
+	SewingTable		UMETA(DisplayName = "Sewing Table"),	// Sewing table
+	TanningRack		UMETA(DisplayName = "Tanning Rack"),	// Tanning rack
+	Loom			UMETA(DisplayName = "Loom"),			// Loom
+	GrindStone		UMETA(DisplayName = "Grind Stone"),		// Grindstone
+	Enchanting		UMETA(DisplayName = "Enchanting"),		// Enchanting table
+	Custom			UMETA(DisplayName = "Custom"),			// Custom (tag-based)
 	MAX				UMETA(Hidden)
 };
 
 /**
- * Recipe difficulty level
+ * @enum EHarmoniaRecipeDifficulty
+ * @brief Recipe difficulty level
  */
 UENUM(BlueprintType)
 enum class EHarmoniaRecipeDifficulty : uint8
 {
-	Trivial			UMETA(DisplayName = "Trivial"),			// 매우 ?��?
-	Easy			UMETA(DisplayName = "Easy"),			// ?��?
-	Normal			UMETA(DisplayName = "Normal"),			// 보통
-	Hard			UMETA(DisplayName = "Hard"),			// ?�려?�
-	Expert			UMETA(DisplayName = "Expert"),			// ?�문가
-	Master			UMETA(DisplayName = "Master"),			// 마스??
-	Legendary		UMETA(DisplayName = "Legendary"),		// ?�설
+	Trivial			UMETA(DisplayName = "Trivial"),			// Very easy
+	Easy			UMETA(DisplayName = "Easy"),			// Easy
+	Normal			UMETA(DisplayName = "Normal"),			// Normal
+	Hard			UMETA(DisplayName = "Hard"),			// Hard
+	Expert			UMETA(DisplayName = "Expert"),			// Expert
+	Master			UMETA(DisplayName = "Master"),			// Master
+	Legendary		UMETA(DisplayName = "Legendary"),		// Legendary
 	MAX				UMETA(Hidden)
 };
 
 /**
- * Crafting result type (renamed for consistency with subsystem)
+ * @enum EHarmoniaCraftingResult
+ * @brief Crafting result type (renamed for consistency with subsystem)
  */
 UENUM(BlueprintType)
 enum class EHarmoniaCraftingResult : uint8
 {
-	Success				UMETA(DisplayName = "Success"),				// ?�작 ?�공
-	Failure				UMETA(DisplayName = "Failure"),				// ?�작 ?�패
-	CriticalSuccess		UMETA(DisplayName = "Critical Success"),	// ?�?�공 (추�? 보상 ??
-	Cancelled			UMETA(DisplayName = "Cancelled"),			// 취소??
-	InvalidRecipe		UMETA(DisplayName = "Invalid Recipe"),		// ?�못???�시??
-	InsufficientMaterials	UMETA(DisplayName = "Insufficient Materials"),	// ?�료 부�?
+	Success				UMETA(DisplayName = "Success"),				// Crafting success
+	Failure				UMETA(DisplayName = "Failure"),				// Crafting failure
+	CriticalSuccess		UMETA(DisplayName = "Critical Success"),	// Critical success (bonus rewards)
+	Cancelled			UMETA(DisplayName = "Cancelled"),			// Cancelled
+	InvalidRecipe		UMETA(DisplayName = "Invalid Recipe"),		// Invalid recipe
+	InsufficientMaterials	UMETA(DisplayName = "Insufficient Materials"),	// Insufficient materials
 	MAX					UMETA(Hidden)
 };
 

@@ -1,4 +1,10 @@
-﻿// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright 2025 Snow Game Studio.
+
+/**
+ * @file HarmoniaCurrencyDataAsset.h
+ * @brief Currency data asset for defining in-game currencies
+ * @author Harmonia Team
+ */
 
 #pragma once
 
@@ -8,8 +14,10 @@
 #include "HarmoniaCurrencyDataAsset.generated.h"
 
 /**
- * ?�화 ?�이???�셋
- * �??�화 ?�?�의 ?�시 ?�보, ?�한, 변??비율 ?�을 ?�의
+ * @class UHarmoniaCurrencyDataAsset
+ * @brief Currency data asset
+ * 
+ * Defines display info, limits, and conversion rates for each currency type.
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaCurrencyDataAsset : public UDataAsset
@@ -19,58 +27,61 @@ class HARMONIAKIT_API UHarmoniaCurrencyDataAsset : public UDataAsset
 public:
 	UHarmoniaCurrencyDataAsset();
 
-	//~ ?�화 기본 ?�보
-	/** ?�화 ?�??*/
+	//~ Currency Basic Info
+	
+	/** Currency type */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Currency")
 	EHarmoniaCurrencyType CurrencyType;
 
-	/** ?�시 ?�름 */
+	/** Display name */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Currency")
 	FText DisplayName;
 
-	/** ?�명 */
+	/** Description */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Currency")
 	FText Description;
 
-	/** ?�화 ?�상 (UI ?�시?? */
+	/** Currency color for UI display */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Currency|Visual")
 	FLinearColor CurrencyColor;
 
-	/** ?�화 ?�이�?*/
+	/** Currency icon */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Currency|Visual")
 	TSoftObjectPtr<UTexture2D> Icon;
 
-	//~ ?�화 ?�한
-	/** 최�? ?��???(0 = 무제?? */
+	//~ Currency Limits
+	
+	/** Max carry amount (0 = unlimited) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Currency|Limits", meta = (ClampMin = "0"))
 	int32 MaxCarryAmount;
 
-	/** ?�망 ???�롭 가???��? */
+	/** Can drop on death */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Currency|Death")
 	bool bCanDropOnDeath;
 
-	/** ?�망 ???�롭 비율 (0.0 - 1.0) */
+	/** Drop percentage on death (0.0 - 1.0) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Currency|Death", meta = (ClampMin = "0.0", ClampMax = "1.0", EditCondition = "bCanDropOnDeath"))
 	float DropPercentage;
 
-	/** 거래 가???��? */
+	/** Is tradeable */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Currency|Trade")
 	bool bIsTradeable;
 
-	/** ?�른 ?�화로의 변??비율 */
+	/** Conversion rates to other currencies */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Currency|Conversion")
 	TMap<EHarmoniaCurrencyType, float> ConversionRates;
 
-	//~ ?�틸리티 ?�수
-	/** ?�량???�함???�시 ?�스??반환 */
+	//~ Utility Functions
+	
+	/** Get display text with amount included */
 	UFUNCTION(BlueprintPure, Category = "Currency")
 	FText GetDisplayTextWithAmount(int32 Amount) const;
 
-	/** ?��? ?�도 ?�내?��? ?�인 */
+	/** Check if amount is within carry limit */
 	UFUNCTION(BlueprintPure, Category = "Currency")
 	bool IsWithinCarryLimit(int32 Amount) const;
 
-	/** ?�른 ?�화�?변??*/
+	/** Convert to another currency */
 	UFUNCTION(BlueprintPure, Category = "Currency")
 	int32 ConvertTo(EHarmoniaCurrencyType TargetCurrency, int32 Amount) const;
 
