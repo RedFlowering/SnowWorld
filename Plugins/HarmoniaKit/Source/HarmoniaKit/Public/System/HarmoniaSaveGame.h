@@ -2,6 +2,15 @@
 
 #pragma once
 
+/**
+ * @file HarmoniaSaveGame.h
+ * @brief Save game system for persistent player and world data
+ * @author Harmonia Team
+ * 
+ * Provides comprehensive save data structures for player attributes,
+ * inventory, equipment, progression, and world state.
+ */
+
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
 #include "GameplayTagContainer.h"
@@ -15,17 +24,20 @@
 class ULyraInventoryItemInstance;
 class ULyraInventoryItemDefinition;
 
-/** 인벤토리 아이템 저장 데이터 */
+/**
+ * @struct FHarmoniaSavedInventoryItem
+ * @brief Inventory item save data
+ */
 USTRUCT(BlueprintType)
 struct FHarmoniaSavedInventoryItem
 {
 	GENERATED_BODY()
 
-	/** 아이템 정의 경로 */
+	/** Item definition path */
 	UPROPERTY(SaveGame)
 	FSoftObjectPath ItemDefinitionPath;
 
-	/** 스택 개수 */
+	/** Stack count */
 	UPROPERTY(SaveGame)
 	int32 StackCount = 1;
 
@@ -35,159 +47,174 @@ struct FHarmoniaSavedInventoryItem
 	}
 };
 
-/** ?�레?�어 ?�성 ?�???�이??*/
+/**
+ * @struct FHarmoniaSavedPlayerAttributes
+ * @brief Player attribute save data
+ */
 USTRUCT(BlueprintType)
 struct FHarmoniaSavedPlayerAttributes
 {
 	GENERATED_BODY()
 
-	/** 체력 */
+	/** Current health */
 	UPROPERTY(SaveGame)
 	float Health = 100.0f;
 
-	/** 최�? 체력 */
+	/** Maximum health */
 	UPROPERTY(SaveGame)
 	float MaxHealth = 100.0f;
 
-	/** ?�태미나 */
+	/** Current stamina */
 	UPROPERTY(SaveGame)
 	float Stamina = 100.0f;
 
-	/** 최�? ?�태미나 */
+	/** Maximum stamina */
 	UPROPERTY(SaveGame)
 	float MaxStamina = 100.0f;
 
-	/** 공격??*/
+	/** Attack power */
 	UPROPERTY(SaveGame)
 	float AttackPower = 10.0f;
 
-	/** 방어??*/
+	/** Defense */
 	UPROPERTY(SaveGame)
 	float Defense = 5.0f;
 
-	/** ?�리?�컬 ?�률 */
+	/** Critical hit chance */
 	UPROPERTY(SaveGame)
 	float CriticalChance = 0.1f;
 
-	/** ?�리?�컬 배수 */
+	/** Critical damage multiplier */
 	UPROPERTY(SaveGame)
 	float CriticalDamage = 1.5f;
 
-	/** ?�동 ?�도 */
+	/** Movement speed */
 	UPROPERTY(SaveGame)
 	float MovementSpeed = 600.0f;
 
-	/** 공격 ?�도 */
+	/** Attack speed */
 	UPROPERTY(SaveGame)
 	float AttackSpeed = 1.0f;
 };
 
-/** 빌딩 배치 ?�이??*/
+/**
+ * @struct FHarmoniaSavedBuildingInstance
+ * @brief Building placement save data
+ */
 USTRUCT(BlueprintType)
 struct FHarmoniaSavedBuildingInstance
 {
 	GENERATED_BODY()
 
-	/** 빌딩 ?�트 ID */
+	/** Building part ID */
 	UPROPERTY(SaveGame)
 	FName PartID;
 
-	/** ?�치 */
+	/** Location */
 	UPROPERTY(SaveGame)
 	FVector Location = FVector::ZeroVector;
 
-	/** ?�전 */
+	/** Rotation */
 	UPROPERTY(SaveGame)
 	FRotator Rotation = FRotator::ZeroRotator;
 
-	/** ?��???*/
+	/** Scale */
 	UPROPERTY(SaveGame)
 	FVector Scale = FVector::OneVector;
 };
 
-/** ?�레?�어�??�이�??�이??*/
+/**
+ * @struct FHarmoniaPlayerSaveData
+ * @brief Player data save structure
+ */
 USTRUCT(BlueprintType)
 struct FHarmoniaPlayerSaveData
 {
 	GENERATED_BODY()
 
-	/** ?��? ID (UniqueNetId�?문자?�로 ?�?? */
+	/** Steam ID (UniqueNetId as string) */
 	UPROPERTY(SaveGame)
 	FString SteamID;
 
-	/** ?�레?�어 ?�름 */
+	/** Player name */
 	UPROPERTY(SaveGame)
 	FString PlayerName;
 
-	/** ?�레?�어 ?�치 */
+	/** Player location */
 	UPROPERTY(SaveGame)
 	FVector PlayerLocation = FVector::ZeroVector;
 
-	/** ?�레?�어 ?�전 */
+	/** Player rotation */
 	UPROPERTY(SaveGame)
 	FRotator PlayerRotation = FRotator::ZeroRotator;
 
-	/** ?�레?�어 ?�성 */
+	/** Player attributes */
 	UPROPERTY(SaveGame)
 	FHarmoniaSavedPlayerAttributes Attributes;
 
-	/** ?�벤?�리 ?�이??목록 */
+	/** Inventory item list */
 	UPROPERTY(SaveGame)
 	TArray<FHarmoniaSavedInventoryItem> InventoryItems;
 
-	/** ?�비 ?�이??*/
+	/** Equipment data */
 	UPROPERTY(SaveGame)
 	FEquipmentSaveData EquipmentData;
 
-	/** ?�탯 ?�그 (체력 버프, ?�도 증�? ?? */
+	/** Stat tags (health buff, speed boost, etc.) */
 	UPROPERTY(SaveGame)
 	FGameplayTagContainer StatTags;
 
-	/** 마�?�??�???�간 */
+	/** Last save time */
 	UPROPERTY(SaveGame)
 	FDateTime LastSaveTime;
 
-	/** 마�?막으�?공명??체크?�인??ID */
+	/** Last resonated checkpoint ID */
 	UPROPERTY(SaveGame)
 	FName LastCheckpointID;
 
-	/** ?�험??지??목록 */
+	/** Explored region list */
 	UPROPERTY(SaveGame)
 	TArray<FExploredRegion> ExploredRegions;
 
-	/** 발견???�치 목록 */
+	/** Discovered location list */
 	UPROPERTY(SaveGame)
 	TArray<FMapLocationData> DiscoveredLocations;
 
-	/** 캐릭??진행 ?�이??(경험�? ?�벨, ?�킬, ?�래???? */
+	/** Character progression data (experience, level, skills, class, etc.) */
 	UPROPERTY(SaveGame)
 	FHarmoniaProgressionSaveData ProgressionData;
 };
 
-/** 리소???�드 ?�태 ?�???�이??*/
+/**
+ * @struct FHarmoniaSavedResourceNodeState
+ * @brief Resource node state save data
+ */
 USTRUCT(BlueprintType)
 struct FHarmoniaSavedResourceNodeState
 {
 	GENERATED_BODY()
 
-	/** 리소???�드 ID (?�치 기반 ?�시 ?�는 고유 ID) */
+	/** Resource node ID (location-based hash or unique ID) */
 	UPROPERTY(SaveGame)
 	int32 NodeID = 0;
 
-	/** 고갈 ?�태 (0.0 = ?�전 고갈, 1.0 = ?�전 충전) */
+	/** Depletion state (0.0 = fully depleted, 1.0 = fully charged) */
 	UPROPERTY(SaveGame)
 	float DepletionAmount = 1.0f;
 
-	/** 리스???��?중인지 */
+	/** Whether respawn is in progress */
 	UPROPERTY(SaveGame)
 	bool bIsRespawning = false;
 
-	/** 리스?�까지 ?��? ?�간 (�? */
+	/** Remaining time until respawn (seconds) */
 	UPROPERTY(SaveGame)
 	float RemainingRespawnTime = 0.0f;
 };
 
-/** POI 진행 ?�태 ?�???�이??*/
+/**
+ * @struct FHarmoniaSavedPOIState
+ * @brief POI (Point of Interest) progress state save data
+ */
 USTRUCT(BlueprintType)
 struct FHarmoniaSavedPOIState
 {
@@ -197,171 +224,176 @@ struct FHarmoniaSavedPOIState
 	UPROPERTY(SaveGame)
 	int32 POIID = 0;
 
-	/** ?�리???��? */
+	/** Clear status */
 	UPROPERTY(SaveGame)
 	bool bIsCompleted = false;
 
-	/** 보물 ?�득 ?��? */
+	/** Treasure collected status */
 	UPROPERTY(SaveGame)
 	bool bTreasureCollected = false;
 
-	/** 방문 ?�수 */
+	/** Visit count */
 	UPROPERTY(SaveGame)
 	int32 VisitCount = 0;
 
-	/** 마�?�?방문 ?�간 */
+	/** Last visit time */
 	UPROPERTY(SaveGame)
 	FDateTime LastVisitTime;
 };
 
-/** ?�드 ?�이�??�이??*/
+/**
+ * @struct FHarmoniaWorldSaveData
+ * @brief World data save structure
+ */
 USTRUCT(BlueprintType)
 struct FHarmoniaWorldSaveData
 {
 	GENERATED_BODY()
 
-	// ===== 빌딩 ?�스??=====
+	// ===== Building System =====
 
-	/** 배치??빌딩 목록 */
+	/** Placed buildings list */
 	UPROPERTY(SaveGame)
 	TArray<FHarmoniaSavedBuildingInstance> PlacedBuildings;
 
-	// ===== ?�드 ?�성 ?�보 =====
+	// ===== World Generation Info =====
 
-	/** ?�동 ?�성 ?��? (true = ?�드 기반, false = ?�동 ?�성) */
+	/** Auto-generation enabled (true = seed-based, false = manual generation) */
 	UPROPERTY(SaveGame)
 	bool bIsAutomaticallyGenerated = true;
 
-	/** ?�드 ?�드 (?�동 ?�성 ???�수, ?�동 ?�성 ??무시) */
+	/** World seed (required for auto-generation, ignored for manual) */
 	UPROPERTY(SaveGame)
 	int32 WorldSeed = 0;
 
-	/** ?�드 ?�기 X */
+	/** World size X */
 	UPROPERTY(SaveGame)
 	int32 WorldSizeX = 512;
 
-	/** ?�드 ?�기 Y */
+	/** World size Y */
 	UPROPERTY(SaveGame)
 	int32 WorldSizeY = 512;
 
-	// ===== 계절 ?�스??=====
+	// ===== Season System =====
 
-	/** ?�재 계절 */
+	/** Current season */
 	UPROPERTY(SaveGame)
 	uint8 CurrentSeason = 0; // ESeasonType (Spring=0, Summer=1, Fall=2, Winter=3)
 
-	/** 계절 진행??(0.0 ~ 1.0) */
+	/** Season progress (0.0 ~ 1.0) */
 	UPROPERTY(SaveGame)
 	float SeasonProgress = 0.0f;
 
-	/** �?경과 ?�수 */
+	/** Total days elapsed */
 	UPROPERTY(SaveGame)
 	int32 TotalDaysElapsed = 0;
 
-	// ===== ?�씨 ?�스??=====
+	// ===== Weather System =====
 
-	/** ?�재 ?�씨 ?�??*/
+	/** Current weather type */
 	UPROPERTY(SaveGame)
 	uint8 CurrentWeatherType = 0; // EWeatherType
 
-	/** ?�전 ?�씨 ?�??(?�환?? */
+	/** Previous weather type (for transitions) */
 	UPROPERTY(SaveGame)
 	uint8 PreviousWeatherType = 0; // EWeatherType
 
-	/** ?�씨 강도 (0.0 ~ 1.0) */
+	/** Weather intensity (0.0 ~ 1.0) */
 	UPROPERTY(SaveGame)
 	float WeatherIntensity = 1.0f;
 
-	/** ?�씨 ?�환 진행??(0.0 ~ 1.0) */
+	/** Weather transition progress (0.0 ~ 1.0) */
 	UPROPERTY(SaveGame)
 	float WeatherTransitionProgress = 1.0f;
 
-	/** ?�재 ?�씨 지???�간 (�? */
+	/** Current weather duration (seconds) */
 	UPROPERTY(SaveGame)
 	float CurrentWeatherDuration = 3600.0f;
 
-	/** ?�재 ?�씨 경과 ?�간 (�? */
+	/** Current weather elapsed time (seconds) */
 	UPROPERTY(SaveGame)
 	float CurrentWeatherElapsedTime = 0.0f;
 
-	// ===== ?�간 ?�스??=====
+	// ===== Time System =====
 
-	/** ?�재 게임 ?�간 (0.0 ~ 24.0) */
+	/** Current game hour (0.0 ~ 24.0) */
 	UPROPERTY(SaveGame)
 	float CurrentGameHour = 8.0f;
 
-	/** ?�재 게임 ??(1부???�작) */
+	/** Current game day (starts from 1) */
 	UPROPERTY(SaveGame)
 	int32 CurrentGameDay = 1;
 
-	/** ?�간 ?�도 배율 (1.0 = ?�상 ?�도) */
+	/** Time speed multiplier (1.0 = normal speed) */
 	UPROPERTY(SaveGame)
 	float TimeSpeedMultiplier = 1.0f;
 
-	/** ?�재 ?�간?� */
+	/** Current time of day */
 	UPROPERTY(SaveGame)
 	uint8 CurrentTimeOfDay = 2; // ETimeOfDay (Night=0, Dawn=1, Morning=2, Noon=3, Afternoon=4, Dusk=5)
 
-	/** ?�시 ?��? ?��? */
+	/** Time pause status */
 	UPROPERTY(SaveGame)
 	bool bIsTimePaused = false;
 
-	// ===== ?�동 ?�성 ?�드 ?�이??(bIsAutomaticallyGenerated == false ???�만 ?�용) =====
+	// ===== Manual Generation World Data (only used when bIsAutomaticallyGenerated == false) =====
 
-	/** ?�동 배치???�드 ?�브?�트 (?�무, 바위 ?? */
+	/** Manually placed world object locations (trees, rocks, etc.) */
 	UPROPERTY(SaveGame)
 	TArray<FVector> ManualObjectLocations;
 
-	/** ?�동 배치???�브?�트 ?�??*/
+	/** Manually placed object types */
 	UPROPERTY(SaveGame)
 	TArray<uint8> ManualObjectTypes; // EWorldObjectType
 
-	/** ?�동 배치???�브?�트 ?�전 */
+	/** Manually placed object rotations */
 	UPROPERTY(SaveGame)
 	TArray<FRotator> ManualObjectRotations;
 
-	/** ?�동 배치???�브?�트 ?��???*/
+	/** Manually placed object scales */
 	UPROPERTY(SaveGame)
 	TArray<FVector> ManualObjectScales;
 
-	// ===== ?�적 ?�태 (?�동/?�동 모두 ?�?? =====
+	// ===== Dynamic State (used in both auto/manual modes) =====
 
-	/** 리소???�드 ?�태 목록 */
+	/** Resource node state list */
 	UPROPERTY(SaveGame)
 	TArray<FHarmoniaSavedResourceNodeState> ResourceNodeStates;
 
-	/** POI 진행 ?�태 목록 */
+	/** POI progress state list */
 	UPROPERTY(SaveGame)
 	TArray<FHarmoniaSavedPOIState> POIStates;
 
-	/** 변경된 바이???�이??(?�본�??�른 경우�??�?? */
+	/** Modified biome indices (only saved when different from original) */
 	UPROPERTY(SaveGame)
 	TArray<int32> ModifiedBiomeIndices;
 
-	/** 변경된 바이???�??*/
+	/** Modified biome types */
 	UPROPERTY(SaveGame)
 	TArray<uint8> ModifiedBiomeTypes; // EBiomeType
 
-	// ===== ?�거???�환??(Deprecated) =====
+	// ===== Deprecated (for backward compatibility) =====
 
-	/** [DEPRECATED] ?�드 ?�간 (CurrentGameHour�??�체됨) */
+	/** [DEPRECATED] World time (replaced by CurrentGameHour) */
 	UPROPERTY(SaveGame)
 	float WorldTime = 0.0f;
 
-	/** [DEPRECATED] ?�씨 ?�태 (CurrentWeatherType?�로 ?�체됨) */
+	/** [DEPRECATED] Weather state (replaced by CurrentWeatherType) */
 	UPROPERTY(SaveGame)
 	FString WeatherState;
 
-	// ===== 체크?�인???�스??=====
+	// ===== Checkpoint System =====
 
-	/** 체크?�인???�이??목록 */
+	/** Checkpoint data list */
 	UPROPERTY(SaveGame)
 	TArray<FHarmoniaCheckpointData> CheckpointStates;
 };
 
 /**
- * 게임 ?�이�??�이??
- * 로컬 PC �??��? ?�라?�드???�?�됩?�다.
+ * @class UHarmoniaSaveGame
+ * @brief Game save data class
+ * 
+ * Saved to local PC or cloud storage.
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaSaveGame : public USaveGame
@@ -371,52 +403,70 @@ class HARMONIAKIT_API UHarmoniaSaveGame : public USaveGame
 public:
 	UHarmoniaSaveGame();
 
-	/** ?�이�??�롯 ?�름 */
+	/** Save slot name */
 	UPROPERTY(SaveGame)
 	FString SaveSlotName;
 
-	/** ?�이�??�일 버전 (?�환??체크?? */
+	/** Save file version (for compatibility check) */
 	UPROPERTY(SaveGame)
 	int32 SaveVersion = 2;
 
-	/** 마�?�??�???�간 */
+	/** Last save timestamp */
 	UPROPERTY(SaveGame)
 	FDateTime LastSaveTimestamp;
 
-	/** ?�버 ?�유주의 ?��? ID */
+	/** Server owner Steam ID */
 	UPROPERTY(SaveGame)
 	FString ServerOwnerSteamID;
 
-	/** ?�레?�어�??�이�??�이??(?��? ID�??�로 ?�용) */
+	/** Player save data (keyed by Steam ID) */
 	UPROPERTY(SaveGame)
 	TMap<FString, FHarmoniaPlayerSaveData> PlayerDataMap;
 
-	/** ?�드 공유 ?�이??(빌딩 ?? */
+	/** World shared data (buildings, etc.) */
 	UPROPERTY(SaveGame)
 	FHarmoniaWorldSaveData WorldData;
 
-	/** ?�레???�간 (�??�위) */
+	/** Total play time (in seconds) */
 	UPROPERTY(SaveGame)
 	float TotalPlayTime = 0.0f;
 
-	/** ?�이???�정 */
+	/** Difficulty configuration */
 	UPROPERTY(SaveGame)
 	FHarmoniaDifficultyConfiguration DifficultyConfiguration;
 
 	// Helper functions
 
-	/** ?�레?�어 ?�이??추�?/?�데?�트 */
+	/**
+	 * @brief Adds or updates player data
+	 * @param InSteamID Player Steam ID
+	 * @param InPlayerData Player data to save
+	 */
 	void SetPlayerData(const FString& InSteamID, const FHarmoniaPlayerSaveData& InPlayerData);
 
-	/** ?�레?�어 ?�이??가?�오�?*/
+	/**
+	 * @brief Gets player data
+	 * @param InSteamID Player Steam ID
+	 * @param OutPlayerData Output player data
+	 * @return True if player data exists
+	 */
 	bool GetPlayerData(const FString& InSteamID, FHarmoniaPlayerSaveData& OutPlayerData) const;
 
-	/** ?�레?�어 ?�이??존재 ?��? ?�인 */
+	/**
+	 * @brief Checks if player data exists
+	 * @param InSteamID Player Steam ID
+	 * @return True if player data exists
+	 */
 	bool HasPlayerData(const FString& InSteamID) const;
 
-	/** 빌딩 추�? */
+	/**
+	 * @brief Adds a building
+	 * @param Building Building instance to add
+	 */
 	void AddBuilding(const FHarmoniaSavedBuildingInstance& Building);
 
-	/** 모든 빌딩 ?�거 */
+	/**
+	 * @brief Clears all buildings
+	 */
 	void ClearBuildings();
 };

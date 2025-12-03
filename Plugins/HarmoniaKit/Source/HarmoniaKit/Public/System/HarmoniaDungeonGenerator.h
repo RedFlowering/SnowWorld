@@ -2,6 +2,15 @@
 
 #pragma once
 
+/**
+ * @file HarmoniaDungeonGenerator.h
+ * @brief Dungeon generation system for procedural dungeon layouts
+ * @author Harmonia Team
+ * 
+ * Provides procedural dungeon generation with customizable room types,
+ * corridors, and infinite dungeon floor support.
+ */
+
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 #include "Definitions/HarmoniaDungeonSystemDefinitions.h"
@@ -11,7 +20,8 @@ class UDungeonDataAsset;
 class AHarmoniaDungeonInstance;
 
 /**
- * ?�전 �??�??
+ * @enum EDungeonRoomType
+ * @brief Types of dungeon rooms
  */
 UENUM(BlueprintType)
 enum class EDungeonRoomType : uint8
@@ -26,152 +36,158 @@ enum class EDungeonRoomType : uint8
 };
 
 /**
- * ?�전 �??�보
+ * @struct FDungeonRoom
+ * @brief Contains dungeon room information
  */
 USTRUCT(BlueprintType)
 struct FDungeonRoom
 {
 	GENERATED_BODY()
 
-	/** �??�??*/
+	/** Room type */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	EDungeonRoomType RoomType = EDungeonRoomType::Normal;
 
-	/** �??�치 (그리??좌표) */
+	/** Room position (grid coordinates) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	FIntPoint GridPosition;
 
-	/** ?�제 ?�드 ?�치 */
+	/** Actual world position */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	FVector WorldPosition;
 
-	/** �??�기 */
+	/** Room size */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	FVector RoomSize = FVector(2000.0f, 2000.0f, 400.0f);
 
-	/** ?�결??방들 */
+	/** Connected rooms */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	TArray<FIntPoint> ConnectedRooms;
 
-	/** �?방향 (�? ?? ?? ?? */
+	/** Door directions (North, South, East, West) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	TArray<FVector> DoorDirections;
 
-	/** ?�이??*/
+	/** Difficulty level */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	int32 Difficulty = 1;
 
-	/** ?�폰??몬스????*/
+	/** Number of monsters to spawn */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	int32 MonsterCount = 0;
 };
 
 /**
- * ?�전 복도 ?�보
+ * @struct FDungeonCorridor
+ * @brief Contains dungeon corridor information
  */
 USTRUCT(BlueprintType)
 struct FDungeonCorridor
 {
 	GENERATED_BODY()
 
-	/** ?�작 �?*/
+	/** Start room */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	FIntPoint StartRoom;
 
-	/** ??�?*/
+	/** End room */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	FIntPoint EndRoom;
 
-	/** 경로 ?�인??*/
+	/** Path waypoints */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	TArray<FVector> PathPoints;
 
-	/** 복도 ?�비 */
+	/** Corridor width */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	float Width = 400.0f;
 };
 
 /**
- * ?�전 ?�이?�웃 ?�이??
+ * @struct FDungeonLayout
+ * @brief Contains dungeon layout data
  */
 USTRUCT(BlueprintType)
 struct FDungeonLayout
 {
 	GENERATED_BODY()
 
-	/** ?�전 ?�드 */
+	/** Dungeon seed */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	int32 Seed = 0;
 
-	/** �?목록 */
+	/** Room list */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	TArray<FDungeonRoom> Rooms;
 
-	/** 복도 목록 */
+	/** Corridor list */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	TArray<FDungeonCorridor> Corridors;
 
-	/** ?�전 ?�체 ?�기 (그리?? */
+	/** Dungeon total size (grid) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	FIntPoint GridSize = FIntPoint(10, 10);
 
-	/** ?�???�기 */
+	/** Tile size */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
 	float TileSize = 2000.0f;
 };
 
 /**
- * ?�전 ?�성 ?�정
+ * @struct FDungeonGenerationSettings
+ * @brief Configuration for dungeon generation
  */
 USTRUCT(BlueprintType)
 struct FDungeonGenerationSettings
 {
 	GENERATED_BODY()
 
-	/** ?�전 ?�기 (그리?? */
+	/** Dungeon size (grid) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Generation")
 	FIntPoint DungeonSize = FIntPoint(20, 20);
 
-	/** 최소 �?개수 */
+	/** Minimum room count */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Generation")
 	int32 MinRoomCount = 5;
 
-	/** 최�? �?개수 */
+	/** Maximum room count */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Generation")
 	int32 MaxRoomCount = 15;
 
-	/** 최소 �??�기 (그리???�위) */
+	/** Minimum room size (grid units) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Generation")
 	FIntPoint MinRoomSize = FIntPoint(3, 3);
 
-	/** 최�? �??�기 (그리???�위) */
+	/** Maximum room size (grid units) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Generation")
 	FIntPoint MaxRoomSize = FIntPoint(7, 7);
 
-	/** 보스�??�률 */
+	/** Boss room spawn chance */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Generation")
 	float BossRoomChance = 1.0f;
 
-	/** 보물�??�률 */
+	/** Treasure room spawn chance */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Generation")
 	float TreasureRoomChance = 0.3f;
 
-	/** 비�?�??�률 */
+	/** Secret room spawn chance */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Generation")
 	float SecretRoomChance = 0.1f;
 
-	/** 복도 구불구불??(0-1) */
+	/** Corridor windiness (0-1) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Generation")
 	float CorridorWindiness = 0.5f;
 
-	/** 루프 ?�용 (?�환 경로) */
+	/** Allow loops (circular paths) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Generation")
 	bool bAllowLoops = true;
 };
 
 /**
- * ?�전 ?�성�?
- * ?�로?��????�전???�성?�는 ?�틸리티 ?�래??
+ * @class UHarmoniaDungeonGenerator
+ * @brief Dungeon generator utility class
+ * 
+ * Generates procedural dungeons using configurable settings.
  */
 UCLASS(BlueprintType)
 class HARMONIAKIT_API UHarmoniaDungeonGenerator : public UObject
@@ -179,44 +195,102 @@ class HARMONIAKIT_API UHarmoniaDungeonGenerator : public UObject
 	GENERATED_BODY()
 
 public:
-	/** ?�전 ?�이?�웃 ?�성 */
+	/**
+	 * @brief Generates dungeon layout
+	 * @param Settings Generation settings
+	 * @param Seed Random seed (0 = random)
+	 * @return Generated dungeon layout
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Generator")
 	FDungeonLayout GenerateDungeonLayout(const FDungeonGenerationSettings& Settings, int32 Seed = 0);
 
-	/** 무한 ?�전 ?�이?�웃 ?�성 (층별) */
+	/**
+	 * @brief Generates infinite dungeon layout (per floor)
+	 * @param FloorNumber Floor number
+	 * @param FloorInfo Floor configuration
+	 * @return Generated dungeon layout for the floor
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Generator")
 	FDungeonLayout GenerateInfiniteDungeonFloor(int32 FloorNumber, const FInfiniteDungeonFloor& FloorInfo);
 
-	/** ?�전 ?�이?�웃???�드???�폰 */
+	/**
+	 * @brief Spawns dungeon layout into the world
+	 * @param WorldContextObject World context
+	 * @param Layout Dungeon layout to spawn
+	 * @param DungeonData Dungeon data asset
+	 * @return Spawned dungeon instance actor
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Generator", meta = (WorldContext = "WorldContextObject"))
 	AHarmoniaDungeonInstance* SpawnDungeonFromLayout(UObject* WorldContextObject, const FDungeonLayout& Layout, const UDungeonDataAsset* DungeonData);
 
-	/** ?�전 검�?(?�결?? ?�달 가?�성 ?? */
+	/**
+	 * @brief Validates dungeon layout (connectivity, reachability, etc.)
+	 * @param Layout Dungeon layout to validate
+	 * @return True if layout is valid
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Dungeon|Generator")
 	bool ValidateDungeonLayout(const FDungeonLayout& Layout);
 
 protected:
-	/** �??�성 */
+	/**
+	 * @brief Generates rooms
+	 * @param Settings Generation settings
+	 * @param RandomStream Random stream for generation
+	 * @return Array of generated rooms
+	 */
 	TArray<FDungeonRoom> GenerateRooms(const FDungeonGenerationSettings& Settings, FRandomStream& RandomStream);
 
-	/** 복도 ?�성 */
+	/**
+	 * @brief Generates corridors
+	 * @param Rooms Array of rooms to connect
+	 * @param Settings Generation settings
+	 * @param RandomStream Random stream for generation
+	 * @return Array of generated corridors
+	 */
 	TArray<FDungeonCorridor> GenerateCorridors(const TArray<FDungeonRoom>& Rooms, const FDungeonGenerationSettings& Settings, FRandomStream& RandomStream);
 
-	/** �??�???�당 */
+	/**
+	 * @brief Assigns room types
+	 * @param Rooms Rooms to assign types to
+	 * @param Settings Generation settings
+	 * @param RandomStream Random stream for generation
+	 */
 	void AssignRoomTypes(TArray<FDungeonRoom>& Rooms, const FDungeonGenerationSettings& Settings, FRandomStream& RandomStream);
 
-	/** �?겹침 체크 */
+	/**
+	 * @brief Checks room overlap
+	 * @param Room Room to check
+	 * @param ExistingRooms Existing rooms to check against
+	 * @return True if room overlaps
+	 */
 	bool IsRoomOverlapping(const FDungeonRoom& Room, const TArray<FDungeonRoom>& ExistingRooms) const;
 
-	/** 최단 경로 찾기 (A*) */
+	/**
+	 * @brief Finds shortest path (A*)
+	 * @param Start Start position
+	 * @param End End position
+	 * @param Settings Generation settings
+	 * @return Path waypoints
+	 */
 	TArray<FIntPoint> FindPath(FIntPoint Start, FIntPoint End, const FDungeonGenerationSettings& Settings) const;
 
-	/** �??�결??체크 */
+	/**
+	 * @brief Checks if all rooms are connected
+	 * @param Rooms Rooms to check
+	 * @return True if all rooms are connected
+	 */
 	bool AreAllRoomsConnected(const TArray<FDungeonRoom>& Rooms) const;
 
-	/** ?�이??계산 (?�작?�으로�??�의 거리 기반) */
+	/**
+	 * @brief Calculates room difficulty (based on distance from start room)
+	 * @param Rooms Rooms to calculate difficulty for
+	 */
 	void CalculateRoomDifficulty(TArray<FDungeonRoom>& Rooms);
 
-	/** 몬스????계산 */
+	/**
+	 * @brief Calculates monster counts
+	 * @param Rooms Rooms to assign monster counts
+	 * @param FloorNumber Current floor number
+	 */
 	void CalculateMonsterCounts(TArray<FDungeonRoom>& Rooms, int32 FloorNumber = 1);
 };

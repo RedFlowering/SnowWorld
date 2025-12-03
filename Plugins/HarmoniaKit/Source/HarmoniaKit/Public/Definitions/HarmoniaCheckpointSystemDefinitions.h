@@ -2,118 +2,127 @@
 
 #pragma once
 
+/**
+ * @file HarmoniaCheckpointSystemDefinitions.h
+ * @brief Checkpoint system definitions and data structures
+ * @author Harmonia Team
+ * 
+ * Defines checkpoint states, resonance frequencies, and upgrade types
+ * for the crystal resonator save point system.
+ */
+
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "HarmoniaCheckpointSystemDefinitions.generated.h"
 
 /**
- * Checkpoint State
- * 체크?�인???�태
+ * @enum EHarmoniaCheckpointState
+ * @brief Checkpoint state
  */
 UENUM(BlueprintType)
 enum class EHarmoniaCheckpointState : uint8
 {
-	// 비활?�화 - ?�직 발견?��? 못함
+	/** Inactive - not yet discovered */
 	Inactive UMETA(DisplayName = "Inactive"),
 
-	// ?�성?�됨 - 발견?��?�?공명?��? ?�음
+	/** Activated - discovered but not resonating */
 	Activated UMETA(DisplayName = "Activated"),
 
-	// 공명 �?- ?�재 ?�레?�어가 공명?�고 ?�음
+	/** Resonating - player is currently resonating */
 	Resonating UMETA(DisplayName = "Resonating")
 };
 
 /**
- * Resonance Frequency Type
- * 공명 주파???�??- �??�리?�탈??고유???�성
+ * @enum EHarmoniaResonanceFrequency
+ * @brief Resonance frequency type - unique attribute of each crystal
  */
 UENUM(BlueprintType)
 enum class EHarmoniaResonanceFrequency : uint8
 {
-	// ?�른 공명 - 차분?�고 ?�화로운
+	/** Azure resonance - calm and peaceful */
 	Azure UMETA(DisplayName = "Azure (Blue)"),
 
-	// 붉�? 공명 - ?�정?�이�?강렬??
+	/** Crimson resonance - passionate and intense */
 	Crimson UMETA(DisplayName = "Crimson (Red)"),
 
-	// ?�색 공명 - ?�명?�과 ?�복
+	/** Verdant resonance - life and healing */
 	Verdant UMETA(DisplayName = "Verdant (Green)"),
 
-	// 금색 공명 - ?�성?�고 고�???
+	/** Aurum resonance - sacred and noble */
 	Aurum UMETA(DisplayName = "Aurum (Gold)"),
 
-	// 보라 공명 - ?�비�?�� 마법?�인
+	/** Violet resonance - mysterious and magical */
 	Violet UMETA(DisplayName = "Violet (Purple)"),
 
-	// ?�색 공명 - ?�수?�고 중립?�인
+	/** Luminous resonance - pure and neutral */
 	Luminous UMETA(DisplayName = "Luminous (White)")
 };
 
 /**
- * Checkpoint Upgrade Type
- * 체크?�인??강화 ?�??
+ * @enum EHarmoniaCheckpointUpgradeType
+ * @brief Checkpoint upgrade types
  */
 UENUM(BlueprintType)
 enum class EHarmoniaCheckpointUpgradeType : uint8
 {
-	// ?�복??증�?
+	/** Increased healing */
 	EnhancedRestoration UMETA(DisplayName = "Enhanced Restoration"),
 
-	// 공명 ?�도 증�?
+	/** Faster resonance speed */
 	FasterResonance UMETA(DisplayName = "Faster Resonance"),
 
-	// ?�레?�트 비용 감소
+	/** Reduced teleport cost */
 	ReducedTeleportCost UMETA(DisplayName = "Reduced Teleport Cost"),
 
-	// 공명 범위 증�? (주�? ?�레?�어???�복)
+	/** Extended resonance range (heals nearby players) */
 	ExtendedRange UMETA(DisplayName = "Extended Range"),
 
-	// 부????추�? 보너??
+	/** Additional bonus on respawn */
 	RespawnBonus UMETA(DisplayName = "Respawn Bonus")
 };
 
 /**
- * Checkpoint Data
- * 체크?�인???�???�이??
+ * @struct FHarmoniaCheckpointData
+ * @brief Checkpoint data structure
  */
 USTRUCT(BlueprintType)
 struct FHarmoniaCheckpointData
 {
 	GENERATED_BODY()
 
-	// 체크?�인??고유 ID
+	/** Checkpoint unique ID */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Checkpoint")
 	FName CheckpointID;
 
-	// 체크?�인???�름 (UI ?�시??
+	/** Checkpoint name (for UI display) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Checkpoint")
 	FText CheckpointName;
 
-	// 체크?�인???�명
+	/** Checkpoint description */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Checkpoint")
 	FText CheckpointDescription;
 
-	// 공명 주파??(?�상/?�성)
+	/** Resonance frequency (visual/attribute) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Checkpoint")
 	EHarmoniaResonanceFrequency ResonanceFrequency = EHarmoniaResonanceFrequency::Azure;
 
-	// 체크?�인???�치
+	/** Checkpoint location */
 	UPROPERTY(BlueprintReadWrite, Category = "Checkpoint")
 	FVector Location = FVector::ZeroVector;
 
-	// 체크?�인???�전
+	/** Checkpoint rotation */
 	UPROPERTY(BlueprintReadWrite, Category = "Checkpoint")
 	FRotator Rotation = FRotator::ZeroRotator;
 
-	// ?�성???��?
+	/** Activated status */
 	UPROPERTY(BlueprintReadWrite, Category = "Checkpoint")
 	bool bActivated = false;
 
-	// 마�?�?공명 ?�간
+	/** Last resonance time */
 	UPROPERTY(BlueprintReadWrite, Category = "Checkpoint")
 	FDateTime LastResonanceTime;
 
-	// 강화 ?�벨
+	/** Upgrade levels */
 	UPROPERTY(BlueprintReadWrite, Category = "Checkpoint")
 	TMap<EHarmoniaCheckpointUpgradeType, int32> UpgradeLevels;
 
@@ -131,115 +140,115 @@ struct FHarmoniaCheckpointData
 };
 
 /**
- * Resonance Result
- * 공명 결과
+ * @struct FHarmoniaResonanceResult
+ * @brief Resonance result structure
  */
 USTRUCT(BlueprintType)
 struct FHarmoniaResonanceResult
 {
 	GENERATED_BODY()
 
-	// ?�공 ?��?
+	/** Success status */
 	UPROPERTY(BlueprintReadWrite, Category = "Resonance")
 	bool bSuccess = false;
 
-	// ?�복??체력
+	/** Health restored */
 	UPROPERTY(BlueprintReadWrite, Category = "Resonance")
 	float HealthRestored = 0.0f;
 
-	// ?�복??마나/?�태미나
+	/** Resource restored (mana/stamina) */
 	UPROPERTY(BlueprintReadWrite, Category = "Resonance")
 	float ResourceRestored = 0.0f;
 
-	// 리스?�된 ????
+	/** Number of enemies respawned */
 	UPROPERTY(BlueprintReadWrite, Category = "Resonance")
 	int32 EnemiesRespawned = 0;
 
-	// 게임 ?�???��?
+	/** Game saved status */
 	UPROPERTY(BlueprintReadWrite, Category = "Resonance")
 	bool bGameSaved = false;
 
-	// ?�패 ?�유
+	/** Failure reason */
 	UPROPERTY(BlueprintReadWrite, Category = "Resonance")
 	FText FailureReason;
 };
 
 /**
- * Teleport Result
- * ?�레?�트 결과
+ * @struct FHarmoniaTeleportResult
+ * @brief Teleport result structure
  */
 USTRUCT(BlueprintType)
 struct FHarmoniaTeleportResult
 {
 	GENERATED_BODY()
 
-	// ?�공 ?��?
+	/** Success status */
 	UPROPERTY(BlueprintReadWrite, Category = "Teleport")
 	bool bSuccess = false;
 
-	// ?�레?�트??체크?�인??ID
+	/** Teleport destination checkpoint ID */
 	UPROPERTY(BlueprintReadWrite, Category = "Teleport")
 	FName DestinationCheckpointID;
 
-	// ?�모??리소??(?�울, 마나 ??
+	/** Resource cost (souls, mana, etc.) */
 	UPROPERTY(BlueprintReadWrite, Category = "Teleport")
 	int32 ResourceCost = 0;
 
-	// ?�패 ?�유
+	/** Failure reason */
 	UPROPERTY(BlueprintReadWrite, Category = "Teleport")
 	FText FailureReason;
 };
 
 /**
- * Checkpoint Configuration
- * 체크?�인???�정
+ * @struct FHarmoniaCheckpointConfig
+ * @brief Checkpoint configuration structure
  */
 USTRUCT(BlueprintType)
 struct FHarmoniaCheckpointConfig
 {
 	GENERATED_BODY()
 
-	// 공명 ??체력 ?�복�?(0.0 ~ 1.0)
+	/** Health restoration rate on resonance (0.0 ~ 1.0) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float HealthRestorationRate = 1.0f;
 
-	// 공명 ??리소???�복�?(0.0 ~ 1.0)
+	/** Resource restoration rate on resonance (0.0 ~ 1.0) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float ResourceRestorationRate = 1.0f;
 
-	// 공명 ?�요 ?�간 (�?
+	/** Resonance duration (seconds) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config", meta = (ClampMin = "0.1"))
 	float ResonanceDuration = 3.0f;
 
-	// 공명 �??�직이�?취소 ?��?
+	/** Cancel resonance on movement */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config")
 	bool bCancelOnMovement = true;
 
-	// 공명 �??�격 ??취소 ?��?
+	/** Cancel resonance on damage */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config")
 	bool bCancelOnDamage = true;
 
-	// ?�레?�트 기본 비용 (?�울)
+	/** Base teleport cost (souls) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config")
 	int32 BaseTeleportCost = 100;
 
-	// ?�레?�트 거리??추�? 비용
+	/** Additional cost per distance for teleport */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config")
 	float TeleportCostPerDistance = 0.1f;
 
-	// 죽었????마�?�?체크?�인?�에??리스??
+	/** Respawn at last checkpoint on death */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config")
 	bool bRespawnAtLastCheckpoint = true;
 
-	// 공명 ??주�? ??리스??
+	/** Respawn enemies on resonance */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config")
 	bool bRespawnEnemiesOnResonance = true;
 
-	// 공명 ???�동 ?�??
+	/** Auto-save on resonance */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config")
 	bool bAutoSaveOnResonance = true;
 
-	// 공명 범위 (멀?�플?�이 ??주�? ?�레?�어???�복)
+	/** Resonance range (heals nearby players in multiplayer) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config")
 	float ResonanceRange = 500.0f;
 
