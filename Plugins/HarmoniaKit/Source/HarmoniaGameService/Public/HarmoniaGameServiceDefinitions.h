@@ -1,5 +1,19 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file HarmoniaGameServiceDefinitions.h
+ * @brief Type definitions for HarmoniaGameService
+ * 
+ * Contains all enums, structs, and data types used by the game service system:
+ * - Platform identifiers
+ * - Achievement data structures
+ * - Cloud save metadata
+ * - Leaderboard entries
+ * - Player statistics
+ * - DLC ownership information
+ * - Cross-play session data
+ */
+
 #pragma once
 
 #include "CoreMinimal.h"

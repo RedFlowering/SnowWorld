@@ -1,5 +1,18 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file HarmoniaGameService.cpp
+ * @brief Implementation of the unified game service platform integration layer
+ * 
+ * Provides cross-platform support for:
+ * - Achievements (Steam, Epic, Xbox, PlayStation, Switch, GOG)
+ * - Cloud Saves with conflict resolution
+ * - Leaderboards with multiple query modes
+ * - Player Statistics with auto-upload
+ * - DLC/Content ownership checks
+ * - Cross-Play multiplayer sessions
+ */
+
 #include "HarmoniaGameService.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
@@ -7,6 +20,10 @@
 #include "OnlineSessionSettings.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
+
+//=============================================================================
+// Constructor & Lifecycle
+//=============================================================================
 
 UHarmoniaGameService::UHarmoniaGameService()
 {

@@ -1,5 +1,25 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file HarmoniaGameService.h
+ * @brief Main game service subsystem for platform integration
+ * 
+ * This file contains UHarmoniaGameService, a GameInstanceSubsystem that provides
+ * unified access to platform services across Steam, Epic, Xbox, PlayStation,
+ * Nintendo Switch, and GOG platforms.
+ * 
+ * Features:
+ * - Achievement unlocking and progress tracking
+ * - Cloud save upload/download with conflict resolution
+ * - Leaderboard score submission and queries
+ * - Player statistics tracking with auto-upload
+ * - DLC/Content entitlement verification
+ * - Cross-play session management
+ * 
+ * @see UHarmoniaGameService
+ * @see HarmoniaGameServiceDefinitions.h
+ */
+
 #pragma once
 
 #include "CoreMinimal.h"

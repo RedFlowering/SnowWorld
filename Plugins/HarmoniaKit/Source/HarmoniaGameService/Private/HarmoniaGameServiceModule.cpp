@@ -1,5 +1,10 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
+/**
+ * @file HarmoniaGameServiceModule.cpp
+ * @brief Module implementation for HarmoniaGameService
+ */
+
 #include "HarmoniaGameServiceModule.h"
 #include "Modules/ModuleManager.h"
 
@@ -9,12 +14,16 @@ IMPLEMENT_MODULE(FHarmoniaGameService, HarmoniaGameService);
 
 void FHarmoniaGameService::StartupModule()
 {
-	UE_LOG(LogTemp, Log, TEXT("HarmoniaGameService module has started."));
+	// Log module startup
+	// The actual service initialization happens in UHarmoniaGameService::Initialize()
+	UE_LOG(LogTemp, Log, TEXT("[Harmonia] GameService module has started."));
 }
 
 void FHarmoniaGameService::ShutdownModule()
 {
-	UE_LOG(LogTemp, Log, TEXT("HarmoniaGameService module has shut down."));
+	// Log module shutdown
+	// Service cleanup happens in UHarmoniaGameService::Deinitialize()
+	UE_LOG(LogTemp, Log, TEXT("[Harmonia] GameService module has shut down."));
 }
 
 #undef LOCTEXT_NAMESPACE
