@@ -241,7 +241,8 @@ void ULyraHeroComponent::InitializePlayerInput(UInputComponent* PlayerInputCompo
 	UEnhancedInputLocalPlayerSubsystem* Subsystem = LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
 	check(Subsystem);
 
-	Subsystem->ClearAllMappings();
+	// Don't clear all mappings - Game Features may have already added their IMCs
+	// Subsystem->ClearAllMappings();
 
 	if (const ULyraPawnExtensionComponent* PawnExtComp = ULyraPawnExtensionComponent::FindPawnExtensionComponent(Pawn))
 	{
