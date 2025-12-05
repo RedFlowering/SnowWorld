@@ -21,7 +21,7 @@
 UHarmoniaRangedCombatComponent::UHarmoniaRangedCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	SetIsReplicated(true);
+	SetIsReplicatedByDefault(true);
 }
 
 void UHarmoniaRangedCombatComponent::BeginPlay()

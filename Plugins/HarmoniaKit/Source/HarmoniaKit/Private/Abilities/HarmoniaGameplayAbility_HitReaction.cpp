@@ -200,7 +200,7 @@ void UHarmoniaGameplayAbility_HitReaction::PerformHitReaction(const FGameplayEve
 					// Remove stun tag after duration
 					if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
 					{
-						ASC->RemoveLooseGameplayTag(HarmoniaGameplayTags::State_HitStunned);
+						ASC->RemoveLooseGameplayTag(HarmoniaGameplayTags::State_Stunned);
 					}
 				},
 				CurrentReactionData.StunDuration,

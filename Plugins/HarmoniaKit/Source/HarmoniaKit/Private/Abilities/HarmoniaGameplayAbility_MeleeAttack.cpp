@@ -99,6 +99,12 @@ void UHarmoniaGameplayAbility_MeleeAttack::EndAbility(
 	// End attack in melee combat component
 	if (MeleeCombatComponent)
 	{
+		// If ability was cancelled (by dodge, block, etc.), reset combo
+		if (bWasCancelled)
+		{
+			MeleeCombatComponent->ResetCombo();
+		}
+		
 		MeleeCombatComponent->EndAttack();
 	}
 

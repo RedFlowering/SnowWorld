@@ -66,7 +66,6 @@ namespace HarmoniaGameplayTags
 
 	// State Tags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_HitReaction);
-	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_HitStunned);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Invincible);
 
 	// Event Tags
@@ -95,6 +94,65 @@ namespace HarmoniaGameplayTags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_Type_Neutral);
 
 	// ============================================================
+	// Block System Tags
+	// ============================================================
+
+	// Input Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Block);
+
+	// Ability Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Block);
+
+	// ============================================================
+	// Sprint System Tags
+	// ============================================================
+
+	// Input Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Sprint);
+
+	// Ability Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Sprint);
+
+	// State Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Sprinting);
+
+	// ============================================================
+	// Interact System Tags
+	// ============================================================
+
+	// Input Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Interact);
+
+	// Ability Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Interact);
+
+	// State Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Interacting);
+
+	// ============================================================
+	// Item System Tags
+	// ============================================================
+
+	// Input Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_UseItem);
+
+	// Ability Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_UseItem);
+
+	// State Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_UsingItem);
+
+	// ============================================================
+	// Heavy Attack System Tags
+	// ============================================================
+
+	// Input Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Attack_Heavy);
+
+	// Ability Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Attack_Heavy);
+
+	// ============================================================
 	// Dodge System Tags (Already implemented)
 	// ============================================================
 
@@ -111,6 +169,13 @@ namespace HarmoniaGameplayTags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_State_Blocking);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_State_Parrying);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_State_Invulnerable);
+
+	// ============================================================
+	// Common Character State Tags
+	// ============================================================
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Dead);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Stunned);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Incapacitated);
 
 	// ============================================================
 	// Difficulty System Tags

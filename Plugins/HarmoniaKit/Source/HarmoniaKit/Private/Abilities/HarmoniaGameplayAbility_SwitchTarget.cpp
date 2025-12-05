@@ -13,6 +13,9 @@ UHarmoniaGameplayAbility_SwitchTarget::UHarmoniaGameplayAbility_SwitchTarget(con
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 	
+	// Default direction
+	SwitchDirection = ESwitchTargetDirection::Right;
+	
 	// ActivationRequiredTags will be set in Blueprint (e.g., State.LockOn.Active)
 	// GAS will automatically block activation if tag is not present
 }
@@ -24,23 +27,15 @@ void UHarmoniaGameplayAbility_SwitchTarget::ActivateAbility(const FGameplayAbili
 	// GAS already checked ActivationRequiredTags, so we know we're locked on
 	if (UHarmoniaLockOnComponent* LockOnComp = GetLockOnComponent())
 	{
-		// Get input axis value from the trigger event
-		// Positive value = right, Negative value = left
-		float AxisValue = 0.0f;
-		
-		if (TriggerEventData)
+		// Switch based on configured direction
+		switch (SwitchDirection)
 		{
-			// EventMagnitude can carry the axis value
-			AxisValue = TriggerEventData->EventMagnitude;
-		}
-		
-		if (AxisValue > 0.0f)
-		{
-			LockOnComp->SwitchTargetRight();
-		}
-		else if (AxisValue < 0.0f)
-		{
+		case ESwitchTargetDirection::Left:
 			LockOnComp->SwitchTargetLeft();
+			break;
+		case ESwitchTargetDirection::Right:
+			LockOnComp->SwitchTargetRight();
+			break;
 		}
 	}
 

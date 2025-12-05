@@ -68,7 +68,6 @@ namespace HarmoniaGameplayTags
 
 	// State Tags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_HitReaction, "State.HitReaction", "Character is in hit reaction");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_HitStunned, "State.HitStunned", "Character is hit stunned");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Invincible, "State.Invincible", "Character is invincible");
 
 	// Event Tags
@@ -97,6 +96,65 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_Type_Neutral, "Character.Type.Neutral", "Character is neutral");
 
 	// ============================================================
+	// Block System Tags
+	// ============================================================
+
+	// Input Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Block, "InputTag.Block", "Block input");
+
+	// Ability Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Block, "Ability.Block", "Block ability");
+
+	// ============================================================
+	// Sprint System Tags
+	// ============================================================
+
+	// Input Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Sprint, "InputTag.Sprint", "Sprint input");
+
+	// Ability Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Sprint, "Ability.Sprint", "Sprint ability");
+
+	// State Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Sprinting, "State.Sprinting", "Character is sprinting");
+
+	// ============================================================
+	// Interact System Tags
+	// ============================================================
+
+	// Input Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Interact, "InputTag.Interact", "Interact input");
+
+	// Ability Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Interact, "Ability.Interact", "Interact ability");
+
+	// State Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Interacting, "State.Interacting", "Character is interacting with something");
+
+	// ============================================================
+	// Item System Tags
+	// ============================================================
+
+	// Input Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_UseItem, "InputTag.UseItem", "Use item input");
+
+	// Ability Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_UseItem, "Ability.UseItem", "Use item ability");
+
+	// State Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_UsingItem, "State.UsingItem", "Character is using an item");
+
+	// ============================================================
+	// Heavy Attack System Tags
+	// ============================================================
+
+	// Input Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Attack_Heavy, "InputTag.Attack.Heavy", "Heavy attack input");
+
+	// Ability Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Attack_Heavy, "Ability.Attack.Heavy", "Heavy attack ability");
+
+	// ============================================================
 	// Dodge System Tags (Already implemented)
 	// ============================================================
 
@@ -113,6 +171,13 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_State_Blocking, "Character.State.Blocking", "Character state blocking");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_State_Parrying, "Character.State.Parrying", "Character state parrying");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_State_Invulnerable, "Character.State.Invulnerable", "Character state invulnerable");
+
+	// ============================================================
+	// Common Character State Tags
+	// ============================================================
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Dead, "State.Dead", "Character is dead");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Stunned, "State.Stunned", "Character is stunned");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Incapacitated, "State.Incapacitated", "Character is incapacitated");
 
 	// ============================================================
 	// Difficulty System Tags
