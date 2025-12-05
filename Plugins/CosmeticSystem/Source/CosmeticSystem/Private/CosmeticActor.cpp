@@ -24,7 +24,10 @@ ACosmeticActor::ACosmeticActor(const FObjectInitializer& ObjectInitializer)
 		Mesh->AlwaysLoadOnClient = true;
 		Mesh->AlwaysLoadOnServer = true;
 		Mesh->bOwnerNoSee = false;
-		Mesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesWhenNotRendered;
+		// AlwaysTickPoseAndRefreshBones로 변경하여 애니메이션이 간헐적으로 멈추는 문제 방지
+		// LeaderPoseComponent를 사용하는 경우 Leader와 동일하게 틱해야 동기화가 유지됨
+		// show bones 등 디버그 명령어 크래시도 방지
+		Mesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
 		Mesh->bCastDynamicShadow = true;
 		Mesh->bAffectDynamicIndirectLighting = true;
 		Mesh->PrimaryComponentTick.TickGroup = TG_PrePhysics;

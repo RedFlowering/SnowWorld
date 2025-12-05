@@ -241,12 +241,10 @@ void ULyraHeroComponent::InitializePlayerInput(UInputComponent* PlayerInputCompo
 	UEnhancedInputLocalPlayerSubsystem* Subsystem = LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
 	check(Subsystem);
 
-	// Only clear mappings on re-initialization (e.g., Pawn swap)
-	// First initialization should preserve Game Feature IMCs that were already added
-	if (bReadyToBindInputs)
-	{
-		Subsystem->ClearAllMappings();
-	}
+	// Don't clear all mappings - Game Features manage their own IMCs
+	// and will remove them when deactivated. Clearing here would remove
+	// IMCs that Game Features have already added before this function is called.
+	// Subsystem->ClearAllMappings();
 
 	if (const ULyraPawnExtensionComponent* PawnExtComp = ULyraPawnExtensionComponent::FindPawnExtensionComponent(Pawn))
 	{

@@ -46,6 +46,9 @@ ALyraCharacter::ALyraCharacter(const FObjectInitializer& ObjectInitializer)
 	check(MeshComp);
 	MeshComp->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));  // Rotate mesh to be X forward since it is exported as Y forward.
 	MeshComp->SetCollisionProfileName(NAME_LyraCharacterCollisionProfile_Mesh);
+	// ALS의 기본 설정(OnlyTickMontagesWhenNotRendered)을 오버라이드하여 
+	// 애니메이션이 간헐적으로 멈추는 문제 방지 및 show bones 등 디버그 명령어 크래시 방지
+	MeshComp->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
 
 	ULyraCharacterMovementComponent* LyraMoveComp = CastChecked<ULyraCharacterMovementComponent>(GetCharacterMovement());
 	LyraMoveComp->GravityScale = 1.0f;
