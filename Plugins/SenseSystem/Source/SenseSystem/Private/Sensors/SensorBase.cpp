@@ -18,7 +18,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
 #include "Async/ParallelFor.h"
-#include "Stats/Stats2.h"
+#include "Stats/Stats.h"
 #include "Async/TaskGraphInterfaces.h"
 
 
@@ -905,7 +905,7 @@ TArray<FStimulusFindResult> USensorBase::UnRegisterSenseStimulus(USenseStimulusB
 							checkSlow(FindIndex == Ch.BestSensedID_ByScore.IndexOfByKey(It.SensedID));
 							if (FindIndex != INDEX_NONE)
 							{
-								Ch.BestSensedID_ByScore.RemoveAt(FindIndex, 1, false);
+								Ch.BestSensedID_ByScore.RemoveAt(FindIndex, 1, EAllowShrinking::No);
 							}
 							for (int32& BestIt : Ch.BestSensedID_ByScore)
 							{
@@ -930,7 +930,7 @@ TArray<FStimulusFindResult> USensorBase::UnRegisterSenseStimulus(USenseStimulusB
 					}
 
 					TArray<FSensedStimulus>& Array = Ch.GetSensedStimulusBySenseEvent(It.SensedType);
-					Array.RemoveAt(It.SensedID, 1, false);
+					Array.RemoveAt(It.SensedID, 1, EAllowShrinking::No);
 #if WITH_EDITOR
 					for (const int32 BestIt : Ch.BestSensedID_ByScore)
 					{
@@ -2332,7 +2332,7 @@ void USensorBase::PostEditChangeProperty(struct FPropertyChangedEvent& e)
 	Super::PostEditChangeProperty(e);
 }
 
-EDataValidationResult USensorBase::IsDataValid(FDataValidationContext& ValidationErrors)
+EDataValidationResult USensorBase::IsDataValid(FDataValidationContext& ValidationErrors) const
 {
 	EDataValidationResult EIsValid = Super::IsDataValid(ValidationErrors);
 
@@ -2348,7 +2348,6 @@ EDataValidationResult USensorBase::IsDataValid(FDataValidationContext& Validatio
 
 	if (!Algo::IsSorted(ChannelSetup, TLess<uint8>()))
 	{
-		Algo::Sort(ChannelSetup, TLess<uint8>());
 		const FText ErrText = FText::FromString((TEXT("ChannelSetup is Unsorted in USensorBase: %s"), *GetNameSafe(this)));
 		ValidationErrors.AddError(ErrText);
 		EIsValid = CombineDataValidationResults(EIsValid, EDataValidationResult::Invalid);
@@ -2356,9 +2355,6 @@ EDataValidationResult USensorBase::IsDataValid(FDataValidationContext& Validatio
 
 	if (ArraySorted::ContainsDuplicates_Sorted(ChannelSetup))
 	{
-		const auto Predicate = [](const TArray<FChannelSetup>& A, const int32 ID)
-		{ return (ID > 0 && A[ID] == A[ID - 1]) || A[ID].Channel > 64 || A[ID].Channel <= 0; };
-		ArrayHelpers::Filter_Sorted(ChannelSetup, Predicate);
 		const FText ErrText = FText::FromString((TEXT("Duplicates in ChannelSetup USensorBase: %s"), *GetNameSafe(this)));
 		ValidationErrors.AddError(ErrText);
 		EIsValid = CombineDataValidationResults(EIsValid, EDataValidationResult::Invalid);
@@ -2917,7 +2913,7 @@ bool USensorBase::CheckSensorTestToDefaults(TArray<FSenseSysRestoreObject>& Rest
 					{
 						if (const UBlueprintGeneratedClass* ParentClass_0 = Cast<UBlueprintGeneratedClass>(Blueprint_Self->ParentClass))
 						{
-							DefaultComponent = Cast<USenseReceiverComponent>(ParentClass_0->ClassDefaultObject);
+							DefaultComponent = Cast<USenseReceiverComponent>(ParentClass_0->GetDefaultObject(true));
 						}
 						else if (const UClass* ParentClass_1 = Cast<UClass>(Blueprint_Self->ParentClass))
 						{
@@ -2936,7 +2932,7 @@ bool USensorBase::CheckSensorTestToDefaults(TArray<FSenseSysRestoreObject>& Rest
 					{
 						if (const UBlueprintGeneratedClass* ParentClass_0 = Cast<UBlueprintGeneratedClass>(Blueprint_Self->ParentClass))
 						{
-							DefaultSensor = Cast<USensorBase>(ParentClass_0->ClassDefaultObject);
+							DefaultSensor = Cast<USensorBase>(ParentClass_0->GetDefaultObject(true));
 						}
 						else if (const UClass* ParentClass_1 = Cast<UClass>(Blueprint_Self->ParentClass))
 						{

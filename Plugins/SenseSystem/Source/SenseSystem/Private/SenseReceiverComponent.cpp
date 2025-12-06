@@ -810,7 +810,7 @@ void USenseReceiverComponent::PostEditChangeProperty(struct FPropertyChangedEven
 	}
 }
 
-EDataValidationResult USenseReceiverComponent::IsDataValid(FDataValidationContext& ValidationErrors)
+EDataValidationResult USenseReceiverComponent::IsDataValid(FDataValidationContext& ValidationErrors) const
 {
 	EDataValidationResult IsValid = Super::IsDataValid(ValidationErrors);
 	for (uint8 i = 1; i < 4; i++)
@@ -1117,7 +1117,7 @@ bool USenseReceiverComponent::CheckSensorTestToDefaults(TArray<FSenseSysRestoreO
 						{
 							if (const UBlueprintGeneratedClass* ParentClass_0 = Cast<UBlueprintGeneratedClass>(Blueprint_Self->ParentClass))
 							{
-								DefaultComponent = Cast<USenseReceiverComponent>(ParentClass_0->ClassDefaultObject);
+								DefaultComponent = Cast<USenseReceiverComponent>(ParentClass_0->GetDefaultObject(true));
 							}
 							else if (const UClass* ParentClass_1 = Cast<UClass>(Blueprint_Self->ParentClass))
 							{

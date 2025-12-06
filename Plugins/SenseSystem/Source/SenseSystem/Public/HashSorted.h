@@ -131,7 +131,7 @@ namespace ArrayHelpers
 		r++;
 		if (r < A.Num())
 		{
-			A.RemoveAt(r, A.Num() - r, bShrink);
+			A.RemoveAt(r, A.Num() - r, bShrink ? EAllowShrinking::Yes : EAllowShrinking::No);
 			return true;
 		}
 		return false;
@@ -152,7 +152,7 @@ namespace ArrayHelpers
 		r++;
 		if (r < A.Num())
 		{
-			A.RemoveAt(r, A.Num() - r, bShrink);
+			A.RemoveAt(r, A.Num() - r, bShrink ? EAllowShrinking::Yes : EAllowShrinking::No);
 			return true;
 		}
 		return false;
@@ -429,7 +429,7 @@ namespace ArraySorted
 				}
 				if (DuplicateCount > 0)
 				{
-					A.RemoveAt(Bound.X, DuplicateCount, true);
+					A.RemoveAt(Bound.X, DuplicateCount, EAllowShrinking::Yes);
 				}
 
 				//#if WITH_EDITOR
@@ -502,7 +502,7 @@ namespace ArraySorted
 				}
 				if (DuplicateCount > 0)
 				{
-					A.RemoveAt(Bound.X, DuplicateCount, true);
+					A.RemoveAt(Bound.X, DuplicateCount, EAllowShrinking::Yes);
 				}
 			}
 			//checkSlow(Algo::IsSorted(A, SortPredicate));
@@ -634,7 +634,7 @@ namespace ArraySorted
 			}
 			if (Rem.X < A.Num() && Rem.Y > 0)
 			{
-				A.RemoveAt(Rem.X, Rem.Y, bShrink);
+				A.RemoveAt(Rem.X, Rem.Y, bShrink ? EAllowShrinking::Yes : EAllowShrinking::No);
 			}
 			//#if WITH_EDITOR
 			//			check(Algo::IsSorted(A, SortPredicate));
@@ -842,7 +842,7 @@ namespace HashSorted
 		const int32 ID = Algo::BinarySearch(A, Hash, TSortTypeHashPredicate<T>());
 		if (ID != INDEX_NONE)
 		{
-			A.RemoveAt(ID, 1, bAllowShrinking);
+			A.RemoveAt(ID, 1, bAllowShrinking ? EAllowShrinking::Yes : EAllowShrinking::No);
 		}
 		return ID;
 	}

@@ -61,7 +61,7 @@ protected:
 public:
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& e) override;
-	virtual EDataValidationResult IsDataValid(FDataValidationContext& ValidationErrors) override;
+	virtual EDataValidationResult IsDataValid(FDataValidationContext& ValidationErrors) const override;
 
 	bool CheckSensorTestToDefaults(TArray<FSenseSysRestoreObject>& Rest, ESensorType InSensor_Type = ESensorType::None);
 	void RestoreSensorTestDefaults(TArray<FSenseSysRestoreObject>& Rest);

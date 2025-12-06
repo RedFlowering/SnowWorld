@@ -169,7 +169,7 @@ public:
 		const float X = C * (1 - FMath::Abs(FMath::Fmod(T, 2.0f) - 1));
 		const float m = Color.Z - C;
 
-		FVector OutColor;
+		FVector OutColor = FVector::ZeroVector;
 
 		if (T < 1)
 		{

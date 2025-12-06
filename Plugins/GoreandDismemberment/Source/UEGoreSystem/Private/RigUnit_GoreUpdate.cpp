@@ -38,7 +38,7 @@ FRigUnit_GoreUpdate_Execute()
 
 		if (CachedItems.Num() != GoreComp->DestroyedBones.Num())
 		{
-			CachedItems.SetNum(GoreComp->DestroyedBones.Num(), true);
+			CachedItems.SetNum(GoreComp->DestroyedBones.Num(), EAllowShrinking::Yes);
 		}
 
 		if (CachedItems.Num() == GoreComp->DestroyedBones.Num())

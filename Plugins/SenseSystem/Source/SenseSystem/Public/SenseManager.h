@@ -6,7 +6,7 @@
 #include "Engine/World.h"
 #include "Containers/Map.h"
 #include "Templates/UniquePtr.h"
-#include "Stats/Stats2.h"
+#include "Stats/Stats.h"
 #include "Tickable.h"
 #include "UObject/NoExportTypes.h"
 #include "Subsystems/WorldSubsystem.h"

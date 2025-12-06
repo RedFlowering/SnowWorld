@@ -274,7 +274,7 @@ public:
 	//virtual bool CanEditChange(const UProperty* InProperty) const override;
 	//	UFUNCTION()void OnPreCompile(class UBlueprint* BlueprintToCompile);
 
-	virtual EDataValidationResult IsDataValid(FDataValidationContext& ValidationErrors) override;
+	virtual EDataValidationResult IsDataValid(FDataValidationContext& ValidationErrors) const override;
 
 	static uint8 GetUniqueChannel(const TArray<uint8>& Tmp, uint8 Start = 0);
 
