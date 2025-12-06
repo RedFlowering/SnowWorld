@@ -1,5 +1,6 @@
 .idea/
 .svn/
+.claude/
 
 *.DS_Store
 ; *.bat
