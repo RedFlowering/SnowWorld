@@ -7,9 +7,9 @@
 
 UHarmoniaAttributeSet::UHarmoniaAttributeSet()
 {
-	// Set default values for core attributes
-	Health = 100.0f;
-	MaxHealth = 100.0f;
+	// Note: Health and MaxHealth are initialized by parent class ULyraHealthSet
+	
+	// Set default values for stamina attributes
 	Stamina = 100.0f;
 	MaxStamina = 100.0f;
 	StaminaRegenRate = 10.0f; // 10 stamina per second
@@ -45,9 +45,9 @@ void UHarmoniaAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	// Core attributes
-	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Health, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
+	// Note: Health and MaxHealth replication is handled by parent class ULyraHealthSet
+	
+	// Stamina attributes
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Stamina, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, MaxStamina, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, StaminaRegenRate, COND_None, REPNOTIFY_Always);
@@ -110,7 +110,7 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 	// ============================================================================
 	// Handle Healing
 	// ============================================================================
-	if (Data.EvaluatedData.Attribute == GetHealingAttribute())
+	if (Data.EvaluatedData.Attribute == ULyraHealthSet::GetHealingAttribute())
 	{
 		const float LocalHealing = GetHealing();
 		SetHealing(0.0f); // Clear meta attribute
@@ -129,7 +129,7 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 	// ============================================================================
 	// Handle Damage
 	// ============================================================================
-	else if (Data.EvaluatedData.Attribute == GetDamageAttribute())
+	else if (Data.EvaluatedData.Attribute == ULyraHealthSet::GetDamageAttribute())
 	{
 		float LocalDamage = GetDamage();
 		SetDamage(0.0f); // Clear meta attribute
@@ -177,7 +177,7 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 	// ============================================================================
 	// Handle Health Changes
 	// ============================================================================
-	else if (Data.EvaluatedData.Attribute == GetHealthAttribute())
+	else if (Data.EvaluatedData.Attribute == ULyraHealthSet::GetHealthAttribute())
 	{
 		const float NewHealth = FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth());
 		SetHealth(NewHealth);
@@ -215,7 +215,7 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 	// ============================================================================
 	// Handle Max Health Changes
 	// ============================================================================
-	else if (Data.EvaluatedData.Attribute == GetMaxHealthAttribute())
+	else if (Data.EvaluatedData.Attribute == ULyraHealthSet::GetMaxHealthAttribute())
 	{
 		const float NewMaxHealth = FMath::Max(GetMaxHealth(), 1.0f);
 		SetMaxHealth(NewMaxHealth);
@@ -337,56 +337,58 @@ void UHarmoniaAttributeSet::PostAttributeChange(const FGameplayAttribute& Attrib
 {
 	Super::PostAttributeChange(Attribute, OldValue, NewValue);
 
-	// Clamp health to max health
-	if (Attribute == GetHealthAttribute())
+	// NOTE: Do NOT call SetXXX() here - it causes infinite recursion!
+	// Clamping is already handled in PreAttributeChange via ClampAttribute()
+	
+	// Broadcast stamina change events
+	if (Attribute == GetStaminaAttribute())
 	{
-		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
+		OnStaminaChanged.Broadcast(nullptr, nullptr, nullptr, NewValue - OldValue, OldValue, NewValue);
+		
+		// Check if stamina reached zero
+		if (NewValue <= 0.0f && OldValue > 0.0f)
+		{
+			OnOutOfStamina.Broadcast(nullptr, nullptr, nullptr, 0.0f, OldValue, NewValue);
+		}
 	}
-	// Clamp stamina to max stamina
-	else if (Attribute == GetStaminaAttribute())
-	{
-		SetStamina(FMath::Clamp(GetStamina(), 0.0f, GetMaxStamina()));
-	}
-	// Clamp mana to max mana
-	else if (Attribute == GetManaAttribute())
-	{
-		SetMana(FMath::Clamp(GetMana(), 0.0f, GetMaxMana()));
-	}
-	// Clamp poise to max poise
-	else if (Attribute == GetPoiseAttribute())
-	{
-		SetPoise(FMath::Clamp(GetPoise(), 0.0f, GetMaxPoise()));
-	}
-	// Ensure max health is always at least 1
-	else if (Attribute == GetMaxHealthAttribute())
-	{
-		SetMaxHealth(FMath::Max(GetMaxHealth(), 1.0f));
-	}
-	// Ensure max stamina is always at least 1
 	else if (Attribute == GetMaxStaminaAttribute())
 	{
-		SetMaxStamina(FMath::Max(GetMaxStamina(), 1.0f));
+		OnMaxStaminaChanged.Broadcast(nullptr, nullptr, nullptr, NewValue - OldValue, OldValue, NewValue);
 	}
-	// Ensure max mana is always at least 1
+	// Broadcast mana change events
+	else if (Attribute == GetManaAttribute())
+	{
+		OnManaChanged.Broadcast(nullptr, nullptr, nullptr, NewValue - OldValue, OldValue, NewValue);
+		
+		// Check if mana reached zero
+		if (NewValue <= 0.0f && OldValue > 0.0f)
+		{
+			OnOutOfMana.Broadcast(nullptr, nullptr, nullptr, 0.0f, OldValue, NewValue);
+		}
+	}
 	else if (Attribute == GetMaxManaAttribute())
 	{
-		SetMaxMana(FMath::Max(GetMaxMana(), 1.0f));
+		OnMaxManaChanged.Broadcast(nullptr, nullptr, nullptr, NewValue - OldValue, OldValue, NewValue);
 	}
-	// Ensure max poise is always at least 1
-	else if (Attribute == GetMaxPoiseAttribute())
+	// Broadcast poise events
+	else if (Attribute == GetPoiseAttribute())
 	{
-		SetMaxPoise(FMath::Max(GetMaxPoise(), 1.0f));
+		// Check if poise is broken (reached zero)
+		if (NewValue <= 0.0f && OldValue > 0.0f)
+		{
+			OnPoiseBroken.Broadcast(nullptr, nullptr, nullptr, 0.0f, OldValue, NewValue);
+		}
 	}
 }
 
 void UHarmoniaAttributeSet::ClampAttribute(const FGameplayAttribute& Attribute, float& NewValue) const
 {
-	// Core attributes
-	if (Attribute == GetHealthAttribute())
+	// Health attributes - use parent class (ULyraHealthSet) accessors
+	if (Attribute == ULyraHealthSet::GetHealthAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxHealth());
 	}
-	else if (Attribute == GetMaxHealthAttribute())
+	else if (Attribute == ULyraHealthSet::GetMaxHealthAttribute())
 	{
 		NewValue = FMath::Max(NewValue, 1.0f);
 	}
@@ -476,17 +478,8 @@ UAbilitySystemComponent* UHarmoniaAttributeSet::GetAbilitySystemComponent() cons
 
 // ============================================================================
 // Replication Callbacks
+// Note: OnRep_Health and OnRep_MaxHealth are handled by parent class ULyraHealthSet
 // ============================================================================
-
-void UHarmoniaAttributeSet::OnRep_Health(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Health, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxHealth, OldValue);
-}
 
 void UHarmoniaAttributeSet::OnRep_Stamina(const FGameplayAttributeData& OldValue)
 {

@@ -31,65 +31,73 @@ bool UHarmoniaAbilitySystemLibrary::ConsumeStamina(UAbilitySystemComponent* Abil
 		return false;
 	}
 
-	const UHarmoniaAttributeSet* AttributeSet = GetAttributeSetChecked(AbilitySystemComponent);
-	if (!AttributeSet)
+	// Get current stamina value directly from ASC to avoid AttributeSet lookup issues
+	const FGameplayAttribute StaminaAttribute = UHarmoniaAttributeSet::GetStaminaAttribute();
+	if (!StaminaAttribute.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("[AbilitySystemLibrary] ConsumeStamina: StaminaAttribute is not valid!"));
+		return false;
+	}
+
+	const float CurrentStamina = AbilitySystemComponent->GetNumericAttribute(StaminaAttribute);
+	
+	if (CurrentStamina < StaminaCost)
 	{
 		return false;
 	}
 
-	if (AttributeSet->GetStamina() < StaminaCost)
-	{
-		return false;
-	}
+	// Calculate new stamina value
+	const float NewStamina = FMath::Max(CurrentStamina - StaminaCost, 0.0f);
 
-	// Apply stamina cost
-	FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
-
-	// Create a simple instant gameplay effect to reduce stamina
-	FGameplayModifierInfo ModifierInfo;
-	ModifierInfo.Attribute = UHarmoniaAttributeSet::GetStaminaAttribute();
-	ModifierInfo.ModifierOp = EGameplayModOp::Additive;
-
-	FSetByCallerFloat SetByCallerMagnitude;
-	SetByCallerMagnitude.DataTag = FGameplayTag::RequestGameplayTag(FName("Data.StaminaCost"));
-
-	// Since we can't easily create a GameplayEffect at runtime in C++,
-	// we'll directly modify the attribute (not recommended for production, but works for testing)
-	// In production, you should use a pre-made GameplayEffect class
-
-	// For now, directly modify (this bypasses gameplay effect system)
-	UHarmoniaAttributeSet* MutableAttributeSet =
-		const_cast<UHarmoniaAttributeSet*>(AttributeSet);
-	if (MutableAttributeSet)
-	{
-		float NewStamina = FMath::Max(AttributeSet->GetStamina() - StaminaCost, 0.0f);
-		MutableAttributeSet->SetStamina(NewStamina);
-	}
+	// Use proper GAS API to set the attribute base value
+	AbilitySystemComponent->SetNumericAttributeBase(StaminaAttribute, NewStamina);
 
 	return true;
 }
 
 float UHarmoniaAbilitySystemLibrary::GetStamina(UAbilitySystemComponent* AbilitySystemComponent)
 {
-	const UHarmoniaAttributeSet* AttributeSet = GetAttributeSetChecked(AbilitySystemComponent);
-	return AttributeSet ? AttributeSet->GetStamina() : 0.0f;
-}
-
-float UHarmoniaAbilitySystemLibrary::GetMaxStamina(UAbilitySystemComponent* AbilitySystemComponent)
-{
-	const UHarmoniaAttributeSet* AttributeSet = GetAttributeSetChecked(AbilitySystemComponent);
-	return AttributeSet ? AttributeSet->GetMaxStamina() : 0.0f;
-}
-
-float UHarmoniaAbilitySystemLibrary::GetStaminaPercent(UAbilitySystemComponent* AbilitySystemComponent)
-{
-	const UHarmoniaAttributeSet* AttributeSet = GetAttributeSetChecked(AbilitySystemComponent);
-	if (!AttributeSet || AttributeSet->GetMaxStamina() <= 0.0f)
+	if (!AbilitySystemComponent)
 	{
 		return 0.0f;
 	}
 
-	return AttributeSet->GetStamina() / AttributeSet->GetMaxStamina();
+	const FGameplayAttribute StaminaAttribute = UHarmoniaAttributeSet::GetStaminaAttribute();
+	if (!StaminaAttribute.IsValid())
+	{
+		return 0.0f;
+	}
+
+	return AbilitySystemComponent->GetNumericAttribute(StaminaAttribute);
+}
+
+float UHarmoniaAbilitySystemLibrary::GetMaxStamina(UAbilitySystemComponent* AbilitySystemComponent)
+{
+	if (!AbilitySystemComponent)
+	{
+		return 0.0f;
+	}
+
+	const FGameplayAttribute MaxStaminaAttribute = UHarmoniaAttributeSet::GetMaxStaminaAttribute();
+	if (!MaxStaminaAttribute.IsValid())
+	{
+		return 0.0f;
+	}
+
+	return AbilitySystemComponent->GetNumericAttribute(MaxStaminaAttribute);
+}
+
+float UHarmoniaAbilitySystemLibrary::GetStaminaPercent(UAbilitySystemComponent* AbilitySystemComponent)
+{
+	const float CurrentStamina = GetStamina(AbilitySystemComponent);
+	const float MaxStamina = GetMaxStamina(AbilitySystemComponent);
+	
+	if (MaxStamina <= 0.0f)
+	{
+		return 0.0f;
+	}
+
+	return CurrentStamina / MaxStamina;
 }
 
 void UHarmoniaAbilitySystemLibrary::RestoreStamina(UAbilitySystemComponent* AbilitySystemComponent, float Amount)
@@ -99,22 +107,17 @@ void UHarmoniaAbilitySystemLibrary::RestoreStamina(UAbilitySystemComponent* Abil
 		return;
 	}
 
-	const UHarmoniaAttributeSet* AttributeSet = GetAttributeSetChecked(AbilitySystemComponent);
-	if (!AttributeSet)
+	const FGameplayAttribute StaminaAttribute = UHarmoniaAttributeSet::GetStaminaAttribute();
+	if (!StaminaAttribute.IsValid())
 	{
 		return;
 	}
 
-	UHarmoniaAttributeSet* MutableAttributeSet =
-		const_cast<UHarmoniaAttributeSet*>(AttributeSet);
-	if (MutableAttributeSet)
-	{
-		float NewStamina = FMath::Min(
-			AttributeSet->GetStamina() + Amount,
-			AttributeSet->GetMaxStamina()
-		);
-		MutableAttributeSet->SetStamina(NewStamina);
-	}
+	const float CurrentStamina = GetStamina(AbilitySystemComponent);
+	const float MaxStamina = GetMaxStamina(AbilitySystemComponent);
+	const float NewStamina = FMath::Min(CurrentStamina + Amount, MaxStamina);
+
+	AbilitySystemComponent->SetNumericAttributeBase(StaminaAttribute, NewStamina);
 }
 
 // ============================================================================
@@ -123,25 +126,47 @@ void UHarmoniaAbilitySystemLibrary::RestoreStamina(UAbilitySystemComponent* Abil
 
 float UHarmoniaAbilitySystemLibrary::GetHealth(UAbilitySystemComponent* AbilitySystemComponent)
 {
-	const UHarmoniaAttributeSet* AttributeSet = GetAttributeSetChecked(AbilitySystemComponent);
-	return AttributeSet ? AttributeSet->GetHealth() : 0.0f;
-}
-
-float UHarmoniaAbilitySystemLibrary::GetMaxHealth(UAbilitySystemComponent* AbilitySystemComponent)
-{
-	const UHarmoniaAttributeSet* AttributeSet = GetAttributeSetChecked(AbilitySystemComponent);
-	return AttributeSet ? AttributeSet->GetMaxHealth() : 0.0f;
-}
-
-float UHarmoniaAbilitySystemLibrary::GetHealthPercent(UAbilitySystemComponent* AbilitySystemComponent)
-{
-	const UHarmoniaAttributeSet* AttributeSet = GetAttributeSetChecked(AbilitySystemComponent);
-	if (!AttributeSet || AttributeSet->GetMaxHealth() <= 0.0f)
+	if (!AbilitySystemComponent)
 	{
 		return 0.0f;
 	}
 
-	return AttributeSet->GetHealth() / AttributeSet->GetMaxHealth();
+	const FGameplayAttribute HealthAttribute = UHarmoniaAttributeSet::GetHealthAttribute();
+	if (!HealthAttribute.IsValid())
+	{
+		return 0.0f;
+	}
+
+	return AbilitySystemComponent->GetNumericAttribute(HealthAttribute);
+}
+
+float UHarmoniaAbilitySystemLibrary::GetMaxHealth(UAbilitySystemComponent* AbilitySystemComponent)
+{
+	if (!AbilitySystemComponent)
+	{
+		return 0.0f;
+	}
+
+	const FGameplayAttribute MaxHealthAttribute = UHarmoniaAttributeSet::GetMaxHealthAttribute();
+	if (!MaxHealthAttribute.IsValid())
+	{
+		return 0.0f;
+	}
+
+	return AbilitySystemComponent->GetNumericAttribute(MaxHealthAttribute);
+}
+
+float UHarmoniaAbilitySystemLibrary::GetHealthPercent(UAbilitySystemComponent* AbilitySystemComponent)
+{
+	const float CurrentHealth = GetHealth(AbilitySystemComponent);
+	const float MaxHealth = GetMaxHealth(AbilitySystemComponent);
+	
+	if (MaxHealth <= 0.0f)
+	{
+		return 0.0f;
+	}
+
+	return CurrentHealth / MaxHealth;
 }
 
 void UHarmoniaAbilitySystemLibrary::RestoreHealth(UAbilitySystemComponent* AbilitySystemComponent, float Amount)
@@ -151,22 +176,17 @@ void UHarmoniaAbilitySystemLibrary::RestoreHealth(UAbilitySystemComponent* Abili
 		return;
 	}
 
-	const UHarmoniaAttributeSet* AttributeSet = GetAttributeSetChecked(AbilitySystemComponent);
-	if (!AttributeSet)
+	const FGameplayAttribute HealthAttribute = UHarmoniaAttributeSet::GetHealthAttribute();
+	if (!HealthAttribute.IsValid())
 	{
 		return;
 	}
 
-	UHarmoniaAttributeSet* MutableAttributeSet =
-		const_cast<UHarmoniaAttributeSet*>(AttributeSet);
-	if (MutableAttributeSet)
-	{
-		float NewHealth = FMath::Min(
-			AttributeSet->GetHealth() + Amount,
-			AttributeSet->GetMaxHealth()
-		);
-		MutableAttributeSet->SetHealth(NewHealth);
-	}
+	const float CurrentHealth = GetHealth(AbilitySystemComponent);
+	const float MaxHealth = GetMaxHealth(AbilitySystemComponent);
+	const float NewHealth = FMath::Min(CurrentHealth + Amount, MaxHealth);
+
+	AbilitySystemComponent->SetNumericAttributeBase(HealthAttribute, NewHealth);
 }
 
 // ============================================================================

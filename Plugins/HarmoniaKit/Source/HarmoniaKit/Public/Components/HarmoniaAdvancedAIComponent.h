@@ -28,7 +28,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTacticalPositionFoundDelegate, EH
  * Attach to monster actors to enable advanced AI features
  * Inherits common AI functionality from UHarmoniaBaseAIComponent
  */
-UCLASS(ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
+UCLASS(Blueprintable, ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaAdvancedAIComponent : public UHarmoniaBaseAIComponent
 {
 	GENERATED_BODY()

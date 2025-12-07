@@ -32,7 +32,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMountDiedSignature);
  * - Flying mount controls
  * - Mount stamina management
  */
-UCLASS(ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
+UCLASS(Blueprintable, ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaMountComponent : public UActorComponent
 {
 	GENERATED_BODY()

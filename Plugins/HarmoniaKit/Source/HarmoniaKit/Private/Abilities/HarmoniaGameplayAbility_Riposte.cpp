@@ -243,11 +243,12 @@ UHarmoniaMeleeCombatComponent* UHarmoniaGameplayAbility_Riposte::GetMeleeCombatC
 		return MeleeCombatComponent;
 	}
 
+	// In Lyra, OwnerActor is PlayerState but components are on the Avatar (Character/Pawn)
 	if (const FGameplayAbilityActorInfo* ActorInfo = GetCurrentActorInfo())
 	{
-		if (AActor* Owner = ActorInfo->OwnerActor.Get())
+		if (AActor* Avatar = ActorInfo->AvatarActor.Get())
 		{
-			return Owner->FindComponentByClass<UHarmoniaMeleeCombatComponent>();
+			return Avatar->FindComponentByClass<UHarmoniaMeleeCombatComponent>();
 		}
 	}
 
@@ -261,11 +262,12 @@ UHarmoniaSenseAttackComponent* UHarmoniaGameplayAbility_Riposte::GetAttackCompon
 		return AttackComponent;
 	}
 
+	// In Lyra, OwnerActor is PlayerState but components are on the Avatar (Character/Pawn)
 	if (const FGameplayAbilityActorInfo* ActorInfo = GetCurrentActorInfo())
 	{
-		if (AActor* Owner = ActorInfo->OwnerActor.Get())
+		if (AActor* Avatar = ActorInfo->AvatarActor.Get())
 		{
-			return Owner->FindComponentByClass<UHarmoniaSenseAttackComponent>();
+			return Avatar->FindComponentByClass<UHarmoniaSenseAttackComponent>();
 		}
 	}
 

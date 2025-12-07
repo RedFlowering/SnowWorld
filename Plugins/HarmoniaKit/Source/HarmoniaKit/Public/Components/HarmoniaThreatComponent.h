@@ -54,7 +54,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHighestThreatChangedDelegate, AA
  *
  * Usage: Add to monster actors to enable threat system
  */
-UCLASS(ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
+UCLASS(Blueprintable, ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaThreatComponent : public UActorComponent
 {
 	GENERATED_BODY()

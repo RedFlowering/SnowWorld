@@ -141,11 +141,12 @@ UHarmoniaMeleeCombatComponent* UHarmoniaGameplayAbility_Parry::GetMeleeCombatCom
 		return MeleeCombatComponent;
 	}
 
+	// In Lyra, OwnerActor is PlayerState but components are on the Avatar (Character/Pawn)
 	if (const FGameplayAbilityActorInfo* ActorInfo = GetCurrentActorInfo())
 	{
-		if (AActor* Owner = ActorInfo->OwnerActor.Get())
+		if (AActor* Avatar = ActorInfo->AvatarActor.Get())
 		{
-			return Owner->FindComponentByClass<UHarmoniaMeleeCombatComponent>();
+			return Avatar->FindComponentByClass<UHarmoniaMeleeCombatComponent>();
 		}
 	}
 

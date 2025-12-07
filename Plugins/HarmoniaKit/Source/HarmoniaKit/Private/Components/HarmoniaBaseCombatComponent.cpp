@@ -65,6 +65,26 @@ UHarmoniaAttributeSet* UHarmoniaBaseCombatComponent::GetAttributeSet() const
 		if (ASC)
 		{
 			CachedAttributeSet = const_cast<UHarmoniaAttributeSet*>(ASC->GetSet<UHarmoniaAttributeSet>());
+			
+			if (!CachedAttributeSet)
+			{
+				// Debug: List all AttributeSets on ASC
+				UE_LOG(LogTemp, Warning, TEXT("[BaseCombatComponent] HarmoniaAttributeSet not found! Listing all AttributeSets on ASC:"));
+				const TArray<UAttributeSet*>& AttributeSets = ASC->GetSpawnedAttributes();
+				
+				for (int32 i = 0; i < AttributeSets.Num(); ++i)
+				{
+					if (AttributeSets[i])
+					{
+						UE_LOG(LogTemp, Warning, TEXT("  [%d] %s"), i, *AttributeSets[i]->GetClass()->GetName());
+					}
+				}
+				
+				if (AttributeSets.Num() == 0)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("  No AttributeSets found on ASC!"));
+				}
+			}
 		}
 	}
 	return CachedAttributeSet;
@@ -106,12 +126,26 @@ bool UHarmoniaBaseCombatComponent::ConsumeStamina(float StaminaCost)
 
 float UHarmoniaBaseCombatComponent::GetCurrentStamina() const
 {
-	UHarmoniaAttributeSet* Attributes = GetAttributeSet();
-	if (Attributes)
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC)
 	{
-		return Attributes->GetStamina();
+		UE_LOG(LogTemp, Warning, TEXT("[BaseCombatComponent] GetCurrentStamina: ASC is NULL! Owner=%s"), 
+			GetOwner() ? *GetOwner()->GetName() : TEXT("NULL"));
+		return 0.0f;
 	}
-	return 0.0f;
+
+	UHarmoniaAttributeSet* Attributes = GetAttributeSet();
+	if (!Attributes)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[BaseCombatComponent] GetCurrentStamina: AttributeSet is NULL! ASC=%s"), 
+			*ASC->GetName());
+		return 0.0f;
+	}
+
+	const float Stamina = Attributes->GetStamina();
+	UE_LOG(LogTemp, Log, TEXT("[BaseCombatComponent] GetCurrentStamina: %.1f (Max: %.1f)"), 
+		Stamina, Attributes->GetMaxStamina());
+	return Stamina;
 }
 
 float UHarmoniaBaseCombatComponent::GetMaxStamina() const

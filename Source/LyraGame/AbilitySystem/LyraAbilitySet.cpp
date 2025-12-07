@@ -81,6 +81,8 @@ void ULyraAbilitySet::GiveToAbilitySystem(ULyraAbilitySystemComponent* LyraASC, 
 	}
 	
 	// Grant the attribute sets.
+	UE_LOG(LogTemp, Log, TEXT("[LyraAbilitySet] GiveToAbilitySystem: %s - Granting %d AttributeSets"), *GetNameSafe(this), GrantedAttributes.Num());
+	
 	for (int32 SetIndex = 0; SetIndex < GrantedAttributes.Num(); ++SetIndex)
 	{
 		const FLyraAbilitySet_AttributeSet& SetToGrant = GrantedAttributes[SetIndex];
@@ -91,6 +93,8 @@ void ULyraAbilitySet::GiveToAbilitySystem(ULyraAbilitySystemComponent* LyraASC, 
 			continue;
 		}
 
+		UE_LOG(LogTemp, Log, TEXT("[LyraAbilitySet] Granting AttributeSet[%d]: %s"), SetIndex, *GetNameSafe(SetToGrant.AttributeSet));
+		
 		UAttributeSet* NewSet = NewObject<UAttributeSet>(LyraASC->GetOwner(), SetToGrant.AttributeSet);
 		LyraASC->AddAttributeSetSubobject(NewSet);
 

@@ -21,7 +21,7 @@ class UAbilitySystemComponent;
  * - Transmog system (appearance override)
  * - Repair system (durability management)
  */
-UCLASS(ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
+UCLASS(Blueprintable, ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaEnhancementSystemComponent : public UActorComponent
 {
 	GENERATED_BODY()

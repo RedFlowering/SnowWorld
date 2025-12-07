@@ -32,7 +32,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSquadMemberRemovedDelegate, AActo
  *
  * Inherits common AI functionality from UHarmoniaBaseAIComponent
  */
-UCLASS(ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
+UCLASS(Blueprintable, ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaSquadComponent : public UHarmoniaBaseAIComponent
 {
 	GENERATED_BODY()

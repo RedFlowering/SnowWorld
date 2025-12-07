@@ -41,7 +41,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAILODLevelChangedDelegate, EHarm
  * - Automatic tick rate adjustment
  * - Combat override (always high LOD in combat)
  */
-UCLASS(ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
+UCLASS(Blueprintable, ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaAILODComponent : public UActorComponent
 {
 	GENERATED_BODY()

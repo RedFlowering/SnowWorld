@@ -87,7 +87,7 @@ public:
  *	Data used to store handles to what has been granted by the ability set.
  */
 USTRUCT(BlueprintType)
-struct FLyraAbilitySet_GrantedHandles
+struct LYRAGAME_API FLyraAbilitySet_GrantedHandles
 {
 	GENERATED_BODY()
 
@@ -121,7 +121,7 @@ protected:
  *	Non-mutable data asset used to grant gameplay abilities and gameplay effects.
  */
 UCLASS(BlueprintType, Const)
-class ULyraAbilitySet : public UPrimaryDataAsset
+class LYRAGAME_API ULyraAbilitySet : public UPrimaryDataAsset
 {
 	GENERATED_BODY()
 

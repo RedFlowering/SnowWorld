@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemComponent.h"
-#include "AbilitySystem/Attributes/LyraAttributeSet.h"
+#include "AbilitySystem/Attributes/LyraHealthSet.h"
 #include "HarmoniaAttributeSet.generated.h"
 
 class UObject;
@@ -35,7 +35,7 @@ DECLARE_MULTICAST_DELEGATE_SixParams(
  * UHarmoniaAttributeSet
  *
  * Extended attribute set for Soul-like RPG gameplay.
- * Inherits from ULyraAttributeSet to leverage Lyra's base functionality.
+ * Inherits from ULyraHealthSet to leverage Lyra's Health/MaxHealth/Healing/Damage functionality.
  * 
  * Adds Soul-like specific attributes:
  * - Stamina system (for dodging, attacking, sprinting)
@@ -44,11 +44,10 @@ DECLARE_MULTICAST_DELEGATE_SixParams(
  * - Combat stats (Poise, Critical chance/damage, Attack/Movement speed)
  * - Equipment load system
  *
- * Note: Health and MaxHealth are inherited from LyraHealthSet.
- * This class provides additional attributes specific to Soul-like gameplay.
+ * Health and MaxHealth are inherited from ULyraHealthSet - do not redefine here.
  */
 UCLASS(BlueprintType)
-class HARMONIAKIT_API UHarmoniaAttributeSet : public ULyraAttributeSet
+class HARMONIAKIT_API UHarmoniaAttributeSet : public ULyraHealthSet
 {
 	GENERATED_BODY()
 
@@ -71,9 +70,10 @@ public:
 	// Attribute Accessors
 	// ============================================================================
 
-	// Core Attributes
-	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, Health);
-	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, MaxHealth);
+	// Note: Health, MaxHealth, Healing, Damage are inherited from ULyraHealthSet
+	// and accessed via ULyraHealthSet::GetHealthAttribute() etc.
+
+	// Stamina Attributes
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, Stamina);
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, MaxStamina);
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, StaminaRegenRate);
@@ -104,9 +104,7 @@ public:
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, EquipLoad);
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, MaxEquipLoad);
 
-	// Meta Attributes (temporary, not replicated)
-	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, Healing);
-	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, Damage);
+	// Note: Healing and Damage meta attributes are inherited from ULyraHealthSet
 
 	// ============================================================================
 	// Delegates
@@ -151,13 +149,8 @@ public:
 protected:
 	/**
 	 * Replication callbacks
+	 * Note: OnRep_Health and OnRep_MaxHealth are inherited from ULyraHealthSet
 	 */
-	UFUNCTION()
-	void OnRep_Health(const FGameplayAttributeData& OldValue);
-
-	UFUNCTION()
-	void OnRep_MaxHealth(const FGameplayAttributeData& OldValue);
-
 	UFUNCTION()
 	void OnRep_Stamina(const FGameplayAttributeData& OldValue);
 
@@ -239,23 +232,9 @@ protected:
 
 private:
 	// ============================================================================
-	// Core Attributes
+	// Stamina Attributes
+	// Note: Health/MaxHealth/Healing/Damage are inherited from ULyraHealthSet
 	// ============================================================================
-
-	/**
-	 * Current health
-	 * Clamped by MaxHealth
-	 * Hidden from modifiers - only executions can modify
-	 */
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Health, Category = "Harmonia|Attributes", Meta = (HideFromModifiers, AllowPrivateAccess = true))
-	FGameplayAttributeData Health;
-
-	/**
-	 * Maximum health
-	 * Can be modified by gameplay effects
-	 */
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxHealth, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
-	FGameplayAttributeData MaxHealth;
 
 	/**
 	 * Current stamina
@@ -426,25 +405,7 @@ private:
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxEquipLoad, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData MaxEquipLoad;
 
-	// ============================================================================
-	// Meta Attributes
-	// These are not replicated and are used for temporary calculations
-	// ============================================================================
-
-	/**
-	 * Incoming healing
-	 * Mapped to +Health
-	 */
-	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
-	FGameplayAttributeData Healing;
-
-	/**
-	 * Incoming damage
-	 * Mapped to -Health
-	 * Hidden from modifiers - only executions can apply damage
-	 */
-	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Attributes", Meta = (HideFromModifiers, AllowPrivateAccess = true))
-	FGameplayAttributeData Damage;
+	// Note: Healing and Damage meta attributes are inherited from ULyraHealthSet
 
 	// ============================================================================
 	// Internal State

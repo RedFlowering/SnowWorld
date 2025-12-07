@@ -35,7 +35,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAttackEndDelegate);
  * - Critical hit calculation
  * - Hit-once-per-target tracking
  */
-UCLASS(ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
+UCLASS(Blueprintable, ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaSenseAttackComponent : public USceneComponent
 {
 	GENERATED_BODY()
