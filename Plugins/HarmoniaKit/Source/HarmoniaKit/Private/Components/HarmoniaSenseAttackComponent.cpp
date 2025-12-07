@@ -7,6 +7,7 @@
 #include "SenseReceiverComponent.h"
 #include "SenseStimulusComponent.h"
 #include "Sensors/SensorBase.h"
+#include "Sensors/SensorSight.h"
 #include "GameplayEffect.h"
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
@@ -331,12 +332,23 @@ void UHarmoniaSenseAttackComponent::UpdateSenseStimulus()
 
 	const FHarmoniaAttackTraceConfig& TraceConfig = CurrentAttackData.TraceConfig;
 
+	// Configure response channel for attack detection using table values
+	const uint8 Channel = static_cast<uint8>(FMath::Clamp(TraceConfig.SenseChannel, 0, 63));
+	if (Channel > 0)
+	{
+		SenseStimulus->SetResponseChannel(TraceConfig.SensorTag, Channel, true);
+	}
+	else
+	{
+		// Default to channel 1 if not specified
+		SenseStimulus->SetResponseChannel(TraceConfig.SensorTag, 1, true);
+	}
+
+	// Set appropriate score for detection priority (default 1.0 for reliable detection)
+	SenseStimulus->SetScore(TraceConfig.SensorTag, 1.0f);
+
 	// Activate stimulus
 	SenseStimulus->SetActive(true);
-
-	// Note: Actual sense stimulus configuration would depend on the SenseSystem plugin's API
-	// This is a simplified implementation
-	// In practice, you would configure the stimulus shape, range, etc. here
 }
 
 void UHarmoniaSenseAttackComponent::SetupSenseReceiver()
@@ -346,6 +358,8 @@ void UHarmoniaSenseAttackComponent::SetupSenseReceiver()
 	{
 		return;
 	}
+
+	const FHarmoniaAttackTraceConfig& TraceConfig = CurrentAttackData.TraceConfig;
 
 	// Create temporary sense receiver for this attack
 	if (!SenseReceiver)
@@ -358,6 +372,45 @@ void UHarmoniaSenseAttackComponent::SetupSenseReceiver()
 		if (SenseReceiver)
 		{
 			SenseReceiver->RegisterComponent();
+
+			// Create and configure sensor for attack detection using table values
+			ESuccessState SuccessState;
+			USensorBase* AttackSensor = SenseReceiver->CreateNewSensor(
+				USensorSight::StaticClass(),
+				ESensorType::Active,
+				TraceConfig.SensorTag,
+				ESensorThreadType::Main_Thread,
+				true,
+				SuccessState);
+
+			if (AttackSensor && SuccessState == ESuccessState::Success)
+			{
+				// Configure sensor response channel from table
+				const uint8 Channel = static_cast<uint8>(FMath::Clamp(TraceConfig.SenseChannel, 0, 63));
+				if (Channel > 0)
+				{
+					AttackSensor->SetSenseResponseChannelBit(Channel, true);
+				}
+				else
+				{
+					// Default to channel 1 if not specified
+					AttackSensor->SetSenseResponseChannelBit(1, true);
+				}
+
+				// Configure sensor sight parameters using TraceExtent as detection range
+				if (USensorSight* SightSensor = Cast<USensorSight>(AttackSensor))
+				{
+					const float DetectionRange = TraceConfig.TraceExtent.X; // Use X as primary range
+					SightSensor->SetDistanceAngleParam(
+						DetectionRange,         // MaxDistance
+						DetectionRange * 1.2f,  // MaxDistanceLost (slightly larger for hysteresis)
+						180.0f,                 // MaxAngle (full sphere for attack detection)
+						180.0f,                 // MaxAngleLost
+						true,                   // TestBySingleLocation
+						TraceConfig.MinimumSenseScore  // MinScore from table
+					);
+				}
+			}
 		}
 	}
 
