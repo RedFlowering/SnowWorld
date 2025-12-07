@@ -126,9 +126,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Combo")
 	void ClearQueuedCombo() { bNextComboQueued = false; }
 
-	/** Get combo sequence for current weapon */
+	/** Get combo sequence for current weapon (returns cached data) */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Combo")
-	bool GetComboSequence(bool bHeavyCombo, FHarmoniaComboAttackSequence& OutSequence) const;
+	bool GetComboSequence(EHarmoniaAttackType AttackType, FHarmoniaComboAttackSequence& OutSequence) const;
+
+	/** Refresh cached combo data (call on weapon change or owner setup) */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Combo")
+	void RefreshCachedCombos();
+
+	/** Get current attack type (Light/Heavy based on current attack state) */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Combo")
+	EHarmoniaAttackType GetCurrentAttackType() const { return bIsHeavyAttack ? EHarmoniaAttackType::Heavy : EHarmoniaAttackType::Light; }
 
 	/** Get current combo step's attack data (uses AttackDataOverride if enabled) */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Combo")
@@ -258,6 +266,25 @@ protected:
 	/** Combo sequences data table */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Combat|Data")
 	TObjectPtr<UDataTable> ComboSequencesDataTable;
+
+	// ============================================================================
+	// Owner Configuration
+	// ============================================================================
+
+	/** Owner type tag for combo lookup (e.g., Character.Race.Human) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Melee Combat|Owner")
+	FGameplayTag OwnerTypeTag;
+
+	// ============================================================================
+	// Cached Combo Data
+	// ============================================================================
+
+	/** Cached combo sequences by attack type */
+	UPROPERTY(Transient)
+	TMap<EHarmoniaAttackType, FHarmoniaComboAttackSequence> CachedCombos;
+
+	/** Is combo cache valid? */
+	bool bComboCacheValid = false;
 
 	// ============================================================================
 	// Default Configurations

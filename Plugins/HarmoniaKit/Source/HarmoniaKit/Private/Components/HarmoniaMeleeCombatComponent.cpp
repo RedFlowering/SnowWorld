@@ -48,6 +48,9 @@ void UHarmoniaMeleeCombatComponent::SetCurrentWeaponType(EHarmoniaMeleeWeaponTyp
 
 		// Reset combo when weapon changes
 		ResetCombo();
+
+		// Refresh cached combos for new weapon
+		RefreshCachedCombos();
 	}
 }
 
@@ -218,32 +221,111 @@ void UHarmoniaMeleeCombatComponent::OnComboWindowExpired()
 	bNextComboQueued = false;
 }
 
-bool UHarmoniaMeleeCombatComponent::GetComboSequence(bool bHeavyCombo, FHarmoniaComboAttackSequence& OutSequence) const
+bool UHarmoniaMeleeCombatComponent::GetComboSequence(EHarmoniaAttackType AttackType, FHarmoniaComboAttackSequence& OutSequence) const
 {
+	// Return cached combo data
+	if (bComboCacheValid)
+	{
+		const FHarmoniaComboAttackSequence* CachedSequence = CachedCombos.Find(AttackType);
+		if (CachedSequence && CachedSequence->ComboSteps.Num() > 0)
+		{
+			OutSequence = *CachedSequence;
+			return true;
+		}
+		return false;
+	}
+
+	// Fallback: direct lookup if cache not valid
 	if (!ComboSequencesDataTable)
 	{
 		return false;
 	}
 
-	// Try to find combo sequence for current weapon type
-	FName WeaponRowName = EnumToRowName(CurrentWeaponType);
-	FString ComboName = WeaponRowName.ToString() + (bHeavyCombo ? "_Heavy" : "_Light");
+	const FString ContextString = TEXT("GetComboSequence");
+	TArray<FHarmoniaComboAttackSequence*> AllRows;
+	ComboSequencesDataTable->GetAllRows<FHarmoniaComboAttackSequence>(ContextString, AllRows);
 
-	FHarmoniaComboAttackSequence* ComboSequence = ComboSequencesDataTable->FindRow<FHarmoniaComboAttackSequence>(FName(*ComboName), TEXT("GetComboSequence"));
-	if (ComboSequence)
+	for (const FHarmoniaComboAttackSequence* Row : AllRows)
 	{
-		OutSequence = *ComboSequence;
-		return true;
+		if (Row && Row->WeaponType == CurrentWeaponType && Row->AttackType == AttackType)
+		{
+			// Check owner type tag if specified
+			if (OwnerTypeTag.IsValid() && Row->OwnerTypeTag.IsValid())
+			{
+				if (Row->OwnerTypeTag.MatchesTag(OwnerTypeTag))
+				{
+					OutSequence = *Row;
+					return true;
+				}
+			}
+			else if (!OwnerTypeTag.IsValid() && !Row->OwnerTypeTag.IsValid())
+			{
+				// Both don't have owner tag - match
+				OutSequence = *Row;
+				return true;
+			}
+		}
 	}
 
 	return false;
 }
 
+void UHarmoniaMeleeCombatComponent::RefreshCachedCombos()
+{
+	bComboCacheValid = false;
+	CachedCombos.Empty();
+
+	if (!ComboSequencesDataTable)
+	{
+		return;
+	}
+
+	const FString ContextString = TEXT("RefreshCachedCombos");
+	TArray<FHarmoniaComboAttackSequence*> AllRows;
+	ComboSequencesDataTable->GetAllRows<FHarmoniaComboAttackSequence>(ContextString, AllRows);
+
+	for (const FHarmoniaComboAttackSequence* Row : AllRows)
+	{
+		if (!Row || Row->WeaponType != CurrentWeaponType)
+		{
+			continue;
+		}
+
+		// Check owner type tag match
+		bool bOwnerMatch = false;
+		if (OwnerTypeTag.IsValid() && Row->OwnerTypeTag.IsValid())
+		{
+			bOwnerMatch = Row->OwnerTypeTag.MatchesTag(OwnerTypeTag);
+		}
+		else if (!OwnerTypeTag.IsValid() && !Row->OwnerTypeTag.IsValid())
+		{
+			bOwnerMatch = true;
+		}
+
+		if (bOwnerMatch)
+		{
+			// Only cache if not already present (first match wins)
+			if (!CachedCombos.Contains(Row->AttackType))
+			{
+				CachedCombos.Add(Row->AttackType, *Row);
+			}
+		}
+	}
+
+	bComboCacheValid = true;
+
+	UE_LOG(LogHarmoniaCombat, Log, TEXT("RefreshCachedCombos: Weapon=%d, OwnerTag=%s, CachedTypes=%d"),
+		(int32)CurrentWeaponType,
+		*OwnerTypeTag.ToString(),
+		CachedCombos.Num());
+}
+
 bool UHarmoniaMeleeCombatComponent::GetCurrentComboAttackData(FHarmoniaAttackData& OutAttackData) const
 {
-	// Get current combo sequence
+	// Get current combo sequence based on attack type
+	const EHarmoniaAttackType CurrentAttackType = bIsHeavyAttack ? EHarmoniaAttackType::Heavy : EHarmoniaAttackType::Light;
 	FHarmoniaComboAttackSequence ComboSequence;
-	if (!GetComboSequence(bIsHeavyAttack, ComboSequence))
+	if (!GetComboSequence(CurrentAttackType, ComboSequence))
 	{
 		return false;
 	}

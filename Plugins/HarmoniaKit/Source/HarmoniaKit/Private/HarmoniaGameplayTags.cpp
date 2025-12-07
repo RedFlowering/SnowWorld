@@ -95,6 +95,14 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_Type_Ally, "Character.Type.Ally", "Character is an ally");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_Type_Neutral, "Character.Type.Neutral", "Character is neutral");
 
+	// Character Race Tags (for combo/animation lookup)
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_Race_Human, "Character.Race.Human", "Human race for combo/animation lookup");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_Race_Monster, "Character.Race.Monster", "Monster race for combo/animation lookup");
+
+	// Character Gender Tags (for combo/animation lookup)
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_Gender_Male, "Character.Gender.Male", "Male gender for combo/animation lookup");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_Gender_Female, "Character.Gender.Female", "Female gender for combo/animation lookup");
+
 	// ============================================================
 	// Block System Tags
 	// ============================================================

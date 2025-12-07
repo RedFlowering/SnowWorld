@@ -74,8 +74,9 @@ void UHarmoniaGameplayAbility_MeleeAttack::ActivateAbility(
 		return;
 	}
 
-	// Get combo sequence
-	if (!MeleeCombatComponent->GetComboSequence(bIsHeavyAttack, CurrentComboSequence))
+	// Get combo sequence based on attack type
+	const EHarmoniaAttackType AttackType = bIsHeavyAttack ? EHarmoniaAttackType::Heavy : EHarmoniaAttackType::Light;
+	if (!MeleeCombatComponent->GetComboSequence(AttackType, CurrentComboSequence))
 	{
 		// No combo sequence found, end ability
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);

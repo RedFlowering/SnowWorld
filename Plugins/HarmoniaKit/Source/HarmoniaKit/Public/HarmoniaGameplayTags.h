@@ -93,6 +93,14 @@ namespace HarmoniaGameplayTags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_Type_Ally);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_Type_Neutral);
 
+	// Character Race Tags (for combo/animation lookup)
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_Race_Human);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_Race_Monster);
+
+	// Character Gender Tags (for combo/animation lookup)
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_Gender_Male);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_Gender_Female);
+
 	// ============================================================
 	// Block System Tags
 	// ============================================================

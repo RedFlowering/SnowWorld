@@ -77,6 +77,19 @@ enum class EHarmoniaHitReactionType : uint8
 };
 
 /**
+ * Attack Type Enum
+ * Defines the type of attack for combo lookup
+ */
+UENUM(BlueprintType)
+enum class EHarmoniaAttackType : uint8
+{
+	Light UMETA(DisplayName = "Light Attack"),
+	Heavy UMETA(DisplayName = "Heavy Attack"),
+	Special UMETA(DisplayName = "Special Attack"),
+	Charged UMETA(DisplayName = "Charged Attack")
+};
+
+/**
  * Melee Weapon Type
  * Soul-like melee weapon categories
  */
@@ -616,9 +629,14 @@ struct HARMONIAKIT_API FHarmoniaComboAttackSequence : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
 	EHarmoniaMeleeWeaponType WeaponType = EHarmoniaMeleeWeaponType::Sword;
 
-	// Is this a light or heavy combo?
+	// Attack type (Light, Heavy, Special, etc.)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
-	bool bIsHeavyCombo = false;
+	EHarmoniaAttackType AttackType = EHarmoniaAttackType::Light;
+
+	// Owner type tag for combo lookup (e.g., Character.Race.Human, Character.Gender.Male)
+	// Used to select different animations for different character types
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
+	FGameplayTag OwnerTypeTag;
 
 	// Combo steps
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
