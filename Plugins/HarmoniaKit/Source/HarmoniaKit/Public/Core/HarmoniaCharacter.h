@@ -47,8 +47,6 @@ protected:
 	UFUNCTION()
 	void OnRep_DesiredOverlayMode(const FGameplayTag& PreviousMode);
 
-
-
 	void PreOverlayModeChanged(const FGameplayTag& PreviousMode);
 	void PostOverlayModeChanged();
 

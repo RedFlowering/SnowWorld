@@ -105,8 +105,6 @@ void UHarmoniaCharacterMovementComponent::PhysicsRotation(float DeltaTime)
 	Super::PhysicsRotation(DeltaTime);
 }
 
-
-
 void UHarmoniaCharacterMovementComponent::PhysNavWalking(const float DeltaTime, int32 IterationsCount)
 {
 	Super::PhysNavWalking(DeltaTime, IterationsCount);
