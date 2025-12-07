@@ -587,6 +587,10 @@ struct HARMONIAKIT_API FHarmoniaComboAttackStep
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
 	FName MontageSectionName = NAME_None;
 
+	// Section to play if combo is not continued (End/Recovery)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	FName EndSectionName = NAME_None;
+
 	// Attack data override (if empty, uses weapon default)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	FHarmoniaAttackData AttackDataOverride;

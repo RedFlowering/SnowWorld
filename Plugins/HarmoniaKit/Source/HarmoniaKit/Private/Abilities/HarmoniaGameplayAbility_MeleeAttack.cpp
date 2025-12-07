@@ -176,6 +176,28 @@ void UHarmoniaGameplayAbility_MeleeAttack::PerformMeleeAttack()
 	{
 		UE_LOG(LogTemp, Error, TEXT("[MeleeAttack] PerformMeleeAttack: MontageTask creation FAILED!"));
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+		return;
+	}
+
+	// Link section to end section if specified
+	// IMPORTANT: Must be done AFTER ReadyForActivation so the montage is playing
+	if (CurrentStep.MontageSectionName != NAME_None && CurrentStep.EndSectionName != NAME_None)
+	{
+		if (USkeletalMeshComponent* Mesh = GetActorInfo().SkeletalMeshComponent.Get())
+		{
+			if (UAnimInstance* AnimInstance = Mesh->GetAnimInstance())
+			{
+				if (AnimInstance->Montage_IsPlaying(Montage))
+				{
+					AnimInstance->Montage_SetNextSection(CurrentStep.MontageSectionName, CurrentStep.EndSectionName, Montage);
+					UE_LOG(LogTemp, Log, TEXT("[MeleeAttack] Linked section '%s' to '%s'"), *CurrentStep.MontageSectionName.ToString(), *CurrentStep.EndSectionName.ToString());
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("[MeleeAttack] Failed to link sections: Montage is not playing!"));
+				}
+			}
+		}
 	}
 }
 
@@ -243,6 +265,40 @@ void UHarmoniaGameplayAbility_MeleeAttack::OnComboInputPressed(float TimeWaited)
 	if (MeleeCombatComponent)
 	{
 		MeleeCombatComponent->QueueNextCombo();
+
+		// Clear the "End Section" linkage if it exists
+		// This ensures we don't automatically jump to the recovery animation
+		// allowing the next combo step to play naturally when this one finishes
+		FHarmoniaComboAttackStep CurrentStep;
+		if (GetCurrentAttackStep(CurrentStep) && CurrentStep.MontageSectionName != NAME_None)
+		{
+			if (USkeletalMeshComponent* Mesh = GetActorInfo().SkeletalMeshComponent.Get())
+			{
+				if (UAnimInstance* AnimInstance = Mesh->GetAnimInstance())
+				{
+					if (UAnimMontage* Montage = GetCurrentAttackMontage())
+					{
+						// Check if this is the last combo step
+						// If it is, we WANT the End/Recovery section to play even if input is queued
+						// This gives finishers a proper "weight" and recovery period
+						const int32 CurrentIndex = MeleeCombatComponent->GetCurrentComboIndex();
+						const bool bIsLastStep = (CurrentIndex >= CurrentComboSequence.ComboSteps.Num() - 1);
+
+						if (!bIsLastStep)
+						{
+							// Reset next section to None (or loop) to prevent jumping to EndSection
+							// Only do this for non-final steps to allow fluid chaining
+							AnimInstance->Montage_SetNextSection(CurrentStep.MontageSectionName, NAME_None, Montage);
+							UE_LOG(LogTemp, Log, TEXT("[MeleeAttack] Cleared next section linkage for '%s' due to combo input"), *CurrentStep.MontageSectionName.ToString());
+						}
+						else
+						{
+							UE_LOG(LogTemp, Log, TEXT("[MeleeAttack] Preserving EndSection linkage for Final Combo '%s'"), *CurrentStep.MontageSectionName.ToString());
+						}
+					}
+				}
+			}
+		}
 	}
 	
 	// Start waiting for another input (in case of 3+ combo)
