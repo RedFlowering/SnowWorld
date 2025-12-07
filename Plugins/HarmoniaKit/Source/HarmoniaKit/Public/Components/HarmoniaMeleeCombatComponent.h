@@ -23,7 +23,7 @@ class UDataTable;
  * - Dodging
  * - Stamina management
  */
-UCLASS(ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
+UCLASS(Blueprintable, ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaMeleeCombatComponent : public UHarmoniaBaseCombatComponent
 {
 	GENERATED_BODY()
@@ -114,6 +114,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Combo")
 	bool IsInComboWindow() const;
 
+	/** Open combo window manually (called by AnimNotify) */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Combo")
+	void OpenComboWindow(float Duration);
+
 	/** Queue next combo attack */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Combo")
 	void QueueNextCombo();
@@ -134,9 +138,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Combo")
 	void RefreshCachedCombos();
 
-	/** Get current attack type (Light/Heavy based on current attack state) */
+	/** Get current attack type */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Combo")
-	EHarmoniaAttackType GetCurrentAttackType() const { return bIsHeavyAttack ? EHarmoniaAttackType::Heavy : EHarmoniaAttackType::Light; }
+	EHarmoniaAttackType GetCurrentAttackType() const { return CurrentAttackType; }
 
 	/** Get current combo step's attack data (uses AttackDataOverride if enabled) */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Combo")
@@ -144,7 +148,7 @@ public:
 
 	/** Is current attack a heavy attack? */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Combo")
-	bool IsCurrentAttackHeavy() const { return bIsHeavyAttack; }
+	bool IsCurrentAttackHeavy() const { return CurrentAttackType == EHarmoniaAttackType::Heavy; }
 
 	// ============================================================================
 	// Attack Execution
@@ -160,7 +164,7 @@ public:
 
 	/** Start attack (called by ability) */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Attack")
-	void StartAttack(bool bHeavyAttack);
+	void StartAttack(EHarmoniaAttackType InAttackType);
 
 	/** End attack (called by ability) */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Attack")
@@ -330,6 +334,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Combat|Tags")
 	FGameplayTag InvulnerableTag;
 
+	/** Tag that blocks attack (if character has this tag, attack is blocked) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Combat|Tags")
+	FGameplayTag AttackBlockedTag;
+
 	// ============================================================================
 	// State
 	// ============================================================================
@@ -346,9 +354,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|State")
 	bool bIsAttacking = false;
 
-	/** Is current attack heavy? */
+	/** Current attack type */
 	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|State")
-	bool bIsHeavyAttack = false;
+	EHarmoniaAttackType CurrentAttackType = EHarmoniaAttackType::Light;
 
 	/** Current combo index */
 	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|State")

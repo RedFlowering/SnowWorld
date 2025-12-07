@@ -67,6 +67,13 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Melee Attack|Combo")
 	bool IsInComboWindow() const;
 
+	/** Start waiting for combo input during attack */
+	void StartWaitingForComboInput();
+
+	/** Called when combo input is detected */
+	UFUNCTION()
+	void OnComboInputPressed(float TimeWaited);
+
 	// ============================================================================
 	// Animation Callbacks
 	// ============================================================================
@@ -100,9 +107,9 @@ protected:
 	// Configuration
 	// ============================================================================
 
-	/** Is this a heavy attack? */
+	/** Attack type (Light, Heavy, Special, Charged) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Attack")
-	bool bIsHeavyAttack = false;
+	EHarmoniaAttackType AttackType = EHarmoniaAttackType::Light;
 
 	/** Damage gameplay effect to apply on hit */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Attack|Damage")

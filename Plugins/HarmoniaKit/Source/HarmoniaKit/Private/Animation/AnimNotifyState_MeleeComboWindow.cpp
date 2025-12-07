@@ -29,39 +29,17 @@ void UAnimNotifyState_MeleeComboWindow::NotifyBegin(USkeletalMeshComponent* Mesh
 	UHarmoniaMeleeCombatComponent* MeleeComponent = FindMeleeCombatComponent(Owner);
 	if (!MeleeComponent)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[ComboWindow] NotifyBegin: MeleeComponent NOT FOUND on %s"), *Owner->GetName());
 		return;
 	}
 
-	// Combo window is now active - managed by MeleeCombatComponent's timer
-	// This notify state is just for visual feedback in the animation editor
+	// Open combo window - this starts the timer that allows input queueing
+	MeleeComponent->OpenComboWindow(TotalDuration);
 }
 
 void UAnimNotifyState_MeleeComboWindow::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {
 	Super::NotifyEnd(MeshComp, Animation, EventReference);
-
-	if (!MeshComp)
-	{
-		return;
-	}
-
-	AActor* Owner = MeshComp->GetOwner();
-	if (!Owner)
-	{
-		return;
-	}
-
-	UHarmoniaMeleeCombatComponent* MeleeComponent = FindMeleeCombatComponent(Owner);
-	if (!MeleeComponent)
-	{
-		return;
-	}
-
-	// If auto advance is enabled and combo was queued, advance it
-	if (bAutoAdvanceCombo && MeleeComponent->IsNextComboQueued())
-	{
-		MeleeComponent->AdvanceCombo();
-	}
 }
 
 FString UAnimNotifyState_MeleeComboWindow::GetNotifyName_Implementation() const

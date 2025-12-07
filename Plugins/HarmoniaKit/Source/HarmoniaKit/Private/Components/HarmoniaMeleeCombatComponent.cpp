@@ -3,6 +3,7 @@
 #include "Components/HarmoniaMeleeCombatComponent.h"
 #include "HarmoniaGameplayTags.h"
 #include "HarmoniaLogCategories.h"
+#include "HarmoniaDataTableBFL.h"
 #include "Components/HarmoniaSenseAttackComponent.h"
 #include "Components/HarmoniaEquipmentComponent.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
@@ -29,6 +30,29 @@ UHarmoniaMeleeCombatComponent::UHarmoniaMeleeCombatComponent()
 void UHarmoniaMeleeCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] BeginPlay called"));
+
+	// Auto-load DataTables from HarmoniaDataTableBFL if not already set
+	if (!ComboSequencesDataTable)
+	{
+		ComboSequencesDataTable = UHarmoniaDataTableBFL::GetComboAttackDataTable();
+		if (ComboSequencesDataTable)
+		{
+			UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] ComboSequencesDataTable loaded via HarmoniaDataTableBFL"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[MeleeCombatComponent] ComboSequencesDataTable not found via HarmoniaDataTableBFL"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] ComboSequencesDataTable already set from Blueprint"));
+	}
+
+	// Always refresh cache on BeginPlay
+	RefreshCachedCombos();
 }
 
 void UHarmoniaMeleeCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -208,8 +232,25 @@ bool UHarmoniaMeleeCombatComponent::IsInComboWindow() const
 	return GetWorld()->GetTimerManager().IsTimerActive(ComboWindowTimerHandle);
 }
 
+void UHarmoniaMeleeCombatComponent::OpenComboWindow(float Duration)
+{
+	// Start combo window timer - allows input queueing during this window
+	if (Duration > 0.0f)
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			ComboWindowTimerHandle,
+			this,
+			&UHarmoniaMeleeCombatComponent::OnComboWindowExpired,
+			Duration,
+			false
+		);
+		
+	}
+}
+
 void UHarmoniaMeleeCombatComponent::QueueNextCombo()
 {
+	// Strictly allow queueing only during combo window (controlled by AnimNotifyState)
 	if (IsInComboWindow())
 	{
 		bNextComboQueued = true;
@@ -218,11 +259,16 @@ void UHarmoniaMeleeCombatComponent::QueueNextCombo()
 
 void UHarmoniaMeleeCombatComponent::OnComboWindowExpired()
 {
-	bNextComboQueued = false;
+	// Don't clear bNextComboQueued here - let EndAttack handle it.
+	// We want to preserve the queued state if the user clicked successfully while the window was open,
+	// even if the timer expires before EndAttack is called.
 }
 
 bool UHarmoniaMeleeCombatComponent::GetComboSequence(EHarmoniaAttackType AttackType, FHarmoniaComboAttackSequence& OutSequence) const
 {
+	UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] GetComboSequence: AttackType=%d, WeaponType=%d, CacheValid=%d"), 
+		(int32)AttackType, (int32)CurrentWeaponType, bComboCacheValid);
+
 	// Return cached combo data
 	if (bComboCacheValid)
 	{
@@ -238,12 +284,15 @@ bool UHarmoniaMeleeCombatComponent::GetComboSequence(EHarmoniaAttackType AttackT
 	// Fallback: direct lookup if cache not valid
 	if (!ComboSequencesDataTable)
 	{
+		UE_LOG(LogTemp, Error, TEXT("[MeleeCombatComponent] GetComboSequence: ComboSequencesDataTable is NULL!"));
 		return false;
 	}
 
 	const FString ContextString = TEXT("GetComboSequence");
 	TArray<FHarmoniaComboAttackSequence*> AllRows;
 	ComboSequencesDataTable->GetAllRows<FHarmoniaComboAttackSequence>(ContextString, AllRows);
+	
+	UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] GetComboSequence: DataTable has %d rows"), AllRows.Num());
 
 	for (const FHarmoniaComboAttackSequence* Row : AllRows)
 	{
@@ -254,6 +303,7 @@ bool UHarmoniaMeleeCombatComponent::GetComboSequence(EHarmoniaAttackType AttackT
 			{
 				if (Row->OwnerTypeTag.MatchesTag(OwnerTypeTag))
 				{
+					UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] GetComboSequence: Found matching row with OwnerTypeTag"));
 					OutSequence = *Row;
 					return true;
 				}
@@ -261,12 +311,14 @@ bool UHarmoniaMeleeCombatComponent::GetComboSequence(EHarmoniaAttackType AttackT
 			else if (!OwnerTypeTag.IsValid() && !Row->OwnerTypeTag.IsValid())
 			{
 				// Both don't have owner tag - match
+				UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] GetComboSequence: Found matching row (no OwnerTypeTag)"));
 				OutSequence = *Row;
 				return true;
 			}
 		}
 	}
 
+	UE_LOG(LogTemp, Warning, TEXT("[MeleeCombatComponent] GetComboSequence: No matching row found in DataTable"));
 	return false;
 }
 
@@ -277,6 +329,7 @@ void UHarmoniaMeleeCombatComponent::RefreshCachedCombos()
 
 	if (!ComboSequencesDataTable)
 	{
+		UE_LOG(LogTemp, Error, TEXT("[MeleeCombatComponent] RefreshCachedCombos: DataTable is NULL!"));
 		return;
 	}
 
@@ -284,10 +337,22 @@ void UHarmoniaMeleeCombatComponent::RefreshCachedCombos()
 	TArray<FHarmoniaComboAttackSequence*> AllRows;
 	ComboSequencesDataTable->GetAllRows<FHarmoniaComboAttackSequence>(ContextString, AllRows);
 
+	UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] RefreshCachedCombos: DataTable has %d rows, CurrentWeaponType=%d, OwnerTypeTag=%s"),
+		AllRows.Num(), (int32)CurrentWeaponType, *OwnerTypeTag.ToString());
+
 	for (const FHarmoniaComboAttackSequence* Row : AllRows)
 	{
-		if (!Row || Row->WeaponType != CurrentWeaponType)
+		if (!Row)
 		{
+			continue;
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] RefreshCachedCombos: Row WeaponType=%d, AttackType=%d, OwnerTag=%s"),
+			(int32)Row->WeaponType, (int32)Row->AttackType, *Row->OwnerTypeTag.ToString());
+
+		if (Row->WeaponType != CurrentWeaponType)
+		{
+			UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] RefreshCachedCombos: WeaponType mismatch, skipping"));
 			continue;
 		}
 
@@ -296,10 +361,16 @@ void UHarmoniaMeleeCombatComponent::RefreshCachedCombos()
 		if (OwnerTypeTag.IsValid() && Row->OwnerTypeTag.IsValid())
 		{
 			bOwnerMatch = Row->OwnerTypeTag.MatchesTag(OwnerTypeTag);
+			UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] RefreshCachedCombos: OwnerTag match check = %d"), bOwnerMatch);
 		}
 		else if (!OwnerTypeTag.IsValid() && !Row->OwnerTypeTag.IsValid())
 		{
 			bOwnerMatch = true;
+			UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] RefreshCachedCombos: Both OwnerTags invalid - match"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] RefreshCachedCombos: OwnerTag one valid, one invalid - no match"));
 		}
 
 		if (bOwnerMatch)
@@ -308,22 +379,19 @@ void UHarmoniaMeleeCombatComponent::RefreshCachedCombos()
 			if (!CachedCombos.Contains(Row->AttackType))
 			{
 				CachedCombos.Add(Row->AttackType, *Row);
+				UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] RefreshCachedCombos: CACHED AttackType=%d"), (int32)Row->AttackType);
 			}
 		}
 	}
 
 	bComboCacheValid = true;
 
-	UE_LOG(LogHarmoniaCombat, Log, TEXT("RefreshCachedCombos: Weapon=%d, OwnerTag=%s, CachedTypes=%d"),
-		(int32)CurrentWeaponType,
-		*OwnerTypeTag.ToString(),
-		CachedCombos.Num());
+	UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] RefreshCachedCombos: DONE - CachedTypes=%d"), CachedCombos.Num());
 }
 
 bool UHarmoniaMeleeCombatComponent::GetCurrentComboAttackData(FHarmoniaAttackData& OutAttackData) const
 {
 	// Get current combo sequence based on attack type
-	const EHarmoniaAttackType CurrentAttackType = bIsHeavyAttack ? EHarmoniaAttackType::Heavy : EHarmoniaAttackType::Light;
 	FHarmoniaComboAttackSequence ComboSequence;
 	if (!GetComboSequence(CurrentAttackType, ComboSequence))
 	{
@@ -388,7 +456,7 @@ bool UHarmoniaMeleeCombatComponent::RequestLightAttack()
 	}
 
 	// Start new attack
-	StartAttack(false);
+	StartAttack(EHarmoniaAttackType::Light);
 	return true;
 }
 
@@ -406,14 +474,14 @@ bool UHarmoniaMeleeCombatComponent::RequestHeavyAttack()
 	}
 
 	// Heavy attacks don't combo in most soul-likes
-	StartAttack(true);
+	StartAttack(EHarmoniaAttackType::Heavy);
 	return true;
 }
 
-void UHarmoniaMeleeCombatComponent::StartAttack(bool bHeavyAttack)
+void UHarmoniaMeleeCombatComponent::StartAttack(EHarmoniaAttackType InAttackType)
 {
 	bIsAttacking = true;
-	bIsHeavyAttack = bHeavyAttack;
+	CurrentAttackType = InAttackType;
 
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 	if (ASC)
@@ -422,7 +490,8 @@ void UHarmoniaMeleeCombatComponent::StartAttack(bool bHeavyAttack)
 	}
 
 	// Consume stamina
-	const float StaminaCost = bHeavyAttack ? GetHeavyAttackStaminaCost() : GetLightAttackStaminaCost();
+	const bool bIsHeavy = (CurrentAttackType == EHarmoniaAttackType::Heavy);
+	const float StaminaCost = bIsHeavy ? GetHeavyAttackStaminaCost() : GetLightAttackStaminaCost();
 	ConsumeStamina(StaminaCost);
 }
 
@@ -431,13 +500,14 @@ void UHarmoniaMeleeCombatComponent::EndAttack()
 	bIsAttacking = false;
 
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	if (ASC)
+	if (ASC && ASC->HasMatchingGameplayTag(AttackingTag))
 	{
 		ASC->RemoveLooseGameplayTag(AttackingTag);
 	}
 
-	// Check if should advance combo
-	if (bNextComboQueued && !bIsHeavyAttack)
+	// Check if should advance combo (only for Light attacks)
+	const bool bIsHeavy = (CurrentAttackType == EHarmoniaAttackType::Heavy);
+	if (bNextComboQueued && !bIsHeavy)
 	{
 		AdvanceCombo();
 		bNextComboQueued = false;
@@ -459,12 +529,9 @@ bool UHarmoniaMeleeCombatComponent::CanAttack() const
 
 	// Check ability system for blocking tags
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	if (ASC)
+	if (ASC && AttackBlockedTag.IsValid())
 	{
-		FGameplayTagContainer BlockedTags;
-		BlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Ability.Blocked.Attack")));
-
-		if (ASC->HasAnyMatchingGameplayTags(BlockedTags))
+		if (ASC->HasMatchingGameplayTag(AttackBlockedTag))
 		{
 			return false;
 		}
