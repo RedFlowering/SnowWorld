@@ -9,6 +9,7 @@
 #include "Utility/AlsConstants.h"
 #include "SenseReceiverComponent.h"
 #include "Components/CapsuleComponent.h" // Needed for SetDefaultSubobjectClass usage usually implies access to base
+#include "Net/UnrealNetwork.h"
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Character_Status_Aiming, "Status.Aiming");
 
@@ -36,34 +37,55 @@ void AHarmoniaCharacter::PostInitializeComponents()
 	}
 }
 
-void AHarmoniaCharacter::SetDesiredOverlayMode(const FGameplayTag& NewModeTag, bool bMulticast /*= true*/)
+void AHarmoniaCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-	//Check whether we were able to Set the Desired Overlay State
-	if (TrySetDesiredOverlayMode(NewModeTag))
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION(ThisClass, DesiredOverlayMode, COND_SkipOwner);
+}
+
+void AHarmoniaCharacter::SetDesiredOverlayMode(const FGameplayTag& NewModeTag)
+{
+	if (DesiredOverlayMode != NewModeTag)
 	{
-		if (GetLocalRole() != ROLE_SimulatedProxy)
+		// Autonomous proxy: Set locally for prediction (if using COND_SkipOwner), then notify server
+		// If using COND_SkipOwner, we must set it locally.
+		// However, overlay states usually don't need strict prediction like movement.
+		// Let's stick to Server Authoritative model for simplicity and correctness first.
+		
+		// If Local, and Authority, set directly.
+		if (GetLocalRole() == ROLE_Authority)
 		{
-			ServerSetDesiredOverlayMode(NewModeTag, bMulticast);
+			const FGameplayTag Prev = DesiredOverlayMode;
+			DesiredOverlayMode = NewModeTag;
+			OnRep_DesiredOverlayMode(Prev); // Explicit call for Listen Server
+		}
+		else
+		{
+			// Client: Send request to server
+			ServerSetDesiredOverlayMode(NewModeTag);
 		}
 	}
 }
 
-void AHarmoniaCharacter::ServerSetDesiredOverlayMode_Implementation(const FGameplayTag& NewModeTag, bool bMulticast)
+void AHarmoniaCharacter::ServerSetDesiredOverlayMode_Implementation(const FGameplayTag& NewModeTag)
 {
-	TrySetDesiredOverlayMode(NewModeTag);
-	if (bMulticast)
-	{
-		MulticastSetDesiredOverlayMode(NewModeTag);
-	}
+	SetDesiredOverlayMode(NewModeTag);
 }
 
-void AHarmoniaCharacter::MulticastSetDesiredOverlayMode_Implementation(const FGameplayTag& NewModeTag)
+void AHarmoniaCharacter::OnRep_DesiredOverlayMode(const FGameplayTag& PreviousMode)
 {
-	//Checking if Authority to avoid calling twice
-	if (GetLocalRole() != ROLE_Authority)
+	if (DesiredOverlayMode == PreviousMode)
 	{
-		TrySetDesiredOverlayMode(NewModeTag);
+		// No change?
+		return;
 	}
+
+	// Logic adaptation:
+	bChangingOverlayMode = true;
+	PreviousOverlayMode = PreviousMode; 
+
+	PreOverlayModeChanged(PreviousMode);
 }
 
 void AHarmoniaCharacter::AimingTagChanged(const FGameplayTag CallbackTag, int32 NewCount)
@@ -71,42 +93,11 @@ void AHarmoniaCharacter::AimingTagChanged(const FGameplayTag CallbackTag, int32 
 	if (NewCount == 0)
 	{
 		SetDesiredAiming(false);
-		// AlsCharacterSettings.h might define it? Or it's a function we missed from BaseCharacter.h?
-		// BaseCharacter.h inherited from LyraCharacterWithAbilities -> LyraCharacter.
-		// SetDesiredAiming likely comes from an interface or macro expansion, OR it was in BaseCharacter.h but inherited?
-		// Re-checking BaseCharacter.h... it wasn't declared there.
-		// It must come from AlsCharacter which LyraCharacter might NOT inherit from?
-		// Wait, BaseCharacter inherited from LyraCharacterWithAbilities.
-		// Where did SetDesiredAiming come from?
-		// Check BaseCharacter.cpp again... line 63: SetDesiredAiming(false);
-		// It was compiling before. 
-		// If LyraCharacter doesn't have it, we have a problem.
-		// Assuming it logic exists or we implement it. For now commented out to prevent error if missing.
-		
-		// If BaseCharacter inherited ALyraCharacterWithAbilities, and compiled, then SetDesiredAiming must be there.
-		// But LyraCharacterWithAbilities inherits ALyraCharacter.
-		// Unless LyraCharacter itself has it.
 	}
 	else
 	{
 		SetDesiredAiming(true);
 	}
-}
-
-bool AHarmoniaCharacter::TrySetDesiredOverlayMode(const FGameplayTag& NewModeTag)
-{
-	if ((DesiredOverlayMode != NewModeTag) && !bChangingOverlayMode)
-	{
-		DesiredOverlayMode = NewModeTag;
-		bChangingOverlayMode = true;
-
-		const FGameplayTag Prev = DesiredOverlayMode;
-		PreOverlayModeChanged(Prev);
-
-		return true;
-	}
-
-	return false;
 }
 
 void AHarmoniaCharacter::PreOverlayModeChanged(const FGameplayTag& PreviousMode)
@@ -174,7 +165,7 @@ FTransform AHarmoniaCharacter::GetLeftHandIK()
 	return LeftHandIK.TargetTransform;
 }
 
-void AHarmoniaCharacter::SetUseLefttHandIK(bool bUseIK)
+void AHarmoniaCharacter::SetUseLeftHandIK(bool bUseIK)
 {
 	LeftHandIK.bUseHandIK = bUseIK;
 }

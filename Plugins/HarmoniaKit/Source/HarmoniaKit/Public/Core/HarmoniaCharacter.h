@@ -35,27 +35,25 @@ public:
 
 	virtual void PostInitializeComponents() override;
 
-	UFUNCTION(BlueprintCallable, Category = "Harmonia Character")
-	const FGameplayTag GetDefaultOverlayMode() const { return OverrideDefaultOverlayMode; }
-
 	UFUNCTION(BlueprintCallable, Category = "Harmonia Character", Meta = (AutoCreateRefTerm = "NewModeTag", GameplayTagFilter  = "Als.OverlayMode"))
-	void SetDesiredOverlayMode(const FGameplayTag& NewModeTag, bool bMulticast = true);
+	void SetDesiredOverlayMode(const FGameplayTag& NewModeTag);
 
-	UFUNCTION(BlueprintCallable, Server, Reliable, Category = "Harmonia Character", Meta = (AutoCreateRefTerm = "NewModeTag", GameplayTagFilter = "Als.OverlayMode"))
-	void ServerSetDesiredOverlayMode(const FGameplayTag& NewModeTag, bool bMulticast);
-
-	UFUNCTION(BlueprintCallable, NetMulticast, Reliable, Category = "Harmonia Character", Meta = (AutoCreateRefTerm = "NewModeTag", GameplayTagFilter = "Als.OverlayMode"))
-	void MulticastSetDesiredOverlayMode(const FGameplayTag& NewModeTag);
+	UFUNCTION(Server, Reliable, Category = "Harmonia Character")
+	void ServerSetDesiredOverlayMode(const FGameplayTag& NewModeTag);
 
 protected:
 	void AimingTagChanged(const FGameplayTag CallbackTag, int32 NewCount);
 
-	bool TrySetDesiredOverlayMode(const FGameplayTag& NewModeTag);
+	UFUNCTION()
+	void OnRep_DesiredOverlayMode(const FGameplayTag& PreviousMode);
+
+
 
 	void PreOverlayModeChanged(const FGameplayTag& PreviousMode);
 	void PostOverlayModeChanged();
 
 public:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void OnEquipAnimation(bool bStart);
 	void OnUnEquipAnimation(bool bStart);
 	 
@@ -80,7 +78,7 @@ public:
 	FTransform GetLeftHandIK();
 
 	UFUNCTION(BlueprintCallable, Category = "Harmonia Character|Hand IK")
-	void SetUseLefttHandIK(bool bUseIK);
+	void SetUseLeftHandIK(bool bUseIK);
 
 	UFUNCTION(BlueprintCallable, Category = "Harmonia Character|Hand IK")
 	bool GetUseLeftHandIK();
@@ -89,7 +87,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|Harmonia Character|Desired State", meta=(EditCondition="bOverrideDefaultOverlay"))
 	FGameplayTag OverrideDefaultOverlayMode{ AlsOverlayModeTags::Default };
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Settings|Harmonia Character|Desired State")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_DesiredOverlayMode, Category = "Settings|Harmonia Character|Desired State")
 	FGameplayTag DesiredOverlayMode = AlsOverlayModeTags::Default;
 
 	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, Category = "Settings|Harmonia Character|Desired State")

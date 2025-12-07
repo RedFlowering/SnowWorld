@@ -24,8 +24,6 @@ UENUM()
 enum class EHarmoniaCustomMovementMode : uint8
 {
 	MOVE_None				UMETA(DisplayName = "None"),
-	MOVE_GrapplingHook		UMETA(DisplayName = "GrapplingHook"),
-	MOVE_Climbing			UMETA(DisplayName = "Climbing"),
 };
 
 UCLASS(Config = Game)
@@ -60,28 +58,9 @@ protected:
 
 	virtual void PhysicsRotation(float DeltaTime);
 
-	virtual void PhysWalking(float DeltaTime, int32 IterationsCount) override;
-
 	virtual void PhysNavWalking(float DeltaTime, int32 IterationsCount) override;
 
 	virtual void PhysCustom(float DeltaTime, int32 IterationsCount) override;
-
-	virtual void PhysGrpplingHook(float DeltaTime, int32 IterationCount);
-
-	virtual void PhysClimbing(float DeltaTime, int32 IterationCount);
-
-public:
-	UFUNCTION(BlueprintCallable, Category = "HarmoniaMovement|GrapplingHook")
-	FVector GetGrapplingHookMovmentVector();
-
-	UFUNCTION(BlueprintCallable, Category = "HarmoniaMovement|GrapplingHook")
-	void SetGrapplingHookMovementVector(FVector GrapplingVector);
-
-	UFUNCTION(BlueprintCallable, Category = "HarmoniaMovement|Climbing")
-	FVector GetClimbingMovementVector();
-
-	UFUNCTION(BlueprintCallable, Category = "HarmoniaMovement|Climbing")
-	void SetClimbingMovementVector(FVector ClimbVector);
 
 protected:
 	UPROPERTY()
@@ -89,9 +68,4 @@ protected:
 	EHarmoniaMovementMode HarmoniaMovementMode = EHarmoniaMovementMode::MOVE_Walking;
 
 	EHarmoniaCustomMovementMode HarmoniaCustomMovementMode = EHarmoniaCustomMovementMode::MOVE_None;
-
-private:
-	FVector GrapplingHookVector = FVector::ZeroVector;
-
-	FVector ClimbingVector = FVector::ZeroVector;
 };
