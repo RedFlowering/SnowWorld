@@ -41,7 +41,7 @@ private:
 
 /** Container of gameplay tag stacks */
 USTRUCT(BlueprintType)
-struct FGameplayTagStackContainer : public FFastArraySerializer
+struct LYRAGAME_API FGameplayTagStackContainer : public FFastArraySerializer
 {
 	GENERATED_BODY()
 

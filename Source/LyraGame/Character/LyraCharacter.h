@@ -110,6 +110,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Lyra|Character")
 	UE_API ALyraPlayerState* GetLyraPlayerState() const;
 
+	/** Returns the health component */
+	UE_API ULyraHealthComponent* GetHealthComponent() const { return HealthComponent; }
+
 	UFUNCTION(BlueprintCallable, Category = "Lyra|Character")
 	UE_API ULyraAbilitySystemComponent* GetLyraAbilitySystemComponent() const;
 	UE_API virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;

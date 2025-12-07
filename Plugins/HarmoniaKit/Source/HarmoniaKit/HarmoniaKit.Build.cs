@@ -34,6 +34,7 @@ public class HarmoniaKit : ModuleRules
                 "UMG",
                 "Slate",
                 "SlateCore",
+                "NetCore", // For FastArraySerializer
                 
                 // Harmonia Plugin Dependencies
                 "HarmoniaLoadManager",     // 세이브/로드 시스템
@@ -45,6 +46,9 @@ public class HarmoniaKit : ModuleRules
                 "GameplayTags",            // 게임플레이 태그
                 "GameplayTasks",           // 게임플레이 태스크
                 "LyraGame",                // Lyra 기반 클래스
+                "GameplayMessageRuntime",  // 게임플레이 메시지 시스템
+                "ModularGameplay",         // ModularPlayerState
+                "ModularGameplayActors",   // Modular Actors
                 "ALS",                     // Advanced Locomotion System
                 
                 // Online & Navigation
