@@ -213,8 +213,9 @@ protected:
 
 	/**
 	 * Apply damage to target using Gameplay Effect
+	 * @return The actual damage dealt (after all calculations)
 	 */
-	virtual void ApplyDamageToTarget(
+	virtual float ApplyDamageToTarget(
 		AActor* TargetActor,
 		const FHarmoniaDamageEffectConfig& DamageConfig,
 		bool bWasCritical,
@@ -258,6 +259,17 @@ protected:
 	 * Draw debug visualization for current attack
 	 */
 	virtual void DrawDebugAttackTrace() const;
+
+	/**
+	 * Minimum interval between attacks (anti-spam)
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack|AntiCheat")
+	float MinAttackInterval = 0.1f;
+
+	/**
+	 * Last attack request time (for rate limiting)
+	 */
+	float LastAttackRequestTime = 0.0f;
 
 private:
 	/**
@@ -304,3 +316,4 @@ private:
 	 */
 	float AttackStartTime = 0.0f;
 };
+

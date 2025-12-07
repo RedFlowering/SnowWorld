@@ -575,7 +575,7 @@ void UHarmoniaRangedCombatComponent::FireProjectile()
 		FHarmoniaProjectileData ProjectileData;
 		ProjectileData.ProjectileType = WeaponData.DefaultProjectileType;
 		ProjectileData.InitialSpeed = 3000.0f;
-		ProjectileData.DamageConfig.BaseDamage = 25.0f * DamageMultiplier * WeaponData.BaseDamageMultiplier;
+		ProjectileData.DamageConfig.DamageMultiplier = DamageMultiplier * WeaponData.BaseDamageMultiplier;
 
 		AActor* Projectile = SpawnProjectile(ProjectileData, SpawnLocation, SpreadDirection, DamageMultiplier);
 

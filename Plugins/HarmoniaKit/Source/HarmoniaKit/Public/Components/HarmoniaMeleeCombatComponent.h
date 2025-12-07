@@ -130,6 +130,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Combo")
 	bool GetComboSequence(bool bHeavyCombo, FHarmoniaComboAttackSequence& OutSequence) const;
 
+	/** Get current combo step's attack data (uses AttackDataOverride if enabled) */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Combo")
+	bool GetCurrentComboAttackData(FHarmoniaAttackData& OutAttackData) const;
+
+	/** Is current attack a heavy attack? */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Combo")
+	bool IsCurrentAttackHeavy() const { return bIsHeavyAttack; }
+
 	// ============================================================================
 	// Attack Execution
 	// ============================================================================

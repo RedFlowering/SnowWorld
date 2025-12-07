@@ -111,19 +111,42 @@ bool UHarmoniaSenseAttackComponent::ServerStartAttack_Validate(const FHarmoniaAt
 		return false;
 	}
 
-	// Validate damage values are reasonable
-	if (InAttackData.DamageConfig.BaseDamage < 0.0f || InAttackData.DamageConfig.BaseDamage > 10000.0f)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartAttack: Invalid base damage %.1f"),
-			InAttackData.DamageConfig.BaseDamage);
-		return false;
-	}
-
+	// Validate damage multiplier is reasonable
 	if (InAttackData.DamageConfig.DamageMultiplier < 0.0f || InAttackData.DamageConfig.DamageMultiplier > 100.0f)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartAttack: Invalid damage multiplier %.1f"),
 			InAttackData.DamageConfig.DamageMultiplier);
 		return false;
+	}
+
+	// [ANTI-CHEAT] Validate critical chance is reasonable (0-100%)
+	if (InAttackData.DamageConfig.CriticalChance < 0.0f || InAttackData.DamageConfig.CriticalChance > 1.0f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartAttack: Invalid critical chance %.2f (must be 0.0-1.0)"),
+			InAttackData.DamageConfig.CriticalChance);
+		return false;
+	}
+
+	// [ANTI-CHEAT] Validate critical multiplier is reasonable (1x-10x)
+	if (InAttackData.DamageConfig.CriticalMultiplier < 1.0f || InAttackData.DamageConfig.CriticalMultiplier > 10.0f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartAttack: Invalid critical multiplier %.2f (must be 1.0-10.0)"),
+			InAttackData.DamageConfig.CriticalMultiplier);
+		return false;
+	}
+
+	// [ANTI-CHEAT] Attack rate limiting - prevent spam attacks
+	if (const UWorld* World = GetWorld())
+	{
+		const float CurrentTime = World->GetTimeSeconds();
+		if (CurrentTime - LastAttackRequestTime < MinAttackInterval)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartAttack: Attack rate too fast (%.3fs since last attack, min: %.3fs)"),
+				CurrentTime - LastAttackRequestTime, MinAttackInterval);
+			return false;
+		}
+		// Note: We update LastAttackRequestTime in Implementation, not here
+		// to avoid issues if validation passes but implementation fails
 	}
 
 	// Validate attack trace extent
@@ -142,6 +165,12 @@ bool UHarmoniaSenseAttackComponent::ServerStartAttack_Validate(const FHarmoniaAt
 
 void UHarmoniaSenseAttackComponent::ServerStartAttack_Implementation(const FHarmoniaAttackData& InAttackData)
 {
+	// Update attack request time for rate limiting
+	if (const UWorld* World = GetWorld())
+	{
+		LastAttackRequestTime = World->GetTimeSeconds();
+	}
+
 	StartAttack(InAttackData);
 }
 
@@ -427,8 +456,8 @@ bool UHarmoniaSenseAttackComponent::ProcessHitTarget(const FSensedStimulus& Stim
 	FVector HitNormal = (GetOwner()->GetActorLocation() - HitLocation).GetSafeNormal();
 	float HitDistance = Stimulus.SensedPoints.Num() > 0 ? (HitLocation - GetTraceLocation()).Length() : 0.0f;
 
-	// Apply damage
-	ApplyDamageToTarget(TargetActor, CurrentAttackData.DamageConfig, bWasCritical, HitLocation, HitNormal);
+	// Apply damage and get actual damage dealt
+	float ActualDamage = ApplyDamageToTarget(TargetActor, CurrentAttackData.DamageConfig, bWasCritical, HitLocation, HitNormal);
 
 	// Apply hit reaction
 	const FVector HitDirection = (HitLocation - GetTraceLocation()).GetSafeNormal();
@@ -449,13 +478,8 @@ bool UHarmoniaSenseAttackComponent::ProcessHitTarget(const FSensedStimulus& Stim
 		HitResult.HitTime = World->GetTimeSeconds();
 	}
 
-	// Calculate final damage
-	float FinalDamage = CurrentAttackData.DamageConfig.BaseDamage * CurrentAttackData.DamageConfig.DamageMultiplier;
-	if (bWasCritical)
-	{
-		FinalDamage *= CurrentAttackData.DamageConfig.CriticalMultiplier;
-	}
-	HitResult.DamageDealt = FinalDamage;
+	// Use actual damage from ApplyDamageToTarget
+	HitResult.DamageDealt = ActualDamage;
 
 	HitTargets.Add(HitResult);
 	HitActors.Add(TargetActor);
@@ -516,7 +540,7 @@ bool UHarmoniaSenseAttackComponent::CalculateCriticalHit(float CritChance) const
 // Damage Application
 // ============================================================================
 
-void UHarmoniaSenseAttackComponent::ApplyDamageToTarget(
+float UHarmoniaSenseAttackComponent::ApplyDamageToTarget(
 	AActor* TargetActor,
 	const FHarmoniaDamageEffectConfig& DamageConfig,
 	bool bWasCritical,
@@ -525,30 +549,33 @@ void UHarmoniaSenseAttackComponent::ApplyDamageToTarget(
 {
 	if (!TargetActor)
 	{
-		return;
+		return 0.0f;
 	}
 
 	UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(TargetActor);
 	if (!TargetASC)
 	{
-		return;
+		return 0.0f;
 	}
 
 	AActor* Owner = GetOwner();
 	UAbilitySystemComponent* SourceASC = OwnerAbilitySystem;
 
-	// Calculate final damage
-	float FinalDamage = DamageConfig.BaseDamage * DamageConfig.DamageMultiplier;
+	// Calculate final damage using AttackPower from attributes as base
+	float FinalDamage = 0.0f;
 
-	// Apply attack power from owner's attributes
 	if (SourceASC)
 	{
 		const UHarmoniaAttributeSet* CombatSet = SourceASC->GetSet<UHarmoniaAttributeSet>();
 		if (CombatSet)
 		{
-			FinalDamage *= (CombatSet->GetAttackPower() / 10.0f); // Normalize attack power
+			// Use AttackPower as base damage (includes weapon, stats, buffs)
+			FinalDamage = CombatSet->GetAttackPower();
 		}
 	}
+
+	// Apply combo/attack multiplier from table
+	FinalDamage *= DamageConfig.DamageMultiplier;
 
 	// Apply critical multiplier
 	if (bWasCritical)
@@ -580,8 +607,11 @@ void UHarmoniaSenseAttackComponent::ApplyDamageToTarget(
 
 				if (SpecHandle.IsValid())
 				{
-					// Set damage magnitude
-					SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Data.Damage")), FinalDamage);
+					// Set damage magnitude using configured tag
+					if (DamageConfig.SetByCallerDamageTag.IsValid())
+					{
+						SpecHandle.Data->SetSetByCallerMagnitude(DamageConfig.SetByCallerDamageTag, FinalDamage);
+					}
 
 					// Add damage tags
 					SpecHandle.Data->DynamicGrantedTags.AppendTags(DamageConfig.DamageTags);
@@ -617,7 +647,10 @@ void UHarmoniaSenseAttackComponent::ApplyDamageToTarget(
 				{
 					// Calculate damage per tick
 					const float DamagePerTick = FinalDamage / (DamageConfig.DurationSeconds / DamageConfig.TickInterval);
-					SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Data.Damage")), DamagePerTick);
+					if (DamageConfig.SetByCallerDamageTag.IsValid())
+					{
+						SpecHandle.Data->SetSetByCallerMagnitude(DamageConfig.SetByCallerDamageTag, DamagePerTick);
+					}
 
 					// Add damage tags
 					SpecHandle.Data->DynamicGrantedTags.AppendTags(DamageConfig.DamageTags);
@@ -645,7 +678,10 @@ void UHarmoniaSenseAttackComponent::ApplyDamageToTarget(
 
 				if (SpecHandle.IsValid())
 				{
-					SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Data.Damage")), FinalDamage);
+					if (DamageConfig.SetByCallerDamageTag.IsValid())
+					{
+						SpecHandle.Data->SetSetByCallerMagnitude(DamageConfig.SetByCallerDamageTag, FinalDamage);
+					}
 					SpecHandle.Data->DynamicGrantedTags.AppendTags(DamageConfig.DamageTags);
 					SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 				}
@@ -689,6 +725,8 @@ void UHarmoniaSenseAttackComponent::ApplyDamageToTarget(
 			}
 		}
 	}
+
+	return FinalDamage;
 }
 
 void UHarmoniaSenseAttackComponent::ApplyHitReaction(

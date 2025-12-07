@@ -135,6 +135,18 @@ void AHarmoniaProjectile::InitializeProjectile(const FHarmoniaProjectileData& In
 	ProjectileOwner = InOwner;
 	DamageMultiplier = InDamageMultiplier;
 
+	// [ANTI-CHEAT] Server-side validation and clamping of damage values
+	if (HasAuthority())
+	{
+		// Clamp damage multiplier to reasonable range
+		DamageMultiplier = FMath::Clamp(DamageMultiplier, 0.0f, 10.0f);
+		ProjectileData.DamageConfig.DamageMultiplier = FMath::Clamp(ProjectileData.DamageConfig.DamageMultiplier, 0.0f, 100.0f);
+		
+		// Clamp critical values to reasonable range
+		ProjectileData.DamageConfig.CriticalChance = FMath::Clamp(ProjectileData.DamageConfig.CriticalChance, 0.0f, 1.0f);
+		ProjectileData.DamageConfig.CriticalMultiplier = FMath::Clamp(ProjectileData.DamageConfig.CriticalMultiplier, 1.0f, 10.0f);
+	}
+
 	// Set up penetration
 	RemainingPenetrations = ProjectileData.PenetrationCount;
 	RemainingBounces = ProjectileData.BounceCount;
@@ -308,8 +320,32 @@ void AHarmoniaProjectile::ApplyDamageToTarget(AActor* Target, const FHitResult& 
 		return;
 	}
 
-	// Calculate final damage
-	float FinalDamage = ProjectileData.DamageConfig.BaseDamage * ProjectileData.DamageConfig.DamageMultiplier * DamageMultiplier;
+	// Calculate final damage using AttackPower from attributes as base
+	float BaseDamage = 0.0f;
+	float CriticalChance = ProjectileData.DamageConfig.CriticalChance;
+	float CriticalMultiplier = ProjectileData.DamageConfig.CriticalMultiplier;
+
+	if (OwnerASC)
+	{
+		const UHarmoniaAttributeSet* CombatSet = OwnerASC->GetSet<UHarmoniaAttributeSet>();
+		if (CombatSet)
+		{
+			BaseDamage = CombatSet->GetAttackPower();
+			// Use attribute values if available
+			CriticalChance = CombatSet->GetCriticalChance();
+			CriticalMultiplier = CombatSet->GetCriticalDamage();
+		}
+	}
+
+	float FinalDamage = BaseDamage * ProjectileData.DamageConfig.DamageMultiplier * DamageMultiplier;
+
+	// Apply critical hit
+	bool bWasCriticalHit = false;
+	if (ProjectileData.DamageConfig.bCanCritical && FMath::FRand() < CriticalChance)
+	{
+		bWasCriticalHit = true;
+		FinalDamage *= CriticalMultiplier;
+	}
 
 	// Apply penetration damage falloff
 	int32 PenetrationsUsed = ProjectileData.PenetrationCount - RemainingPenetrations;
@@ -330,8 +366,14 @@ void AHarmoniaProjectile::ApplyDamageToTarget(AActor* Target, const FHitResult& 
 		FGameplayEffectSpecHandle SpecHandle = OwnerASC->MakeOutgoingSpec(ProjectileData.DamageConfig.DamageEffectClass, 1.0f, EffectContext);
 		if (SpecHandle.IsValid())
 		{
-			// Set damage magnitude
-			SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Data.Damage")), FinalDamage);
+			// Set damage magnitude using configured SetByCaller tag
+			if (ProjectileData.DamageConfig.SetByCallerDamageTag.IsValid())
+			{
+				SpecHandle.Data->SetSetByCallerMagnitude(ProjectileData.DamageConfig.SetByCallerDamageTag, FinalDamage);
+			}
+
+			// Add damage tags
+			SpecHandle.Data->DynamicGrantedTags.AppendTags(ProjectileData.DamageConfig.DamageTags);
 
 			// Apply effect to target
 			OwnerASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
@@ -438,11 +480,12 @@ void AHarmoniaProjectile::Explode(const FVector& ExplosionLocation)
 				HitResult.Location = HitActor->GetActorLocation();
 				HitResult.HitObjectHandle = FActorInstanceHandle(HitActor);
 
-				// Temporarily modify damage for falloff
-				float OriginalDamage = ProjectileData.DamageConfig.BaseDamage;
-				ProjectileData.DamageConfig.BaseDamage *= DamageFalloff;
+				// Apply damage with distance falloff
+				// Store original multiplier and apply falloff
+				float OriginalMultiplier = ProjectileData.DamageConfig.DamageMultiplier;
+				ProjectileData.DamageConfig.DamageMultiplier *= DamageFalloff;
 				ApplyDamageToTarget(HitActor, HitResult);
-				ProjectileData.DamageConfig.BaseDamage = OriginalDamage;
+				ProjectileData.DamageConfig.DamageMultiplier = OriginalMultiplier;
 			}
 		}
 	}

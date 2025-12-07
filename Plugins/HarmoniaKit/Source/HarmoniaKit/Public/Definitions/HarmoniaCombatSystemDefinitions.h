@@ -214,11 +214,8 @@ struct HARMONIAKIT_API FHarmoniaDamageEffectConfig
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
 	EHarmoniaDamageType DamageType = EHarmoniaDamageType::Instant;
 
-	// Base damage amount
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
-	float BaseDamage = 10.0f;
-
-	// Damage multiplier (applied to base damage)
+	// Damage multiplier (applied to AttackPower from attributes)
+	// Use this for combo step scaling (1.0, 1.1, 1.5 for finisher, etc.)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
 	float DamageMultiplier = 1.0f;
 
@@ -269,6 +266,10 @@ struct HARMONIAKIT_API FHarmoniaDamageEffectConfig
 	// Critical hit damage multiplier
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage", meta = (EditCondition = "bCanCritical"))
 	float CriticalMultiplier = 2.0f;
+
+	// SetByCaller tag for damage magnitude (used by GE)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay Effect")
+	FGameplayTag SetByCallerDamageTag = FGameplayTag::RequestGameplayTag(FName("SetByCaller.Damage"), false);
 };
 
 /**

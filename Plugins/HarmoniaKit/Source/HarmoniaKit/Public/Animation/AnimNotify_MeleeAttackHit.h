@@ -11,13 +11,20 @@ class UHarmoniaSenseAttackComponent;
 
 /**
  * Melee Attack Hit Notify
- * Integrated melee combat attack check notify
- * Combines HarmoniaSenseAttackComponent with HarmoniaMeleeCombatComponent
+ * Triggers melee attack detection at the exact animation frame
+ * 
+ * Responsibilities:
+ * - Trigger attack detection at correct timing
+ * - Find and call HarmoniaSenseAttackComponent
+ * 
+ * NOT responsible for:
+ * - Damage calculation (handled by AttackComponent using AttributeSet)
+ * - Damage multipliers (handled by MeleeCombatComponent / DataTable)
+ * - Critical hit (handled by AttributeSet)
  *
  * Usage:
  * - Place at the exact frame where weapon should hit
- * - Automatically uses current weapon's attack data
- * - Works with combo system
+ * - Component will use current combo step data for damage config
  */
 UCLASS(const, hidecategories = Object, collapsecategories, meta = (DisplayName = "Melee Attack Hit"))
 class HARMONIAKIT_API UAnimNotify_MeleeAttackHit : public UAnimNotify
@@ -34,25 +41,6 @@ public:
 
 protected:
 	/**
-	 * Damage multiplier for this specific hit
-	 * Multiplied with weapon's base damage
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	float DamageMultiplier = 1.0f;
-
-	/**
-	 * Whether this is a critical hit point (e.g., sweet spot)
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	bool bIsCriticalHitPoint = false;
-
-	/**
-	 * Critical damage multiplier if this is a critical hit point
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack", meta = (EditCondition = "bIsCriticalHitPoint"))
-	float CriticalDamageMultiplier = 2.0f;
-
-	/**
 	 * Name of attack component to use (leave empty for default)
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
@@ -64,3 +52,4 @@ protected:
 	virtual UHarmoniaMeleeCombatComponent* FindMeleeCombatComponent(AActor* Owner) const;
 	virtual UHarmoniaSenseAttackComponent* FindAttackComponent(AActor* Owner) const;
 };
+

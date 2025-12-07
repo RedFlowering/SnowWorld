@@ -239,6 +239,48 @@ bool UHarmoniaMeleeCombatComponent::GetComboSequence(bool bHeavyCombo, FHarmonia
 	return false;
 }
 
+bool UHarmoniaMeleeCombatComponent::GetCurrentComboAttackData(FHarmoniaAttackData& OutAttackData) const
+{
+	// Get current combo sequence
+	FHarmoniaComboAttackSequence ComboSequence;
+	if (!GetComboSequence(bIsHeavyAttack, ComboSequence))
+	{
+		return false;
+	}
+
+	// Check if current combo index is valid
+	if (!ComboSequence.ComboSteps.IsValidIndex(CurrentComboIndex))
+	{
+		return false;
+	}
+
+	const FHarmoniaComboAttackStep& ComboStep = ComboSequence.ComboSteps[CurrentComboIndex];
+
+	// Use AttackDataOverride if enabled, otherwise use weapon default
+	if (ComboStep.bUseAttackDataOverride)
+	{
+		OutAttackData = ComboStep.AttackDataOverride;
+
+		// Apply combo step's damage multiplier on top
+		OutAttackData.DamageConfig.DamageMultiplier *= ComboStep.DamageMultiplier;
+	}
+	else
+	{
+		// Get weapon default attack data
+		FHarmoniaMeleeWeaponData WeaponData;
+		if (GetCurrentWeaponData(WeaponData))
+		{
+			// Use weapon's default trace config
+			OutAttackData.TraceConfig = WeaponData.DefaultTraceConfig;
+
+			// Apply combo step's damage multiplier
+			OutAttackData.DamageConfig.DamageMultiplier = ComboStep.DamageMultiplier;
+		}
+	}
+
+	return true;
+}
+
 // ============================================================================
 // Attack Execution
 // ============================================================================

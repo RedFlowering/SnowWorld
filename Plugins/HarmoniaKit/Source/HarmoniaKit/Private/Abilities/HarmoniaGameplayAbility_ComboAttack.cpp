@@ -176,7 +176,7 @@ void UHarmoniaGameplayAbility_ComboAttack::PerformComboAttack()
 				FHarmoniaAttackData ModifiedAttackData = AttackComponent->AttackData;
 
 				// Apply damage multiplier
-				ModifiedAttackData.DamageConfig.BaseDamage *= ComboData.DamageMultiplier;
+				ModifiedAttackData.DamageConfig.DamageMultiplier *= ComboData.DamageMultiplier;
 
 				// Apply range multiplier to trace config
 				if (ModifiedAttackData.TraceConfig.TraceShape == EHarmoniaAttackTraceShape::Box)

@@ -38,68 +38,24 @@ void UAnimNotify_MeleeAttackHit::Notify(USkeletalMeshComponent* MeshComp, UAnimS
 		return;
 	}
 
-	// Get attack data from current weapon if melee component exists
+	// Get attack data from MeleeCombatComponent (includes combo step data)
 	FHarmoniaAttackData AttackData;
-	bool bHasWeaponData = false;
-
-	if (MeleeComponent)
+	
+	if (MeleeComponent && MeleeComponent->GetCurrentComboAttackData(AttackData))
 	{
-		FHarmoniaMeleeWeaponData WeaponData;
-		if (MeleeComponent->GetCurrentWeaponData(WeaponData))
-		{
-			// Use weapon's default attack data
-			AttackData.TraceConfig = WeaponData.DefaultTraceConfig;
-			AttackData.DamageConfig.BaseDamage = 10.0f; // Base damage, will be modified by weapon stats
-			AttackData.DamageConfig.DamageMultiplier = WeaponData.BaseDamageMultiplier * DamageMultiplier;
-
-			// Set critical hit chance if this is a critical hit point
-			if (bIsCriticalHitPoint)
-			{
-				AttackData.DamageConfig.bCanCritical = true;
-				AttackData.DamageConfig.CriticalChance = 1.0f; // Always crit at this point
-				AttackData.DamageConfig.CriticalMultiplier = CriticalDamageMultiplier;
-			}
-
-			bHasWeaponData = true;
-		}
+		// Use combo attack data from MeleeCombatComponent
+		AttackComponent->RequestStartAttack(AttackData);
 	}
-
-	// If no weapon data, use component's default
-	if (!bHasWeaponData)
+	else
 	{
-		AttackData = AttackComponent->AttackData;
-		AttackData.DamageConfig.DamageMultiplier *= DamageMultiplier;
-
-		if (bIsCriticalHitPoint)
-		{
-			AttackData.DamageConfig.bCanCritical = true;
-			AttackData.DamageConfig.CriticalChance = 1.0f;
-			AttackData.DamageConfig.CriticalMultiplier = CriticalDamageMultiplier;
-		}
+		// Fallback: Use component's default attack data
+		AttackComponent->RequestStartAttackDefault();
 	}
-
-	// Single-shot detection (not continuous)
-	AttackData.TraceConfig.bContinuousDetection = false;
-
-	// Trigger attack
-	AttackComponent->RequestStartAttack(AttackData);
 }
 
 FString UAnimNotify_MeleeAttackHit::GetNotifyName_Implementation() const
 {
-	FString Name = TEXT("Melee Attack Hit");
-
-	if (DamageMultiplier != 1.0f)
-	{
-		Name += FString::Printf(TEXT(" (x%.1f)"), DamageMultiplier);
-	}
-
-	if (bIsCriticalHitPoint)
-	{
-		Name += TEXT(" [CRIT]");
-	}
-
-	return Name;
+	return TEXT("Melee Attack Hit");
 }
 
 UHarmoniaMeleeCombatComponent* UAnimNotify_MeleeAttackHit::FindMeleeCombatComponent(AActor* Owner) const
@@ -139,3 +95,4 @@ UHarmoniaSenseAttackComponent* UAnimNotify_MeleeAttackHit::FindAttackComponent(A
 	// Otherwise, return first found component
 	return Owner->FindComponentByClass<UHarmoniaSenseAttackComponent>();
 }
+
