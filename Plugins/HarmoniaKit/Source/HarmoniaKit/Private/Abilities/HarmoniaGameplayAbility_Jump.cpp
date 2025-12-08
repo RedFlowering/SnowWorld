@@ -2,7 +2,6 @@
 
 #include "Abilities/HarmoniaGameplayAbility_Jump.h"
 #include "AbilitySystemComponent.h"
-#include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "GameFramework/Character.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HarmoniaGameplayAbility_Jump)
@@ -21,26 +20,9 @@ bool UHarmoniaGameplayAbility_Jump::CanActivateAbility(const FGameplayAbilitySpe
 		return false;
 	}
 
-	// Check if character can jump
+	// Check if character can jump (grounded, not falling, etc.)
 	const ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
-	if (!Character || !Character->CanJump())
-	{
-		return false;
-	}
-
-	// Check minimum stamina requirement
-	if (const UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
-	{
-		if (const UHarmoniaAttributeSet* AttributeSet = ASC->GetSet<UHarmoniaAttributeSet>())
-		{
-			if (AttributeSet->GetStamina() < MinStaminaToJump)
-			{
-				return false;
-			}
-		}
-	}
-
-	return true;
+	return Character && Character->CanJump();
 }
 
 void UHarmoniaGameplayAbility_Jump::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -70,9 +52,33 @@ void UHarmoniaGameplayAbility_Jump::ActivateAbility(const FGameplayAbilitySpecHa
 		}
 	}
 
+	// Bind to landed event to end ability when grounded
+	Character->LandedDelegate.AddDynamic(this, &UHarmoniaGameplayAbility_Jump::OnLanded);
+
 	// Trigger the jump - ALS handles animation automatically
 	Character->Jump();
 
-	// End ability immediately - jump is a one-shot action
-	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+	// Ability persists until landing - ActivationOwnedTags (State.InAir) remain active
+}
+
+void UHarmoniaGameplayAbility_Jump::OnLanded(const FHitResult& Hit)
+{
+	// Unbind and end ability
+	if (ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+	{
+		Character->LandedDelegate.RemoveDynamic(this, &UHarmoniaGameplayAbility_Jump::OnLanded);
+	}
+
+	K2_EndAbility();
+}
+
+void UHarmoniaGameplayAbility_Jump::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
+{
+	// Ensure delegate is unbound
+	if (ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get()))
+	{
+		Character->LandedDelegate.RemoveDynamic(this, &UHarmoniaGameplayAbility_Jump::OnLanded);
+	}
+
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

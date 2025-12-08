@@ -11,21 +11,22 @@ class ACharacter;
 /**
  * UHarmoniaGameplayAbility_Jump
  *
- * Simple Jump ability with stamina integration.
+ * Jump ability with stamina integration and state tag management.
  * Uses ALS/Character's built-in jump system.
  *
  * Behavior:
- * - Instant activation: Triggers jump on activate
- * - Stamina check: Requires minimum stamina to jump
- * - Optional stamina cost: Can apply GE for stamina consumption
+ * - Triggers jump on activate
+ * - Persists until landing (maintains State.InAir tag)
+ * - Optional stamina cost via CostGameplayEffectClass
  *
  * Flow:
- * 1. Input pressed: ActivateAbility() -> Check stamina -> Character->Jump()
- * 2. Ability ends immediately after jump is triggered
+ * 1. Input pressed: ActivateAbility() -> Character->Jump() -> ActivationOwnedTags applied
+ * 2. Character lands: OnLanded() -> EndAbility() -> Tags removed
  *
  * Usage:
  * - Add to AbilitySet with InputTag.Jump
  * - Bind to Space key with Pressed trigger in IMC
+ * - Set ActivationOwnedTags: State.InAir (blocks other abilities while in air)
  * - Set CostGameplayEffectClass for stamina consumption (optional)
  */
 UCLASS()
@@ -38,14 +39,12 @@ public:
 
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
+	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
+
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 
 protected:
-	/** Minimum stamina required to jump */
-	UPROPERTY(EditDefaultsOnly, Category = "Jump|Stamina")
-	float MinStaminaToJump = 10.0f;
-
-	/** Stamina cost for jumping (applied via CostGameplayEffectClass) */
-	UPROPERTY(EditDefaultsOnly, Category = "Jump|Stamina")
-	float StaminaCost = 10.0f;
+	/** Called when character lands - ends the ability */
+	UFUNCTION()
+	void OnLanded(const FHitResult& Hit);
 };
