@@ -85,10 +85,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Combat|Stamina")
 	float GetStaminaRecoveryDelay() const;
 
-protected:
-	/** Apply stamina recovery block effect (called internally when stamina is consumed) */
-	void ApplyStaminaRecoveryBlock();
-
 public:
 	// Mana Management
 	// ============================================================================
@@ -139,17 +135,6 @@ protected:
 
 	UPROPERTY(Transient)
 	mutable TObjectPtr<UHarmoniaEquipmentComponent> CachedEquipmentComponent;
-
-	/** 
-	 * GameplayEffect class to apply when stamina is consumed
-	 * This effect should grant the Debuff.StaminaRecoveryBlocked tag
-	 * Duration should be set from StaminaRecoveryDelay attribute via SetByCaller or just overridden
-	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Harmonia|Combat|Stamina")
-	TSubclassOf<UGameplayEffect> StaminaRecoveryBlockEffectClass;
-
-	/** Active effect handle for stamina recovery block (used for refreshing duration) */
-	FActiveGameplayEffectHandle ActiveStaminaRecoveryBlockHandle;
 };
 
 // ============================================================================

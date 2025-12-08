@@ -66,26 +66,6 @@ UHarmoniaAttributeSet* UHarmoniaBaseCombatComponent::GetAttributeSet() const
 		if (ASC)
 		{
 			CachedAttributeSet = const_cast<UHarmoniaAttributeSet*>(ASC->GetSet<UHarmoniaAttributeSet>());
-			
-			if (!CachedAttributeSet)
-			{
-				// Debug: List all AttributeSets on ASC
-				UE_LOG(LogTemp, Warning, TEXT("[BaseCombatComponent] HarmoniaAttributeSet not found! Listing all AttributeSets on ASC:"));
-				const TArray<UAttributeSet*>& AttributeSets = ASC->GetSpawnedAttributes();
-				
-				for (int32 i = 0; i < AttributeSets.Num(); ++i)
-				{
-					if (AttributeSets[i])
-					{
-						UE_LOG(LogTemp, Warning, TEXT("  [%d] %s"), i, *AttributeSets[i]->GetClass()->GetName());
-					}
-				}
-				
-				if (AttributeSets.Num() == 0)
-				{
-					UE_LOG(LogTemp, Warning, TEXT("  No AttributeSets found on ASC!"));
-				}
-			}
 		}
 	}
 	return CachedAttributeSet;
@@ -122,39 +102,19 @@ bool UHarmoniaBaseCombatComponent::ConsumeStamina(float StaminaCost)
 	}
 
 	// Use the HarmoniaAbilitySystemLibrary to consume stamina
-	const bool bSuccess = UHarmoniaAbilitySystemLibrary::ConsumeStamina(ASC, StaminaCost);
-	
-	if (bSuccess)
-	{
-		// Apply stamina recovery block effect
-		ApplyStaminaRecoveryBlock();
-	}
-
-	return bSuccess;
+	// Note: HarmoniaAttributeSet::PostAttributeChange automatically applies
+	// StaminaRecoveryBlockEffectClass when stamina decreases
+	return UHarmoniaAbilitySystemLibrary::ConsumeStamina(ASC, StaminaCost);
 }
 
 float UHarmoniaBaseCombatComponent::GetCurrentStamina() const
 {
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	if (!ASC)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[BaseCombatComponent] GetCurrentStamina: ASC is NULL! Owner=%s"), 
-			GetOwner() ? *GetOwner()->GetName() : TEXT("NULL"));
-		return 0.0f;
-	}
-
 	UHarmoniaAttributeSet* Attributes = GetAttributeSet();
-	if (!Attributes)
+	if (Attributes)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[BaseCombatComponent] GetCurrentStamina: AttributeSet is NULL! ASC=%s"), 
-			*ASC->GetName());
-		return 0.0f;
+		return Attributes->GetStamina();
 	}
-
-	const float Stamina = Attributes->GetStamina();
-	UE_LOG(LogTemp, Log, TEXT("[BaseCombatComponent] GetCurrentStamina: %.1f (Max: %.1f)"), 
-		Stamina, Attributes->GetMaxStamina());
-	return Stamina;
+	return 0.0f;
 }
 
 float UHarmoniaBaseCombatComponent::GetMaxStamina() const
@@ -185,45 +145,6 @@ float UHarmoniaBaseCombatComponent::GetStaminaRecoveryDelay() const
 		return Attributes->GetStaminaRecoveryDelay();
 	}
 	return 1.5f; // Default delay
-}
-
-void UHarmoniaBaseCombatComponent::ApplyStaminaRecoveryBlock()
-{
-	if (!StaminaRecoveryBlockEffectClass)
-	{
-		// No effect class set - stamina recovery will not be blocked
-		return;
-	}
-
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	if (!ASC)
-	{
-		return;
-	}
-
-	// If we already have an active block effect, remove it first (to reset duration)
-	if (ActiveStaminaRecoveryBlockHandle.IsValid())
-	{
-		ASC->RemoveActiveGameplayEffect(ActiveStaminaRecoveryBlockHandle);
-		ActiveStaminaRecoveryBlockHandle.Invalidate();
-	}
-
-	// Create and apply the effect
-	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
-	EffectContext.AddSourceObject(GetOwner());
-
-	// If the GE has duration, we can initialize it with SetByCaller or just use the duration from the class
-	// However, usually we want to control the duration via the attribute StaminaRecoveryDelay.
-	// We can use SetByCallerMagnitude if the GE is configured to use it for duration.
-	// For simplicity in this specific implementation, we assume the GE has a duration policy of HasDuration.
-	// We will attempt to override the duration using the spec.
-	
-	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(StaminaRecoveryBlockEffectClass, 1.0f, EffectContext);
-	if (SpecHandle.IsValid())
-	{
-		// Apply the effect and store the handle
-		ActiveStaminaRecoveryBlockHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-	}
 }
 
 // ============================================================================

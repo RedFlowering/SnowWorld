@@ -1,6 +1,8 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "Abilities/HarmoniaGameplayAbility_Sprint.h"
+#include "AbilitySystemComponent.h"
+#include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "AlsCharacter.h"
 #include "Utility/AlsGameplayTags.h"
 
@@ -9,15 +11,9 @@
 UHarmoniaGameplayAbility_Sprint::UHarmoniaGameplayAbility_Sprint(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	// Duration-based ability - stays active while sprinting
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
-	
-	// Default restore gait is Running
 	RestoreGaitTag = AlsGaitTags::Running;
-	
-	// ActivationOwnedTags can be set in Blueprint (e.g., State.Movement.Sprinting)
-	// ActivationBlockedTags can block sprint during certain states (e.g., State.Combat.Blocking)
 }
 
 void UHarmoniaGameplayAbility_Sprint::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -31,19 +27,71 @@ void UHarmoniaGameplayAbility_Sprint::ActivateAbility(const FGameplayAbilitySpec
 		return;
 	}
 
-	// Set gait to Sprinting
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	if (!ASC)
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+
+	// Check minimum stamina requirement
+	const UHarmoniaAttributeSet* AttributeSet = ASC->GetSet<UHarmoniaAttributeSet>();
+	if (AttributeSet && AttributeSet->GetStamina() < MinStaminaToActivate)
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+
 	AlsCharacter->SetDesiredGait(AlsGaitTags::Sprinting);
+
+	// Apply stamina cost effect
+	if (CostGameplayEffectClass)
+	{
+		FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+		EffectContext.AddSourceObject(GetAvatarActorFromActorInfo());
+
+		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(CostGameplayEffectClass, GetAbilityLevel(), EffectContext);
+		if (SpecHandle.IsValid())
+		{
+			SprintCostEffectHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		}
+	}
+
+	// Bind to stamina depletion event
+	if (AttributeSet)
+	{
+		UHarmoniaAttributeSet* MutableAttributeSet = const_cast<UHarmoniaAttributeSet*>(AttributeSet);
+		MutableAttributeSet->OnOutOfStamina.AddUObject(this, &UHarmoniaGameplayAbility_Sprint::OnOutOfStamina);
+	}
 }
 
 void UHarmoniaGameplayAbility_Sprint::InputReleased(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo)
 {
-	// Input released = stop sprinting
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }
 
 void UHarmoniaGameplayAbility_Sprint::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	// Restore previous gait when sprint ends
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+
+	// Remove stamina cost effect
+	if (ASC && SprintCostEffectHandle.IsValid())
+	{
+		ASC->RemoveActiveGameplayEffect(SprintCostEffectHandle);
+		SprintCostEffectHandle.Invalidate();
+	}
+
+	// Unbind stamina delegate
+	if (ASC)
+	{
+		if (const UHarmoniaAttributeSet* HarmoniaSet = ASC->GetSet<UHarmoniaAttributeSet>())
+		{
+			UHarmoniaAttributeSet* MutableSet = const_cast<UHarmoniaAttributeSet*>(HarmoniaSet);
+			MutableSet->OnOutOfStamina.RemoveAll(this);
+		}
+	}
+
+	// Restore gait
 	if (AAlsCharacter* AlsCharacter = GetAlsCharacter())
 	{
 		AlsCharacter->SetDesiredGait(RestoreGaitTag);
@@ -55,4 +103,9 @@ void UHarmoniaGameplayAbility_Sprint::EndAbility(const FGameplayAbilitySpecHandl
 AAlsCharacter* UHarmoniaGameplayAbility_Sprint::GetAlsCharacter() const
 {
 	return Cast<AAlsCharacter>(GetAvatarActorFromActorInfo());
+}
+
+void UHarmoniaGameplayAbility_Sprint::OnOutOfStamina(AActor* Instigator, AActor* Causer, const FGameplayEffectSpec* EffectSpec, float Magnitude, float OldValue, float NewValue)
+{
+	K2_EndAbility();
 }

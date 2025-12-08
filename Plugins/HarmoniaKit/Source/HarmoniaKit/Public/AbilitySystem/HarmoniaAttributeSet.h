@@ -280,6 +280,13 @@ private:
 	FGameplayAttributeData StaminaRecoveryDelay;
 
 	/**
+	 * Gameplay Effect to apply when stamina is consumed
+	 * Used to block stamina regeneration for a period (e.g., GE_StaminaRecoveryBlock)
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
+	TSubclassOf<UGameplayEffect> StaminaRecoveryBlockEffectClass;
+
+	/**
 	 * Current mana
 	 * Used for magic spells and abilities
 	 * Clamped by MaxMana

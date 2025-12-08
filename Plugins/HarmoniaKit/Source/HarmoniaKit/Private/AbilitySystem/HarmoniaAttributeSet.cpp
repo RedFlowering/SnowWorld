@@ -221,7 +221,7 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 	else if (Data.EvaluatedData.Attribute == GetStaminaRecoveryAttribute())
 	{
 		const float LocalRecovery = GetStaminaRecovery();
-		SetStaminaRecovery(0.0f); // Clear meta attribute
+		SetStaminaRecovery(0.0f);
 
 		if (LocalRecovery > 0.0f)
 		{
@@ -229,10 +229,8 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 			const float NewStamina = FMath::Clamp(OldStamina + LocalRecovery, 0.0f, GetMaxStamina());
 			SetStamina(NewStamina);
 
-			// Broadcast stamina recovered event
 			OnStaminaRecovered.Broadcast(Instigator, Causer, &Data.EffectSpec, LocalRecovery, OldStamina, NewStamina);
 
-			// Reset out of stamina flag if we recovered
 			if (NewStamina > 0.0f)
 			{
 				bOutOfStamina = false;
@@ -372,6 +370,22 @@ void UHarmoniaAttributeSet::PostAttributeChange(const FGameplayAttribute& Attrib
 	if (Attribute == GetStaminaAttribute())
 	{
 		OnStaminaChanged.Broadcast(nullptr, nullptr, nullptr, NewValue - OldValue, OldValue, NewValue);
+		
+		// Apply recovery block effect when stamina decreases
+		if (NewValue < OldValue && StaminaRecoveryBlockEffectClass)
+		{
+			if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+			{
+				FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
+				ContextHandle.AddSourceObject(GetOwningActor());
+				
+				FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(StaminaRecoveryBlockEffectClass, 1.0f, ContextHandle);
+				if (SpecHandle.IsValid())
+				{
+					ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+				}
+			}
+		}
 		
 		// Check if stamina reached zero
 		if (NewValue <= 0.0f && OldValue > 0.0f)

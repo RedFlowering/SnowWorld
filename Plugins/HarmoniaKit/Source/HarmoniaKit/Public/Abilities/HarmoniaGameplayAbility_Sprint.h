@@ -49,7 +49,17 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Sprint")
 	AAlsCharacter* GetAlsCharacter() const;
 
+	/** Handle for the active sprint cost effect */
+	FActiveGameplayEffectHandle SprintCostEffectHandle;
+
+	/** Callback when stamina changes to check if we ran out */
+	void OnOutOfStamina(AActor* Instigator, AActor* Causer, const FGameplayEffectSpec* EffectSpec, float Magnitude, float OldValue, float NewValue);
+
 	/** Gait tag to restore when sprint ends (default: Running) */
 	UPROPERTY(EditDefaultsOnly, Category = "Sprint")
 	FGameplayTag RestoreGaitTag;
+
+	/** Minimum stamina required to start sprinting (prevents immediate reactivation) */
+	UPROPERTY(EditDefaultsOnly, Category = "Sprint|Stamina")
+	float MinStaminaToActivate = 10.0f;
 };

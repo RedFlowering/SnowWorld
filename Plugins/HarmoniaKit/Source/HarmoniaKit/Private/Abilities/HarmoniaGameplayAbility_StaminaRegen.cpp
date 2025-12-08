@@ -9,12 +9,8 @@
 UHarmoniaGameplayAbility_StaminaRegen::UHarmoniaGameplayAbility_StaminaRegen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	// Passive ability - activates automatically when granted
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
-	
-	// This ability should activate immediately when granted
-	// Configure via AbilitySet with ActivationPolicy = OnSpawn
 }
 
 void UHarmoniaGameplayAbility_StaminaRegen::ActivateAbility(
@@ -36,23 +32,14 @@ void UHarmoniaGameplayAbility_StaminaRegen::ActivateAbility(
 		return;
 	}
 
-	// Apply the stamina regen effect
 	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
 	EffectContext.AddSourceObject(GetAvatarActorFromActorInfo());
 
 	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(StaminaRegenEffectClass, GetAbilityLevel(), EffectContext);
-
-    if (SpecHandle.IsValid())
+	if (SpecHandle.IsValid())
 	{
 		ActiveRegenEffectHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("[GA_StaminaRegen] Failed to create SpecHandle!"));
-	}
-
-	// This ability stays active indefinitely (passive)
-	// It will be ended when the character dies or the ability is removed
 }
 
 void UHarmoniaGameplayAbility_StaminaRegen::EndAbility(
@@ -62,7 +49,6 @@ void UHarmoniaGameplayAbility_StaminaRegen::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	// Remove the stamina regen effect when ability ends
 	if (ActiveRegenEffectHandle.IsValid())
 	{
 		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
