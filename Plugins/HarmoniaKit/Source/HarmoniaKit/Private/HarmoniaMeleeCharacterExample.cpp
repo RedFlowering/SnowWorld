@@ -59,11 +59,8 @@ void AHarmoniaMeleeCharacterExample::BeginPlay()
 		}
 	}
 
-	// Set default weapon
-	if (MeleeCombatComponent)
-	{
-		MeleeCombatComponent->SetCurrentWeaponType(EHarmoniaMeleeWeaponType::Sword);
-	}
+	// Weapon type is now determined by EquipmentComponent
+	// MeleeCombatComponent queries it via GetCurrentWeaponTypeTag() -> EquipmentComponent->GetMainHandWeaponTypeTag()
 }
 
 void AHarmoniaMeleeCharacterExample::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -199,19 +196,12 @@ void AHarmoniaMeleeCharacterExample::OnLockOnToggle(const FInputActionValue& Val
 // Example Functions
 // ============================================================================
 
-void AHarmoniaMeleeCharacterExample::SwitchWeapon(EHarmoniaMeleeWeaponType NewWeaponType)
+void AHarmoniaMeleeCharacterExample::SwitchWeapon(FGameplayTag NewWeaponTypeTag)
 {
-	if (MeleeCombatComponent)
-	{
-		MeleeCombatComponent->SetCurrentWeaponType(NewWeaponType);
-
-		// Update equipment visuals (if using equipment component)
-		// UHarmoniaEquipmentComponent* EquipmentComp = FindComponentByClass<UHarmoniaEquipmentComponent>();
-		// if (EquipmentComp)
-		// {
-		//     // Update equipped weapon mesh
-		// }
-	}
+	// In the centralized model, weapon type is managed by EquipmentComponent
+	// To switch weapons, equip a new weapon to the MainHand slot via EquipmentComponent
+	// The MeleeCombatComponent will automatically query the new weapon type
+	UE_LOG(LogTemp, Warning, TEXT("SwitchWeapon: Use EquipmentComponent::EquipItem instead. Weapon type is now managed centrally."));
 }
 
 bool AHarmoniaMeleeCharacterExample::CanAttack() const
@@ -261,13 +251,13 @@ int32 AHarmoniaMeleeCharacterExample::GetCurrentComboIndex() const
 	return 0;
 }
 
-EHarmoniaMeleeWeaponType AHarmoniaMeleeCharacterExample::GetCurrentWeaponType() const
+FGameplayTag AHarmoniaMeleeCharacterExample::GetCurrentWeaponTypeTag() const
 {
 	if (MeleeCombatComponent)
 	{
-		return MeleeCombatComponent->GetCurrentWeaponType();
+		return MeleeCombatComponent->GetCurrentWeaponTypeTag();
 	}
-	return EHarmoniaMeleeWeaponType::None;
+	return FGameplayTag();
 }
 
 // ============================================================================

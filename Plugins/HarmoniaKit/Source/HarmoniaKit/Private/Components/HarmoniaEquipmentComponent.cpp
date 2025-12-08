@@ -2,7 +2,11 @@
 
 #include "Components/HarmoniaEquipmentComponent.h"
 #include "Components/HarmoniaInventoryComponent.h"
+#include "Components/HarmoniaMeleeCombatComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "CosmeticComponent.h"
 #include "AbilitySystemComponent.h"
+#include "AbilitySystemGlobals.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "HarmoniaGameplayTags.h"
 #include "Engine/DataTable.h"
@@ -126,7 +130,7 @@ bool UHarmoniaEquipmentComponent::EquipItem(const FHarmoniaID& EquipmentId, EEqu
 	// Update equipment load
 	UpdateEquipLoad();
 
-	// Broadcast event
+	// Broadcast event - CombatComponents listen to this and query GetMainHandWeaponTypeTag()
 	OnEquipmentChanged.Broadcast(TargetSlot, OldEquipmentId, EquipmentId);
 	OnEquipmentStatsChanged.Broadcast(TargetSlot, EquipmentData.StatModifiers);
 
@@ -323,6 +327,60 @@ void UHarmoniaEquipmentComponent::UnequipAll()
 	{
 		UnequipItem(Item.Slot);
 	}
+}
+
+bool UHarmoniaEquipmentComponent::GetEquipmentDataForSlot(EEquipmentSlot Slot, FHarmoniaEquipmentData& OutData) const
+{
+	const FEquippedItem* FoundItem = EquippedItems.FindByPredicate([Slot](const FEquippedItem& Item)
+	{
+		return Item.Slot == Slot;
+	});
+
+	if (FoundItem && FoundItem->IsValid())
+	{
+		return GetEquipmentData(FoundItem->EquipmentId, OutData);
+	}
+
+	return false;
+}
+
+FGameplayTag UHarmoniaEquipmentComponent::GetMainHandWeaponTypeTag() const
+{
+	FHarmoniaEquipmentData EquipmentData;
+	if (GetEquipmentDataForSlot(EEquipmentSlot::MainHand, EquipmentData))
+	{
+		// Find Weapon.Type.X tag from GrantedTags
+		static const FGameplayTag WeaponTypeParent = FGameplayTag::RequestGameplayTag(FName("Weapon.Type"), false);
+		for (const FGameplayTag& Tag : EquipmentData.GrantedTags)
+		{
+			if (Tag.MatchesTag(WeaponTypeParent))
+			{
+				return Tag;
+			}
+		}
+	}
+
+	// Default to Fist when no weapon equipped
+	return FGameplayTag::RequestGameplayTag(FName("Weapon.Type.Fist"), false);
+}
+
+FGameplayTag UHarmoniaEquipmentComponent::GetOffHandWeaponTypeTag() const
+{
+	FHarmoniaEquipmentData EquipmentData;
+	if (GetEquipmentDataForSlot(EEquipmentSlot::OffHand, EquipmentData))
+	{
+		// Find Weapon.Type.X tag from GrantedTags
+		static const FGameplayTag WeaponTypeParent = FGameplayTag::RequestGameplayTag(FName("Weapon.Type"), false);
+		for (const FGameplayTag& Tag : EquipmentData.GrantedTags)
+		{
+			if (Tag.MatchesTag(WeaponTypeParent))
+			{
+				return Tag;
+			}
+		}
+	}
+
+	return FGameplayTag(); // Empty tag for no offhand weapon
 }
 
 // ============================================================================
@@ -857,6 +915,7 @@ void UHarmoniaEquipmentComponent::ApplyVisualMesh(const FHarmoniaEquipmentData& 
 
 	EquipmentMeshComponent->SetSkeletalMesh(LoadedMesh);
 	EquipmentMeshComponent->SetupAttachment(OwnerMesh, EquipmentData.AttachSocketName);
+	EquipmentMeshComponent->SetRelativeTransform(EquipmentData.AttachOffset);
 	EquipmentMeshComponent->SetLeaderPoseComponent(OwnerMesh);
 
 	// Tag with slot info for later removal
@@ -894,8 +953,8 @@ UAbilitySystemComponent* UHarmoniaEquipmentComponent::GetAbilitySystemComponent(
 		return nullptr;
 	}
 
-	// Try to get from owner
-	UAbilitySystemComponent* ASC = Owner->FindComponentByClass<UAbilitySystemComponent>();
+	// Try to get from owner using AbilitySystemGlobals (handles Interface and PlayerState)
+	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Owner);
 	if (ASC)
 	{
 		const_cast<UHarmoniaEquipmentComponent*>(this)->CachedASC = ASC;
@@ -931,7 +990,23 @@ UHarmoniaAttributeSet* UHarmoniaEquipmentComponent::GetAttributeSet() const
 
 USkeletalMeshComponent* UHarmoniaEquipmentComponent::GetOwnerMesh() const
 {
-	ACharacter* Character = Cast<ACharacter>(GetOwner());
+	AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		return nullptr;
+	}
+
+	// First, try to find CosmeticSystem's CosmeticComponent for visual mesh
+	if (UCosmeticComponent* CosmeticComp = Owner->FindComponentByClass<UCosmeticComponent>())
+	{
+		if (USkeletalMeshComponent* VisualMesh = CosmeticComp->GetVisualMesh())
+		{
+			return VisualMesh;
+		}
+	}
+
+	// Fallback to character's own mesh
+	ACharacter* Character = Cast<ACharacter>(Owner);
 	if (Character)
 	{
 		return Character->GetMesh();
@@ -995,6 +1070,7 @@ bool UHarmoniaEquipmentComponent::ServerEquipItem_Validate(const FHarmoniaID& Eq
 
 	return true;
 }
+
 
 void UHarmoniaEquipmentComponent::ServerUnequipItem_Implementation(EEquipmentSlot Slot)
 {

@@ -155,9 +155,9 @@ protected:
 	// Example Functions (Blueprint callable)
 	// ============================================================================
 
-	/** Switch to specific weapon type */
+	/** Switch to specific weapon type tag */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat")
-	void SwitchWeapon(EHarmoniaMeleeWeaponType NewWeaponType);
+	void SwitchWeapon(FGameplayTag NewWeaponTypeTag);
 
 	/** Check if can perform action */
 	UFUNCTION(BlueprintPure, Category = "Melee Combat")
@@ -177,7 +177,7 @@ protected:
 	int32 GetCurrentComboIndex() const;
 
 	UFUNCTION(BlueprintPure, Category = "Melee Combat")
-	EHarmoniaMeleeWeaponType GetCurrentWeaponType() const;
+	FGameplayTag GetCurrentWeaponTypeTag() const;
 
 private:
 	/** Grant abilities to ASC */

@@ -91,6 +91,7 @@ enum class EHarmoniaAttackType : uint8
 
 /**
  * Melee Weapon Type
+ * @deprecated Use GameplayTag (Weapon.Type.Sword etc.) instead for better extensibility
  * Soul-like melee weapon categories
  */
 UENUM(BlueprintType)
@@ -513,9 +514,10 @@ struct HARMONIAKIT_API FHarmoniaMeleeWeaponData : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	// Weapon type
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
-	EHarmoniaMeleeWeaponType WeaponType = EHarmoniaMeleeWeaponType::Sword;
+	// Weapon type tag (e.g., Weapon.Type.Sword)
+	// Use this instead of deprecated EHarmoniaMeleeWeaponType enum
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon", meta = (Categories = "Weapon.Type"))
+	FGameplayTag WeaponTypeTag;
 
 	// Display name
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
@@ -633,9 +635,9 @@ struct HARMONIAKIT_API FHarmoniaComboAttackSequence : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
 	FText ComboName;
 
-	// Weapon type this combo belongs to
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
-	EHarmoniaMeleeWeaponType WeaponType = EHarmoniaMeleeWeaponType::Sword;
+	// Weapon type tag this combo belongs to (e.g., Weapon.Type.Sword)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo", meta = (Categories = "Weapon.Type"))
+	FGameplayTag WeaponTypeTag;
 
 	// Attack type (Light, Heavy, Special, etc.)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")

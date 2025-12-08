@@ -7,6 +7,8 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "Components/HarmoniaCurrencyManagerComponent.h"
+#include "Components/HarmoniaEquipmentComponent.h"
+#include "Definitions/HarmoniaEquipmentSystemDefinitions.h"
 #include "System/HarmoniaTimeWeatherManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
@@ -14,6 +16,7 @@
 
 UHarmoniaCheatManager::UHarmoniaCheatManager()
 {
+#if !UE_BUILD_SHIPPING
 	bInvincible = false;
 	bGodMode = false;
 	bOneHitKill = false;
@@ -22,8 +25,10 @@ UHarmoniaCheatManager::UHarmoniaCheatManager()
 	SpeedMultiplier = 1.0f;
 	DamageMultiplier = 1.0f;
 	TimeScale = 1.0f;
+#endif
 }
 
+#if !UE_BUILD_SHIPPING
 // ==================== Health, Mana, Stamina ====================
 
 void UHarmoniaCheatManager::HarmoniaSetHealth(float NewHealth)
@@ -145,6 +150,95 @@ void UHarmoniaCheatManager::HarmoniaClearInventory()
 {
 	LogCheat(TEXT("Inventory cleared."));
 	LogCheat(TEXT("This feature requires implementation with inventory system."));
+}
+
+// ==================== Equipment ====================
+
+void UHarmoniaCheatManager::HarmoniaEquipItem(const FString& EquipmentId)
+{
+	ACharacter* PlayerChar = GetPlayerCharacter();
+	if (PlayerChar)
+	{
+		UHarmoniaEquipmentComponent* EquipmentComp = PlayerChar->FindComponentByClass<UHarmoniaEquipmentComponent>();
+		if (EquipmentComp)
+		{
+			FHarmoniaID Id;
+			Id.Id = FName(*EquipmentId);
+			
+			if (EquipmentComp->EquipItem(Id))
+			{
+				LogCheat(FString::Printf(TEXT("Equipped item '%s'."), *EquipmentId));
+			}
+			else
+			{
+				LogCheat(FString::Printf(TEXT("Failed to equip item '%s'. Check if ID exists in DataTable."), *EquipmentId));
+			}
+		}
+		else
+		{
+			LogCheat(TEXT("Equipment Component not found on player."));
+		}
+	}
+}
+
+void UHarmoniaCheatManager::HarmoniaUnequipSlot(const FString& SlotName)
+{
+	ACharacter* PlayerChar = GetPlayerCharacter();
+	if (PlayerChar)
+	{
+		UHarmoniaEquipmentComponent* EquipmentComp = PlayerChar->FindComponentByClass<UHarmoniaEquipmentComponent>();
+		if (EquipmentComp)
+		{
+			EEquipmentSlot Slot = EEquipmentSlot::None;
+			
+			if (SlotName.Equals(TEXT("Head"), ESearchCase::IgnoreCase)) Slot = EEquipmentSlot::Head;
+			else if (SlotName.Equals(TEXT("Chest"), ESearchCase::IgnoreCase)) Slot = EEquipmentSlot::Chest;
+			else if (SlotName.Equals(TEXT("Legs"), ESearchCase::IgnoreCase)) Slot = EEquipmentSlot::Legs;
+			else if (SlotName.Equals(TEXT("Feet"), ESearchCase::IgnoreCase)) Slot = EEquipmentSlot::Feet;
+			else if (SlotName.Equals(TEXT("Hands"), ESearchCase::IgnoreCase)) Slot = EEquipmentSlot::Hands;
+			else if (SlotName.Equals(TEXT("MainHand"), ESearchCase::IgnoreCase)) Slot = EEquipmentSlot::MainHand;
+			else if (SlotName.Equals(TEXT("OffHand"), ESearchCase::IgnoreCase)) Slot = EEquipmentSlot::OffHand;
+			else if (SlotName.Equals(TEXT("Accessory1"), ESearchCase::IgnoreCase)) Slot = EEquipmentSlot::Accessory1;
+			else if (SlotName.Equals(TEXT("Accessory2"), ESearchCase::IgnoreCase)) Slot = EEquipmentSlot::Accessory2;
+			else if (SlotName.Equals(TEXT("Back"), ESearchCase::IgnoreCase)) Slot = EEquipmentSlot::Back;
+			else
+			{
+				LogCheat(FString::Printf(TEXT("Unknown slot '%s'. Valid: Head, Chest, Legs, Feet, Hands, MainHand, OffHand, Accessory1, Accessory2, Back"), *SlotName));
+				return;
+			}
+			
+			if (EquipmentComp->UnequipItem(Slot))
+			{
+				LogCheat(FString::Printf(TEXT("Unequipped slot '%s'."), *SlotName));
+			}
+			else
+			{
+				LogCheat(FString::Printf(TEXT("Slot '%s' is already empty."), *SlotName));
+			}
+		}
+		else
+		{
+			LogCheat(TEXT("Equipment Component not found on player."));
+		}
+	}
+}
+
+void UHarmoniaCheatManager::HarmoniaUnequipAll()
+{
+	ACharacter* PlayerChar = GetPlayerCharacter();
+	if (PlayerChar)
+	{
+		UHarmoniaEquipmentComponent* EquipmentComp = PlayerChar->FindComponentByClass<UHarmoniaEquipmentComponent>();
+		if (EquipmentComp)
+		{
+			EquipmentComp->UnequipAll();
+			LogCheat(TEXT("Unequipped all items."));
+		}
+		else
+		{
+			LogCheat(TEXT("Equipment Component not found on player."));
+		}
+	}
 }
 
 // ==================== Level & Experience ====================
@@ -474,6 +568,11 @@ void UHarmoniaCheatManager::HarmoniaHelp()
 	LogCheat(TEXT("HarmoniaSetTimeScale <multiplier> - Set time scale"));
 	LogCheat(TEXT("HarmoniaSetWeather <type> - Set weather (Clear/Rain/Snow/Storm)"));
 	LogCheat(TEXT(""));
+	LogCheat(TEXT("== Equipment =="));
+	LogCheat(TEXT("HarmoniaEquipItem <id> - Equip item by ID"));
+	LogCheat(TEXT("HarmoniaUnequipSlot <slot> - Unequip slot"));
+	LogCheat(TEXT("HarmoniaUnequipAll - Unequip all"));
+	LogCheat(TEXT(""));
 	LogCheat(TEXT("== Misc =="));
 	LogCheat(TEXT("HarmoniaToggleDebugInfo - Toggle debug info"));
 	LogCheat(TEXT("HarmoniaResetCheats - Reset all cheats"));
@@ -513,3 +612,4 @@ void UHarmoniaCheatManager::LogCheat(const FString& Message) const
 	}
 	UE_LOG(LogTemp, Log, TEXT("[Harmonia Cheat] %s"), *Message);
 }
+#endif // !UE_BUILD_SHIPPING

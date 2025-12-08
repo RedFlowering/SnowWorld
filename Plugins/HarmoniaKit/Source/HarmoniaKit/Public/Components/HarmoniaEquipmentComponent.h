@@ -37,7 +37,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
  * - Gameplay Effect application
  * - Visual mesh management
  */
-UCLASS(ClassGroup=(HarmoniaKit), meta=(BlueprintSpawnableComponent))
+UCLASS(Blueprintable, ClassGroup=(HarmoniaKit), meta=(BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaEquipmentComponent : public UActorComponent
 {
 	GENERATED_BODY()
@@ -113,6 +113,29 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Equipment")
 	void UnequipAll();
+
+	/**
+	 * Get equipment data for specific slot
+	 * @param Slot - Equipment slot to query
+	 * @param OutData - Output equipment data
+	 * @return true if slot has equipment
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Harmonia|Equipment")
+	bool GetEquipmentDataForSlot(EEquipmentSlot Slot, FHarmoniaEquipmentData& OutData) const;
+
+	/**
+	 * Get weapon type tag from MainHand equipment
+	 * Convenience function for combat components
+	 * @return Weapon.Type.X tag from equipped MainHand item, or empty tag if none
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Harmonia|Equipment")
+	FGameplayTag GetMainHandWeaponTypeTag() const;
+
+	/**
+	 * Get weapon type tag from OffHand equipment
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Harmonia|Equipment")
+	FGameplayTag GetOffHandWeaponTypeTag() const;
 
 	// ============================================================================
 	// Durability

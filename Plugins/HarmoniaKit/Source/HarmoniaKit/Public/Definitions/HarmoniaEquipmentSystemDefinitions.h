@@ -139,9 +139,21 @@ struct FHarmoniaEquipmentData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Visual")
 	FName AttachSocketName = NAME_None;
 
+	// Offset from socket (position, rotation, scale)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Visual")
+	FTransform AttachOffset = FTransform::Identity;
+
 	// Material instances to apply
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Visual")
 	TArray<TSoftObjectPtr<UMaterialInstance>> MaterialInstances;
+
+	// Static mesh for world pickup and UI preview (loot, inventory, shop)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Visual")
+	TSoftObjectPtr<UStaticMesh> PickupMesh = nullptr;
+
+	// Actor class to spawn when dropped in world (optional, for physics/interaction)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Visual")
+	TSubclassOf<AActor> PickupActorClass = nullptr;
 
 	// Durability (0 = indestructible)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Durability")
@@ -150,10 +162,6 @@ struct FHarmoniaEquipmentData : public FTableRowBase
 	// Weight
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Properties")
 	float Weight = 1.f;
-
-	// Item rarity/quality (legacy - use Grade instead)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Properties")
-	int32 Rarity = 0;
 
 	// Item grade/tier
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Properties")

@@ -82,7 +82,7 @@ public:
 	/** Get balanced weapon stats for level */
 	UFUNCTION(BlueprintCallable, Category = "Balancing")
 	void GetBalancedWeaponStats(
-		EHarmoniaMeleeWeaponType WeaponType,
+		FGameplayTag WeaponTypeTag,
 		int32 WeaponLevel,
 		float& OutDamage,
 		float& OutStaminaCost,

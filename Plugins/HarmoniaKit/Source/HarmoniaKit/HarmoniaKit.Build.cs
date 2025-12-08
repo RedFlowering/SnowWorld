@@ -42,6 +42,7 @@ public class HarmoniaKit : ModuleRules
                 
                 // Gameplay Systems
                 "SenseSystem",             // Sense 기반 상호작용
+                "CosmeticSystem",          // 코스메틱 시스템
                 "GameplayAbilities",       // GAS 핵심
                 "GameplayTags",            // 게임플레이 태그
                 "GameplayTasks",           // 게임플레이 태스크
@@ -55,6 +56,7 @@ public class HarmoniaKit : ModuleRules
                 "OnlineSubsystem",
                 "OnlineSubsystemUtils",
                 "CommonUI",
+                "CommonGame",
                 "NavigationSystem",
                 "AIModule",
                 

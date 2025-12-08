@@ -6,6 +6,7 @@
 #include "Components/HarmoniaBaseCombatComponent.h"
 #include "GameplayTagContainer.h"
 #include "Definitions/HarmoniaCombatSystemDefinitions.h"
+#include "Definitions/HarmoniaEquipmentSystemDefinitions.h"
 #include "HarmoniaMeleeCombatComponent.generated.h"
 
 class UHarmoniaAttributeSet;
@@ -38,21 +39,17 @@ public:
 	// Weapon Management
 	// ============================================================================
 
-	/** Get current equipped weapon type */
+	/** Get current equipped weapon type tag from EquipmentComponent */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat")
-	EHarmoniaMeleeWeaponType GetCurrentWeaponType() const { return CurrentWeaponType; }
-
-	/** Set current weapon type (called by equipment system) */
-	UFUNCTION(BlueprintCallable, Category = "Melee Combat")
-	void SetCurrentWeaponType(EHarmoniaMeleeWeaponType NewWeaponType);
+	FGameplayTag GetCurrentWeaponTypeTag() const;
 
 	/** Get weapon data for current weapon */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat")
 	bool GetCurrentWeaponData(FHarmoniaMeleeWeaponData& OutWeaponData) const;
 
-	/** Get weapon data for specific weapon type */
+	/** Get weapon data for specific weapon type tag */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat")
-	bool GetWeaponDataForType(EHarmoniaMeleeWeaponType WeaponType, FHarmoniaMeleeWeaponData& OutWeaponData) const;
+	bool GetWeaponDataForTypeTag(FGameplayTag WeaponTypeTag, FHarmoniaMeleeWeaponData& OutWeaponData) const;
 
 	// ============================================================================
 	// Combat State
@@ -226,19 +223,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Riposte")
 	float GetRiposteWindowDuration() const;
 
-	/** Get riposte damage multiplier */
-	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Riposte")
-	float GetRiposteDamageMultiplier() const;
-
 	/** Start riposte window */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Riposte")
-	void StartRiposteWindow(AActor* ParriedTarget, float Duration);
+	void StartRiposteWindow(AActor* Target, float Duration);
 
 	/** End riposte window */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Riposte")
 	void EndRiposteWindow();
 
-	/** Get parried target */
+	/** Get current parried target */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Riposte")
 	AActor* GetParriedTarget() const;
 
@@ -246,11 +239,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Riposte")
 	void ClearParriedTarget();
 
+	/** Get riposte damage multiplier */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Riposte")
+	float GetRiposteDamageMultiplier() const;
+
 	// ============================================================================
 	// Backstab System
 	// ============================================================================
 
-	/** Check if attack is a backstab */
+	/** Check if attack is considered backstab */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Backstab")
 	bool IsBackstabAttack(AActor* Target, FVector AttackOrigin) const;
 
@@ -330,21 +327,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Combat|Tags")
 	FGameplayTag DodgingTag;
 
-	/** Tag applied during i-frames */
+	/** Tag applied while invulnerable */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Combat|Tags")
 	FGameplayTag InvulnerableTag;
 
-	/** Tag that blocks attack (if character has this tag, attack is blocked) */
+	/** Tag that blocks attacks */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Combat|Tags")
 	FGameplayTag AttackBlockedTag;
 
 	// ============================================================================
-	// State
+	// Combat State
 	// ============================================================================
-
-	/** Current equipped weapon type */
-	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|State")
-	EHarmoniaMeleeWeaponType CurrentWeaponType = EHarmoniaMeleeWeaponType::Fist;
 
 	/** Current defense state */
 	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|State")
@@ -386,6 +379,14 @@ protected:
 
 	/** Riposte window timer */
 	FTimerHandle RiposteWindowTimerHandle;
+
+	// ============================================================================
+	// Event Handlers
+	// ============================================================================
+
+	/** Handle equipment changes to update cached combos */
+	UFUNCTION()
+	void OnEquipmentChanged(EEquipmentSlot Slot, const FHarmoniaID& OldId, const FHarmoniaID& NewId);
 
 private:
 	/** Clear i-frames */

@@ -28,6 +28,7 @@ public:
 UHarmoniaCheatManager();
 
 // ==================== Health, Mana, Stamina ====================
+// Note: UFUNCTION(Exec) functions are automatically disabled in Shipping builds by UCheatManager
 
 /**
  * 플레이어의 체력을 설정합니다.
@@ -122,6 +123,28 @@ void HarmoniaGiveAllItems();
  */
 UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Items")
 void HarmoniaClearInventory();
+
+// ==================== Equipment ====================
+
+/**
+ * 장비를 장착합니다.
+ * @param EquipmentId 장비 ID (예: 10000000)
+ */
+UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Equipment")
+void HarmoniaEquipItem(const FString& EquipmentId);
+
+/**
+ * 특정 슬롯의 장비를 해제합니다.
+ * @param SlotName 슬롯 이름 (Head, Chest, Legs, Feet, Hands, MainHand, OffHand, Accessory1, Accessory2, Back)
+ */
+UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Equipment")
+void HarmoniaUnequipSlot(const FString& SlotName);
+
+/**
+ * 모든 장비를 해제합니다.
+ */
+UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Equipment")
+void HarmoniaUnequipAll();
 
 // ==================== Level & Experience ====================
 
@@ -289,34 +312,20 @@ void HarmoniaResetCheats();
 UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Debug")
 void HarmoniaHelp();
 
-protected:
-// 치트 상태 플래그
-UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Cheat")
-bool bInvincible;
-
-UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Cheat")
-bool bGodMode;
-
-UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Cheat")
-bool bOneHitKill;
-
-UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Cheat")
-bool bNoClip;
-
-UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Cheat")
-bool bShowDebugInfo;
-
-UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Cheat")
-float SpeedMultiplier;
-
-UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Cheat")
-float DamageMultiplier;
-
-UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Cheat")
-float TimeScale;
-
 // 헬퍼 함수들
 class ACharacter* GetPlayerCharacter() const;
 class UAbilitySystemComponent* GetPlayerAbilitySystemComponent() const;
 void LogCheat(const FString& Message) const;
+
+protected:
+// 치트 상태 플래그 (UPROPERTY는 #if 블록 안에 있을 수 없음)
+// Shipping 빌드에서도 변수 자체는 존재하지만 초기화/사용 코드는 제외됨
+bool bInvincible = false;
+bool bGodMode = false;
+bool bOneHitKill = false;
+bool bNoClip = false;
+bool bShowDebugInfo = false;
+float SpeedMultiplier = 1.0f;
+float DamageMultiplier = 1.0f;
+float TimeScale = 1.0f;
 };

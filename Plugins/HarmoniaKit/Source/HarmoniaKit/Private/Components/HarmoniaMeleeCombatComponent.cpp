@@ -38,52 +38,71 @@ void UHarmoniaMeleeCombatComponent::BeginPlay()
 	}
 
 	// Always refresh cache on BeginPlay
+	// Always refresh cache on BeginPlay
 	RefreshCachedCombos();
+
+	// Listen for equipment changes
+	if (AActor* Owner = GetOwner())
+	{
+		if (UHarmoniaEquipmentComponent* EquipComp = Owner->FindComponentByClass<UHarmoniaEquipmentComponent>())
+		{
+			EquipComp->OnEquipmentChanged.AddDynamic(this, &UHarmoniaMeleeCombatComponent::OnEquipmentChanged);
+		}
+	}
 }
+
 
 void UHarmoniaMeleeCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
-// ============================================================================
-// Weapon Management
-// ============================================================================
-
-void UHarmoniaMeleeCombatComponent::SetCurrentWeaponType(EHarmoniaMeleeWeaponType NewWeaponType)
+void UHarmoniaMeleeCombatComponent::OnEquipmentChanged(EEquipmentSlot Slot, const FHarmoniaID& OldId, const FHarmoniaID& NewId)
 {
-	if (CurrentWeaponType != NewWeaponType)
+	// Update combos if main hand weapon changed
+	if (Slot == EEquipmentSlot::MainHand)
 	{
-		CurrentWeaponType = NewWeaponType;
-
-		// Reset combo when weapon changes
-		ResetCombo();
-
-		// Refresh cached combos for new weapon
 		RefreshCachedCombos();
 	}
 }
 
-bool UHarmoniaMeleeCombatComponent::GetCurrentWeaponData(FHarmoniaMeleeWeaponData& OutWeaponData) const
+
+// ============================================================================
+// Weapon Management
+// ============================================================================
+
+FGameplayTag UHarmoniaMeleeCombatComponent::GetCurrentWeaponTypeTag() const
 {
-	return GetWeaponDataForType(CurrentWeaponType, OutWeaponData);
+	// Query EquipmentComponent as the single source of truth
+	if (UHarmoniaEquipmentComponent* EquipComp = GetOwner()->FindComponentByClass<UHarmoniaEquipmentComponent>())
+	{
+		return EquipComp->GetMainHandWeaponTypeTag();
+	}
+
+	// Default to Fist if no equipment component
+	return FGameplayTag::RequestGameplayTag(FName("Weapon.Type.Fist"), false);
 }
 
-bool UHarmoniaMeleeCombatComponent::GetWeaponDataForType(EHarmoniaMeleeWeaponType WeaponType, FHarmoniaMeleeWeaponData& OutWeaponData) const
+bool UHarmoniaMeleeCombatComponent::GetCurrentWeaponData(FHarmoniaMeleeWeaponData& OutWeaponData) const
 {
-	if (!WeaponDataTable)
+	return GetWeaponDataForTypeTag(GetCurrentWeaponTypeTag(), OutWeaponData);
+}
+
+bool UHarmoniaMeleeCombatComponent::GetWeaponDataForTypeTag(FGameplayTag WeaponTypeTag, FHarmoniaMeleeWeaponData& OutWeaponData) const
+{
+	if (!WeaponDataTable || !WeaponTypeTag.IsValid())
 	{
 		return false;
 	}
 
-	// Search by WeaponType column instead of RowName
-	const FString ContextString = TEXT("GetWeaponDataForType");
+	// Search by WeaponTypeTag column instead of RowName
+	const FString ContextString = TEXT("GetWeaponDataForTypeTag");
 	TArray<FHarmoniaMeleeWeaponData*> AllRows;
 	WeaponDataTable->GetAllRows<FHarmoniaMeleeWeaponData>(ContextString, AllRows);
 
 	for (const FHarmoniaMeleeWeaponData* Row : AllRows)
 	{
-		if (Row && Row->WeaponType == WeaponType)
+		if (Row && Row->WeaponTypeTag.MatchesTagExact(WeaponTypeTag))
 		{
 			OutWeaponData = *Row;
 			return true;
@@ -280,9 +299,11 @@ bool UHarmoniaMeleeCombatComponent::GetComboSequence(EHarmoniaAttackType AttackT
 	TArray<FHarmoniaComboAttackSequence*> AllRows;
 	ComboSequencesDataTable->GetAllRows<FHarmoniaComboAttackSequence>(ContextString, AllRows);
 
+	const FGameplayTag CurrentWeaponTag = GetCurrentWeaponTypeTag();
+
 	for (const FHarmoniaComboAttackSequence* Row : AllRows)
 	{
-		if (Row && Row->WeaponType == CurrentWeaponType && Row->AttackType == AttackType)
+		if (Row && Row->WeaponTypeTag.MatchesTagExact(CurrentWeaponTag) && Row->AttackType == AttackType)
 		{
 			// Check owner type tag if specified
 			if (OwnerTypeTag.IsValid() && Row->OwnerTypeTag.IsValid())
@@ -319,9 +340,11 @@ void UHarmoniaMeleeCombatComponent::RefreshCachedCombos()
 	TArray<FHarmoniaComboAttackSequence*> AllRows;
 	ComboSequencesDataTable->GetAllRows<FHarmoniaComboAttackSequence>(ContextString, AllRows);
 
+	const FGameplayTag CurrentWeaponTag = GetCurrentWeaponTypeTag();
+
 	for (const FHarmoniaComboAttackSequence* Row : AllRows)
 	{
-		if (!Row || Row->WeaponType != CurrentWeaponType)
+		if (!Row || !Row->WeaponTypeTag.MatchesTagExact(CurrentWeaponTag))
 		{
 			continue;
 		}

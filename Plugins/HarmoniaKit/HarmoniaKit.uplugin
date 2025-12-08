@@ -67,6 +67,10 @@
   ],
   "Plugins": [
     {
+      "Name": "CommonGame",
+      "Enabled": true
+    },
+    {
       "Name": "CommonUI",
       "Enabled": true
     },

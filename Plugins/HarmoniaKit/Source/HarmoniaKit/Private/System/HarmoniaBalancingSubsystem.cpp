@@ -118,39 +118,38 @@ float UHarmoniaBalancingSubsystem::CalculateScaledStamina(float BaseStamina, int
 // ============================================================================
 
 void UHarmoniaBalancingSubsystem::GetBalancedWeaponStats(
-	EHarmoniaMeleeWeaponType WeaponType,
+	FGameplayTag WeaponTypeTag,
 	int32 WeaponLevel,
 	float& OutDamage,
 	float& OutStaminaCost,
 	float& OutAttackSpeed) const
 {
-	// Base stats from weapon type
+	// Base stats default
 	float BaseDamage = 10.0f;
 	float BaseStamina = 10.0f;
 	float BaseSpeed = 1.0f;
 
-	// Apply weapon type multipliers (should come from data table)
-	switch (WeaponType)
+	// Apply weapon type multipliers based on tag (should come from data table in production)
+	// This is a simplified fallback for when WeaponBalancingTable is not set
+	if (WeaponTypeTag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("Weapon.Type.Sword"), false)))
 	{
-	case EHarmoniaMeleeWeaponType::Sword:
 		BaseDamage = 15.0f;
 		BaseStamina = 10.0f;
 		BaseSpeed = 1.0f;
-		break;
-	case EHarmoniaMeleeWeaponType::GreatSword:
+	}
+	else if (WeaponTypeTag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("Weapon.Type.GreatSword"), false)))
+	{
 		BaseDamage = 30.0f;
 		BaseStamina = 20.0f;
 		BaseSpeed = 0.7f;
-		break;
-	case EHarmoniaMeleeWeaponType::Dagger:
+	}
+	else if (WeaponTypeTag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("Weapon.Type.Dagger"), false)))
+	{
 		BaseDamage = 8.0f;
 		BaseStamina = 6.0f;
 		BaseSpeed = 1.4f;
-		break;
-	// Add other weapon types...
-	default:
-		break;
 	}
+	// Add other weapon types via WeaponBalancingTable...
 
 	// Apply level scaling
 	float UpgradeMultiplier = GetWeaponUpgradeMultiplier(WeaponLevel);
