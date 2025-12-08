@@ -13,6 +13,7 @@ UHarmoniaAttributeSet::UHarmoniaAttributeSet()
 	Stamina = 100.0f;
 	MaxStamina = 100.0f;
 	StaminaRegenRate = 10.0f; // 10 stamina per second
+	StaminaRecoveryDelay = 1.5f; // 1.5 seconds delay before recovery starts
 	Mana = 50.0f;
 	MaxMana = 50.0f;
 	ManaRegenRate = 5.0f; // 5 mana per second
@@ -51,6 +52,8 @@ void UHarmoniaAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Stamina, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, MaxStamina, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, StaminaRegenRate, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, StaminaRecoveryDelay, COND_None, REPNOTIFY_Always);
+	// Note: StaminaRecovery is a meta attribute, not replicated
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Mana, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, MaxMana, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, ManaRegenRate, COND_None, REPNOTIFY_Always);
@@ -210,6 +213,31 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 		}
 
 		OnStaminaChanged.Broadcast(Instigator, Causer, &Data.EffectSpec, 0.0f, StaminaBeforeAttributeChange, NewStamina);
+	}
+
+	// ============================================================================
+	// Handle Stamina Recovery (Meta Attribute - similar to Lyra's Healing)
+	// ============================================================================
+	else if (Data.EvaluatedData.Attribute == GetStaminaRecoveryAttribute())
+	{
+		const float LocalRecovery = GetStaminaRecovery();
+		SetStaminaRecovery(0.0f); // Clear meta attribute
+
+		if (LocalRecovery > 0.0f)
+		{
+			const float OldStamina = GetStamina();
+			const float NewStamina = FMath::Clamp(OldStamina + LocalRecovery, 0.0f, GetMaxStamina());
+			SetStamina(NewStamina);
+
+			// Broadcast stamina recovered event
+			OnStaminaRecovered.Broadcast(Instigator, Causer, &Data.EffectSpec, LocalRecovery, OldStamina, NewStamina);
+
+			// Reset out of stamina flag if we recovered
+			if (NewStamina > 0.0f)
+			{
+				bOutOfStamina = false;
+			}
+		}
 	}
 
 	// ============================================================================
@@ -416,6 +444,14 @@ void UHarmoniaAttributeSet::ClampAttribute(const FGameplayAttribute& Attribute, 
 	{
 		NewValue = FMath::Max(NewValue, 0.0f);
 	}
+	else if (Attribute == GetStaminaRecoveryDelayAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 0.0f); // Delay can be 0 (instant recovery)
+	}
+	else if (Attribute == GetStaminaRecoveryAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 0.0f); // Recovery can't be negative
+	}
 
 	// Primary stats - minimum 1, maximum 99 (typical soul-like cap)
 	else if (Attribute == GetVitalityAttribute() || Attribute == GetEnduranceAttribute() ||
@@ -524,6 +560,11 @@ void UHarmoniaAttributeSet::OnRep_AttackSpeed(const FGameplayAttributeData& OldV
 void UHarmoniaAttributeSet::OnRep_StaminaRegenRate(const FGameplayAttributeData& OldValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, StaminaRegenRate, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_StaminaRecoveryDelay(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, StaminaRecoveryDelay, OldValue);
 }
 
 void UHarmoniaAttributeSet::OnRep_Mana(const FGameplayAttributeData& OldValue)

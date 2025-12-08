@@ -31,24 +31,10 @@ void UHarmoniaMeleeCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] BeginPlay called"));
-
 	// Auto-load DataTables from HarmoniaDataTableBFL if not already set
 	if (!ComboSequencesDataTable)
 	{
 		ComboSequencesDataTable = UHarmoniaDataTableBFL::GetComboAttackDataTable();
-		if (ComboSequencesDataTable)
-		{
-			UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] ComboSequencesDataTable loaded via HarmoniaDataTableBFL"));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[MeleeCombatComponent] ComboSequencesDataTable not found via HarmoniaDataTableBFL"));
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] ComboSequencesDataTable already set from Blueprint"));
 	}
 
 	// Always refresh cache on BeginPlay
@@ -90,12 +76,18 @@ bool UHarmoniaMeleeCombatComponent::GetWeaponDataForType(EHarmoniaMeleeWeaponTyp
 		return false;
 	}
 
-	FName RowName = EnumToRowName(WeaponType);
-	FHarmoniaMeleeWeaponData* WeaponData = WeaponDataTable->FindRow<FHarmoniaMeleeWeaponData>(RowName, TEXT("GetWeaponDataForType"));
-	if (WeaponData)
+	// Search by WeaponType column instead of RowName
+	const FString ContextString = TEXT("GetWeaponDataForType");
+	TArray<FHarmoniaMeleeWeaponData*> AllRows;
+	WeaponDataTable->GetAllRows<FHarmoniaMeleeWeaponData>(ContextString, AllRows);
+
+	for (const FHarmoniaMeleeWeaponData* Row : AllRows)
 	{
-		OutWeaponData = *WeaponData;
-		return true;
+		if (Row && Row->WeaponType == WeaponType)
+		{
+			OutWeaponData = *Row;
+			return true;
+		}
 	}
 
 	return false;
@@ -266,9 +258,6 @@ void UHarmoniaMeleeCombatComponent::OnComboWindowExpired()
 
 bool UHarmoniaMeleeCombatComponent::GetComboSequence(EHarmoniaAttackType AttackType, FHarmoniaComboAttackSequence& OutSequence) const
 {
-	UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] GetComboSequence: AttackType=%d, WeaponType=%d, CacheValid=%d"), 
-		(int32)AttackType, (int32)CurrentWeaponType, bComboCacheValid);
-
 	// Return cached combo data
 	if (bComboCacheValid)
 	{
@@ -284,15 +273,12 @@ bool UHarmoniaMeleeCombatComponent::GetComboSequence(EHarmoniaAttackType AttackT
 	// Fallback: direct lookup if cache not valid
 	if (!ComboSequencesDataTable)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[MeleeCombatComponent] GetComboSequence: ComboSequencesDataTable is NULL!"));
 		return false;
 	}
 
 	const FString ContextString = TEXT("GetComboSequence");
 	TArray<FHarmoniaComboAttackSequence*> AllRows;
 	ComboSequencesDataTable->GetAllRows<FHarmoniaComboAttackSequence>(ContextString, AllRows);
-	
-	UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] GetComboSequence: DataTable has %d rows"), AllRows.Num());
 
 	for (const FHarmoniaComboAttackSequence* Row : AllRows)
 	{
@@ -303,7 +289,6 @@ bool UHarmoniaMeleeCombatComponent::GetComboSequence(EHarmoniaAttackType AttackT
 			{
 				if (Row->OwnerTypeTag.MatchesTag(OwnerTypeTag))
 				{
-					UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] GetComboSequence: Found matching row with OwnerTypeTag"));
 					OutSequence = *Row;
 					return true;
 				}
@@ -311,14 +296,12 @@ bool UHarmoniaMeleeCombatComponent::GetComboSequence(EHarmoniaAttackType AttackT
 			else if (!OwnerTypeTag.IsValid() && !Row->OwnerTypeTag.IsValid())
 			{
 				// Both don't have owner tag - match
-				UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] GetComboSequence: Found matching row (no OwnerTypeTag)"));
 				OutSequence = *Row;
 				return true;
 			}
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[MeleeCombatComponent] GetComboSequence: No matching row found in DataTable"));
 	return false;
 }
 
@@ -329,7 +312,6 @@ void UHarmoniaMeleeCombatComponent::RefreshCachedCombos()
 
 	if (!ComboSequencesDataTable)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[MeleeCombatComponent] RefreshCachedCombos: DataTable is NULL!"));
 		return;
 	}
 
@@ -337,22 +319,10 @@ void UHarmoniaMeleeCombatComponent::RefreshCachedCombos()
 	TArray<FHarmoniaComboAttackSequence*> AllRows;
 	ComboSequencesDataTable->GetAllRows<FHarmoniaComboAttackSequence>(ContextString, AllRows);
 
-	UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] RefreshCachedCombos: DataTable has %d rows, CurrentWeaponType=%d, OwnerTypeTag=%s"),
-		AllRows.Num(), (int32)CurrentWeaponType, *OwnerTypeTag.ToString());
-
 	for (const FHarmoniaComboAttackSequence* Row : AllRows)
 	{
-		if (!Row)
+		if (!Row || Row->WeaponType != CurrentWeaponType)
 		{
-			continue;
-		}
-
-		UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] RefreshCachedCombos: Row WeaponType=%d, AttackType=%d, OwnerTag=%s"),
-			(int32)Row->WeaponType, (int32)Row->AttackType, *Row->OwnerTypeTag.ToString());
-
-		if (Row->WeaponType != CurrentWeaponType)
-		{
-			UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] RefreshCachedCombos: WeaponType mismatch, skipping"));
 			continue;
 		}
 
@@ -361,16 +331,10 @@ void UHarmoniaMeleeCombatComponent::RefreshCachedCombos()
 		if (OwnerTypeTag.IsValid() && Row->OwnerTypeTag.IsValid())
 		{
 			bOwnerMatch = Row->OwnerTypeTag.MatchesTag(OwnerTypeTag);
-			UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] RefreshCachedCombos: OwnerTag match check = %d"), bOwnerMatch);
 		}
 		else if (!OwnerTypeTag.IsValid() && !Row->OwnerTypeTag.IsValid())
 		{
 			bOwnerMatch = true;
-			UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] RefreshCachedCombos: Both OwnerTags invalid - match"));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] RefreshCachedCombos: OwnerTag one valid, one invalid - no match"));
 		}
 
 		if (bOwnerMatch)
@@ -379,14 +343,11 @@ void UHarmoniaMeleeCombatComponent::RefreshCachedCombos()
 			if (!CachedCombos.Contains(Row->AttackType))
 			{
 				CachedCombos.Add(Row->AttackType, *Row);
-				UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] RefreshCachedCombos: CACHED AttackType=%d"), (int32)Row->AttackType);
 			}
 		}
 	}
 
 	bComboCacheValid = true;
-
-	UE_LOG(LogTemp, Log, TEXT("[MeleeCombatComponent] RefreshCachedCombos: DONE - CachedTypes=%d"), CachedCombos.Num());
 }
 
 bool UHarmoniaMeleeCombatComponent::GetCurrentComboAttackData(FHarmoniaAttackData& OutAttackData) const

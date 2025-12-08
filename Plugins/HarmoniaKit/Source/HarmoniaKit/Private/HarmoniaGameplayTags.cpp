@@ -61,6 +61,7 @@ namespace HarmoniaGameplayTags
 	// Data Tags (for SetByCaller magnitudes)
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Data_Damage, "Data.Damage", "Damage magnitude for SetByCaller");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Data_Healing, "Data.Healing", "Healing magnitude for SetByCaller");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Data_StaminaRecovery, "Data.StaminaRecovery", "Stamina recovery magnitude for SetByCaller");
 
 	// ============================================================
 	// Hit Reaction System Tags
@@ -186,6 +187,11 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Dead, "State.Dead", "Character is dead");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Stunned, "State.Stunned", "Character is stunned");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Incapacitated, "State.Incapacitated", "Character is incapacitated");
+
+	// ============================================================
+	// Debuff Tags
+	// ============================================================
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Debuff_StaminaRecoveryBlocked, "Debuff.StaminaRecoveryBlocked", "Stamina recovery is blocked for a duration after consumption");
 
 	// ============================================================
 	// Difficulty System Tags

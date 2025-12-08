@@ -34,31 +34,20 @@ bool UHarmoniaGameplayAbility_MeleeAttack::CanActivateAbility(
 {
 	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[MeleeAttack] CanActivateAbility: Super::CanActivateAbility returned false"));
 		return false;
 	}
 
 	// Check if melee combat component allows attack
 	UHarmoniaMeleeCombatComponent* MeleeComp = GetMeleeCombatComponent();
-	if (!MeleeComp)
+	if (!MeleeComp || !MeleeComp->CanAttack())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[MeleeAttack] CanActivateAbility: MeleeCombatComponent is NULL!"));
-		return false;
-	}
-
-	if (!MeleeComp->CanAttack())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[MeleeAttack] CanActivateAbility: MeleeComp->CanAttack() returned false"));
 		return false;
 	}
 
 	// Check stamina
 	const float StaminaCost = (AttackType == EHarmoniaAttackType::Heavy) ? MeleeComp->GetHeavyAttackStaminaCost() : MeleeComp->GetLightAttackStaminaCost();
-	const float CurrentStamina = MeleeComp->GetCurrentStamina();
-	
 	if (!MeleeComp->HasEnoughStamina(StaminaCost))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[MeleeAttack] CanActivateAbility: Not enough stamina! (%.1f < %.1f)"), CurrentStamina, StaminaCost);
 		return false;
 	}
 
@@ -77,14 +66,12 @@ void UHarmoniaGameplayAbility_MeleeAttack::ActivateAbility(
 
 	if (!MeleeCombatComponent)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[MeleeAttack] ActivateAbility: MeleeCombatComponent is NULL!"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
 
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
-		UE_LOG(LogTemp, Error, TEXT("[MeleeAttack] ActivateAbility: CommitAbility FAILED!"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
@@ -92,7 +79,6 @@ void UHarmoniaGameplayAbility_MeleeAttack::ActivateAbility(
 	// Get combo sequence based on attack type
 	if (!MeleeCombatComponent->GetComboSequence(AttackType, CurrentComboSequence))
 	{
-		UE_LOG(LogTemp, Error, TEXT("[MeleeAttack] ActivateAbility: GetComboSequence FAILED! AttackType=%d"), (int32)AttackType);
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
@@ -138,7 +124,6 @@ void UHarmoniaGameplayAbility_MeleeAttack::PerformMeleeAttack()
 	UAnimMontage* Montage = GetCurrentAttackMontage();
 	if (!Montage)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[MeleeAttack] PerformMeleeAttack: Montage is NULL! Check combo sequence data."));
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		return;
 	}
@@ -170,11 +155,9 @@ void UHarmoniaGameplayAbility_MeleeAttack::PerformMeleeAttack()
 		MontageTask->OnBlendOut.AddDynamic(this, &UHarmoniaGameplayAbility_MeleeAttack::OnMontageBlendOut);
 
 		MontageTask->ReadyForActivation();
-		UE_LOG(LogTemp, Log, TEXT("[MeleeAttack] PerformMeleeAttack: MontageTask activated"));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("[MeleeAttack] PerformMeleeAttack: MontageTask creation FAILED!"));
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		return;
 	}
@@ -190,11 +173,6 @@ void UHarmoniaGameplayAbility_MeleeAttack::PerformMeleeAttack()
 				if (AnimInstance->Montage_IsPlaying(Montage))
 				{
 					AnimInstance->Montage_SetNextSection(CurrentStep.MontageSectionName, CurrentStep.EndSectionName, Montage);
-					UE_LOG(LogTemp, Log, TEXT("[MeleeAttack] Linked section '%s' to '%s'"), *CurrentStep.MontageSectionName.ToString(), *CurrentStep.EndSectionName.ToString());
-				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("[MeleeAttack] Failed to link sections: Montage is not playing!"));
 				}
 			}
 		}
@@ -289,11 +267,6 @@ void UHarmoniaGameplayAbility_MeleeAttack::OnComboInputPressed(float TimeWaited)
 							// Reset next section to None (or loop) to prevent jumping to EndSection
 							// Only do this for non-final steps to allow fluid chaining
 							AnimInstance->Montage_SetNextSection(CurrentStep.MontageSectionName, NAME_None, Montage);
-							UE_LOG(LogTemp, Log, TEXT("[MeleeAttack] Cleared next section linkage for '%s' due to combo input"), *CurrentStep.MontageSectionName.ToString());
-						}
-						else
-						{
-							UE_LOG(LogTemp, Log, TEXT("[MeleeAttack] Preserving EndSection linkage for Final Combo '%s'"), *CurrentStep.MontageSectionName.ToString());
 						}
 					}
 				}
@@ -311,19 +284,11 @@ void UHarmoniaGameplayAbility_MeleeAttack::OnComboInputPressed(float TimeWaited)
 
 void UHarmoniaGameplayAbility_MeleeAttack::OnMontageCompleted()
 {
-	UE_LOG(LogTemp, Log, TEXT("[MeleeAttack] OnMontageCompleted: ComboQueued=%d, CurrentIndex=%d, TotalSteps=%d"), 
-		MeleeCombatComponent ? MeleeCombatComponent->IsNextComboQueued() : false,
-		MeleeCombatComponent ? MeleeCombatComponent->GetCurrentComboIndex() : -1,
-		CurrentComboSequence.ComboSteps.Num());
-
 	// Check if next combo is queued and can be executed
 	if (MeleeCombatComponent && MeleeCombatComponent->IsNextComboQueued())
 	{
 		// Check if there's a next combo step available
 		const int32 NextComboIndex = MeleeCombatComponent->GetCurrentComboIndex() + 1;
-		UE_LOG(LogTemp, Log, TEXT("[MeleeAttack] OnMontageCompleted: NextComboIndex=%d, IsValid=%d"), 
-			NextComboIndex, CurrentComboSequence.ComboSteps.IsValidIndex(NextComboIndex));
-			
 		if (CurrentComboSequence.ComboSteps.IsValidIndex(NextComboIndex))
 		{
 			// Advance combo and continue
@@ -335,15 +300,11 @@ void UHarmoniaGameplayAbility_MeleeAttack::OnMontageCompleted()
 			
 			// Continue listening for input
 			StartWaitingForComboInput();
-			
-			UE_LOG(LogTemp, Log, TEXT("[MeleeAttack] OnMontageCompleted: Continuing to combo step %d"), 
-				MeleeCombatComponent->GetCurrentComboIndex());
 			return;
 		}
 	}
 	
 	// No more combo steps or not queued - end ability
-	UE_LOG(LogTemp, Log, TEXT("[MeleeAttack] OnMontageCompleted: Ending ability"));
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 

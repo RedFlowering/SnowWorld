@@ -59,6 +59,7 @@ namespace HarmoniaGameplayTags
 	// Data Tags (for SetByCaller magnitudes)
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Damage);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Healing);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_StaminaRecovery);
 
 	// ============================================================
 	// Hit Reaction System Tags
@@ -184,6 +185,13 @@ namespace HarmoniaGameplayTags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Dead);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Stunned);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Incapacitated);
+
+	// ============================================================
+	// Debuff Tags
+	// ============================================================
+
+	// Stamina recovery blocked (applied after stamina consumption)
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Debuff_StaminaRecoveryBlocked);
 
 	// ============================================================
 	// Difficulty System Tags

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "GameplayTagContainer.h"
+#include "ActiveGameplayEffectHandle.h"
 #include "HarmoniaBaseCombatComponent.generated.h"
 
 class UAbilitySystemComponent;
@@ -12,6 +13,7 @@ class UHarmoniaAttributeSet;
 class UHarmoniaSenseAttackComponent;
 class UHarmoniaEquipmentComponent;
 class UDataTable;
+class UGameplayEffect;
 
 /**
  * Base Combat Component
@@ -79,7 +81,15 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Combat|Stamina")
 	float GetStaminaPercentage() const;
 
-	// ============================================================================
+	/** Get stamina recovery delay (seconds before recovery starts after consumption) */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|Combat|Stamina")
+	float GetStaminaRecoveryDelay() const;
+
+protected:
+	/** Apply stamina recovery block effect (called internally when stamina is consumed) */
+	void ApplyStaminaRecoveryBlock();
+
+public:
 	// Mana Management
 	// ============================================================================
 
@@ -129,6 +139,17 @@ protected:
 
 	UPROPERTY(Transient)
 	mutable TObjectPtr<UHarmoniaEquipmentComponent> CachedEquipmentComponent;
+
+	/** 
+	 * GameplayEffect class to apply when stamina is consumed
+	 * This effect should grant the Debuff.StaminaRecoveryBlocked tag
+	 * Duration should be set from StaminaRecoveryDelay attribute via SetByCaller or just overridden
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Harmonia|Combat|Stamina")
+	TSubclassOf<UGameplayEffect> StaminaRecoveryBlockEffectClass;
+
+	/** Active effect handle for stamina recovery block (used for refreshing duration) */
+	FActiveGameplayEffectHandle ActiveStaminaRecoveryBlockHandle;
 };
 
 // ============================================================================

@@ -521,6 +521,10 @@ struct HARMONIAKIT_API FHarmoniaMeleeWeaponData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
 	FText DisplayName;
 
+	// Icon texture for UI
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
+	TSoftObjectPtr<UTexture2D> Icon;
+
 	// Base damage multiplier for this weapon type
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Damage")
 	float BaseDamageMultiplier = 1.0f;

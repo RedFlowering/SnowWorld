@@ -77,6 +77,8 @@ public:
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, Stamina);
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, MaxStamina);
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, StaminaRegenRate);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, StaminaRecovery);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, StaminaRecoveryDelay);
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, Mana);
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, MaxMana);
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, ManaRegenRate);
@@ -146,6 +148,9 @@ public:
 	// Called when healing is received
 	mutable FHarmoniaAttributeEvent OnHealingReceived;
 
+	// Called when stamina is recovered
+	mutable FHarmoniaAttributeEvent OnStaminaRecovered;
+
 protected:
 	/**
 	 * Replication callbacks
@@ -159,6 +164,9 @@ protected:
 
 	UFUNCTION()
 	void OnRep_StaminaRegenRate(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_StaminaRecoveryDelay(const FGameplayAttributeData& OldValue);
 
 	UFUNCTION()
 	void OnRep_Mana(const FGameplayAttributeData& OldValue);
@@ -256,6 +264,20 @@ private:
 	 */
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_StaminaRegenRate, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData StaminaRegenRate;
+
+	/**
+	 * Meta Attribute: Incoming stamina recovery
+	 * Similar to Lyra's Healing attribute - applied to Stamina and then reset to 0
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData StaminaRecovery;
+
+	/**
+	 * Delay before stamina recovery starts after consumption (in seconds)
+	 * When stamina is consumed, recovery is blocked for this duration
+	 */
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_StaminaRecoveryDelay, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData StaminaRecoveryDelay;
 
 	/**
 	 * Current mana

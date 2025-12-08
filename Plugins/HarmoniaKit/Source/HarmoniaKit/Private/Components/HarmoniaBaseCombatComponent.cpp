@@ -8,6 +8,7 @@
 #include "AbilitySystem/HarmoniaAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
+#include "GameplayEffect.h"
 #include "GameFramework/Actor.h"
 
 UHarmoniaBaseCombatComponent::UHarmoniaBaseCombatComponent()
@@ -121,7 +122,15 @@ bool UHarmoniaBaseCombatComponent::ConsumeStamina(float StaminaCost)
 	}
 
 	// Use the HarmoniaAbilitySystemLibrary to consume stamina
-	return UHarmoniaAbilitySystemLibrary::ConsumeStamina(ASC, StaminaCost);
+	const bool bSuccess = UHarmoniaAbilitySystemLibrary::ConsumeStamina(ASC, StaminaCost);
+	
+	if (bSuccess)
+	{
+		// Apply stamina recovery block effect
+		ApplyStaminaRecoveryBlock();
+	}
+
+	return bSuccess;
 }
 
 float UHarmoniaBaseCombatComponent::GetCurrentStamina() const
@@ -166,6 +175,55 @@ float UHarmoniaBaseCombatComponent::GetStaminaPercentage() const
 		return GetCurrentStamina() / MaxStamina;
 	}
 	return 0.0f;
+}
+
+float UHarmoniaBaseCombatComponent::GetStaminaRecoveryDelay() const
+{
+	UHarmoniaAttributeSet* Attributes = GetAttributeSet();
+	if (Attributes)
+	{
+		return Attributes->GetStaminaRecoveryDelay();
+	}
+	return 1.5f; // Default delay
+}
+
+void UHarmoniaBaseCombatComponent::ApplyStaminaRecoveryBlock()
+{
+	if (!StaminaRecoveryBlockEffectClass)
+	{
+		// No effect class set - stamina recovery will not be blocked
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC)
+	{
+		return;
+	}
+
+	// If we already have an active block effect, remove it first (to reset duration)
+	if (ActiveStaminaRecoveryBlockHandle.IsValid())
+	{
+		ASC->RemoveActiveGameplayEffect(ActiveStaminaRecoveryBlockHandle);
+		ActiveStaminaRecoveryBlockHandle.Invalidate();
+	}
+
+	// Create and apply the effect
+	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+	EffectContext.AddSourceObject(GetOwner());
+
+	// If the GE has duration, we can initialize it with SetByCaller or just use the duration from the class
+	// However, usually we want to control the duration via the attribute StaminaRecoveryDelay.
+	// We can use SetByCallerMagnitude if the GE is configured to use it for duration.
+	// For simplicity in this specific implementation, we assume the GE has a duration policy of HasDuration.
+	// We will attempt to override the duration using the spec.
+	
+	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(StaminaRecoveryBlockEffectClass, 1.0f, EffectContext);
+	if (SpecHandle.IsValid())
+	{
+		// Apply the effect and store the handle
+		ActiveStaminaRecoveryBlockHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+	}
 }
 
 // ============================================================================
