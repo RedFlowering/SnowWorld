@@ -311,6 +311,39 @@ void UHarmoniaGameplayAbility_MeleeAttack::OnComboInputPressed(float TimeWaited)
 
 void UHarmoniaGameplayAbility_MeleeAttack::OnMontageCompleted()
 {
+	UE_LOG(LogTemp, Log, TEXT("[MeleeAttack] OnMontageCompleted: ComboQueued=%d, CurrentIndex=%d, TotalSteps=%d"), 
+		MeleeCombatComponent ? MeleeCombatComponent->IsNextComboQueued() : false,
+		MeleeCombatComponent ? MeleeCombatComponent->GetCurrentComboIndex() : -1,
+		CurrentComboSequence.ComboSteps.Num());
+
+	// Check if next combo is queued and can be executed
+	if (MeleeCombatComponent && MeleeCombatComponent->IsNextComboQueued())
+	{
+		// Check if there's a next combo step available
+		const int32 NextComboIndex = MeleeCombatComponent->GetCurrentComboIndex() + 1;
+		UE_LOG(LogTemp, Log, TEXT("[MeleeAttack] OnMontageCompleted: NextComboIndex=%d, IsValid=%d"), 
+			NextComboIndex, CurrentComboSequence.ComboSteps.IsValidIndex(NextComboIndex));
+			
+		if (CurrentComboSequence.ComboSteps.IsValidIndex(NextComboIndex))
+		{
+			// Advance combo and continue
+			MeleeCombatComponent->EndAttack(); // This will call AdvanceCombo() since bNextComboQueued is true
+			MeleeCombatComponent->StartAttack(MeleeCombatComponent->GetCurrentAttackType());
+			
+			// Perform next attack
+			PerformMeleeAttack();
+			
+			// Continue listening for input
+			StartWaitingForComboInput();
+			
+			UE_LOG(LogTemp, Log, TEXT("[MeleeAttack] OnMontageCompleted: Continuing to combo step %d"), 
+				MeleeCombatComponent->GetCurrentComboIndex());
+			return;
+		}
+	}
+	
+	// No more combo steps or not queued - end ability
+	UE_LOG(LogTemp, Log, TEXT("[MeleeAttack] OnMontageCompleted: Ending ability"));
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 

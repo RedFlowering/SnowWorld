@@ -203,8 +203,8 @@ int32 UHarmoniaMeleeCombatComponent::GetMaxComboCount() const
 
 void UHarmoniaMeleeCombatComponent::AdvanceCombo()
 {
-	const int32 MaxCombo = GetMaxComboCount();
-	CurrentComboIndex = (CurrentComboIndex + 1) % MaxCombo;
+	// Simply increment the index - validity is checked in the ability's OnMontageCompleted
+	CurrentComboIndex++;
 
 	// Start combo window timer
 	FHarmoniaMeleeWeaponData WeaponData;
@@ -473,7 +473,14 @@ bool UHarmoniaMeleeCombatComponent::RequestHeavyAttack()
 		return false;
 	}
 
-	// Heavy attacks don't combo in most soul-likes
+	// If in combo window while attacking, queue the next attack
+	if (IsInComboWindow() && IsAttacking())
+	{
+		QueueNextCombo();
+		return true;
+	}
+
+	// Start new heavy attack combo
 	StartAttack(EHarmoniaAttackType::Heavy);
 	return true;
 }
@@ -505,9 +512,8 @@ void UHarmoniaMeleeCombatComponent::EndAttack()
 		ASC->RemoveLooseGameplayTag(AttackingTag);
 	}
 
-	// Check if should advance combo (only for Light attacks)
-	const bool bIsHeavy = (CurrentAttackType == EHarmoniaAttackType::Heavy);
-	if (bNextComboQueued && !bIsHeavy)
+	// Check if should advance combo (for both Light and Heavy attacks)
+	if (bNextComboQueued)
 	{
 		AdvanceCombo();
 		bNextComboQueued = false;
