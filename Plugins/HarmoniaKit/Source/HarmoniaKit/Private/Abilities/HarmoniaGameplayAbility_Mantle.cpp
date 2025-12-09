@@ -58,6 +58,23 @@ void UHarmoniaGameplayAbility_Mantle::OnMantleCheckTimer()
 		
 		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
 		{
+			// Cancel Sprint GA first (before Jump cancellation removes State.InAir tag)
+			if (SprintAbilityClass)
+			{
+				FGameplayAbilitySpec* SprintSpec = ASC->FindAbilitySpecFromClass(SprintAbilityClass);
+				if (SprintSpec && SprintSpec->IsActive())
+				{
+					TArray<UGameplayAbility*> Instances = SprintSpec->GetAbilityInstances();
+					for (UGameplayAbility* Instance : Instances)
+					{
+						if (Instance && Instance->IsActive())
+						{
+							Instance->CancelAbility(SprintSpec->Handle, Instance->GetCurrentActorInfo(), Instance->GetCurrentActivationInfo(), true);
+						}
+					}
+				}
+			}
+			
 			// Cancel Jump GA by class
 			if (JumpAbilityClass)
 			{
@@ -75,7 +92,21 @@ void UHarmoniaGameplayAbility_Mantle::OnMantleCheckTimer()
 				}
 			}
 			
+			// Add State.Mantling tag (managed manually since GA activates on jump, not mantle)
 			ASC->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(TEXT("State.Mantling")));
+			
+			// Apply mantle cost effect
+			if (CostGameplayEffectClass)
+			{
+				FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+				EffectContext.AddSourceObject(GetAvatarActorFromActorInfo());
+				
+				FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(CostGameplayEffectClass, GetAbilityLevel(), EffectContext);
+				if (SpecHandle.IsValid())
+				{
+					ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+				}
+			}
 		}
 	}
 	else
@@ -88,6 +119,7 @@ void UHarmoniaGameplayAbility_Mantle::OnMantlingEnded()
 {
 	bIsMantling = false;
 	
+	// Remove State.Mantling tag
 	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
 	{
 		ASC->RemoveLooseGameplayTag(FGameplayTag::RequestGameplayTag(TEXT("State.Mantling")));

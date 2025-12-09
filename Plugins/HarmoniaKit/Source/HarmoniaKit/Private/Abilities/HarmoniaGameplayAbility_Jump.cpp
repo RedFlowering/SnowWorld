@@ -29,6 +29,26 @@ void UHarmoniaGameplayAbility_Jump::ActivateAbility(const FGameplayAbilitySpecHa
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
+	// Cancel Sprint GA by class (same pattern as Mantle cancelling Jump)
+	if (SprintAbilityClass)
+	{
+		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+		{
+			FGameplayAbilitySpec* SprintSpec = ASC->FindAbilitySpecFromClass(SprintAbilityClass);
+			if (SprintSpec && SprintSpec->IsActive())
+			{
+				TArray<UGameplayAbility*> Instances = SprintSpec->GetAbilityInstances();
+				for (UGameplayAbility* Instance : Instances)
+				{
+					if (Instance && Instance->IsActive())
+					{
+						Instance->CancelAbility(SprintSpec->Handle, Instance->GetCurrentActorInfo(), Instance->GetCurrentActivationInfo(), true);
+					}
+				}
+			}
+		}
+	}
+
 	ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
 	if (!Character)
 	{

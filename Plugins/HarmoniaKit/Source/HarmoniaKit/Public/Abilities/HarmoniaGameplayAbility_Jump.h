@@ -47,6 +47,10 @@ public:
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 
 protected:
+	/** Sprint ability class to cancel when jumping */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Jump")
+	TSubclassOf<UGameplayAbility> SprintAbilityClass;
+
 	/** Called when character lands - ends the ability */
 	UFUNCTION()
 	void OnLanded(const FHitResult& Hit);
