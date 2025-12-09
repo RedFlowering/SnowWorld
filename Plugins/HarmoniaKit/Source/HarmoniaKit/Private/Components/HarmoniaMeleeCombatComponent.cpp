@@ -415,6 +415,14 @@ bool UHarmoniaMeleeCombatComponent::RequestHeavyAttack()
 void UHarmoniaMeleeCombatComponent::StartAttack(EHarmoniaAttackType InAttackType)
 {
 	bIsAttacking = true;
+
+	// Reset combo if attack type changed (e.g., switching from Light to Heavy)
+	if (CurrentAttackType != InAttackType)
+	{
+		CurrentComboIndex = 0;
+		bNextComboQueued = false;
+	}
+
 	CurrentAttackType = InAttackType;
 
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
