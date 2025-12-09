@@ -58,6 +58,10 @@ void UHarmoniaGameplayAbility_Mantle::OnMantleCheckTimer()
 		
 		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
 		{
+			// Add State.Mantling tag FIRST (before cancelling abilities)
+			// This prevents cancelled abilities from immediately reactivating due to held input
+			ASC->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(TEXT("State.Mantling")));
+			
 			// Cancel Sprint GA first (before Jump cancellation removes State.InAir tag)
 			if (SprintAbilityClass)
 			{
@@ -73,6 +77,31 @@ void UHarmoniaGameplayAbility_Mantle::OnMantleCheckTimer()
 						}
 					}
 				}
+			}
+			
+			// Cancel Block GA
+			if (BlockAbilityClass)
+			{
+				FGameplayAbilitySpec* BlockSpec = ASC->FindAbilitySpecFromClass(BlockAbilityClass);
+				UE_LOG(LogTemp, Warning, TEXT("[Mantle] Trying to cancel Block - BlockSpec: %s, IsActive: %d"), 
+					BlockSpec ? TEXT("Found") : TEXT("Not Found"), 
+					BlockSpec ? BlockSpec->IsActive() : false);
+				if (BlockSpec && BlockSpec->IsActive())
+				{
+					TArray<UGameplayAbility*> Instances = BlockSpec->GetAbilityInstances();
+					for (UGameplayAbility* Instance : Instances)
+					{
+						if (Instance && Instance->IsActive())
+						{
+							UE_LOG(LogTemp, Warning, TEXT("[Mantle] Cancelling Block ability instance"));
+							Instance->CancelAbility(BlockSpec->Handle, Instance->GetCurrentActorInfo(), Instance->GetCurrentActivationInfo(), true);
+						}
+					}
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[Mantle] BlockAbilityClass is NOT SET!"));
 			}
 			
 			// Cancel Jump GA by class
@@ -91,9 +120,6 @@ void UHarmoniaGameplayAbility_Mantle::OnMantleCheckTimer()
 					}
 				}
 			}
-			
-			// Add State.Mantling tag (managed manually since GA activates on jump, not mantle)
-			ASC->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(TEXT("State.Mantling")));
 			
 			// Apply mantle cost effect
 			if (CostGameplayEffectClass)

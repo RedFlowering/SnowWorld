@@ -57,6 +57,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mantle")
 	TSubclassOf<UGameplayAbility> SprintAbilityClass;
 
+	/** Block ability class to cancel when mantling starts */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mantle")
+	TSubclassOf<UGameplayAbility> BlockAbilityClass;
+
 private:
 	bool bIsMantling = false;
 };
