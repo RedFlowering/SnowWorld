@@ -287,6 +287,30 @@ UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Debug")
 void HarmoniaToggleDebugInfo();
 
 /**
+ * 스태미나 정보를 화면에 표시합니다.
+ */
+UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Debug")
+void HarmoniaDebugStamina();
+
+/**
+ * 전투 관련 정보(상태, 장비 등)를 화면에 표시합니다.
+ */
+UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Debug")
+void HarmoniaDebugCombat();
+
+/**
+ * 활성화된 모든 게임플레이 태그를 화면에 표시합니다.
+ */
+UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Debug")
+void HarmoniaDebugTags();
+
+/**
+ * 모든 디버그 정보를 화면에 표시합니다.
+ */
+UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Debug")
+void HarmoniaDebugAll();
+
+/**
  * 모든 적을 제거합니다.
  */
 UFUNCTION(Exec, BlueprintCallable, Category = "Harmonia|Cheat|Debug")

@@ -117,4 +117,16 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Harmonia Character|Health")
 	UHarmoniaHealthComponent* GetHarmoniaHealthComponent() const { return HarmoniaHealthComponent; }
+
+#if !UE_BUILD_SHIPPING
+	// Debug display override (showdebug harmonia.stat, harmonia.combat, harmonia.tags)
+	virtual void DisplayDebug(UCanvas* Canvas, const FDebugDisplayInfo& DisplayInfo, float& YL, float& YPos) override;
+
+protected:
+	// Debug drawing helper functions
+	void DisplayDebugHeader(const UCanvas* Canvas, const FText& HeaderText, const FLinearColor& HeaderColor, float Scale, float HorizontalLocation, float& VerticalLocation) const;
+	void DisplayDebugStats(const UCanvas* Canvas, float Scale, float HorizontalLocation, float& VerticalLocation) const;
+	void DisplayDebugCombat(const UCanvas* Canvas, float Scale, float HorizontalLocation, float& VerticalLocation) const;
+	void DisplayDebugTags(const UCanvas* Canvas, float Scale, float HorizontalLocation, float& VerticalLocation) const;
+#endif // !UE_BUILD_SHIPPING
 };

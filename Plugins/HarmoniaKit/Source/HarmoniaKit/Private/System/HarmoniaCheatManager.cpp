@@ -6,6 +6,8 @@
 #include "Components/CapsuleComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
+#include "AbilitySystem/HarmoniaAttributeSet.h"
+#include "GameplayTagContainer.h"
 #include "Components/HarmoniaCurrencyManagerComponent.h"
 #include "Components/HarmoniaEquipmentComponent.h"
 #include "Definitions/HarmoniaEquipmentSystemDefinitions.h"
@@ -495,6 +497,85 @@ void UHarmoniaCheatManager::HarmoniaToggleDebugInfo()
 {
 	bShowDebugInfo = !bShowDebugInfo;
 	LogCheat(FString::Printf(TEXT("Debug info display: %s"), bShowDebugInfo ? TEXT("ON") : TEXT("OFF")));
+}
+
+void UHarmoniaCheatManager::HarmoniaDebugStamina()
+{
+	UAbilitySystemComponent* ASC = GetPlayerAbilitySystemComponent();
+	if (ASC)
+	{
+		// Get Stamina from AttributeSet - using HarmoniaAttributeSet
+		if (const class UHarmoniaAttributeSet* AttributeSet = ASC->GetSet<UHarmoniaAttributeSet>())
+		{
+			float Stamina = AttributeSet->GetStamina();
+			float MaxStamina = AttributeSet->GetMaxStamina();
+			LogCheat(FString::Printf(TEXT("Stamina: %.1f / %.1f"), Stamina, MaxStamina));
+		}
+		else
+		{
+			LogCheat(TEXT("HarmoniaAttributeSet not found."));
+		}
+	}
+	else
+	{
+		LogCheat(TEXT("AbilitySystemComponent not found."));
+	}
+}
+
+void UHarmoniaCheatManager::HarmoniaDebugCombat()
+{
+	ACharacter* PlayerChar = GetPlayerCharacter();
+	if (PlayerChar)
+	{
+		LogCheat(TEXT("=== Combat Debug Info ==="));
+		
+		// Display equipped weapon info if available
+		if (UHarmoniaEquipmentComponent* EquipComp = PlayerChar->FindComponentByClass<UHarmoniaEquipmentComponent>())
+		{
+			LogCheat(FString::Printf(TEXT("Equipment Component found.")));
+		}
+		
+		// Display active gameplay effects
+		UAbilitySystemComponent* ASC = GetPlayerAbilitySystemComponent();
+		if (ASC)
+		{
+			FGameplayTagContainer OwnedTags;
+			ASC->GetOwnedGameplayTags(OwnedTags);
+			LogCheat(FString::Printf(TEXT("Active Tags: %s"), *OwnedTags.ToString()));
+		}
+		
+		LogCheat(TEXT("========================="));
+	}
+}
+
+void UHarmoniaCheatManager::HarmoniaDebugTags()
+{
+	UAbilitySystemComponent* ASC = GetPlayerAbilitySystemComponent();
+	if (ASC)
+	{
+		FGameplayTagContainer OwnedTags;
+		ASC->GetOwnedGameplayTags(OwnedTags);
+		
+		LogCheat(TEXT("=== Active Gameplay Tags ==="));
+		for (const FGameplayTag& Tag : OwnedTags)
+		{
+			LogCheat(FString::Printf(TEXT("  - %s"), *Tag.ToString()));
+		}
+		LogCheat(TEXT("============================"));
+	}
+	else
+	{
+		LogCheat(TEXT("AbilitySystemComponent not found."));
+	}
+}
+
+void UHarmoniaCheatManager::HarmoniaDebugAll()
+{
+	LogCheat(TEXT("========== Full Debug Info =========="));
+	HarmoniaDebugStamina();
+	HarmoniaDebugCombat();
+	HarmoniaDebugTags();
+	LogCheat(TEXT("====================================="));
 }
 
 void UHarmoniaCheatManager::HarmoniaKillAllEnemies()

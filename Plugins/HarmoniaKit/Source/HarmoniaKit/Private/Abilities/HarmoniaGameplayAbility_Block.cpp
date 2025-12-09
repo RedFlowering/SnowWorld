@@ -74,6 +74,16 @@ void UHarmoniaGameplayAbility_Block::ActivateAbility(
 		return;
 	}
 
+	// Check minimum stamina requirement (like Sprint)
+	const UHarmoniaAttributeSet* AttributeSet = ASC->GetSet<UHarmoniaAttributeSet>();
+	if (AttributeSet && AttributeSet->GetStamina() < MinStaminaToActivate)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Block] ActivateAbility - Not enough stamina (%.1f < %.1f)"), 
+			AttributeSet->GetStamina(), MinStaminaToActivate);
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+
 	// Set defense state
 	MeleeCombatComponent->SetDefenseState(EHarmoniaDefenseState::Blocking);
 	MeleeCombatComponent->OnBlockedAttack.AddDynamic(this, &UHarmoniaGameplayAbility_Block::OnBlockHit);
@@ -92,7 +102,7 @@ void UHarmoniaGameplayAbility_Block::ActivateAbility(
 	}
 
 	// Bind to stamina depletion event
-	if (const UHarmoniaAttributeSet* AttributeSet = ASC->GetSet<UHarmoniaAttributeSet>())
+	if (AttributeSet)
 	{
 		UHarmoniaAttributeSet* MutableAttributeSet = const_cast<UHarmoniaAttributeSet*>(AttributeSet);
 		MutableAttributeSet->OnOutOfStamina.AddUObject(this, &UHarmoniaGameplayAbility_Block::OnOutOfStamina);
@@ -135,22 +145,6 @@ void UHarmoniaGameplayAbility_Block::InputReleased(
 	const FGameplayAbilityActivationInfo ActivationInfo)
 {
 	UE_LOG(LogTemp, Warning, TEXT("[Block] InputReleased called"));
-
-	// Transition to End section if montage is playing
-	if (BlockMontage && ActorInfo)
-	{
-		if (ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get()))
-		{
-			if (UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance())
-			{
-				if (AnimInstance->Montage_IsPlaying(BlockMontage))
-				{
-					AnimInstance->Montage_JumpToSection(BlockEndSectionName, BlockMontage);
-				}
-			}
-		}
-	}
-
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }
 
@@ -185,7 +179,8 @@ void UHarmoniaGameplayAbility_Block::OnBlockHit(AActor* Attacker, float Incoming
 
 void UHarmoniaGameplayAbility_Block::OnOutOfStamina(AActor* Instigator, AActor* Causer, const FGameplayEffectSpec* EffectSpec, float Magnitude, float OldValue, float NewValue)
 {
-	// Stamina depleted while blocking - end the ability
+	UE_LOG(LogTemp, Warning, TEXT("[Block] OnOutOfStamina - Stamina depleted while blocking"));
+	// EndAbility handles the montage transition
 	K2_EndAbility();
 }
 
@@ -197,6 +192,21 @@ void UHarmoniaGameplayAbility_Block::EndAbility(
 	bool bWasCancelled)
 {
 	UE_LOG(LogTemp, Warning, TEXT("[Block] EndAbility called - bWasCancelled: %d"), bWasCancelled);
+
+	// Transition to End section if montage is playing
+	if (BlockMontage && ActorInfo)
+	{
+		if (ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get()))
+		{
+			if (UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance())
+			{
+				if (AnimInstance->Montage_IsPlaying(BlockMontage))
+				{
+					AnimInstance->Montage_JumpToSection(BlockEndSectionName, BlockMontage);
+				}
+			}
+		}
+	}
 
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 

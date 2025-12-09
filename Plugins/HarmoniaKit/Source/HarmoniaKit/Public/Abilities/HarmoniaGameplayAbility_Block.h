@@ -67,6 +67,10 @@ protected:
 	// Stamina Cost Configuration
 	// ============================================================================
 
+	/** Minimum stamina required to activate the block ability */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block|Cost")
+	float MinStaminaToActivate = 10.0f;
+
 	/** GE applied when successfully blocking an attack (Instant) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block|Cost")
 	TSubclassOf<UGameplayEffect> BlockHitStaminaCostEffectClass;
