@@ -83,9 +83,6 @@ void UHarmoniaGameplayAbility_Mantle::OnMantleCheckTimer()
 			if (BlockAbilityClass)
 			{
 				FGameplayAbilitySpec* BlockSpec = ASC->FindAbilitySpecFromClass(BlockAbilityClass);
-				UE_LOG(LogTemp, Warning, TEXT("[Mantle] Trying to cancel Block - BlockSpec: %s, IsActive: %d"), 
-					BlockSpec ? TEXT("Found") : TEXT("Not Found"), 
-					BlockSpec ? BlockSpec->IsActive() : false);
 				if (BlockSpec && BlockSpec->IsActive())
 				{
 					TArray<UGameplayAbility*> Instances = BlockSpec->GetAbilityInstances();
@@ -93,15 +90,10 @@ void UHarmoniaGameplayAbility_Mantle::OnMantleCheckTimer()
 					{
 						if (Instance && Instance->IsActive())
 						{
-							UE_LOG(LogTemp, Warning, TEXT("[Mantle] Cancelling Block ability instance"));
 							Instance->CancelAbility(BlockSpec->Handle, Instance->GetCurrentActorInfo(), Instance->GetCurrentActivationInfo(), true);
 						}
 					}
 				}
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("[Mantle] BlockAbilityClass is NOT SET!"));
 			}
 			
 			// Cancel Jump GA by class

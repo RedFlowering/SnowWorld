@@ -23,30 +23,14 @@ bool UHarmoniaGameplayAbility_Block::CanActivateAbility(
 {
 	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
 	{
-		// Log details about why Super failed
-		if (ActorInfo && ActorInfo->AbilitySystemComponent.IsValid())
-		{
-			UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
-			FGameplayTagContainer OwnedTags;
-			ASC->GetOwnedGameplayTags(OwnedTags);
-			UE_LOG(LogTemp, Warning, TEXT("[Block] CanActivateAbility - Super FAILED. OwnedTags: %s, IsActive: %d"), 
-				*OwnedTags.ToString(), IsActive());
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[Block] CanActivateAbility - Super FAILED (no ASC)"));
-		}
 		return false;
 	}
 
 	if (UHarmoniaMeleeCombatComponent* MeleeComp = GetMeleeCombatComponent())
 	{
-		bool bCanBlock = MeleeComp->CanBlock();
-		UE_LOG(LogTemp, Warning, TEXT("[Block] CanActivateAbility - CanBlock: %d"), bCanBlock);
-		return bCanBlock;
+		return MeleeComp->CanBlock();
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[Block] CanActivateAbility - No MeleeComp"));
 	return false;
 }
 
@@ -56,8 +40,6 @@ void UHarmoniaGameplayAbility_Block::ActivateAbility(
 	const FGameplayAbilityActivationInfo ActivationInfo,
 	const FGameplayEventData* TriggerEventData)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[Block] ActivateAbility called - IsActive: %d"), IsActive());
-
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
 	MeleeCombatComponent = GetMeleeCombatComponent();
@@ -144,13 +126,11 @@ void UHarmoniaGameplayAbility_Block::InputReleased(
 	const FGameplayAbilityActorInfo* ActorInfo,
 	const FGameplayAbilityActivationInfo ActivationInfo)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[Block] InputReleased called"));
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }
 
 void UHarmoniaGameplayAbility_Block::OnMontageInterrupted()
 {
-	UE_LOG(LogTemp, Warning, TEXT("[Block] OnMontageInterrupted called - IsActive: %d"), IsActive());
 	// If montage is interrupted externally (e.g., by stagger), end the ability
 	if (IsActive())
 	{
@@ -179,7 +159,6 @@ void UHarmoniaGameplayAbility_Block::OnBlockHit(AActor* Attacker, float Incoming
 
 void UHarmoniaGameplayAbility_Block::OnOutOfStamina(AActor* Instigator, AActor* Causer, const FGameplayEffectSpec* EffectSpec, float Magnitude, float OldValue, float NewValue)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[Block] OnOutOfStamina - Stamina depleted while blocking"));
 	// EndAbility handles the montage transition
 	K2_EndAbility();
 }
@@ -191,8 +170,6 @@ void UHarmoniaGameplayAbility_Block::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[Block] EndAbility called - bWasCancelled: %d"), bWasCancelled);
-
 	// Transition to End section if montage is playing
 	if (BlockMontage && ActorInfo)
 	{
