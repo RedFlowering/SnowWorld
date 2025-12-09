@@ -249,7 +249,7 @@ private:
 	 * Used for attacks, dodges, sprinting, and other activities
 	 * Clamped by MaxStamina
 	 */
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Stamina, Category = "Harmonia|Attributes", Meta = (HideFromModifiers, AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Stamina, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData Stamina;
 
 	/**
@@ -291,7 +291,7 @@ private:
 	 * Used for magic spells and abilities
 	 * Clamped by MaxMana
 	 */
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Mana, Category = "Harmonia|Attributes", Meta = (HideFromModifiers, AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Mana, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData Mana;
 
 	/**
@@ -395,7 +395,7 @@ private:
 	 * Poise (stance/stagger resistance)
 	 * When poise reaches zero, character is staggered
 	 */
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Poise, Category = "Harmonia|Attributes", Meta = (HideFromModifiers, AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Poise, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData Poise;
 
 	/**

@@ -3,6 +3,7 @@
 #include "Abilities/HarmoniaGameplayAbility_Block.h"
 #include "Components/HarmoniaMeleeCombatComponent.h"
 #include "AbilitySystemComponent.h"
+#include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "GameFramework/Character.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 
@@ -11,8 +12,6 @@ UHarmoniaGameplayAbility_Block::UHarmoniaGameplayAbility_Block(const FObjectInit
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
-
-	// Tag configuration: See Docs/HarmoniaKit_Complete_Documentation.md Section 17.3.3
 }
 
 bool UHarmoniaGameplayAbility_Block::CanActivateAbility(
@@ -24,14 +23,30 @@ bool UHarmoniaGameplayAbility_Block::CanActivateAbility(
 {
 	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
 	{
+		// Log details about why Super failed
+		if (ActorInfo && ActorInfo->AbilitySystemComponent.IsValid())
+		{
+			UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
+			FGameplayTagContainer OwnedTags;
+			ASC->GetOwnedGameplayTags(OwnedTags);
+			UE_LOG(LogTemp, Warning, TEXT("[Block] CanActivateAbility - Super FAILED. OwnedTags: %s, IsActive: %d"), 
+				*OwnedTags.ToString(), IsActive());
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[Block] CanActivateAbility - Super FAILED (no ASC)"));
+		}
 		return false;
 	}
 
 	if (UHarmoniaMeleeCombatComponent* MeleeComp = GetMeleeCombatComponent())
 	{
-		return MeleeComp->CanBlock();
+		bool bCanBlock = MeleeComp->CanBlock();
+		UE_LOG(LogTemp, Warning, TEXT("[Block] CanActivateAbility - CanBlock: %d"), bCanBlock);
+		return bCanBlock;
 	}
 
+	UE_LOG(LogTemp, Warning, TEXT("[Block] CanActivateAbility - No MeleeComp"));
 	return false;
 }
 
@@ -41,38 +56,137 @@ void UHarmoniaGameplayAbility_Block::ActivateAbility(
 	const FGameplayAbilityActivationInfo ActivationInfo,
 	const FGameplayEventData* TriggerEventData)
 {
-	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+	UE_LOG(LogTemp, Warning, TEXT("[Block] ActivateAbility called - IsActive: %d"), IsActive());
+
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+
+	MeleeCombatComponent = GetMeleeCombatComponent();
+	if (!MeleeCombatComponent)
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
 
-	MeleeCombatComponent = GetMeleeCombatComponent();
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	if (!ASC)
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
 
 	// Set defense state
-	if (MeleeCombatComponent)
+	MeleeCombatComponent->SetDefenseState(EHarmoniaDefenseState::Blocking);
+	MeleeCombatComponent->OnBlockedAttack.AddDynamic(this, &UHarmoniaGameplayAbility_Block::OnBlockHit);
+
+	// Apply hold stamina cost effect (Duration GE)
+	if (CostGameplayEffectClass)
 	{
-		MeleeCombatComponent->SetDefenseState(EHarmoniaDefenseState::Blocking);
+		FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+		EffectContext.AddSourceObject(GetAvatarActorFromActorInfo());
+
+		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(CostGameplayEffectClass, GetAbilityLevel(), EffectContext);
+		if (SpecHandle.IsValid())
+		{
+			BlockHoldCostEffectHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		}
+	}
+
+	// Bind to stamina depletion event
+	if (const UHarmoniaAttributeSet* AttributeSet = ASC->GetSet<UHarmoniaAttributeSet>())
+	{
+		UHarmoniaAttributeSet* MutableAttributeSet = const_cast<UHarmoniaAttributeSet*>(AttributeSet);
+		MutableAttributeSet->OnOutOfStamina.AddUObject(this, &UHarmoniaGameplayAbility_Block::OnOutOfStamina);
 	}
 
 	// Play block animation if available
-	if (BlockStartMontage)
+	if (BlockMontage)
 	{
 		UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 			this,
 			NAME_None,
-			BlockStartMontage,
+			BlockMontage,
 			1.0f,
-			NAME_None,
+			BlockStartSectionName,
 			false,
 			1.0f
 		);
 
 		if (MontageTask)
 		{
+			MontageTask->OnCancelled.AddDynamic(this, &UHarmoniaGameplayAbility_Block::OnMontageInterrupted);
+			MontageTask->OnInterrupted.AddDynamic(this, &UHarmoniaGameplayAbility_Block::OnMontageInterrupted);
 			MontageTask->ReadyForActivation();
 		}
+
+		// Set up section flow: Start -> Loop
+		if (ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get()))
+		{
+			if (UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance())
+			{
+				AnimInstance->Montage_SetNextSection(BlockStartSectionName, BlockLoopSectionName, BlockMontage);
+			}
+		}
 	}
+}
+
+void UHarmoniaGameplayAbility_Block::InputReleased(
+	const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo)
+{
+	UE_LOG(LogTemp, Warning, TEXT("[Block] InputReleased called"));
+
+	// Transition to End section if montage is playing
+	if (BlockMontage && ActorInfo)
+	{
+		if (ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get()))
+		{
+			if (UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance())
+			{
+				if (AnimInstance->Montage_IsPlaying(BlockMontage))
+				{
+					AnimInstance->Montage_JumpToSection(BlockEndSectionName, BlockMontage);
+				}
+			}
+		}
+	}
+
+	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+}
+
+void UHarmoniaGameplayAbility_Block::OnMontageInterrupted()
+{
+	UE_LOG(LogTemp, Warning, TEXT("[Block] OnMontageInterrupted called - IsActive: %d"), IsActive());
+	// If montage is interrupted externally (e.g., by stagger), end the ability
+	if (IsActive())
+	{
+		K2_EndAbility();
+	}
+}
+
+void UHarmoniaGameplayAbility_Block::OnBlockHit(AActor* Attacker, float IncomingDamage)
+{
+	if (!IsActive())
+	{
+		return;
+	}
+
+	// Apply stamina cost GE when successfully blocking an attack
+	// The GE handles all stamina cost calculation
+	if (BlockHitStaminaCostEffectClass)
+	{
+		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(BlockHitStaminaCostEffectClass, GetAbilityLevel());
+		if (SpecHandle.IsValid())
+		{
+			ApplyGameplayEffectSpecToOwner(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, SpecHandle);
+		}
+	}
+}
+
+void UHarmoniaGameplayAbility_Block::OnOutOfStamina(AActor* Instigator, AActor* Causer, const FGameplayEffectSpec* EffectSpec, float Magnitude, float OldValue, float NewValue)
+{
+	// Stamina depleted while blocking - end the ability
+	K2_EndAbility();
 }
 
 void UHarmoniaGameplayAbility_Block::EndAbility(
@@ -82,9 +196,31 @@ void UHarmoniaGameplayAbility_Block::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	// Reset defense state
+	UE_LOG(LogTemp, Warning, TEXT("[Block] EndAbility called - bWasCancelled: %d"), bWasCancelled);
+
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+
+	// Remove hold stamina cost effect
+	if (ASC && BlockHoldCostEffectHandle.IsValid())
+	{
+		ASC->RemoveActiveGameplayEffect(BlockHoldCostEffectHandle);
+		BlockHoldCostEffectHandle.Invalidate();
+	}
+
+	// Unbind from stamina depletion event
+	if (ASC)
+	{
+		if (const UHarmoniaAttributeSet* AttributeSet = ASC->GetSet<UHarmoniaAttributeSet>())
+		{
+			UHarmoniaAttributeSet* MutableAttributeSet = const_cast<UHarmoniaAttributeSet*>(AttributeSet);
+			MutableAttributeSet->OnOutOfStamina.RemoveAll(this);
+		}
+	}
+
+	// Reset defense state and unsubscribe from delegate
 	if (MeleeCombatComponent)
 	{
+		MeleeCombatComponent->OnBlockedAttack.RemoveDynamic(this, &UHarmoniaGameplayAbility_Block::OnBlockHit);
 		MeleeCombatComponent->SetDefenseState(EHarmoniaDefenseState::None);
 	}
 

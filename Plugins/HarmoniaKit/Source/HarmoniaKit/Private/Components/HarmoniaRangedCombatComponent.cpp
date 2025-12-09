@@ -28,26 +28,18 @@ void UHarmoniaRangedCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// HarmoniaLoadManager를 통해 DataTable 로드
+	// HarmoniaLoadManager를 통해 Spell DataTable 로드
 	if (UHarmoniaLoadManager* LoadManager = UHarmoniaLoadManager::Get())
 	{
-		if (!WeaponDataTable)
-		{
-			WeaponDataTable = LoadManager->GetDataTableByKey(TEXT("RangedWeapons"));
-		}
 		if (!SpellDataTable)
 		{
 			SpellDataTable = LoadManager->GetDataTableByKey(TEXT("Spells"));
 		}
 	}
 
-	// Initialize ammo based on weapon data
-	FHarmoniaRangedWeaponData WeaponData;
-	if (GetCurrentWeaponData(WeaponData))
-	{
-		CurrentAmmo = WeaponData.MagazineSize;
-		TotalAmmo = WeaponData.MaxAmmo;
-	}
+	// Initialize ammo based on member properties
+	CurrentAmmo = MagazineSize;
+	TotalAmmo = MaxAmmoCount;
 }
 
 void UHarmoniaRangedCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -59,12 +51,8 @@ void UHarmoniaRangedCombatComponent::TickComponent(float DeltaTime, ELevelTick T
 	{
 		CurrentDrawTime += DeltaTime;
 
-		FHarmoniaRangedWeaponData WeaponData;
-		if (GetCurrentWeaponData(WeaponData))
-		{
-			// Clamp to max draw time
-			CurrentDrawTime = FMath::Min(CurrentDrawTime, WeaponData.MaxDrawTime);
-		}
+		// Clamp to max draw time
+		CurrentDrawTime = FMath::Min(CurrentDrawTime, MaxDrawTime);
 	}
 
 	// Update reload
@@ -125,41 +113,15 @@ void UHarmoniaRangedCombatComponent::SetCurrentWeaponType(EHarmoniaRangedWeaponT
 	CurrentDrawTime = 0.0f;
 	bIsReloading = false;
 
-	// Initialize ammo
-	FHarmoniaRangedWeaponData WeaponData;
-	if (GetCurrentWeaponData(WeaponData))
-	{
-		CurrentAmmo = WeaponData.MagazineSize;
-		TotalAmmo = WeaponData.MaxAmmo;
-		OnAmmoChanged.Broadcast(CurrentAmmo, WeaponData.MagazineSize);
-	}
+	// Initialize ammo from member properties
+	CurrentAmmo = MagazineSize;
+	TotalAmmo = MaxAmmoCount;
+	OnAmmoChanged.Broadcast(CurrentAmmo, MagazineSize);
 
 	OnRep_CurrentWeaponType();
 }
 
-bool UHarmoniaRangedCombatComponent::GetCurrentWeaponData(FHarmoniaRangedWeaponData& OutWeaponData) const
-{
-	if (!WeaponDataTable || CurrentWeaponType == EHarmoniaRangedWeaponType::None)
-	{
-		return false;
-	}
 
-	// Find weapon data in table
-	const FString ContextString = TEXT("GetCurrentWeaponData");
-	TArray<FHarmoniaRangedWeaponData*> AllWeaponData;
-	WeaponDataTable->GetAllRows<FHarmoniaRangedWeaponData>(ContextString, AllWeaponData);
-
-	for (FHarmoniaRangedWeaponData* WeaponData : AllWeaponData)
-	{
-		if (WeaponData && WeaponData->WeaponType == CurrentWeaponType)
-		{
-			OutWeaponData = *WeaponData;
-			return true;
-		}
-	}
-
-	return false;
-}
 
 void UHarmoniaRangedCombatComponent::DrawWeapon()
 {
@@ -211,11 +173,7 @@ void UHarmoniaRangedCombatComponent::StartAiming()
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
 	if (Character && Character->GetCharacterMovement())
 	{
-		FHarmoniaRangedWeaponData WeaponData;
-		if (GetCurrentWeaponData(WeaponData))
-		{
-			Character->GetCharacterMovement()->MaxWalkSpeed *= WeaponData.AimingMovementSpeedMultiplier;
-		}
+		Character->GetCharacterMovement()->MaxWalkSpeed *= AimingMovementSpeedMultiplier;
 	}
 }
 
@@ -239,11 +197,7 @@ void UHarmoniaRangedCombatComponent::StopAiming()
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
 	if (Character && Character->GetCharacterMovement())
 	{
-		FHarmoniaRangedWeaponData WeaponData;
-		if (GetCurrentWeaponData(WeaponData))
-		{
-			Character->GetCharacterMovement()->MaxWalkSpeed /= WeaponData.AimingMovementSpeedMultiplier;
-		}
+		Character->GetCharacterMovement()->MaxWalkSpeed /= AimingMovementSpeedMultiplier;
 	}
 }
 
@@ -306,17 +260,13 @@ FVector UHarmoniaRangedCombatComponent::GetAimLocation() const
 		return FVector::ZeroVector;
 	}
 
-	FHarmoniaRangedWeaponData WeaponData;
-	if (GetCurrentWeaponData(WeaponData))
+	// Try to get muzzle socket location
+	USkeletalMeshComponent* Mesh = Owner->FindComponentByClass<USkeletalMeshComponent>();
+	if (Mesh && !MuzzleSocketName.IsNone())
 	{
-		// Try to get muzzle socket location
-		USkeletalMeshComponent* Mesh = Owner->FindComponentByClass<USkeletalMeshComponent>();
-		if (Mesh && !WeaponData.MuzzleSocketName.IsNone())
+		if (Mesh->DoesSocketExist(MuzzleSocketName))
 		{
-			if (Mesh->DoesSocketExist(WeaponData.MuzzleSocketName))
-			{
-				return Mesh->GetSocketLocation(WeaponData.MuzzleSocketName);
-			}
+			return Mesh->GetSocketLocation(MuzzleSocketName);
 		}
 	}
 
@@ -329,35 +279,25 @@ FVector UHarmoniaRangedCombatComponent::GetAimTargetLocation() const
 	FVector AimLoc = GetAimLocation();
 	FVector AimDir = GetAimDirection();
 
-	FHarmoniaRangedWeaponData WeaponData;
-	float MaxRange = 10000.0f; // Default range
-	if (GetCurrentWeaponData(WeaponData) && WeaponData.MaxRange > 0.0f)
-	{
-		MaxRange = WeaponData.MaxRange;
-	}
+	// Use member property for range
+	float RangeToUse = (MaxRange > 0.0f) ? MaxRange : 10000.0f;
 
 	// Perform line trace
 	FHitResult HitResult;
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(GetOwner());
 
-	if (GetWorld()->LineTraceSingleByChannel(HitResult, AimLoc, AimLoc + AimDir * MaxRange, ECC_Visibility, QueryParams))
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, AimLoc, AimLoc + AimDir * RangeToUse, ECC_Visibility, QueryParams))
 	{
 		return HitResult.ImpactPoint;
 	}
 
-	return AimLoc + AimDir * MaxRange;
+	return AimLoc + AimDir * RangeToUse;
 }
 
 void UHarmoniaRangedCombatComponent::CalculateTrajectoryPath(TArray<FVector>& OutPathPositions, float TimeStep, float MaxSimTime)
 {
 	OutPathPositions.Empty();
-
-	FHarmoniaRangedWeaponData WeaponData;
-	if (!GetCurrentWeaponData(WeaponData))
-	{
-		return;
-	}
 
 	FVector StartLocation = GetAimLocation();
 	FVector LaunchVelocity = GetAimDirection() * 3000.0f; // Default speed
@@ -413,17 +353,11 @@ bool UHarmoniaRangedCombatComponent::RequestFire()
 		return false;
 	}
 
-	FHarmoniaRangedWeaponData WeaponData;
-	if (!GetCurrentWeaponData(WeaponData))
-	{
-		return false;
-	}
-
 	// For bows, start drawing
-	if (WeaponData.WeaponType == EHarmoniaRangedWeaponType::Bow ||
-		WeaponData.WeaponType == EHarmoniaRangedWeaponType::Longbow ||
-		WeaponData.WeaponType == EHarmoniaRangedWeaponType::Shortbow ||
-		WeaponData.WeaponType == EHarmoniaRangedWeaponType::CompositeBow)
+	if (CurrentWeaponType == EHarmoniaRangedWeaponType::Bow ||
+		CurrentWeaponType == EHarmoniaRangedWeaponType::Longbow ||
+		CurrentWeaponType == EHarmoniaRangedWeaponType::Shortbow ||
+		CurrentWeaponType == EHarmoniaRangedWeaponType::CompositeBow)
 	{
 		bIsDrawing = true;
 		CurrentDrawTime = 0.0f;
@@ -474,11 +408,10 @@ bool UHarmoniaRangedCombatComponent::CanFire() const
 	}
 
 	// Check fire rate
-	FHarmoniaRangedWeaponData WeaponData;
-	if (GetCurrentWeaponData(WeaponData) && WeaponData.FireRate > 0.0f)
+	if (FireRate > 0.0f)
 	{
 		float TimeSinceLastFire = GetWorld()->GetTimeSeconds() - LastFireTime;
-		float MinFireInterval = 1.0f / WeaponData.FireRate;
+		float MinFireInterval = 1.0f / FireRate;
 		if (TimeSinceLastFire < MinFireInterval)
 		{
 			return false;
@@ -490,25 +423,18 @@ bool UHarmoniaRangedCombatComponent::CanFire() const
 
 float UHarmoniaRangedCombatComponent::GetDrawProgress() const
 {
-	FHarmoniaRangedWeaponData WeaponData;
-	if (!GetCurrentWeaponData(WeaponData) || WeaponData.DrawTime <= 0.0f)
+	if (DrawTime <= 0.0f)
 	{
 		return 1.0f;
 	}
 
-	return FMath::Clamp(CurrentDrawTime / WeaponData.DrawTime, 0.0f, 1.0f);
+	return FMath::Clamp(CurrentDrawTime / DrawTime, 0.0f, 1.0f);
 }
 
 float UHarmoniaRangedCombatComponent::GetDrawDamageMultiplier() const
 {
-	FHarmoniaRangedWeaponData WeaponData;
-	if (!GetCurrentWeaponData(WeaponData))
-	{
-		return 1.0f;
-	}
-
-	float DrawProgress = GetDrawProgress();
-	return FMath::Lerp(1.0f, WeaponData.MaxDrawDamageMultiplier, DrawProgress);
+	float Progress = GetDrawProgress();
+	return FMath::Lerp(1.0f, MaxDrawDamageMultiplier, Progress);
 }
 
 void UHarmoniaRangedCombatComponent::RequestReload()
@@ -518,20 +444,19 @@ void UHarmoniaRangedCombatComponent::RequestReload()
 		return;
 	}
 
-	FHarmoniaRangedWeaponData WeaponData;
-	if (!GetCurrentWeaponData(WeaponData) || WeaponData.ReloadTime <= 0.0f)
+	if (ReloadTime <= 0.0f)
 	{
 		return;
 	}
 
 	// Check if we have ammo to reload
-	if (TotalAmmo <= 0 && WeaponData.MaxAmmo > 0)
+	if (TotalAmmo <= 0 && MaxAmmoCount > 0)
 	{
 		return;
 	}
 
 	bIsReloading = true;
-	ReloadTimeRemaining = WeaponData.ReloadTime;
+	ReloadTimeRemaining = ReloadTime;
 }
 
 void UHarmoniaRangedCombatComponent::FireProjectile()
@@ -541,20 +466,14 @@ void UHarmoniaRangedCombatComponent::FireProjectile()
 		return;
 	}
 
-	FHarmoniaRangedWeaponData WeaponData;
-	if (!GetCurrentWeaponData(WeaponData))
-	{
-		return;
-	}
-
 	FVector SpawnLocation = GetAimLocation();
 	FVector Direction = GetAimDirection();
 	float DamageMultiplier = GetDrawDamageMultiplier();
 
 	// Apply spread
-	if (WeaponData.SpreadAngle > 0.0f)
+	if (SpreadAngle > 0.0f)
 	{
-		float SpreadRadians = FMath::DegreesToRadians(WeaponData.SpreadAngle);
+		float SpreadRadians = FMath::DegreesToRadians(SpreadAngle);
 		FVector Spread = FMath::VRandCone(Direction, SpreadRadians);
 		Direction = Spread.GetSafeNormal();
 	}
@@ -562,20 +481,20 @@ void UHarmoniaRangedCombatComponent::FireProjectile()
 	LastFireTime = GetWorld()->GetTimeSeconds();
 
 	// Spawn multiple projectiles if needed (shotgun)
-	for (int32 i = 0; i < WeaponData.ProjectilesPerShot; ++i)
+	for (int32 i = 0; i < ProjectilesPerShot; ++i)
 	{
 		FVector SpreadDirection = Direction;
-		if (i > 0 && WeaponData.SpreadAngle > 0.0f)
+		if (i > 0 && SpreadAngle > 0.0f)
 		{
-			float SpreadRadians = FMath::DegreesToRadians(WeaponData.SpreadAngle);
+			float SpreadRadians = FMath::DegreesToRadians(SpreadAngle);
 			SpreadDirection = FMath::VRandCone(Direction, SpreadRadians).GetSafeNormal();
 		}
 
 		// For now, create simple projectile data
 		FHarmoniaProjectileData ProjectileData;
-		ProjectileData.ProjectileType = WeaponData.DefaultProjectileType;
+		ProjectileData.ProjectileType = DefaultProjectileType;
 		ProjectileData.InitialSpeed = 3000.0f;
-		ProjectileData.DamageConfig.DamageMultiplier = DamageMultiplier * WeaponData.BaseDamageMultiplier;
+		ProjectileData.DamageConfig.DamageMultiplier = DamageMultiplier * BaseDamageMultiplier;
 
 		AActor* Projectile = SpawnProjectile(ProjectileData, SpawnLocation, SpreadDirection, DamageMultiplier);
 
@@ -596,20 +515,14 @@ void UHarmoniaRangedCombatComponent::PerformReload()
 {
 	bIsReloading = false;
 
-	FHarmoniaRangedWeaponData WeaponData;
-	if (!GetCurrentWeaponData(WeaponData))
-	{
-		return;
-	}
-
 	// Calculate how much ammo to reload
-	int32 AmmoNeeded = WeaponData.MagazineSize - CurrentAmmo;
+	int32 AmmoNeeded = MagazineSize - CurrentAmmo;
 	int32 AmmoToReload = FMath::Min(AmmoNeeded, TotalAmmo);
 
 	CurrentAmmo += AmmoToReload;
 	TotalAmmo -= AmmoToReload;
 
-	OnAmmoChanged.Broadcast(CurrentAmmo, WeaponData.MagazineSize);
+	OnAmmoChanged.Broadcast(CurrentAmmo, MagazineSize);
 }
 
 void UHarmoniaRangedCombatComponent::ApplyRecoil()
@@ -619,36 +532,30 @@ void UHarmoniaRangedCombatComponent::ApplyRecoil()
 
 bool UHarmoniaRangedCombatComponent::ConsumeResources()
 {
-	FHarmoniaRangedWeaponData WeaponData;
-	if (!GetCurrentWeaponData(WeaponData))
-	{
-		return false;
-	}
-
 	// Consume ammo
-	if (WeaponData.MagazineSize > 0)
+	if (MagazineSize > 0)
 	{
 		if (CurrentAmmo <= 0)
 		{
 			return false;
 		}
 		CurrentAmmo--;
-		OnAmmoChanged.Broadcast(CurrentAmmo, WeaponData.MagazineSize);
+		OnAmmoChanged.Broadcast(CurrentAmmo, MagazineSize);
 	}
 
 	// Consume stamina
-	if (WeaponData.StaminaCostPerShot > 0.0f)
+	if (StaminaCostPerShot > 0.0f)
 	{
-		if (!ConsumeStamina(WeaponData.StaminaCostPerShot))
+		if (!ConsumeStamina(StaminaCostPerShot))
 		{
 			return false;
 		}
 	}
 
 	// Consume mana (for magic weapons)
-	if (WeaponData.ManaCostPerShot > 0.0f)
+	if (ManaCostPerShot > 0.0f)
 	{
-		if (!ConsumeMana(WeaponData.ManaCostPerShot))
+		if (!ConsumeMana(ManaCostPerShot))
 		{
 			return false;
 		}
@@ -663,53 +570,33 @@ bool UHarmoniaRangedCombatComponent::ConsumeResources()
 
 int32 UHarmoniaRangedCombatComponent::GetMagazineSize() const
 {
-	FHarmoniaRangedWeaponData WeaponData;
-	if (GetCurrentWeaponData(WeaponData))
-	{
-		return WeaponData.MagazineSize;
-	}
-	return 0;
+	return MagazineSize;
 }
 
 void UHarmoniaRangedCombatComponent::AddAmmo(int32 Amount)
 {
-	FHarmoniaRangedWeaponData WeaponData;
-	if (GetCurrentWeaponData(WeaponData))
+	if (MaxAmmoCount > 0)
 	{
-		if (WeaponData.MaxAmmo > 0)
-		{
-			TotalAmmo = FMath::Min(TotalAmmo + Amount, WeaponData.MaxAmmo);
-		}
-		else
-		{
-			TotalAmmo += Amount;
-		}
-		OnAmmoChanged.Broadcast(CurrentAmmo, WeaponData.MagazineSize);
+		TotalAmmo = FMath::Min(TotalAmmo + Amount, MaxAmmoCount);
 	}
+	else
+	{
+		TotalAmmo += Amount;
+	}
+	OnAmmoChanged.Broadcast(CurrentAmmo, MagazineSize);
 }
 
 void UHarmoniaRangedCombatComponent::SetAmmo(int32 InCurrentAmmo, int32 InTotalAmmo)
 {
 	CurrentAmmo = InCurrentAmmo;
 	TotalAmmo = InTotalAmmo;
-
-	FHarmoniaRangedWeaponData WeaponData;
-	if (GetCurrentWeaponData(WeaponData))
-	{
-		OnAmmoChanged.Broadcast(CurrentAmmo, WeaponData.MagazineSize);
-	}
+	OnAmmoChanged.Broadcast(CurrentAmmo, MagazineSize);
 }
 
 bool UHarmoniaRangedCombatComponent::HasAmmo() const
 {
-	FHarmoniaRangedWeaponData WeaponData;
-	if (!GetCurrentWeaponData(WeaponData))
-	{
-		return false;
-	}
-
 	// Infinite ammo
-	if (WeaponData.MagazineSize == 0)
+	if (MagazineSize == 0)
 	{
 		return true;
 	}
@@ -890,14 +777,10 @@ bool UHarmoniaRangedCombatComponent::ServerFireProjectile_Validate(const FVector
 	}
 
 	// Validate player has ammo (if applicable - weapon uses ammo if MagazineSize > 0)
-	FHarmoniaRangedWeaponData WeaponData;
-	if (GetCurrentWeaponData(WeaponData))
+	if (MagazineSize > 0 && CurrentAmmo <= 0)
 	{
-		if (WeaponData.MagazineSize > 0 && CurrentAmmo <= 0)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerFireProjectile: No ammo"));
-			return false;
-		}
+		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerFireProjectile: No ammo"));
+		return false;
 	}
 
 	return true;
@@ -964,9 +847,5 @@ void UHarmoniaRangedCombatComponent::OnRep_IsAiming()
 
 void UHarmoniaRangedCombatComponent::OnRep_CurrentAmmo()
 {
-	FHarmoniaRangedWeaponData WeaponData;
-	if (GetCurrentWeaponData(WeaponData))
-	{
-		OnAmmoChanged.Broadcast(CurrentAmmo, WeaponData.MagazineSize);
-	}
+	OnAmmoChanged.Broadcast(CurrentAmmo, MagazineSize);
 }

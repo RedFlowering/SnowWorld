@@ -15,6 +15,9 @@ class UHarmoniaEquipmentComponent;
 class UHarmoniaSenseAttackComponent;
 class UDataTable;
 
+/** Delegate broadcast when attack is blocked. Damage is the incoming damage before reduction. */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBlockedAttackSignature, AActor*, Attacker, float, Damage);
+
 /**
  * Melee Combat Component
  * Manages melee combat for Soul-like gameplay including:
@@ -42,14 +45,6 @@ public:
 	/** Get current equipped weapon type tag from EquipmentComponent */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat")
 	FGameplayTag GetCurrentWeaponTypeTag() const;
-
-	/** Get weapon data for current weapon */
-	UFUNCTION(BlueprintCallable, Category = "Melee Combat")
-	bool GetCurrentWeaponData(FHarmoniaMeleeWeaponData& OutWeaponData) const;
-
-	/** Get weapon data for specific weapon type tag */
-	UFUNCTION(BlueprintCallable, Category = "Melee Combat")
-	bool GetWeaponDataForTypeTag(FGameplayTag WeaponTypeTag, FHarmoniaMeleeWeaponData& OutWeaponData) const;
 
 	// ============================================================================
 	// Combat State
@@ -171,14 +166,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Attack")
 	bool CanAttack() const;
 
-	/** Get stamina cost for light attack */
-	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Attack")
-	float GetLightAttackStaminaCost() const;
-
-	/** Get stamina cost for heavy attack */
-	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Attack")
-	float GetHeavyAttackStaminaCost() const;
-
 	// ============================================================================
 	// Defense
 	// ============================================================================
@@ -195,17 +182,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Defense")
 	bool CanDodge() const;
 
-	/** Get block damage reduction */
-	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Defense")
-	float GetBlockDamageReduction() const;
-
-	/** Get block stamina cost */
-	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Defense")
-	float GetBlockStaminaCost() const;
-
 	/** Process blocked attack */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Defense")
 	void OnAttackBlocked(AActor* Attacker, float Damage);
+
+	/** Delegate broadcast when attack is blocked (for ability to handle stamina cost) */
+	UPROPERTY(BlueprintAssignable, Category = "Melee Combat|Defense")
+	FOnBlockedAttackSignature OnBlockedAttack;
 
 	/** Process successful parry */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Defense")
@@ -259,10 +242,6 @@ protected:
 	// ============================================================================
 	// Data Tables
 	// ============================================================================
-
-	/** Weapon data table */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Combat|Data")
-	TObjectPtr<UDataTable> WeaponDataTable;
 
 	/** Combo sequences data table */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Combat|Data")

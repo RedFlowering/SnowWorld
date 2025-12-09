@@ -83,35 +83,6 @@ FGameplayTag UHarmoniaMeleeCombatComponent::GetCurrentWeaponTypeTag() const
 	return FGameplayTag::RequestGameplayTag(FName("Weapon.Type.Fist"), false);
 }
 
-bool UHarmoniaMeleeCombatComponent::GetCurrentWeaponData(FHarmoniaMeleeWeaponData& OutWeaponData) const
-{
-	return GetWeaponDataForTypeTag(GetCurrentWeaponTypeTag(), OutWeaponData);
-}
-
-bool UHarmoniaMeleeCombatComponent::GetWeaponDataForTypeTag(FGameplayTag WeaponTypeTag, FHarmoniaMeleeWeaponData& OutWeaponData) const
-{
-	if (!WeaponDataTable || !WeaponTypeTag.IsValid())
-	{
-		return false;
-	}
-
-	// Search by WeaponTypeTag column instead of RowName
-	const FString ContextString = TEXT("GetWeaponDataForTypeTag");
-	TArray<FHarmoniaMeleeWeaponData*> AllRows;
-	WeaponDataTable->GetAllRows<FHarmoniaMeleeWeaponData>(ContextString, AllRows);
-
-	for (const FHarmoniaMeleeWeaponData* Row : AllRows)
-	{
-		if (Row && Row->WeaponTypeTag.MatchesTagExact(WeaponTypeTag))
-		{
-			OutWeaponData = *Row;
-			return true;
-		}
-	}
-
-	return false;
-}
-
 // ============================================================================
 // Combat State
 // ============================================================================
@@ -204,10 +175,11 @@ void UHarmoniaMeleeCombatComponent::ClearInvulnerability()
 
 int32 UHarmoniaMeleeCombatComponent::GetMaxComboCount() const
 {
-	FHarmoniaMeleeWeaponData WeaponData;
-	if (GetCurrentWeaponData(WeaponData))
+	// Get from cached combo sequence
+	FHarmoniaComboAttackSequence ComboSequence;
+	if (GetComboSequence(CurrentAttackType, ComboSequence))
 	{
-		return WeaponData.MaxComboChain;
+		return ComboSequence.ComboSteps.Num();
 	}
 	return 3; // Default
 }
@@ -217,18 +189,7 @@ void UHarmoniaMeleeCombatComponent::AdvanceCombo()
 	// Simply increment the index - validity is checked in the ability's OnMontageCompleted
 	CurrentComboIndex++;
 
-	// Start combo window timer
-	FHarmoniaMeleeWeaponData WeaponData;
-	if (GetCurrentWeaponData(WeaponData))
-	{
-		GetWorld()->GetTimerManager().SetTimer(
-			ComboWindowTimerHandle,
-			this,
-			&UHarmoniaMeleeCombatComponent::OnComboWindowExpired,
-			WeaponData.ComboWindowDuration,
-			false
-		);
-	}
+	// Combo window is managed by AnimNotifyState, not automatically started here
 }
 
 void UHarmoniaMeleeCombatComponent::ResetCombo()
@@ -390,7 +351,7 @@ bool UHarmoniaMeleeCombatComponent::GetCurrentComboAttackData(FHarmoniaAttackDat
 
 	const FHarmoniaComboAttackStep& ComboStep = ComboSequence.ComboSteps[CurrentComboIndex];
 
-	// Use AttackDataOverride if enabled, otherwise use weapon default
+	// Use AttackDataOverride if enabled
 	if (ComboStep.bUseAttackDataOverride)
 	{
 		OutAttackData = ComboStep.AttackDataOverride;
@@ -400,16 +361,10 @@ bool UHarmoniaMeleeCombatComponent::GetCurrentComboAttackData(FHarmoniaAttackDat
 	}
 	else
 	{
-		// Get weapon default attack data
-		FHarmoniaMeleeWeaponData WeaponData;
-		if (GetCurrentWeaponData(WeaponData))
-		{
-			// Use weapon's default trace config
-			OutAttackData.TraceConfig = WeaponData.DefaultTraceConfig;
-
-			// Apply combo step's damage multiplier
-			OutAttackData.DamageConfig.DamageMultiplier = ComboStep.DamageMultiplier;
-		}
+		// Use default attack data with combo step's damage multiplier
+		// Trace config and other settings should be configured in ComboStep's AttackDataOverride
+		OutAttackData = FHarmoniaAttackData();
+		OutAttackData.DamageConfig.DamageMultiplier = ComboStep.DamageMultiplier;
 	}
 
 	return true;
@@ -426,12 +381,6 @@ bool UHarmoniaMeleeCombatComponent::RequestLightAttack()
 		return false;
 	}
 
-	const float StaminaCost = GetLightAttackStaminaCost();
-	if (!HasEnoughStamina(StaminaCost))
-	{
-		return false;
-	}
-
 	// If in combo window, queue next attack
 	if (IsInComboWindow())
 	{
@@ -439,7 +388,7 @@ bool UHarmoniaMeleeCombatComponent::RequestLightAttack()
 		return true;
 	}
 
-	// Start new attack
+	// Start new attack (stamina cost handled by GA's CostGE)
 	StartAttack(EHarmoniaAttackType::Light);
 	return true;
 }
@@ -451,12 +400,6 @@ bool UHarmoniaMeleeCombatComponent::RequestHeavyAttack()
 		return false;
 	}
 
-	const float StaminaCost = GetHeavyAttackStaminaCost();
-	if (!HasEnoughStamina(StaminaCost))
-	{
-		return false;
-	}
-
 	// If in combo window while attacking, queue the next attack
 	if (IsInComboWindow() && IsAttacking())
 	{
@@ -464,7 +407,7 @@ bool UHarmoniaMeleeCombatComponent::RequestHeavyAttack()
 		return true;
 	}
 
-	// Start new heavy attack combo
+	// Start new heavy attack combo (stamina cost handled by GA's CostGE)
 	StartAttack(EHarmoniaAttackType::Heavy);
 	return true;
 }
@@ -480,10 +423,7 @@ void UHarmoniaMeleeCombatComponent::StartAttack(EHarmoniaAttackType InAttackType
 		ASC->AddLooseGameplayTag(AttackingTag);
 	}
 
-	// Consume stamina
-	const bool bIsHeavy = (CurrentAttackType == EHarmoniaAttackType::Heavy);
-	const float StaminaCost = bIsHeavy ? GetHeavyAttackStaminaCost() : GetLightAttackStaminaCost();
-	ConsumeStamina(StaminaCost);
+	// Note: Stamina consumption is handled by the GA's CommitAbilityCost/CostGE
 }
 
 void UHarmoniaMeleeCombatComponent::EndAttack()
@@ -530,60 +470,20 @@ bool UHarmoniaMeleeCombatComponent::CanAttack() const
 	return true;
 }
 
-float UHarmoniaMeleeCombatComponent::GetLightAttackStaminaCost() const
-{
-	FHarmoniaMeleeWeaponData WeaponData;
-	if (GetCurrentWeaponData(WeaponData))
-	{
-		return WeaponData.LightAttackStaminaCost;
-	}
-	return 10.0f; // Default
-}
-
-float UHarmoniaMeleeCombatComponent::GetHeavyAttackStaminaCost() const
-{
-	FHarmoniaMeleeWeaponData WeaponData;
-	if (GetCurrentWeaponData(WeaponData))
-	{
-		return WeaponData.HeavyAttackStaminaCost;
-	}
-	return 25.0f; // Default
-}
-
 // ============================================================================
 // Defense
 // ============================================================================
 
 bool UHarmoniaMeleeCombatComponent::CanBlock() const
 {
-	if (DefenseState != EHarmoniaDefenseState::None)
-	{
-		return false;
-	}
-
-	FHarmoniaMeleeWeaponData WeaponData;
-	if (GetCurrentWeaponData(WeaponData))
-	{
-		return WeaponData.bCanBlock;
-	}
-
-	return false;
+	// Can block if not already in a defense state
+	return DefenseState == EHarmoniaDefenseState::None;
 }
 
 bool UHarmoniaMeleeCombatComponent::CanParry() const
 {
-	if (DefenseState != EHarmoniaDefenseState::None)
-	{
-		return false;
-	}
-
-	FHarmoniaMeleeWeaponData WeaponData;
-	if (GetCurrentWeaponData(WeaponData))
-	{
-		return WeaponData.bCanParry;
-	}
-
-	return false;
+	// Can parry if not already in a defense state
+	return DefenseState == EHarmoniaDefenseState::None;
 }
 
 bool UHarmoniaMeleeCombatComponent::CanDodge() const
@@ -597,45 +497,22 @@ bool UHarmoniaMeleeCombatComponent::CanDodge() const
 	return true;
 }
 
-float UHarmoniaMeleeCombatComponent::GetBlockDamageReduction() const
-{
-	FHarmoniaMeleeWeaponData WeaponData;
-	if (GetCurrentWeaponData(WeaponData))
-	{
-		return WeaponData.BlockDamageReduction;
-	}
 
-	return DefaultDefenseConfig.BlockDamageReduction;
-}
-
-float UHarmoniaMeleeCombatComponent::GetBlockStaminaCost() const
-{
-	FHarmoniaMeleeWeaponData WeaponData;
-	if (GetCurrentWeaponData(WeaponData))
-	{
-		return WeaponData.BlockStaminaCost;
-	}
-
-	return DefaultDefenseConfig.BlockStaminaCost;
-}
 
 void UHarmoniaMeleeCombatComponent::OnAttackBlocked(AActor* Attacker, float Damage)
 {
-	// Consume stamina
-	const float StaminaCost = GetBlockStaminaCost();
-	if (!ConsumeStamina(StaminaCost))
-	{
-		// Not enough stamina, guard broken
-		SetDefenseState(EHarmoniaDefenseState::Stunned);
+	// Broadcast delegate for subscribed abilities (e.g., Block ability for stamina cost)
+	OnBlockedAttack.Broadcast(Attacker, Damage);
 
-		// Apply guard break effects
-		// Note: In full implementation, apply a stun/guard break gameplay effect to the owner
-		// This effect should:
-		// - Prevent actions for a duration (via gameplay tags)
-		// - Play guard break animation
-		// - Possibly apply a defense debuff
-		// Example: ASC->ApplyGameplayEffectToSelf(GuardBreakEffectClass, 1.0f, ASC->MakeEffectContext());
-		UE_LOG(LogHarmoniaCombat, Log, TEXT("Guard broken - stunned state applied"));
+	// Check if stamina is sufficient - if not, guard break
+	if (UHarmoniaAttributeSet* AttributeSet = GetAttributeSet())
+	{
+		if (AttributeSet->GetStamina() <= 0.0f)
+		{
+			// Guard broken - stunned state
+			SetDefenseState(EHarmoniaDefenseState::Stunned);
+			UE_LOG(LogHarmoniaCombat, Log, TEXT("Guard broken - stunned state applied"));
+		}
 	}
 }
 

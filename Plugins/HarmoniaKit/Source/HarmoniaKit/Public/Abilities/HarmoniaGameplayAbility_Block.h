@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystem/Abilities/LyraGameplayAbility.h"
+#include "GameplayEffect.h"
 #include "HarmoniaGameplayAbility_Block.generated.h"
 
 class UHarmoniaMeleeCombatComponent;
@@ -33,25 +34,53 @@ protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+	virtual void InputReleased(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) override;
 	//~End of UGameplayAbility interface
 
+	/** Called when montage is interrupted or cancelled */
+	UFUNCTION()
+	void OnMontageInterrupted();
+
+public:
+	/** Called when successfully blocking an attack - applies stamina cost */
+	UFUNCTION()
+	void OnBlockHit(AActor* Attacker, float IncomingDamage);
+
 protected:
-	/** Block start animation */
+	/** Block animation montage (with Start, Loop, End sections) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block|Animation")
-	TObjectPtr<UAnimMontage> BlockStartMontage = nullptr;
+	TObjectPtr<UAnimMontage> BlockMontage = nullptr;
 
-	/** Block loop animation */
+	/** Section name for block start */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block|Animation")
-	TObjectPtr<UAnimMontage> BlockLoopMontage = nullptr;
+	FName BlockStartSectionName = FName("Start");
 
-	/** Block end animation */
+	/** Section name for block loop */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block|Animation")
-	TObjectPtr<UAnimMontage> BlockEndMontage = nullptr;
+	FName BlockLoopSectionName = FName("Loop");
+
+	/** Section name for block end */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block|Animation")
+	FName BlockEndSectionName = FName("End");
+
+	// ============================================================================
+	// Stamina Cost Configuration
+	// ============================================================================
+
+	/** GE applied when successfully blocking an attack (Instant) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block|Cost")
+	TSubclassOf<UGameplayEffect> BlockHitStaminaCostEffectClass;
 
 	/** Cached melee combat component */
 	UPROPERTY()
 	TObjectPtr<UHarmoniaMeleeCombatComponent> MeleeCombatComponent = nullptr;
 
+	/** Active handle for hold stamina cost effect */
+	FActiveGameplayEffectHandle BlockHoldCostEffectHandle;
+
 private:
 	UHarmoniaMeleeCombatComponent* GetMeleeCombatComponent() const;
+
+	/** Called when stamina runs out while blocking */
+	void OnOutOfStamina(AActor* Instigator, AActor* Causer, const FGameplayEffectSpec* EffectSpec, float Magnitude, float OldValue, float NewValue);
 };

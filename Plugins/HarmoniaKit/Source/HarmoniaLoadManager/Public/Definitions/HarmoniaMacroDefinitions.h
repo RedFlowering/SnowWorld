@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -13,8 +13,6 @@
 #define GETITEMDATATABLE() HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("Item"))
 #define GETITEMSTATDATATABLE() HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("ItemStat"))
 #define GETEQUIPMENTDATATABLE() HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("Equipment"))
-#define GETMELEEWEAPONDATATABLE() HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("MeleeWeapon"))
-#define GETRANGEDWEAPONDATATABLE() HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("RangedWeapon"))
 #define GETSPELLDATATABLE() HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("Spell"))
 #define GETCOMBOATTACKDATATABLE() HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("ComboAttack"))
 #define GETCOMBOATTACKDATADATATABLE() HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("ComboAttackData"))

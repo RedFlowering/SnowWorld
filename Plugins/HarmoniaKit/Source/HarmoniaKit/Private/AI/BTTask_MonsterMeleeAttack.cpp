@@ -46,11 +46,10 @@ EBTNodeResult::Type UBTTask_MonsterMeleeAttack::ExecuteTask(UBehaviorTreeCompone
 		return EBTNodeResult::Failed;
 	}
 
-	// Check stamina
+	// Check stamina (use MinimumStamina property - actual cost handled by GA's CostGE)
 	const bool bIsHeavy = bRandomizeAttackType ? (FMath::FRand() < HeavyAttackChance) : bUseHeavyAttack;
-	const float RequiredStamina = bIsHeavy ? MeleeComp->GetHeavyAttackStaminaCost() : MeleeComp->GetLightAttackStaminaCost();
 
-	if (!MeleeComp->HasEnoughStamina(FMath::Max(RequiredStamina, MinimumStamina)))
+	if (!MeleeComp->HasEnoughStamina(MinimumStamina))
 	{
 		return EBTNodeResult::Failed;
 	}

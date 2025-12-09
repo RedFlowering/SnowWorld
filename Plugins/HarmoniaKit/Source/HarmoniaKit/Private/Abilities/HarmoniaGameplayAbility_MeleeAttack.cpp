@@ -44,12 +44,7 @@ bool UHarmoniaGameplayAbility_MeleeAttack::CanActivateAbility(
 		return false;
 	}
 
-	// Check stamina
-	const float StaminaCost = (AttackType == EHarmoniaAttackType::Heavy) ? MeleeComp->GetHeavyAttackStaminaCost() : MeleeComp->GetLightAttackStaminaCost();
-	if (!MeleeComp->HasEnoughStamina(StaminaCost))
-	{
-		return false;
-	}
+	// Note: Stamina cost is handled by CommitAbilityCost via CostGameplayEffectClass
 
 	return true;
 }

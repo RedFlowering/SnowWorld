@@ -93,26 +93,24 @@ void UHarmoniaGameplayAbility_RangedAttack::ActivateAbility(const FGameplayAbili
 		return;
 	}
 
-	// Get weapon data to determine behavior
-	FHarmoniaRangedWeaponData WeaponData;
-	if (RangedCombat->GetCurrentWeaponData(WeaponData))
+	// Check weapon type to determine behavior
+	const EHarmoniaRangedWeaponType CurrentRangedWeaponType = RangedCombat->GetCurrentWeaponType();
+
+	// For bows, start charging
+	if (CurrentRangedWeaponType == EHarmoniaRangedWeaponType::Bow ||
+		CurrentRangedWeaponType == EHarmoniaRangedWeaponType::Longbow ||
+		CurrentRangedWeaponType == EHarmoniaRangedWeaponType::Shortbow ||
+		CurrentRangedWeaponType == EHarmoniaRangedWeaponType::CompositeBow)
 	{
-		// For bows, start charging
-		if (WeaponData.WeaponType == EHarmoniaRangedWeaponType::Bow ||
-			WeaponData.WeaponType == EHarmoniaRangedWeaponType::Longbow ||
-			WeaponData.WeaponType == EHarmoniaRangedWeaponType::Shortbow ||
-			WeaponData.WeaponType == EHarmoniaRangedWeaponType::CompositeBow)
+		StartCharging();
+
+		// Play draw animation
+		if (DrawMontage && ActorInfo->GetAnimInstance())
 		{
-			StartCharging();
-
-			// Play draw animation
-			if (DrawMontage && ActorInfo->GetAnimInstance())
-			{
-				ActorInfo->GetAnimInstance()->Montage_Play(DrawMontage);
-			}
-
-			return; // Wait for input release
+			ActorInfo->GetAnimInstance()->Montage_Play(DrawMontage);
 		}
+
+		return; // Wait for input release
 	}
 
 	// For other weapons (crossbow, guns, etc.), fire immediately

@@ -65,12 +65,6 @@ public:
 	void SetCurrentWeaponType(EHarmoniaRangedWeaponType NewWeaponType);
 
 	/**
-	 * Get current weapon data
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Harmonia|Ranged Combat")
-	bool GetCurrentWeaponData(FHarmoniaRangedWeaponData& OutWeaponData) const;
-
-	/**
 	 * Draw/ready weapon
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Ranged Combat")
@@ -362,11 +356,6 @@ private:
 	// ============================================================================
 	// Configuration
 	// ============================================================================
-
-	/** Data table containing weapon configurations */
-	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat")
-	TObjectPtr<UDataTable> WeaponDataTable = nullptr;
-
 	/** Data table containing spell configurations */
 	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Magic")
 	TObjectPtr<UDataTable> SpellDataTable = nullptr;
@@ -390,6 +379,90 @@ private:
 	/** Aim assist radius */
 	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Aiming")
 	float AimAssistRadius = 500.0f;
+
+	// ============================================================================
+	// Default Weapon Configuration (replaces WeaponDataTable)
+	// ============================================================================
+
+	/** Default projectile type */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	EHarmoniaProjectileType DefaultProjectileType = EHarmoniaProjectileType::Arrow;
+
+	/** Draw/Charge time for bows (seconds) */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	float DrawTime = 1.0f;
+
+	/** Maximum draw time for damage bonus */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	float MaxDrawTime = 2.0f;
+
+	/** Damage multiplier at max draw (min draw is always 1.0) */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	float MaxDrawDamageMultiplier = 2.0f;
+
+	/** Reload time (seconds, 0 = no reload) */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	float ReloadTime = 0.0f;
+
+	/** Magazine/Quiver size (0 = infinite) */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	int32 MagazineSize = 0;
+
+	/** Maximum ammo count (0 = infinite) */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	int32 MaxAmmoCount = 0;
+
+	/** Accuracy (0-1, 1 = perfect accuracy) */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	float Accuracy = 0.95f;
+
+	/** Spread angle (degrees, 0 = no spread) */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	float SpreadAngle = 0.0f;
+
+	/** Number of projectiles per shot (shotgun) */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	int32 ProjectilesPerShot = 1;
+
+	/** Can move while aiming? */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	bool bCanMoveWhileAiming = true;
+
+	/** Can fire while moving? */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	bool bCanFireWhileMoving = true;
+
+	/** Recoil amount */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	float RecoilAmount = 1.0f;
+
+	/** Fire rate (shots per second, 0 = manual) */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	float FireRate = 0.0f;
+
+	/** Aiming movement speed multiplier */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	float AimingMovementSpeedMultiplier = 0.5f;
+
+	/** Maximum range (cm, 0 = infinite) */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	float MaxRange = 10000.0f;
+
+	/** Muzzle socket name for projectile spawn */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	FName MuzzleSocketName = FName("Muzzle");
+
+	/** Base damage multiplier */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	float BaseDamageMultiplier = 1.0f;
+
+	/** Stamina cost per shot */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	float StaminaCostPerShot = 15.0f;
+
+	/** Mana cost per shot (for magic weapons) */
+	UPROPERTY(EditDefaultsOnly, Category = "Harmonia|Ranged Combat|Weapon")
+	float ManaCostPerShot = 0.0f;
 
 	// ============================================================================
 	// State

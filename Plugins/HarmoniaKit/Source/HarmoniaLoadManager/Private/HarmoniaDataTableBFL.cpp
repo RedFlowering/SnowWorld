@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #include "HarmoniaDataTableBFL.h"
 
@@ -18,16 +18,6 @@ UDataTable* UHarmoniaDataTableBFL::GetItemStatDataTable()
 UDataTable* UHarmoniaDataTableBFL::GetEquipmentDataTable()
 {
     return HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("Equipment"));
-}
-
-UDataTable* UHarmoniaDataTableBFL::GetMeleeWeaponDataTable()
-{
-    return HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("MeleeWeapon"));
-}
-
-UDataTable* UHarmoniaDataTableBFL::GetRangedWeaponDataTable()
-{
-    return HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("RangedWeapon"));
 }
 
 UDataTable* UHarmoniaDataTableBFL::GetSpellDataTable()

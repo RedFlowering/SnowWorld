@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -25,12 +25,6 @@ public:
 
     UFUNCTION(BlueprintPure, Category = "Harmonia|LoadManager")
     static UDataTable* GetEquipmentDataTable();
-
-    UFUNCTION(BlueprintPure, Category = "Harmonia|LoadManager")
-    static UDataTable* GetMeleeWeaponDataTable();
-
-    UFUNCTION(BlueprintPure, Category = "Harmonia|LoadManager")
-    static UDataTable* GetRangedWeaponDataTable();
 
     UFUNCTION(BlueprintPure, Category = "Harmonia|LoadManager")
     static UDataTable* GetSpellDataTable();
