@@ -1,9 +1,9 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #include "Animation/AnimNotify_PlayTaggedEffect.h"
 #include "System/HarmoniaEffectCacheSubsystem.h"
 #include "Definitions/HarmoniaAnimationEffectDefinitions.h"
-#include "Components/HarmoniaSenseAttackComponent.h"
+#include "Components/HarmoniaSenseComponent.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
@@ -156,7 +156,7 @@ bool UAnimNotify_PlayTaggedEffect::GetLastHitResult(AActor* Owner, FVector& OutL
 	}
 
 	// Find attack component
-	UHarmoniaSenseAttackComponent* AttackComponent = Owner->FindComponentByClass<UHarmoniaSenseAttackComponent>();
+	UHarmoniaSenseComponent* AttackComponent = Owner->FindComponentByClass<UHarmoniaSenseComponent>();
 	if (!AttackComponent)
 	{
 		return false;

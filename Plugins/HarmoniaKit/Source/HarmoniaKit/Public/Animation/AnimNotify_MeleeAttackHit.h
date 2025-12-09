@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -7,7 +7,7 @@
 #include "AnimNotify_MeleeAttackHit.generated.h"
 
 class UHarmoniaMeleeCombatComponent;
-class UHarmoniaSenseAttackComponent;
+class UHarmoniaSenseComponent;
 
 /**
  * Melee Attack Hit Notify
@@ -15,7 +15,7 @@ class UHarmoniaSenseAttackComponent;
  * 
  * Responsibilities:
  * - Trigger attack detection at correct timing
- * - Find and call HarmoniaSenseAttackComponent
+ * - Find and call HarmoniaSenseComponent
  * 
  * NOT responsible for:
  * - Damage calculation (handled by AttackComponent using AttributeSet)
@@ -50,6 +50,6 @@ protected:
 	 * Find components
 	 */
 	virtual UHarmoniaMeleeCombatComponent* FindMeleeCombatComponent(AActor* Owner) const;
-	virtual UHarmoniaSenseAttackComponent* FindAttackComponent(AActor* Owner) const;
+	virtual UHarmoniaSenseComponent* FindAttackComponent(AActor* Owner) const;
 };
 

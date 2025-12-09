@@ -1,7 +1,7 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #include "Animation/AnimNotify_PlayHitEffect.h"
-#include "Components/HarmoniaSenseAttackComponent.h"
+#include "Components/HarmoniaSenseComponent.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
@@ -199,7 +199,7 @@ bool UAnimNotify_PlayHitEffect::GetLastHitResult(AActor* Owner, FVector& OutLoca
 	}
 
 	// Find attack component
-	UHarmoniaSenseAttackComponent* AttackComponent = Owner->FindComponentByClass<UHarmoniaSenseAttackComponent>();
+	UHarmoniaSenseComponent* AttackComponent = Owner->FindComponentByClass<UHarmoniaSenseComponent>();
 	if (!AttackComponent)
 	{
 		return false;

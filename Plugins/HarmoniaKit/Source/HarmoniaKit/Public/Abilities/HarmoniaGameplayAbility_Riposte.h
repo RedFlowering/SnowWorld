@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -8,7 +8,7 @@
 #include "HarmoniaGameplayAbility_Riposte.generated.h"
 
 class UHarmoniaMeleeCombatComponent;
-class UHarmoniaSenseAttackComponent;
+class UHarmoniaSenseComponent;
 class UAnimMontage;
 
 /**
@@ -66,7 +66,7 @@ protected:
 
 	/** Cached attack component */
 	UPROPERTY()
-	TObjectPtr<UHarmoniaSenseAttackComponent> AttackComponent;
+	TObjectPtr<UHarmoniaSenseComponent> AttackComponent;
 
 	/** Parried target (set by parry ability) */
 	UPROPERTY()
@@ -77,7 +77,7 @@ private:
 	UHarmoniaMeleeCombatComponent* GetMeleeCombatComponent() const;
 
 	/** Get attack component */
-	UHarmoniaSenseAttackComponent* GetAttackComponent() const;
+	UHarmoniaSenseComponent* GetAttackComponent() const;
 
 	/** Called when riposte attack hits */
 	UFUNCTION()

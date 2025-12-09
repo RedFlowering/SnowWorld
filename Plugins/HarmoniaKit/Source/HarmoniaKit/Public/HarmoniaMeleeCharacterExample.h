@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -9,7 +9,7 @@
 
 class UHarmoniaMeleeCombatComponent;
 class UHarmoniaEquipmentComponent;
-class UHarmoniaSenseAttackComponent;
+class UHarmoniaSenseComponent;
 class UHarmoniaLockOnComponent;
 class UInputMappingContext;
 class UInputAction;
@@ -57,11 +57,11 @@ protected:
 
 	/** Main hand attack component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Melee Combat")
-	TObjectPtr<UHarmoniaSenseAttackComponent> MainHandAttackComponent;
+	TObjectPtr<UHarmoniaSenseComponent> MainHandAttackComponent;
 
 	/** Off hand attack component (optional, for dual wielding) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Melee Combat")
-	TObjectPtr<UHarmoniaSenseAttackComponent> OffHandAttackComponent;
+	TObjectPtr<UHarmoniaSenseComponent> OffHandAttackComponent;
 
 	// ============================================================================
 	// Input

@@ -7,7 +7,6 @@
 #include "AbilitySystem/LyraAbilitySystemComponent.h"
 #include "Settings/AlsCharacterSettings.h"
 #include "Utility/AlsConstants.h"
-#include "SenseReceiverComponent.h"
 #include "Components/CapsuleComponent.h" // Needed for SetDefaultSubobjectClass usage usually implies access to base
 #include "Net/UnrealNetwork.h"
 

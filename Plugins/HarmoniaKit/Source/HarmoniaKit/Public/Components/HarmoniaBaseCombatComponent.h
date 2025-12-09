@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -10,7 +10,7 @@
 
 class UAbilitySystemComponent;
 class UHarmoniaAttributeSet;
-class UHarmoniaSenseAttackComponent;
+class UHarmoniaSenseComponent;
 class UHarmoniaEquipmentComponent;
 class UDataTable;
 class UGameplayEffect;
@@ -43,7 +43,7 @@ public:
 
 	/** Get the Sense Attack Component (cacheed) */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Combat")
-	UHarmoniaSenseAttackComponent* GetAttackComponent() const;
+	UHarmoniaSenseComponent* GetAttackComponent() const;
 
 	/** Get the Ability System Component (cached) */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Combat")
@@ -125,7 +125,7 @@ protected:
 protected:
 	// Cached component references
 	UPROPERTY(Transient)
-	mutable TObjectPtr<UHarmoniaSenseAttackComponent> CachedAttackComponent;
+	mutable TObjectPtr<UHarmoniaSenseComponent> CachedAttackComponent;
 
 	UPROPERTY(Transient)
 	mutable TObjectPtr<UAbilitySystemComponent> CachedAbilitySystemComponent;

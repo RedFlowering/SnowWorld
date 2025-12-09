@@ -7,7 +7,7 @@
 #include "AnimNotifyState_MeleeAttackWindow.generated.h"
 
 class UHarmoniaMeleeCombatComponent;
-class UHarmoniaSenseAttackComponent;
+class UHarmoniaSenseComponent;
 
 /**
  * Melee Attack Window Notify State
@@ -15,7 +15,7 @@ class UHarmoniaSenseAttackComponent;
  *
  * Usage:
  * - Place this at the start of weapon swing to the end
- * - NotifyBegin: Starts hit detection using HarmoniaSenseAttackComponent
+ * - NotifyBegin: Starts hit detection using HarmoniaSenseComponent
  * - NotifyEnd: Stops hit detection
  * - Works with HarmoniaMeleeCombatComponent for damage calculation
  *
@@ -58,5 +58,5 @@ private:
 	UHarmoniaMeleeCombatComponent* FindMeleeCombatComponent(AActor* Owner) const;
 
 	/** Find attack component on actor */
-	UHarmoniaSenseAttackComponent* FindAttackComponent(AActor* Owner) const;
+	UHarmoniaSenseComponent* FindAttackComponent(AActor* Owner) const;
 };

@@ -7,7 +7,7 @@
 #include "Definitions/HarmoniaCombatSystemDefinitions.h"
 #include "AnimNotifyState_HarmoniaAttackWindow.generated.h"
 
-class UHarmoniaSenseAttackComponent;
+class UHarmoniaSenseComponent;
 
 /**
  * UAnimNotifyState_HarmoniaAttackWindow
@@ -39,7 +39,7 @@ public:
 
 protected:
 	/**
-	 * Name of the HarmoniaSenseAttackComponent to trigger
+	 * Name of the HarmoniaSenseComponent to trigger
 	 * Leave empty to use the first found component
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
@@ -67,5 +67,5 @@ protected:
 	/**
 	 * Find attack component on actor
 	 */
-	virtual UHarmoniaSenseAttackComponent* FindAttackComponent(AActor* Owner) const;
+	virtual UHarmoniaSenseComponent* FindAttackComponent(AActor* Owner) const;
 };

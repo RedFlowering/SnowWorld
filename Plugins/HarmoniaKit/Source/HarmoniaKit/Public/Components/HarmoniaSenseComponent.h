@@ -6,12 +6,14 @@
 #include "Components/SceneComponent.h"
 #include "SenseStimulusComponent.h"
 #include "Definitions/HarmoniaCombatSystemDefinitions.h"
-#include "HarmoniaSenseAttackComponent.generated.h"
+#include "HarmoniaSenseComponent.generated.h"
 
 class UAbilitySystemComponent;
 class USenseReceiverComponent;
 class UGameplayEffect;
 struct FSensedStimulus;
+class UHarmoniaSenseInteractableComponent;
+class UHarmoniaSenseInteractionComponent;
 
 /**
  * Delegate for attack hit events
@@ -21,27 +23,28 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAttackStartDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAttackEndDelegate);
 
 /**
- * UHarmoniaSenseAttackComponent
+ * UHarmoniaSenseComponent
  *
- * Component that uses the Sense System to detect attack hits
- * Attach to weapons or actor components to define attack hitboxes
- * Uses multithreaded sense detection for performance
+ * Central SenseSystem management component for characters.
+ * Automatically ensures owner has required SenseSystem components and manages combat/interaction detection.
  *
  * Features:
+ * - Auto-creates HarmoniaSenseInteractableComponent (Stimulus) if missing
+ * - Auto-creates HarmoniaSenseInteractionComponent (Receiver) if missing
+ * - Attack hit detection using multithreaded sense detection
  * - Multiple trace shapes (Box, Sphere, Capsule, Line)
  * - Continuous or single-shot detection
  * - Damage type support (Instant, Duration, Explosion)
  * - Gameplay Effect and Cue integration
  * - Critical hit calculation
- * - Hit-once-per-target tracking
  */
 UCLASS(Blueprintable, ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
-class HARMONIAKIT_API UHarmoniaSenseAttackComponent : public USceneComponent
+class HARMONIAKIT_API UHarmoniaSenseComponent : public USceneComponent
 {
 	GENERATED_BODY()
 
 public:
-	UHarmoniaSenseAttackComponent();
+	UHarmoniaSenseComponent();
 
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -68,6 +71,26 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack|Configuration")
 	TObjectPtr<UAbilitySystemComponent> OwnerAbilitySystem = nullptr;
+
+	// ============================================================================
+	// Owner SenseSystem Component Management
+	// ============================================================================
+
+	/** Owner's interactable component (Stimulus) - created if missing */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sense|Owner Components")
+	TObjectPtr<UHarmoniaSenseInteractableComponent> OwnerInteractable = nullptr;
+
+	/** Owner's interaction component (Receiver) - created if missing */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sense|Owner Components")
+	TObjectPtr<UHarmoniaSenseInteractionComponent> OwnerInteraction = nullptr;
+
+	/** Sensor tag used for combat interactions */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sense|Configuration")
+	FName CombatSensorTag = FName("Combat");
+
+	/** Sense channel used for combat detection */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sense|Configuration")
+	int32 CombatSenseChannel = 1;
 
 	// ============================================================================
 	// Attack Control
@@ -148,6 +171,28 @@ protected:
 	 */
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerStopAttack();
+
+	// ============================================================================
+	// Owner SenseSystem Initialization
+	// ============================================================================
+
+	/**
+	 * Initialize owner's SenseSystem components (Interactable + Interaction)
+	 * Called during BeginPlay - ensures owner can be detected and can detect others
+	 */
+	virtual void InitializeOwnerSenseComponents();
+
+	/**
+	 * Ensure owner has HarmoniaSenseInteractableComponent (Stimulus)
+	 * Creates one if not present and configures for combat detection
+	 */
+	virtual void EnsureOwnerInteractable();
+
+	/**
+	 * Ensure owner has HarmoniaSenseInteractionComponent (Receiver)
+	 * Creates one if not present and configures for combat detection
+	 */
+	virtual void EnsureOwnerInteraction();
 
 	// ============================================================================
 	// Internal Attack Functions (Server-only)

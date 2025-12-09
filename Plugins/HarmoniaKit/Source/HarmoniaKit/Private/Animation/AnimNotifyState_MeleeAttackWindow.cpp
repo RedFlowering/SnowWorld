@@ -2,7 +2,7 @@
 
 #include "Animation/AnimNotifyState_MeleeAttackWindow.h"
 #include "Components/HarmoniaMeleeCombatComponent.h"
-#include "Components/HarmoniaSenseAttackComponent.h"
+#include "Components/HarmoniaSenseComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/Actor.h"
 
@@ -32,7 +32,7 @@ void UAnimNotifyState_MeleeAttackWindow::NotifyBegin(
 		return;
 	}
 
-	UHarmoniaSenseAttackComponent* AttackComp = FindAttackComponent(Owner);
+	UHarmoniaSenseComponent* AttackComp = FindAttackComponent(Owner);
 	if (!AttackComp)
 	{
 		return;
@@ -95,7 +95,7 @@ void UAnimNotifyState_MeleeAttackWindow::NotifyEnd(
 		return;
 	}
 
-	UHarmoniaSenseAttackComponent* AttackComp = FindAttackComponent(Owner);
+	UHarmoniaSenseComponent* AttackComp = FindAttackComponent(Owner);
 	if (AttackComp && AttackComp->IsAttacking())
 	{
 		AttackComp->RequestStopAttack();
@@ -117,7 +117,7 @@ UHarmoniaMeleeCombatComponent* UAnimNotifyState_MeleeAttackWindow::FindMeleeComb
 	return Owner->FindComponentByClass<UHarmoniaMeleeCombatComponent>();
 }
 
-UHarmoniaSenseAttackComponent* UAnimNotifyState_MeleeAttackWindow::FindAttackComponent(AActor* Owner) const
+UHarmoniaSenseComponent* UAnimNotifyState_MeleeAttackWindow::FindAttackComponent(AActor* Owner) const
 {
 	if (!Owner)
 	{
@@ -127,10 +127,10 @@ UHarmoniaSenseAttackComponent* UAnimNotifyState_MeleeAttackWindow::FindAttackCom
 	// If specific component name is provided, find by name
 	if (!AttackComponentName.IsNone())
 	{
-		TArray<UHarmoniaSenseAttackComponent*> AttackComponents;
-		Owner->GetComponents<UHarmoniaSenseAttackComponent>(AttackComponents);
+		TArray<UHarmoniaSenseComponent*> AttackComponents;
+		Owner->GetComponents<UHarmoniaSenseComponent>(AttackComponents);
 		
-		for (UHarmoniaSenseAttackComponent* Comp : AttackComponents)
+		for (UHarmoniaSenseComponent* Comp : AttackComponents)
 		{
 			if (Comp && Comp->GetFName() == AttackComponentName)
 			{
@@ -140,5 +140,5 @@ UHarmoniaSenseAttackComponent* UAnimNotifyState_MeleeAttackWindow::FindAttackCom
 	}
 
 	// Default: find first attack component
-	return Owner->FindComponentByClass<UHarmoniaSenseAttackComponent>();
+	return Owner->FindComponentByClass<UHarmoniaSenseComponent>();
 }

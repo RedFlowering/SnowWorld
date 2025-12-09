@@ -1,8 +1,8 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #include "Abilities/HarmoniaGameplayAbility_MeleeAttack.h"
 #include "Components/HarmoniaMeleeCombatComponent.h"
-#include "Components/HarmoniaSenseAttackComponent.h"
+#include "Components/HarmoniaSenseComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "Animation/AnimMontage.h"
@@ -359,7 +359,7 @@ UHarmoniaMeleeCombatComponent* UHarmoniaGameplayAbility_MeleeAttack::GetMeleeCom
 	return nullptr;
 }
 
-UHarmoniaSenseAttackComponent* UHarmoniaGameplayAbility_MeleeAttack::GetAttackComponent() const
+UHarmoniaSenseComponent* UHarmoniaGameplayAbility_MeleeAttack::GetAttackComponent() const
 {
 	if (AttackComponent)
 	{
@@ -371,7 +371,7 @@ UHarmoniaSenseAttackComponent* UHarmoniaGameplayAbility_MeleeAttack::GetAttackCo
 	{
 		if (AActor* Avatar = ActorInfo->AvatarActor.Get())
 		{
-			return Avatar->FindComponentByClass<UHarmoniaSenseAttackComponent>();
+			return Avatar->FindComponentByClass<UHarmoniaSenseComponent>();
 		}
 	}
 

@@ -1,7 +1,7 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #include "Animation/AnimNotify_HarmoniaAttackCheck.h"
-#include "Components/HarmoniaSenseAttackComponent.h"
+#include "Components/HarmoniaSenseComponent.h"
 #include "GameFramework/Actor.h"
 
 UAnimNotify_HarmoniaAttackCheck::UAnimNotify_HarmoniaAttackCheck()
@@ -27,10 +27,10 @@ void UAnimNotify_HarmoniaAttackCheck::Notify(USkeletalMeshComponent* MeshComp, U
 	}
 
 	// Find attack component
-	UHarmoniaSenseAttackComponent* AttackComponent = FindAttackComponent(Owner);
+	UHarmoniaSenseComponent* AttackComponent = FindAttackComponent(Owner);
 	if (!AttackComponent)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AnimNotify_HarmoniaAttackCheck: No HarmoniaSenseAttackComponent found on %s"), *Owner->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("AnimNotify_HarmoniaAttackCheck: No HarmoniaSenseComponent found on %s"), *Owner->GetName());
 		return;
 	}
 
@@ -61,7 +61,7 @@ FString UAnimNotify_HarmoniaAttackCheck::GetNotifyName_Implementation() const
 	return FString::Printf(TEXT("Harmonia Attack Check (%s)"), *AttackComponentName.ToString());
 }
 
-UHarmoniaSenseAttackComponent* UAnimNotify_HarmoniaAttackCheck::FindAttackComponent(AActor* Owner) const
+UHarmoniaSenseComponent* UAnimNotify_HarmoniaAttackCheck::FindAttackComponent(AActor* Owner) const
 {
 	if (!Owner)
 	{
@@ -71,10 +71,10 @@ UHarmoniaSenseAttackComponent* UAnimNotify_HarmoniaAttackCheck::FindAttackCompon
 	// If component name is specified, find by name
 	if (!AttackComponentName.IsNone())
 	{
-		TArray<UHarmoniaSenseAttackComponent*> AttackComponents;
-		Owner->GetComponents<UHarmoniaSenseAttackComponent>(AttackComponents);
+		TArray<UHarmoniaSenseComponent*> AttackComponents;
+		Owner->GetComponents<UHarmoniaSenseComponent>(AttackComponents);
 
-		for (UHarmoniaSenseAttackComponent* Component : AttackComponents)
+		for (UHarmoniaSenseComponent* Component : AttackComponents)
 		{
 			if (Component && Component->GetFName() == AttackComponentName)
 			{
@@ -87,5 +87,5 @@ UHarmoniaSenseAttackComponent* UAnimNotify_HarmoniaAttackCheck::FindAttackCompon
 	}
 
 	// Otherwise, return first found component
-	return Owner->FindComponentByClass<UHarmoniaSenseAttackComponent>();
+	return Owner->FindComponentByClass<UHarmoniaSenseComponent>();
 }

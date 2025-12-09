@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -8,7 +8,7 @@
 #include "HarmoniaGameplayAbility_MeleeAttack.generated.h"
 
 class UHarmoniaMeleeCombatComponent;
-class UHarmoniaSenseAttackComponent;
+class UHarmoniaSenseComponent;
 class UAnimMontage;
 
 /**
@@ -19,7 +19,7 @@ class UAnimMontage;
  * - Light/Heavy attacks
  * - Weapon-specific combo chains
  * - Stamina consumption
- * - Hit detection via HarmoniaSenseAttackComponent
+ * - Hit detection via HarmoniaSenseComponent
  * - Animation-driven combat
  *
  * @see Docs/HarmoniaKit_Complete_Documentation.md Section 17.3.2 for tag configuration
@@ -137,7 +137,7 @@ protected:
 
 	/** Cached attack component */
 	UPROPERTY()
-	TObjectPtr<UHarmoniaSenseAttackComponent> AttackComponent;
+	TObjectPtr<UHarmoniaSenseComponent> AttackComponent;
 
 	/** Current combo sequence */
 	UPROPERTY()
@@ -148,7 +148,7 @@ private:
 	UHarmoniaMeleeCombatComponent* GetMeleeCombatComponent() const;
 
 	/** Get attack component from owner */
-	UHarmoniaSenseAttackComponent* GetAttackComponent() const;
+	UHarmoniaSenseComponent* GetAttackComponent() const;
 
 	/** Apply damage to hit actor */
 	void ApplyDamageToTarget(AActor* TargetActor, const FHarmoniaAttackHitResult& HitResult);

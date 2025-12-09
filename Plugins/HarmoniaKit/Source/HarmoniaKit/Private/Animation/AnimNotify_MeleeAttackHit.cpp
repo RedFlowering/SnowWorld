@@ -1,8 +1,8 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #include "Animation/AnimNotify_MeleeAttackHit.h"
 #include "Components/HarmoniaMeleeCombatComponent.h"
-#include "Components/HarmoniaSenseAttackComponent.h"
+#include "Components/HarmoniaSenseComponent.h"
 #include "Definitions/HarmoniaCombatSystemDefinitions.h"
 #include "GameFramework/Actor.h"
 
@@ -30,11 +30,11 @@ void UAnimNotify_MeleeAttackHit::Notify(USkeletalMeshComponent* MeshComp, UAnimS
 
 	// Find components
 	UHarmoniaMeleeCombatComponent* MeleeComponent = FindMeleeCombatComponent(Owner);
-	UHarmoniaSenseAttackComponent* AttackComponent = FindAttackComponent(Owner);
+	UHarmoniaSenseComponent* AttackComponent = FindAttackComponent(Owner);
 
 	if (!AttackComponent)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AnimNotify_MeleeAttackHit: No HarmoniaSenseAttackComponent found on %s"), *Owner->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("AnimNotify_MeleeAttackHit: No HarmoniaSenseComponent found on %s"), *Owner->GetName());
 		return;
 	}
 
@@ -68,7 +68,7 @@ UHarmoniaMeleeCombatComponent* UAnimNotify_MeleeAttackHit::FindMeleeCombatCompon
 	return Owner->FindComponentByClass<UHarmoniaMeleeCombatComponent>();
 }
 
-UHarmoniaSenseAttackComponent* UAnimNotify_MeleeAttackHit::FindAttackComponent(AActor* Owner) const
+UHarmoniaSenseComponent* UAnimNotify_MeleeAttackHit::FindAttackComponent(AActor* Owner) const
 {
 	if (!Owner)
 	{
@@ -78,10 +78,10 @@ UHarmoniaSenseAttackComponent* UAnimNotify_MeleeAttackHit::FindAttackComponent(A
 	// If component name is specified, find by name
 	if (!AttackComponentName.IsNone())
 	{
-		TArray<UHarmoniaSenseAttackComponent*> AttackComponents;
-		Owner->GetComponents<UHarmoniaSenseAttackComponent>(AttackComponents);
+		TArray<UHarmoniaSenseComponent*> AttackComponents;
+		Owner->GetComponents<UHarmoniaSenseComponent>(AttackComponents);
 
-		for (UHarmoniaSenseAttackComponent* Component : AttackComponents)
+		for (UHarmoniaSenseComponent* Component : AttackComponents)
 		{
 			if (Component && Component->GetFName() == AttackComponentName)
 			{
@@ -93,6 +93,6 @@ UHarmoniaSenseAttackComponent* UAnimNotify_MeleeAttackHit::FindAttackComponent(A
 	}
 
 	// Otherwise, return first found component
-	return Owner->FindComponentByClass<UHarmoniaSenseAttackComponent>();
+	return Owner->FindComponentByClass<UHarmoniaSenseComponent>();
 }
 

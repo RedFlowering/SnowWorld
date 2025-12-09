@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -7,12 +7,12 @@
 #include "Definitions/HarmoniaCombatSystemDefinitions.h"
 #include "AnimNotify_HarmoniaAttackCheck.generated.h"
 
-class UHarmoniaSenseAttackComponent;
+class UHarmoniaSenseComponent;
 
 /**
  * UAnimNotify_HarmoniaAttackCheck
  *
- * Animation Notify that triggers attack hit detection via HarmoniaSenseAttackComponent
+ * Animation Notify that triggers attack hit detection via HarmoniaSenseComponent
  * Place this notify at the point in animation where weapon should check for hits
  *
  * Usage:
@@ -35,7 +35,7 @@ public:
 
 protected:
 	/**
-	 * Name of the HarmoniaSenseAttackComponent to trigger
+	 * Name of the HarmoniaSenseComponent to trigger
 	 * Leave empty to use the first found component
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
@@ -62,5 +62,5 @@ protected:
 	/**
 	 * Find attack component on actor
 	 */
-	virtual UHarmoniaSenseAttackComponent* FindAttackComponent(AActor* Owner) const;
+	virtual UHarmoniaSenseComponent* FindAttackComponent(AActor* Owner) const;
 };

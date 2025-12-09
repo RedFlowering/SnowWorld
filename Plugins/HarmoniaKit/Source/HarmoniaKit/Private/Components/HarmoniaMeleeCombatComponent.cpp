@@ -4,7 +4,7 @@
 #include "HarmoniaGameplayTags.h"
 #include "HarmoniaLogCategories.h"
 #include "HarmoniaDataTableBFL.h"
-#include "Components/HarmoniaSenseAttackComponent.h"
+#include "Components/HarmoniaSenseComponent.h"
 #include "Components/HarmoniaEquipmentComponent.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "AbilitySystem/HarmoniaAbilitySystemLibrary.h"
@@ -89,6 +89,13 @@ FGameplayTag UHarmoniaMeleeCombatComponent::GetCurrentWeaponTypeTag() const
 
 void UHarmoniaMeleeCombatComponent::SetDefenseState(EHarmoniaDefenseState NewState)
 {
+	// Server authority check - prevent client manipulation
+	AActor* Owner = GetOwner();
+	if (Owner && !Owner->HasAuthority())
+	{
+		return;
+	}
+
 	if (DefenseState == NewState)
 	{
 		return;
@@ -505,7 +512,42 @@ bool UHarmoniaMeleeCombatComponent::CanDodge() const
 	return true;
 }
 
+bool UHarmoniaMeleeCombatComponent::IsDefenseAngleValid(const FVector& AttackerLocation) const
+{
+	AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		return false;
+	}
 
+	// Get defender's forward direction (horizontal only)
+	FVector DefenderForward = Owner->GetActorForwardVector();
+	DefenderForward.Z = 0.0f;
+	DefenderForward.Normalize();
+
+	// Get direction from defender to attacker (horizontal only)
+	FVector ToAttacker = AttackerLocation - Owner->GetActorLocation();
+	ToAttacker.Z = 0.0f;
+	
+	if (ToAttacker.IsNearlyZero())
+	{
+		return true; // Attacker is on top of defender, consider it blockable
+	}
+	
+	ToAttacker.Normalize();
+
+	// Calculate angle between defender's forward and direction to attacker
+	// DotProduct = 1 when attacker is directly in front, -1 when behind
+	const float DotProduct = FVector::DotProduct(DefenderForward, ToAttacker);
+	const float AngleRadians = FMath::Acos(FMath::Clamp(DotProduct, -1.0f, 1.0f));
+	const float AngleDegrees = FMath::RadiansToDegrees(AngleRadians);
+
+	// Check if within half the defense angle (since DefenseAngle is full arc)
+	// e.g., DefenseAngle = 120 means 60 degrees each side of forward
+	const float HalfDefenseAngle = DefenseAngle / 2.0f;
+	
+	return AngleDegrees <= HalfDefenseAngle;
+}
 
 void UHarmoniaMeleeCombatComponent::OnAttackBlocked(AActor* Attacker, float Damage)
 {

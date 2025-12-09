@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -12,7 +12,7 @@
 class UHarmoniaAttributeSet;
 class UAbilitySystemComponent;
 class UHarmoniaEquipmentComponent;
-class UHarmoniaSenseAttackComponent;
+class UHarmoniaSenseComponent;
 class UDataTable;
 
 /** Delegate broadcast when attack is blocked. Damage is the incoming damage before reduction. */
@@ -170,6 +170,10 @@ public:
 	// Defense
 	// ============================================================================
 
+	/** Defense angle in degrees (full arc, e.g., 120 = 60 degrees each side of forward) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee Combat|Defense")
+	float DefenseAngle = 120.0f;
+
 	/** Can currently block? */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Defense")
 	bool CanBlock() const;
@@ -182,6 +186,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Defense")
 	bool CanDodge() const;
 
+	/**
+	 * Check if attacker is within defense angle (front arc)
+	 * @param AttackerLocation World location of the attacker
+	 * @return true if attacker is in front and can be blocked
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Defense")
+	bool IsDefenseAngleValid(const FVector& AttackerLocation) const;
+
 	/** Process blocked attack */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Defense")
 	void OnAttackBlocked(AActor* Attacker, float Damage);
@@ -189,6 +201,12 @@ public:
 	/** Delegate broadcast when attack is blocked (for ability to handle stamina cost) */
 	UPROPERTY(BlueprintAssignable, Category = "Melee Combat|Defense")
 	FOnBlockedAttackSignature OnBlockedAttack;
+
+	/** Delegate broadcast when attack is blocked by defense angle check (from SenseSystem) */
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnBlockedByDefenseSignature, AActor*, Attacker, float, BlockedDamage, bool, bWasInAngle);
+
+	UPROPERTY(BlueprintAssignable, Category = "Melee Combat|Defense")
+	FOnBlockedByDefenseSignature OnBlockedByDefense;
 
 	/** Process successful parry */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Defense")

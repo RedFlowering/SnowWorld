@@ -1,8 +1,8 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #include "Components/HarmoniaBaseCombatComponent.h"
 #include "HarmoniaLogCategories.h"
-#include "Components/HarmoniaSenseAttackComponent.h"
+#include "Components/HarmoniaSenseComponent.h"
 #include "Components/HarmoniaEquipmentComponent.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "AbilitySystem/HarmoniaAbilitySystemLibrary.h"
@@ -32,14 +32,14 @@ void UHarmoniaBaseCombatComponent::BeginPlay()
 // Component References
 // ============================================================================
 
-UHarmoniaSenseAttackComponent* UHarmoniaBaseCombatComponent::GetAttackComponent() const
+UHarmoniaSenseComponent* UHarmoniaBaseCombatComponent::GetAttackComponent() const
 {
 	if (!CachedAttackComponent)
 	{
 		AActor* Owner = GetOwner();
 		if (Owner)
 		{
-			CachedAttackComponent = Owner->FindComponentByClass<UHarmoniaSenseAttackComponent>();
+			CachedAttackComponent = Owner->FindComponentByClass<UHarmoniaSenseComponent>();
 		}
 	}
 	return CachedAttackComponent;

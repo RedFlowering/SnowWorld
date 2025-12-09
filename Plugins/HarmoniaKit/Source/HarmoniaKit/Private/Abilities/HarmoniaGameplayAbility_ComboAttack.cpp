@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #include "Abilities/HarmoniaGameplayAbility_ComboAttack.h"
 #include "HarmoniaGameplayTags.h"
@@ -8,7 +8,7 @@
 #include "GameFramework/Character.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "TimerManager.h"
-#include "Components/HarmoniaSenseAttackComponent.h"
+#include "Components/HarmoniaSenseComponent.h"
 #include "Definitions/HarmoniaCombatSystemDefinitions.h"
 
 UHarmoniaGameplayAbility_ComboAttack::UHarmoniaGameplayAbility_ComboAttack(const FObjectInitializer& ObjectInitializer)
@@ -151,12 +151,12 @@ void UHarmoniaGameplayAbility_ComboAttack::PerformComboAttack()
 		if (Owner)
 		{
 			// Find attack component by name or first available
-			UHarmoniaSenseAttackComponent* AttackComponent = nullptr;
+			UHarmoniaSenseComponent* AttackComponent = nullptr;
 			if (AttackComponentName != NAME_None)
 			{
-				TArray<UHarmoniaSenseAttackComponent*> AttackComponents;
-				Owner->GetComponents<UHarmoniaSenseAttackComponent>(AttackComponents);
-				for (UHarmoniaSenseAttackComponent* Comp : AttackComponents)
+				TArray<UHarmoniaSenseComponent*> AttackComponents;
+				Owner->GetComponents<UHarmoniaSenseComponent>(AttackComponents);
+				for (UHarmoniaSenseComponent* Comp : AttackComponents)
 				{
 					if (Comp->GetFName() == AttackComponentName)
 					{
@@ -167,7 +167,7 @@ void UHarmoniaGameplayAbility_ComboAttack::PerformComboAttack()
 			}
 			else
 			{
-				AttackComponent = Owner->FindComponentByClass<UHarmoniaSenseAttackComponent>();
+				AttackComponent = Owner->FindComponentByClass<UHarmoniaSenseComponent>();
 			}
 
 			if (AttackComponent)

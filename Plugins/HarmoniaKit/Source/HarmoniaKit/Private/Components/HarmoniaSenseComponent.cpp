@@ -1,6 +1,9 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
-#include "Components/HarmoniaSenseAttackComponent.h"
+#include "Components/HarmoniaSenseComponent.h"
+#include "Components/HarmoniaMeleeCombatComponent.h"
+#include "Components/HarmoniaSenseInteractableComponent.h"
+#include "Components/HarmoniaSenseInteractionComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
@@ -14,16 +17,19 @@
 #include "TimerManager.h"
 #include "DrawDebugHelpers.h"
 
-UHarmoniaSenseAttackComponent::UHarmoniaSenseAttackComponent()
+UHarmoniaSenseComponent::UHarmoniaSenseComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.TickGroup = TG_PostPhysics;
 	bAutoActivate = true;
 }
 
-void UHarmoniaSenseAttackComponent::BeginPlay()
+void UHarmoniaSenseComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Initialize owner's SenseSystem components (Interactable + Interaction)
+	InitializeOwnerSenseComponents();
 
 	if (bAutoInitializeSenseStimulus)
 	{
@@ -41,7 +47,7 @@ void UHarmoniaSenseAttackComponent::BeginPlay()
 	}
 }
 
-void UHarmoniaSenseAttackComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+void UHarmoniaSenseComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	StopAttack();
 	CleanupSenseReceiver();
@@ -49,7 +55,7 @@ void UHarmoniaSenseAttackComponent::EndPlay(const EEndPlayReason::Type EndPlayRe
 	Super::EndPlay(EndPlayReason);
 }
 
-void UHarmoniaSenseAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UHarmoniaSenseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
@@ -64,7 +70,7 @@ void UHarmoniaSenseAttackComponent::TickComponent(float DeltaTime, ELevelTick Ti
 // Attack Control - Public Request Functions
 // ============================================================================
 
-void UHarmoniaSenseAttackComponent::RequestStartAttack(const FHarmoniaAttackData& InAttackData)
+void UHarmoniaSenseComponent::RequestStartAttack(const FHarmoniaAttackData& InAttackData)
 {
 	AActor* Owner = GetOwner();
 	if (Owner && Owner->HasAuthority())
@@ -79,12 +85,12 @@ void UHarmoniaSenseAttackComponent::RequestStartAttack(const FHarmoniaAttackData
 	}
 }
 
-void UHarmoniaSenseAttackComponent::RequestStartAttackDefault()
+void UHarmoniaSenseComponent::RequestStartAttackDefault()
 {
 	RequestStartAttack(AttackData);
 }
 
-void UHarmoniaSenseAttackComponent::RequestStopAttack()
+void UHarmoniaSenseComponent::RequestStopAttack()
 {
 	AActor* Owner = GetOwner();
 	if (Owner && Owner->HasAuthority())
@@ -103,7 +109,7 @@ void UHarmoniaSenseAttackComponent::RequestStopAttack()
 // Server RPCs
 // ============================================================================
 
-bool UHarmoniaSenseAttackComponent::ServerStartAttack_Validate(const FHarmoniaAttackData& InAttackData)
+bool UHarmoniaSenseComponent::ServerStartAttack_Validate(const FHarmoniaAttackData& InAttackData)
 {
 	// Validate attack data is enabled
 	if (!InAttackData.bEnabled)
@@ -164,7 +170,7 @@ bool UHarmoniaSenseAttackComponent::ServerStartAttack_Validate(const FHarmoniaAt
 	return true;
 }
 
-void UHarmoniaSenseAttackComponent::ServerStartAttack_Implementation(const FHarmoniaAttackData& InAttackData)
+void UHarmoniaSenseComponent::ServerStartAttack_Implementation(const FHarmoniaAttackData& InAttackData)
 {
 	// Update attack request time for rate limiting
 	if (const UWorld* World = GetWorld())
@@ -175,13 +181,13 @@ void UHarmoniaSenseAttackComponent::ServerStartAttack_Implementation(const FHarm
 	StartAttack(InAttackData);
 }
 
-bool UHarmoniaSenseAttackComponent::ServerStopAttack_Validate()
+bool UHarmoniaSenseComponent::ServerStopAttack_Validate()
 {
 	// Basic validation - always allow stopping
 	return true;
 }
 
-void UHarmoniaSenseAttackComponent::ServerStopAttack_Implementation()
+void UHarmoniaSenseComponent::ServerStopAttack_Implementation()
 {
 	StopAttack();
 }
@@ -190,7 +196,7 @@ void UHarmoniaSenseAttackComponent::ServerStopAttack_Implementation()
 // Internal Attack Functions (Server-only)
 // ============================================================================
 
-void UHarmoniaSenseAttackComponent::StartAttack(const FHarmoniaAttackData& InAttackData)
+void UHarmoniaSenseComponent::StartAttack(const FHarmoniaAttackData& InAttackData)
 {
 	// Server authority check
 	AActor* Owner = GetOwner();
@@ -207,7 +213,7 @@ void UHarmoniaSenseAttackComponent::StartAttack(const FHarmoniaAttackData& InAtt
 
 	if (!InAttackData.bEnabled)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("HarmoniaSenseAttackComponent: Attack data is disabled"));
+		UE_LOG(LogTemp, Warning, TEXT("HarmoniaSenseComponent: Attack data is disabled"));
 		return;
 	}
 
@@ -239,7 +245,7 @@ void UHarmoniaSenseAttackComponent::StartAttack(const FHarmoniaAttackData& InAtt
 			World->GetTimerManager().SetTimer(
 				AttackTimerHandle,
 				this,
-				&UHarmoniaSenseAttackComponent::OnAttackTimerComplete,
+				&UHarmoniaSenseComponent::OnAttackTimerComplete,
 				CurrentAttackData.TraceConfig.DetectionDuration,
 				false);
 		}
@@ -252,14 +258,14 @@ void UHarmoniaSenseAttackComponent::StartAttack(const FHarmoniaAttackData& InAtt
 			World->GetTimerManager().SetTimer(
 				AttackTimerHandle,
 				this,
-				&UHarmoniaSenseAttackComponent::OnAttackTimerComplete,
+				&UHarmoniaSenseComponent::OnAttackTimerComplete,
 				0.1f,
 				false);
 		}
 	}
 }
 
-void UHarmoniaSenseAttackComponent::StopAttack()
+void UHarmoniaSenseComponent::StopAttack()
 {
 	// Server authority check
 	AActor* Owner = GetOwner();
@@ -287,19 +293,115 @@ void UHarmoniaSenseAttackComponent::StopAttack()
 
 	// Broadcast attack end
 	OnAttackEnd.Broadcast();
+
+	// Reset attack data to prevent stale data usage
+	CurrentAttackData = FHarmoniaAttackData();
 }
 
-void UHarmoniaSenseAttackComponent::ClearHitTargets()
+void UHarmoniaSenseComponent::ClearHitTargets()
 {
 	HitTargets.Empty();
 	HitActors.Empty();
 }
 
 // ============================================================================
+// Owner SenseSystem Initialization
+// ============================================================================
+
+void UHarmoniaSenseComponent::InitializeOwnerSenseComponents()
+{
+	AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		return;
+	}
+
+	// Ensure owner has SenseSystem components for combat
+	EnsureOwnerInteractable();
+	EnsureOwnerInteraction();
+}
+
+void UHarmoniaSenseComponent::EnsureOwnerInteractable()
+{
+	AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		return;
+	}
+
+	// Check if owner already has HarmoniaSenseInteractableComponent
+	OwnerInteractable = Owner->FindComponentByClass<UHarmoniaSenseInteractableComponent>();
+	
+	if (!OwnerInteractable)
+	{
+		// Create HarmoniaSenseInteractableComponent dynamically
+		OwnerInteractable = NewObject<UHarmoniaSenseInteractableComponent>(
+			Owner,
+			UHarmoniaSenseInteractableComponent::StaticClass(),
+			FName("CombatSenseInteractable"));
+
+		if (OwnerInteractable)
+		{
+			OwnerInteractable->RegisterComponent();
+			
+			// Configure for combat detection
+			OwnerInteractable->SetResponseChannel(CombatSensorTag, static_cast<uint8>(CombatSenseChannel), true);
+			OwnerInteractable->SetScore(CombatSensorTag, 1.0f);
+			
+			UE_LOG(LogTemp, Log, TEXT("HarmoniaSenseComponent: Created OwnerInteractable for %s"), *Owner->GetName());
+		}
+	}
+	else
+	{
+		// Configure existing component for combat
+		OwnerInteractable->SetResponseChannel(CombatSensorTag, static_cast<uint8>(CombatSenseChannel), true);
+		OwnerInteractable->SetScore(CombatSensorTag, 1.0f);
+	}
+}
+
+void UHarmoniaSenseComponent::EnsureOwnerInteraction()
+{
+	AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		return;
+	}
+
+	// Check if owner already has HarmoniaSenseInteractionComponent
+	OwnerInteraction = Owner->FindComponentByClass<UHarmoniaSenseInteractionComponent>();
+	
+	if (!OwnerInteraction)
+	{
+		// Create HarmoniaSenseInteractionComponent dynamically
+		OwnerInteraction = NewObject<UHarmoniaSenseInteractionComponent>(
+			Owner,
+			UHarmoniaSenseInteractionComponent::StaticClass(),
+			FName("CombatSenseInteraction"));
+
+		if (OwnerInteraction)
+		{
+			OwnerInteraction->RegisterComponent();
+			
+			// Configure for combat (track all actors, not just interactables)
+			OwnerInteraction->bInteractableOnly = false;
+			OwnerInteraction->bEnableAutomaticInteractions = false;
+			
+			UE_LOG(LogTemp, Log, TEXT("HarmoniaSenseComponent: Created OwnerInteraction for %s"), *Owner->GetName());
+		}
+	}
+	else
+	{
+		// Configure existing component for combat
+		OwnerInteraction->bInteractableOnly = false;
+		OwnerInteraction->bEnableAutomaticInteractions = false;
+	}
+}
+
+// ============================================================================
 // Initialization
 // ============================================================================
 
-void UHarmoniaSenseAttackComponent::InitializeSenseStimulus()
+void UHarmoniaSenseComponent::InitializeSenseStimulus()
 {
 	AActor* Owner = GetOwner();
 	if (!Owner)
@@ -323,7 +425,7 @@ void UHarmoniaSenseAttackComponent::InitializeSenseStimulus()
 	}
 }
 
-void UHarmoniaSenseAttackComponent::UpdateSenseStimulus()
+void UHarmoniaSenseComponent::UpdateSenseStimulus()
 {
 	if (!SenseStimulus)
 	{
@@ -351,7 +453,7 @@ void UHarmoniaSenseAttackComponent::UpdateSenseStimulus()
 	SenseStimulus->SetActive(true);
 }
 
-void UHarmoniaSenseAttackComponent::SetupSenseReceiver()
+void UHarmoniaSenseComponent::SetupSenseReceiver()
 {
 	AActor* Owner = GetOwner();
 	if (!Owner)
@@ -417,17 +519,17 @@ void UHarmoniaSenseAttackComponent::SetupSenseReceiver()
 	// Bind to sense detection
 	if (SenseReceiver)
 	{
-		SenseReceiver->OnNewSense.AddDynamic(this, &UHarmoniaSenseAttackComponent::OnSenseDetected);
-		SenseReceiver->OnCurrentSense.AddDynamic(this, &UHarmoniaSenseAttackComponent::OnSenseDetected);
+		SenseReceiver->OnNewSense.AddDynamic(this, &UHarmoniaSenseComponent::OnSenseDetected);
+		SenseReceiver->OnCurrentSense.AddDynamic(this, &UHarmoniaSenseComponent::OnSenseDetected);
 	}
 }
 
-void UHarmoniaSenseAttackComponent::CleanupSenseReceiver()
+void UHarmoniaSenseComponent::CleanupSenseReceiver()
 {
 	if (SenseReceiver)
 	{
-		SenseReceiver->OnNewSense.RemoveDynamic(this, &UHarmoniaSenseAttackComponent::OnSenseDetected);
-		SenseReceiver->OnCurrentSense.RemoveDynamic(this, &UHarmoniaSenseAttackComponent::OnSenseDetected);
+		SenseReceiver->OnNewSense.RemoveDynamic(this, &UHarmoniaSenseComponent::OnSenseDetected);
+		SenseReceiver->OnCurrentSense.RemoveDynamic(this, &UHarmoniaSenseComponent::OnSenseDetected);
 		SenseReceiver->DestroyComponent(false);
 		SenseReceiver = nullptr;
 	}
@@ -442,7 +544,7 @@ void UHarmoniaSenseAttackComponent::CleanupSenseReceiver()
 // Hit Detection
 // ============================================================================
 
-void UHarmoniaSenseAttackComponent::OnSenseDetected(const USensorBase* SensorPtr, int32 Channel, const TArray<FSensedStimulus> SensedStimuli)
+void UHarmoniaSenseComponent::OnSenseDetected(const USensorBase* SensorPtr, int32 Channel, const TArray<FSensedStimulus> SensedStimuli)
 {
 	if (!bIsAttacking || !SensorPtr)
 	{
@@ -482,7 +584,7 @@ void UHarmoniaSenseAttackComponent::OnSenseDetected(const USensorBase* SensorPtr
 	}
 }
 
-bool UHarmoniaSenseAttackComponent::ProcessHitTarget(const FSensedStimulus& Stimulus)
+bool UHarmoniaSenseComponent::ProcessHitTarget(const FSensedStimulus& Stimulus)
 {
 	if (!Stimulus.StimulusComponent.IsValid())
 	{
@@ -543,7 +645,7 @@ bool UHarmoniaSenseAttackComponent::ProcessHitTarget(const FSensedStimulus& Stim
 	return true;
 }
 
-bool UHarmoniaSenseAttackComponent::ShouldHitTarget(AActor* TargetActor, const FSensedStimulus& Stimulus) const
+bool UHarmoniaSenseComponent::ShouldHitTarget(AActor* TargetActor, const FSensedStimulus& Stimulus) const
 {
 	if (!TargetActor)
 	{
@@ -564,10 +666,38 @@ bool UHarmoniaSenseAttackComponent::ShouldHitTarget(AActor* TargetActor, const F
 		return false;
 	}
 
+	// Check if target is blocking and within defense angle
+	if (UHarmoniaMeleeCombatComponent* TargetMeleeComp = TargetActor->FindComponentByClass<UHarmoniaMeleeCombatComponent>())
+	{
+		if (TargetMeleeComp->IsBlocking())
+		{
+			// Check if attacker is within target's defense angle
+			if (Owner && TargetMeleeComp->IsDefenseAngleValid(Owner->GetActorLocation()))
+			{
+				// Attack blocked - calculate actual blocked damage
+				float BlockedDamage = 0.0f;
+				if (OwnerAbilitySystem)
+				{
+					const UHarmoniaAttributeSet* AttackerAttributeSet = OwnerAbilitySystem->GetSet<UHarmoniaAttributeSet>();
+					if (AttackerAttributeSet)
+					{
+						BlockedDamage = AttackerAttributeSet->GetAttackPower() * CurrentAttackData.DamageConfig.DamageMultiplier;
+					}
+				}
+				
+				// Broadcast blocked events and reject hit
+				TargetMeleeComp->OnBlockedByDefense.Broadcast(Owner, BlockedDamage, true);
+				TargetMeleeComp->OnBlockedAttack.Broadcast(Owner, BlockedDamage);
+				return false;
+			}
+			// Attacker is behind/outside defense angle - allow hit (backstab while blocking)
+		}
+	}
+
 	return true;
 }
 
-bool UHarmoniaSenseAttackComponent::CalculateCriticalHit(float CritChance) const
+bool UHarmoniaSenseComponent::CalculateCriticalHit(float CritChance) const
 {
 	if (!CurrentAttackData.DamageConfig.bCanCritical)
 	{
@@ -593,7 +723,7 @@ bool UHarmoniaSenseAttackComponent::CalculateCriticalHit(float CritChance) const
 // Damage Application
 // ============================================================================
 
-float UHarmoniaSenseAttackComponent::ApplyDamageToTarget(
+float UHarmoniaSenseComponent::ApplyDamageToTarget(
 	AActor* TargetActor,
 	const FHarmoniaDamageEffectConfig& DamageConfig,
 	bool bWasCritical,
@@ -782,7 +912,7 @@ float UHarmoniaSenseAttackComponent::ApplyDamageToTarget(
 	return FinalDamage;
 }
 
-void UHarmoniaSenseAttackComponent::ApplyHitReaction(
+void UHarmoniaSenseComponent::ApplyHitReaction(
 	AActor* TargetActor,
 	const FHarmoniaHitReactionConfig& ReactionConfig,
 	bool bWasCritical,
@@ -873,7 +1003,7 @@ void UHarmoniaSenseAttackComponent::ApplyHitReaction(
 	}
 }
 
-FGameplayEffectContextHandle UHarmoniaSenseAttackComponent::CreateDamageEffectContext(
+FGameplayEffectContextHandle UHarmoniaSenseComponent::CreateDamageEffectContext(
 	AActor* TargetActor,
 	const FVector& HitLocation,
 	const FVector& HitNormal) const
@@ -895,12 +1025,12 @@ FGameplayEffectContextHandle UHarmoniaSenseAttackComponent::CreateDamageEffectCo
 // Helpers
 // ============================================================================
 
-void UHarmoniaSenseAttackComponent::OnAttackTimerComplete()
+void UHarmoniaSenseComponent::OnAttackTimerComplete()
 {
 	StopAttack();
 }
 
-FVector UHarmoniaSenseAttackComponent::GetTraceLocation() const
+FVector UHarmoniaSenseComponent::GetTraceLocation() const
 {
 	if (!CurrentAttackData.TraceConfig.SocketName.IsNone())
 	{
@@ -916,7 +1046,7 @@ FVector UHarmoniaSenseAttackComponent::GetTraceLocation() const
 	return GetComponentLocation() + CurrentAttackData.TraceConfig.TraceOffset;
 }
 
-FRotator UHarmoniaSenseAttackComponent::GetTraceRotation() const
+FRotator UHarmoniaSenseComponent::GetTraceRotation() const
 {
 	if (!CurrentAttackData.TraceConfig.SocketName.IsNone())
 	{
@@ -932,7 +1062,7 @@ FRotator UHarmoniaSenseAttackComponent::GetTraceRotation() const
 	return GetComponentRotation();
 }
 
-void UHarmoniaSenseAttackComponent::DrawDebugAttackTrace() const
+void UHarmoniaSenseComponent::DrawDebugAttackTrace() const
 {
 	if (!GetWorld())
 	{

@@ -1,8 +1,8 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #include "HarmoniaMeleeCharacterExample.h"
 #include "Components/HarmoniaMeleeCombatComponent.h"
-#include "Components/HarmoniaSenseAttackComponent.h"
+#include "Components/HarmoniaSenseComponent.h"
 #include "Components/HarmoniaEquipmentComponent.h"
 #include "Components/HarmoniaLockOnComponent.h"
 #include "Abilities/HarmoniaGameplayAbility_MeleeAttack.h"
@@ -25,10 +25,10 @@ AHarmoniaMeleeCharacterExample::AHarmoniaMeleeCharacterExample(const FObjectInit
 	LockOnComponent = CreateDefaultSubobject<UHarmoniaLockOnComponent>(TEXT("LockOnComponent"));
 
 	// Create attack components
-	MainHandAttackComponent = CreateDefaultSubobject<UHarmoniaSenseAttackComponent>(TEXT("MainHandAttackComponent"));
+	MainHandAttackComponent = CreateDefaultSubobject<UHarmoniaSenseComponent>(TEXT("MainHandAttackComponent"));
 	MainHandAttackComponent->SetupAttachment(GetMesh(), FName("weapon_r")); // Attach to right hand socket
 
-	OffHandAttackComponent = CreateDefaultSubobject<UHarmoniaSenseAttackComponent>(TEXT("OffHandAttackComponent"));
+	OffHandAttackComponent = CreateDefaultSubobject<UHarmoniaSenseComponent>(TEXT("OffHandAttackComponent"));
 	OffHandAttackComponent->SetupAttachment(GetMesh(), FName("weapon_l")); // Attach to left hand socket
 	OffHandAttackComponent->SetAutoActivate(false); // Disabled by default
 

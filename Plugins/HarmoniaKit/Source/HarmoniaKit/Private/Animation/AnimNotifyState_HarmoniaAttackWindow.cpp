@@ -1,7 +1,7 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #include "Animation/AnimNotifyState_HarmoniaAttackWindow.h"
-#include "Components/HarmoniaSenseAttackComponent.h"
+#include "Components/HarmoniaSenseComponent.h"
 #include "GameFramework/Actor.h"
 
 UAnimNotifyState_HarmoniaAttackWindow::UAnimNotifyState_HarmoniaAttackWindow()
@@ -27,10 +27,10 @@ void UAnimNotifyState_HarmoniaAttackWindow::NotifyBegin(USkeletalMeshComponent* 
 	}
 
 	// Find attack component
-	UHarmoniaSenseAttackComponent* AttackComponent = FindAttackComponent(Owner);
+	UHarmoniaSenseComponent* AttackComponent = FindAttackComponent(Owner);
 	if (!AttackComponent)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AnimNotifyState_HarmoniaAttackWindow: No HarmoniaSenseAttackComponent found on %s"), *Owner->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("AnimNotifyState_HarmoniaAttackWindow: No HarmoniaSenseComponent found on %s"), *Owner->GetName());
 		return;
 	}
 
@@ -75,7 +75,7 @@ void UAnimNotifyState_HarmoniaAttackWindow::NotifyEnd(USkeletalMeshComponent* Me
 	}
 
 	// Find attack component
-	UHarmoniaSenseAttackComponent* AttackComponent = FindAttackComponent(Owner);
+	UHarmoniaSenseComponent* AttackComponent = FindAttackComponent(Owner);
 	if (!AttackComponent)
 	{
 		return;
@@ -98,7 +98,7 @@ FString UAnimNotifyState_HarmoniaAttackWindow::GetNotifyName_Implementation() co
 	return FString::Printf(TEXT("Harmonia Attack Window (%s)"), *AttackComponentName.ToString());
 }
 
-UHarmoniaSenseAttackComponent* UAnimNotifyState_HarmoniaAttackWindow::FindAttackComponent(AActor* Owner) const
+UHarmoniaSenseComponent* UAnimNotifyState_HarmoniaAttackWindow::FindAttackComponent(AActor* Owner) const
 {
 	if (!Owner)
 	{
@@ -108,10 +108,10 @@ UHarmoniaSenseAttackComponent* UAnimNotifyState_HarmoniaAttackWindow::FindAttack
 	// If component name is specified, find by name
 	if (!AttackComponentName.IsNone())
 	{
-		TArray<UHarmoniaSenseAttackComponent*> AttackComponents;
-		Owner->GetComponents<UHarmoniaSenseAttackComponent>(AttackComponents);
+		TArray<UHarmoniaSenseComponent*> AttackComponents;
+		Owner->GetComponents<UHarmoniaSenseComponent>(AttackComponents);
 
-		for (UHarmoniaSenseAttackComponent* Component : AttackComponents)
+		for (UHarmoniaSenseComponent* Component : AttackComponents)
 		{
 			if (Component && Component->GetFName() == AttackComponentName)
 			{
@@ -124,5 +124,5 @@ UHarmoniaSenseAttackComponent* UAnimNotifyState_HarmoniaAttackWindow::FindAttack
 	}
 
 	// Otherwise, return first found component
-	return Owner->FindComponentByClass<UHarmoniaSenseAttackComponent>();
+	return Owner->FindComponentByClass<UHarmoniaSenseComponent>();
 }

@@ -14,7 +14,6 @@ UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Character_Status_Aiming);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHarmoniaMantlingEnded);
 
 class UHarmoniaCharacterMovementComponent;
-class USenseReceiverComponent;
 class UHarmoniaLockOnTargetingComponent;
 class UHarmoniaHealthComponent;
 
