@@ -5,9 +5,13 @@
 #include "Character/LyraCharacter.h"
 #include "NativeGameplayTags.h"
 #include "Utility/AlsGameplayTags.h"
+#include "Settings/AlsMantlingSettings.h"
 #include "HarmoniaCharacter.generated.h"
 
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Character_Status_Aiming);
+
+/** Delegate broadcast when mantling ends */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHarmoniaMantlingEnded);
 
 class UHarmoniaCharacterMovementComponent;
 class USenseReceiverComponent;
@@ -117,6 +121,32 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Harmonia Character|Health")
 	UHarmoniaHealthComponent* GetHarmoniaHealthComponent() const { return HarmoniaHealthComponent; }
+
+	// ============================================================
+	// Mantling
+	// ============================================================
+
+	/** Delegate broadcast when mantling ends (for GA integration) */
+	UPROPERTY(BlueprintAssignable, Category = "Harmonia Character|Mantling")
+	FOnHarmoniaMantlingEnded OnMantlingEndedDelegate;
+
+	/** Try to start grounded mantling from GA. @return true if mantling started successfully */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia Character|Mantling", Meta = (ReturnDisplayName = "Success"))
+	bool TryMantleFromGA();
+
+protected:
+	/** Override from ALS - only allows mantling when GA requests it. */
+	virtual bool StartMantling(const FAlsMantlingTraceSettings& TraceSettings) override;
+
+	/** Override from ALS */
+	virtual void OnMantlingStarted_Implementation(const FAlsMantlingParameters& Parameters) override;
+
+	/** Override from ALS to broadcast delegate when mantling ends */
+	virtual void OnMantlingEnded_Implementation() override;
+
+private:
+	/** Flag to indicate GA is requesting mantling */
+	bool bGAMantlingRequest = false;
 
 #if !UE_BUILD_SHIPPING
 	// Debug display override (showdebug harmonia.stat, harmonia.combat, harmonia.tags)

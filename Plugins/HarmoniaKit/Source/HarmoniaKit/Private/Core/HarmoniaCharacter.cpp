@@ -174,3 +174,51 @@ bool AHarmoniaCharacter::GetUseLeftHandIK()
 {
 	return LeftHandIK.bUseHandIK;
 }
+
+// ============================================================
+// Mantling
+// ============================================================
+
+bool AHarmoniaCharacter::StartMantling(const FAlsMantlingTraceSettings& TraceSettings)
+{
+	// Only allow mantling when GA explicitly requests it
+	// This blocks ALS Tick's automatic mantling detection
+	if (!bGAMantlingRequest)
+	{
+		return false;
+	}
+
+	// GA is requesting - call parent implementation to do actual mantling
+	return Super::StartMantling(TraceSettings);
+}
+
+bool AHarmoniaCharacter::TryMantleFromGA()
+{
+	// Set flag to allow mantling through StartMantling override
+	bGAMantlingRequest = true;
+
+	// Try grounded mantling first, then in-air mantling
+	bool bSuccess = StartMantlingGrounded();
+	if (!bSuccess)
+	{
+		bSuccess = StartMantlingInAir();
+	}
+
+	// Reset flag
+	bGAMantlingRequest = false;
+
+	return bSuccess;
+}
+
+void AHarmoniaCharacter::OnMantlingStarted_Implementation(const FAlsMantlingParameters& Parameters)
+{
+	// Call parent implementation - handles the actual mantling
+	Super::OnMantlingStarted_Implementation(Parameters);
+	// Note: Mantle GA activates itself via ActivationRequiredTags: State.InAir and detects mantling via TryMantleFromGA()
+}
+
+void AHarmoniaCharacter::OnMantlingEnded_Implementation()
+{
+	Super::OnMantlingEnded_Implementation();
+	OnMantlingEndedDelegate.Broadcast();
+}

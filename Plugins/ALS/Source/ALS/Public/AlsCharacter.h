@@ -507,11 +507,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ALS|Character", Meta = (ReturnDisplayName = "Success"))
 	bool StartMantlingGrounded();
 
+protected:
+	// Made protected virtual for child class override (e.g., GA-controlled mantling in HarmoniaCharacter)
+	virtual bool StartMantlingInAir();
+
+	virtual bool StartMantling(const FAlsMantlingTraceSettings& TraceSettings);
+
 private:
-	bool StartMantlingInAir();
-
-	bool StartMantling(const FAlsMantlingTraceSettings& TraceSettings);
-
 	UFUNCTION(Server, Reliable)
 	void ServerStartMantling(const FAlsMantlingParameters& Parameters);
 

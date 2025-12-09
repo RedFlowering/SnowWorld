@@ -18,16 +18,19 @@ class ACharacter;
  * - Triggers jump on activate
  * - Persists until landing (maintains State.InAir tag)
  * - Optional stamina cost via CostGameplayEffectClass
+ * - Auto-mantling handled by ALS and HarmoniaCharacter (not this ability)
  *
  * Flow:
  * 1. Input pressed: ActivateAbility() -> Character->Jump() -> ActivationOwnedTags applied
  * 2. Character lands: OnLanded() -> EndAbility() -> Tags removed
+ * 3. If ALS detects mantle: HarmoniaCharacter->OnMantlingStarted() -> Mantle GA activated -> Jump GA cancelled
  *
  * Usage:
  * - Add to AbilitySet with InputTag.Jump
  * - Bind to Space key with Pressed trigger in IMC
  * - Set ActivationOwnedTags: State.InAir (blocks other abilities while in air)
  * - Set CostGameplayEffectClass for stamina consumption (optional)
+ * - Configure MantleAbilityClass in HarmoniaCharacter for auto-mantling
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaGameplayAbility_Jump : public ULyraGameplayAbility
@@ -48,3 +51,4 @@ protected:
 	UFUNCTION()
 	void OnLanded(const FHitResult& Hit);
 };
+
