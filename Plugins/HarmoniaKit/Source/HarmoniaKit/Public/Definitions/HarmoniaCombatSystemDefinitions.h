@@ -502,6 +502,41 @@ struct HARMONIAKIT_API FHitReactionData : public FTableRowBase
 };
 
 // ============================================================================
+// Buff System Structs
+// ============================================================================
+
+/**
+ * Buff Data
+ * DataTable row for data-driven buff/debuff management
+ * Maps a gameplay tag to apply/remove GameplayEffects
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaBuffData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** Display name for UI */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Buff")
+	FText DisplayName;
+
+	/** Tag that identifies this buff/debuff (e.g., Debuff.StaminaRecoveryBlocked) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Buff", meta = (Categories = "Buff,Debuff"))
+	FGameplayTag EffectTag;
+
+	/** Effect to apply when this buff/debuff is triggered */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Buff")
+	TSubclassOf<UGameplayEffect> ApplyEffectClass;
+
+	/** Optional: Effect to remove this buff/debuff (Instant GE that removes by tag) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Buff")
+	TSubclassOf<UGameplayEffect> RemoveEffectClass;
+
+	/** Description for debugging/UI */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Buff")
+	FText Description;
+};
+
+// ============================================================================
 // Melee Combat Structs
 // ============================================================================
 

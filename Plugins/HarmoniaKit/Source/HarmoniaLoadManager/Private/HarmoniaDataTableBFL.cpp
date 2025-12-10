@@ -270,3 +270,8 @@ UDataTable* UHarmoniaDataTableBFL::GetModConfigDataTable()
     return HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("ModConfig"));
 }
 
+UDataTable* UHarmoniaDataTableBFL::GetBuffDataTable()
+{
+    return HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("Buff"));
+}
+

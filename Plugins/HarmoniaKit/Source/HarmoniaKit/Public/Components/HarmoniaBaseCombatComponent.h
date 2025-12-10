@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "GameplayTagContainer.h"
 #include "ActiveGameplayEffectHandle.h"
+#include "Definitions/HarmoniaCombatSystemDefinitions.h"
 #include "HarmoniaBaseCombatComponent.generated.h"
 
 class UAbilitySystemComponent;
@@ -106,6 +107,37 @@ public:
 	float GetMaxMana() const;
 
 	// ============================================================================
+	// Buff Management
+	// ============================================================================
+
+	/**
+	 * Apply a buff/debuff effect by its identifying tag
+	 * Looks up the effect in Buff DataTable (via LoadManager) and applies the ApplyEffectClass
+	 * @param EffectTag Tag that identifies the buff/debuff (e.g., Debuff.StaminaRecoveryBlocked)
+	 * @return True if effect was successfully applied
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Combat|Buff")
+	bool ApplyBuffByTag(FGameplayTag EffectTag);
+
+	/**
+	 * Remove a buff/debuff effect by its identifying tag
+	 * Either applies RemoveEffectClass (if specified) or removes effects with matching tag
+	 * @param EffectTag Tag that identifies the buff/debuff to remove
+	 * @return True if effect was successfully removed
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Combat|Buff")
+	bool RemoveBuffByTag(FGameplayTag EffectTag);
+
+	/**
+	 * Get the buff data for a given tag
+	 * @param EffectTag Tag to look up
+	 * @param OutData Data row if found
+	 * @return True if data was found
+	 */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|Combat|Buff")
+	bool GetBuffData(FGameplayTag EffectTag, FHarmoniaBuffData& OutData) const;
+
+	// ============================================================================
 	// Data Table Helpers
 	// ============================================================================
 
@@ -135,6 +167,10 @@ protected:
 
 	UPROPERTY(Transient)
 	mutable TObjectPtr<UHarmoniaEquipmentComponent> CachedEquipmentComponent;
+
+	/** Cached Buff DataTable from LoadManager */
+	UPROPERTY(Transient)
+	mutable TObjectPtr<UDataTable> CachedBuffDataTable;
 };
 
 // ============================================================================

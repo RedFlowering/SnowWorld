@@ -10,6 +10,7 @@
 #include "AbilitySystemGlobals.h"
 #include "GameplayEffect.h"
 #include "GameFramework/Actor.h"
+#include "HarmoniaDataTableBFL.h"
 
 UHarmoniaBaseCombatComponent::UHarmoniaBaseCombatComponent()
 {
@@ -200,4 +201,116 @@ float UHarmoniaBaseCombatComponent::GetMaxMana() const
 		return Attributes->GetMaxMana();
 	}
 	return 100.0f;
+}
+
+// ============================================================================
+// Buff Management
+// ============================================================================
+
+bool UHarmoniaBaseCombatComponent::ApplyBuffByTag(FGameplayTag EffectTag)
+{
+	FHarmoniaBuffData Data;
+	if (!GetBuffData(EffectTag, Data))
+	{
+		UE_LOG(LogHarmoniaKit, Warning, TEXT("ApplyBuffByTag: No data found for tag %s"), *EffectTag.ToString());
+		return false;
+	}
+
+	if (!Data.ApplyEffectClass)
+	{
+		UE_LOG(LogHarmoniaKit, Warning, TEXT("ApplyBuffByTag: No ApplyEffectClass set for tag %s"), *EffectTag.ToString());
+		return false;
+	}
+
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC)
+	{
+		return false;
+	}
+
+	FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
+	ContextHandle.AddSourceObject(GetOwner());
+
+	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Data.ApplyEffectClass, 1.0f, ContextHandle);
+	if (SpecHandle.IsValid())
+	{
+		ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		return true;
+	}
+
+	return false;
+}
+
+bool UHarmoniaBaseCombatComponent::RemoveBuffByTag(FGameplayTag EffectTag)
+{
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC)
+	{
+		return false;
+	}
+
+	// First, try to use RemoveEffectClass if specified in DataTable
+	FHarmoniaBuffData Data;
+	if (GetBuffData(EffectTag, Data) && Data.RemoveEffectClass)
+	{
+		FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
+		ContextHandle.AddSourceObject(GetOwner());
+
+		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Data.RemoveEffectClass, 1.0f, ContextHandle);
+		if (SpecHandle.IsValid())
+		{
+			ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+			return true;
+		}
+	}
+
+	// Fallback: Remove effects by matching granted tags
+	FGameplayTagContainer TagsToRemove;
+	TagsToRemove.AddTag(EffectTag);
+
+	FGameplayEffectQuery Query = FGameplayEffectQuery::MakeQuery_MatchAnyOwningTags(TagsToRemove);
+	TArray<FActiveGameplayEffectHandle> ActiveEffects = ASC->GetActiveEffects(Query);
+
+	if (ActiveEffects.Num() == 0)
+	{
+		return false;
+	}
+
+	for (const FActiveGameplayEffectHandle& Handle : ActiveEffects)
+	{
+		ASC->RemoveActiveGameplayEffect(Handle);
+	}
+
+	return true;
+}
+
+bool UHarmoniaBaseCombatComponent::GetBuffData(FGameplayTag EffectTag, FHarmoniaBuffData& OutData) const
+{
+	// Try to get from cache first
+	if (!CachedBuffDataTable)
+	{
+		// Load from HarmoniaLoadManager via generated function
+		CachedBuffDataTable = UHarmoniaDataTableBFL::GetBuffDataTable();
+
+		if (!CachedBuffDataTable)
+		{
+			UE_LOG(LogHarmoniaKit, Warning, TEXT("GetBuffData: Failed to load BuffData table"));
+			return false;
+		}
+	}
+
+	// Iterate through all rows to find matching tag
+	TArray<FHarmoniaBuffData*> AllRows;
+	CachedBuffDataTable->GetAllRows<FHarmoniaBuffData>(TEXT("GetBuffData"), AllRows);
+
+	for (const FHarmoniaBuffData* Row : AllRows)
+	{
+		if (Row && Row->EffectTag.MatchesTagExact(EffectTag))
+		{
+			OutData = *Row;
+			return true;
+		}
+	}
+
+	return false;
 }

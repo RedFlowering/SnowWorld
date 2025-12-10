@@ -13,6 +13,7 @@
 #include "Camera/CameraShakeBase.h"
 #include "Abilities/GameplayAbilityTargetTypes.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
+#include "HarmoniaGameplayTags.h"
 
 UHarmoniaGameplayAbility_MeleeAttack::UHarmoniaGameplayAbility_MeleeAttack(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -573,6 +574,13 @@ void UHarmoniaGameplayAbility_MeleeAttack::StartCharging()
 	bIsCharging = true;
 	CurrentChargeTime = 0.0f;
 	CachedChargeLevel = 0;
+
+	// Remove Stamina Recovery Block debuff when charging starts
+	// This allows stamina to regenerate during the charging phase
+	if (MeleeCombatComponent)
+	{
+		MeleeCombatComponent->RemoveBuffByTag(HarmoniaGameplayTags::Debuff_StaminaRecoveryBlocked);
+	}
 
 	const FHarmoniaChargeConfig& ChargeConfig = GetChargeConfig();
 

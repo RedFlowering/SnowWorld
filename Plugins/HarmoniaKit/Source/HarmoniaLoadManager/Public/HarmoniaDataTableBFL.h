@@ -176,4 +176,7 @@ public:
     UFUNCTION(BlueprintPure, Category = "Harmonia|LoadManager")
     static UDataTable* GetModConfigDataTable();
 
+    UFUNCTION(BlueprintPure, Category = "Harmonia|LoadManager")
+    static UDataTable* GetBuffDataTable();
+
 };
