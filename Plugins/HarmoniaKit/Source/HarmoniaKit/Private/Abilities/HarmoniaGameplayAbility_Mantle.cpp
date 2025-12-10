@@ -4,6 +4,7 @@
 #include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_WaitDelay.h"
 #include "Core/HarmoniaCharacter.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HarmoniaGameplayAbility_Mantle)
 
@@ -18,24 +19,17 @@ void UHarmoniaGameplayAbility_Mantle::ActivateAbility(const FGameplayAbilitySpec
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	AHarmoniaCharacter* HarmoniaCharacter = GetHarmoniaCharacter();
-	if (!HarmoniaCharacter)
+	if (!GetHarmoniaCharacter())
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
 
-	HarmoniaCharacter->OnMantlingEndedDelegate.AddDynamic(this, &UHarmoniaGameplayAbility_Mantle::OnMantlingEnded);
 	StartMantleCheckTask();
 }
 
 void UHarmoniaGameplayAbility_Mantle::StartMantleCheckTask()
 {
-	if (bIsMantling)
-	{
-		return;
-	}
-
 	UAbilityTask_WaitDelay* WaitTask = UAbilityTask_WaitDelay::WaitDelay(this, MantleCheckInterval);
 	if (WaitTask)
 	{
@@ -46,115 +40,89 @@ void UHarmoniaGameplayAbility_Mantle::StartMantleCheckTask()
 
 void UHarmoniaGameplayAbility_Mantle::OnMantleCheckTimer()
 {
-	if (bIsMantling)
+	AHarmoniaCharacter* HarmoniaCharacter = GetHarmoniaCharacter();
+	if (!HarmoniaCharacter)
 	{
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		return;
 	}
 
-	AHarmoniaCharacter* HarmoniaCharacter = GetHarmoniaCharacter();
-	if (HarmoniaCharacter && HarmoniaCharacter->TryMantleFromGA())
+	UCharacterMovementComponent* CMC = HarmoniaCharacter->GetCharacterMovement();
+	if (!CMC)
+	{
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+		return;
+	}
+
+	if (bIsMantling)
+	{
+		if (CMC->MovementMode != MOVE_Custom)
+		{
+			CancelMantleExecuteAbility();
+			bIsMantling = false;
+		}
+		StartMantleCheckTask();
+		return;
+	}
+
+	if (!CMC->IsFalling())
+	{
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+		return;
+	}
+
+	if (HarmoniaCharacter->TryMantleFromGA())
 	{
 		bIsMantling = true;
 		
-		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+		if (MantleExecuteEventTag.IsValid())
 		{
-			// Add State.Mantling tag FIRST (before cancelling abilities)
-			// This prevents cancelled abilities from immediately reactivating due to held input
-			ASC->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(TEXT("State.Mantling")));
-			
-			// Cancel Sprint GA first (before Jump cancellation removes State.InAir tag)
-			if (SprintAbilityClass)
+			if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
 			{
-				FGameplayAbilitySpec* SprintSpec = ASC->FindAbilitySpecFromClass(SprintAbilityClass);
-				if (SprintSpec && SprintSpec->IsActive())
-				{
-					TArray<UGameplayAbility*> Instances = SprintSpec->GetAbilityInstances();
-					for (UGameplayAbility* Instance : Instances)
-					{
-						if (Instance && Instance->IsActive())
-						{
-							Instance->CancelAbility(SprintSpec->Handle, Instance->GetCurrentActorInfo(), Instance->GetCurrentActivationInfo(), true);
-						}
-					}
-				}
-			}
-			
-			// Cancel Block GA
-			if (BlockAbilityClass)
-			{
-				FGameplayAbilitySpec* BlockSpec = ASC->FindAbilitySpecFromClass(BlockAbilityClass);
-				if (BlockSpec && BlockSpec->IsActive())
-				{
-					TArray<UGameplayAbility*> Instances = BlockSpec->GetAbilityInstances();
-					for (UGameplayAbility* Instance : Instances)
-					{
-						if (Instance && Instance->IsActive())
-						{
-							Instance->CancelAbility(BlockSpec->Handle, Instance->GetCurrentActorInfo(), Instance->GetCurrentActivationInfo(), true);
-						}
-					}
-				}
-			}
-			
-			// Cancel Jump GA by class
-			if (JumpAbilityClass)
-			{
-				FGameplayAbilitySpec* JumpSpec = ASC->FindAbilitySpecFromClass(JumpAbilityClass);
-				if (JumpSpec && JumpSpec->IsActive())
-				{
-					TArray<UGameplayAbility*> Instances = JumpSpec->GetAbilityInstances();
-					for (UGameplayAbility* Instance : Instances)
-					{
-						if (Instance && Instance->IsActive())
-						{
-							Instance->CancelAbility(JumpSpec->Handle, Instance->GetCurrentActorInfo(), Instance->GetCurrentActivationInfo(), true);
-						}
-					}
-				}
-			}
-			
-			// Apply mantle cost effect
-			if (CostGameplayEffectClass)
-			{
-				FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
-				EffectContext.AddSourceObject(GetAvatarActorFromActorInfo());
-				
-				FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(CostGameplayEffectClass, GetAbilityLevel(), EffectContext);
-				if (SpecHandle.IsValid())
-				{
-					ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-				}
+				FGameplayEventData EventData;
+				EventData.Instigator = HarmoniaCharacter;
+				EventData.Target = HarmoniaCharacter;
+				ASC->HandleGameplayEvent(MantleExecuteEventTag, &EventData);
 			}
 		}
 	}
-	else
-	{
-		StartMantleCheckTask();
-	}
+
+	StartMantleCheckTask();
 }
 
-void UHarmoniaGameplayAbility_Mantle::OnMantlingEnded()
+bool UHarmoniaGameplayAbility_Mantle::CanBeCanceled() const
 {
-	bIsMantling = false;
-	
-	// Remove State.Mantling tag
-	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+	if (bIsMantling)
 	{
-		ASC->RemoveLooseGameplayTag(FGameplayTag::RequestGameplayTag(TEXT("State.Mantling")));
+		return false;
 	}
-	
-	StartMantleCheckTask();
+	return Super::CanBeCanceled();
 }
 
 void UHarmoniaGameplayAbility_Mantle::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	if (AHarmoniaCharacter* HarmoniaCharacter = Cast<AHarmoniaCharacter>(ActorInfo->AvatarActor.Get()))
+	if (bIsMantling)
 	{
-		HarmoniaCharacter->OnMantlingEndedDelegate.RemoveDynamic(this, &UHarmoniaGameplayAbility_Mantle::OnMantlingEnded);
+		CancelMantleExecuteAbility();
+		bIsMantling = false;
 	}
 	
-	bIsMantling = false;
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+void UHarmoniaGameplayAbility_Mantle::CancelMantleExecuteAbility()
+{
+	if (!MantleExecuteAbilityTag.IsValid())
+	{
+		return;
+	}
+
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+	{
+		FGameplayTagContainer TagsToCancel;
+		TagsToCancel.AddTag(MantleExecuteAbilityTag);
+		ASC->CancelAbilities(&TagsToCancel, nullptr, nullptr);
+	}
 }
 
 AHarmoniaCharacter* UHarmoniaGameplayAbility_Mantle::GetHarmoniaCharacter() const

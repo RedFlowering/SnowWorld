@@ -55,6 +55,8 @@ protected:
 
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0) override;
+	
 	void OnEquipAnimation(bool bStart);
 	void OnUnEquipAnimation(bool bStart);
 	 

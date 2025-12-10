@@ -9,14 +9,22 @@
 class AHarmoniaCharacter;
 
 /**
- * UHarmoniaGameplayAbility_Mantle
+ * UHarmoniaGameplayAbility_Mantle (MantleMonitor)
  *
- * Mantle ability that activates during InAir state and checks for mantle opportunities.
- * Uses AbilityTask_WaitDelay for periodic checking.
+ * Monitors for mantle opportunities during InAir state.
+ * When mantling is detected, triggers GA_MantleExecute via GameplayEvent.
+ * Automatically ends MantleExecute when mantling animation completes.
  *
- * Blueprint Setup:
- * - ActivationRequiredTags: State.InAir (auto-activate when jumping)
- * - ActivationOwnedTags: State.Mantling (applied during mantling)
+ * Blueprint Setup (GA_Harmonia_Mantle):
+ * - Ability Triggers: State.InAir (Owned Tag Present)
+ * - MantleExecuteEventTag: Event.Mantle.Execute
+ * - MantleExecuteAbilityTag: Ability.Mantle
+ *
+ * Requires separate GA_MantleExecute blueprint with:
+ * - Ability Tags: Ability.Mantle
+ * - Ability Triggers: Event.Mantle.Execute (On Gameplay Event)
+ * - Cancel Abilities With Tag: Ability.Sprint, Ability.Block, Ability.Jump
+ * - Activation Owned Tags: State.Mantling
  */
 UCLASS()
 class HARMONIAKIT_API UHarmoniaGameplayAbility_Mantle : public ULyraGameplayAbility
@@ -27,8 +35,8 @@ public:
 	UHarmoniaGameplayAbility_Mantle(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
-
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
+	virtual bool CanBeCanceled() const override;
 
 protected:
 	/** Start a WaitDelay task to check mantle on next interval */
@@ -38,9 +46,8 @@ protected:
 	UFUNCTION()
 	void OnMantleCheckTimer();
 
-	/** Called when ALS mantling ends */
-	UFUNCTION()
-	void OnMantlingEnded();
+	/** Force cancel MantleExecute ability to remove State.Mantling tag */
+	void CancelMantleExecuteAbility();
 
 	AHarmoniaCharacter* GetHarmoniaCharacter() const;
 
@@ -49,17 +56,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mantle")
 	float MantleCheckInterval = 0.05f;
 
-	/** Jump ability class to cancel when mantling starts */
+	/** Event tag to trigger MantleExecute ability */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mantle")
-	TSubclassOf<UGameplayAbility> JumpAbilityClass;
+	FGameplayTag MantleExecuteEventTag;
 
-	/** Sprint ability class to cancel when mantling starts */
+	/** Ability tag used to identify and cancel MantleExecute */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mantle")
-	TSubclassOf<UGameplayAbility> SprintAbilityClass;
-
-	/** Block ability class to cancel when mantling starts */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mantle")
-	TSubclassOf<UGameplayAbility> BlockAbilityClass;
+	FGameplayTag MantleExecuteAbilityTag;
 
 private:
 	bool bIsMantling = false;

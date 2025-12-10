@@ -7,7 +7,7 @@
 #include "AbilitySystem/LyraAbilitySystemComponent.h"
 #include "Settings/AlsCharacterSettings.h"
 #include "Utility/AlsConstants.h"
-#include "Components/CapsuleComponent.h" // Needed for SetDefaultSubobjectClass usage usually implies access to base
+#include "Components/CapsuleComponent.h"
 #include "Net/UnrealNetwork.h"
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Character_Status_Aiming, "Status.Aiming");
@@ -18,11 +18,7 @@ AHarmoniaCharacter::AHarmoniaCharacter(const FObjectInitializer& ObjectInitializ
 		.SetDefaultSubobjectClass<UHarmoniaHealthComponent>(TEXT("HealthComponent")))
 {
 	HarmoniaCharacterMovement = Cast<UHarmoniaCharacterMovementComponent>(GetCharacterMovement());
-
-	// Create lock-on targeting component
 	LockOnComponent = CreateDefaultSubobject<UHarmoniaLockOnTargetingComponent>(TEXT("LockOnComponent"));
-
-	// Cast parent's HealthComponent to HarmoniaHealthComponent (now accessible as protected member)
 	HarmoniaHealthComponent = Cast<UHarmoniaHealthComponent>(GetHealthComponent());
 }
 
@@ -43,25 +39,44 @@ void AHarmoniaCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME_CONDITION(ThisClass, DesiredOverlayMode, COND_SkipOwner);
 }
 
+void AHarmoniaCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
+{
+	Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
+
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+	{
+		static FGameplayTag InAirTag = FGameplayTag::RequestGameplayTag(FName("State.InAir"));
+		EMovementMode CurrentMode = GetCharacterMovement()->MovementMode;
+		
+		if (GetCharacterMovement()->IsFalling())
+		{
+			if (!ASC->HasMatchingGameplayTag(InAirTag))
+			{
+				ASC->AddLooseGameplayTag(InAirTag);
+			}
+		}
+		else if (CurrentMode == MOVE_Walking || CurrentMode == MOVE_NavWalking)
+		{
+			if (ASC->HasMatchingGameplayTag(InAirTag))
+			{
+				ASC->RemoveLooseGameplayTag(InAirTag);
+			}
+		}
+	}
+}
+
 void AHarmoniaCharacter::SetDesiredOverlayMode(const FGameplayTag& NewModeTag)
 {
 	if (DesiredOverlayMode != NewModeTag)
 	{
-		// Autonomous proxy: Set locally for prediction (if using COND_SkipOwner), then notify server
-		// If using COND_SkipOwner, we must set it locally.
-		// However, overlay states usually don't need strict prediction like movement.
-		// Let's stick to Server Authoritative model for simplicity and correctness first.
-		
-		// If Local, and Authority, set directly.
 		if (GetLocalRole() == ROLE_Authority)
 		{
 			const FGameplayTag Prev = DesiredOverlayMode;
 			DesiredOverlayMode = NewModeTag;
-			OnRep_DesiredOverlayMode(Prev); // Explicit call for Listen Server
+			OnRep_DesiredOverlayMode(Prev);
 		}
 		else
 		{
-			// Client: Send request to server
 			ServerSetDesiredOverlayMode(NewModeTag);
 		}
 	}
@@ -76,11 +91,9 @@ void AHarmoniaCharacter::OnRep_DesiredOverlayMode(const FGameplayTag& PreviousMo
 {
 	if (DesiredOverlayMode == PreviousMode)
 	{
-		// No change?
 		return;
 	}
 
-	// Logic adaptation:
 	bChangingOverlayMode = true;
 	PreviousOverlayMode = PreviousMode; 
 
@@ -180,30 +193,24 @@ bool AHarmoniaCharacter::GetUseLeftHandIK()
 
 bool AHarmoniaCharacter::StartMantling(const FAlsMantlingTraceSettings& TraceSettings)
 {
-	// Only allow mantling when GA explicitly requests it
-	// This blocks ALS Tick's automatic mantling detection
 	if (!bGAMantlingRequest)
 	{
 		return false;
 	}
 
-	// GA is requesting - call parent implementation to do actual mantling
 	return Super::StartMantling(TraceSettings);
 }
 
 bool AHarmoniaCharacter::TryMantleFromGA()
 {
-	// Set flag to allow mantling through StartMantling override
 	bGAMantlingRequest = true;
 
-	// Try grounded mantling first, then in-air mantling
 	bool bSuccess = StartMantlingGrounded();
 	if (!bSuccess)
 	{
 		bSuccess = StartMantlingInAir();
 	}
 
-	// Reset flag
 	bGAMantlingRequest = false;
 
 	return bSuccess;
@@ -211,9 +218,7 @@ bool AHarmoniaCharacter::TryMantleFromGA()
 
 void AHarmoniaCharacter::OnMantlingStarted_Implementation(const FAlsMantlingParameters& Parameters)
 {
-	// Call parent implementation - handles the actual mantling
 	Super::OnMantlingStarted_Implementation(Parameters);
-	// Note: Mantle GA activates itself via ActivationRequiredTags: State.InAir and detects mantling via TryMantleFromGA()
 }
 
 void AHarmoniaCharacter::OnMantlingEnded_Implementation()
