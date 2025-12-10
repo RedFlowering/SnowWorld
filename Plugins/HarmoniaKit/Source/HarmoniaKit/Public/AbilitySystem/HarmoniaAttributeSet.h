@@ -109,6 +109,7 @@ public:
 	// Ultimate Gauge
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, UltimateGauge);
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, MaxUltimateGauge);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, UltimateGaugeRegenRate);
 
 	// Note: Healing and Damage meta attributes are inherited from ULyraHealthSet
 
@@ -160,6 +161,17 @@ public:
 
 	// Called when ultimate gauge is full
 	mutable FHarmoniaAttributeEvent OnUltimateGaugeFull;
+
+	// ============================================================================
+	// Ultimate Gauge Helpers
+	// ============================================================================
+
+	/**
+	 * Adjusts ultimate gauge to maintain ratio when max changes (e.g., weapon switch)
+	 * @param NewMaxUltimateGauge The new maximum ultimate gauge value
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Ultimate")
+	void AdjustUltimateGaugeForNewMax(float NewMaxUltimateGauge);
 
 protected:
 	/**
@@ -243,6 +255,9 @@ protected:
 
 	UFUNCTION()
 	void OnRep_MaxUltimateGauge(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_UltimateGaugeRegenRate(const FGameplayAttributeData& OldValue);
 
 	/**
 	 * Helper function to clamp attribute values
@@ -468,6 +483,13 @@ private:
 	 */
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxUltimateGauge, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData MaxUltimateGauge;
+
+	/**
+	 * Ultimate gauge regeneration rate (per second)
+	 * Controls how fast the ultimate gauge fills up
+	 */
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_UltimateGaugeRegenRate, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData UltimateGaugeRegenRate;
 
 	// ============================================================================
 	// Internal State

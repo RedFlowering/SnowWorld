@@ -232,9 +232,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Harmonia|Equipment")
 	TSubclassOf<UGameplayEffect> DefaultStatModifierEffectClass;
 
+	/** Weapon type to Ultimate Gauge configuration mappings
+	 * When a weapon type is equipped, the corresponding GE will be applied
+	 * to modify UltimateGaugeRegenRate and/or MaxUltimateGauge
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Harmonia|Equipment|Ultimate")
+	TArray<FWeaponUltimateGaugeConfig> WeaponUltimateGaugeConfigs;
+
 	/** Gameplay Effect class for applying equipment load penalty via SetByCaller */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Harmonia|Equipment")
 	TSubclassOf<UGameplayEffect> EquipLoadPenaltyEffectClass;
+
 
 	// ============================================================================
 	// Internal Functions
@@ -342,4 +350,18 @@ private:
 
 	// Active equipment load penalty effect handle
 	FActiveGameplayEffectHandle ActiveEquipLoadPenaltyHandle;
+
+	// Active ultimate gauge config effect handle
+	FActiveGameplayEffectHandle ActiveUltimateGaugeConfigHandle;
+
+	/**
+	 * Apply ultimate gauge configuration based on equipped weapon type
+	 * @param WeaponTypeTag The weapon type tag to look up
+	 */
+	void ApplyUltimateGaugeConfig(const FGameplayTag& WeaponTypeTag);
+
+	/**
+	 * Remove current ultimate gauge configuration
+	 */
+	void RemoveUltimateGaugeConfig();
 };

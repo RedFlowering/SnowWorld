@@ -9,6 +9,34 @@
 #include "Definitions/HarmoniaCraftingSystemDefinitions.h"
 #include "HarmoniaEquipmentSystemDefinitions.generated.h"
 
+class UGameplayEffect;
+
+/**
+ * Weapon type to Ultimate Gauge configuration mapping
+ * Used for per-weapon-type Ultimate Gauge regen rate and max gauge adjustments
+ */
+USTRUCT(BlueprintType)
+struct FWeaponUltimateGaugeConfig
+{
+	GENERATED_BODY()
+
+	/** Weapon type tag to match (e.g., Weapon.Type.Sword, Weapon.Type.Dagger) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ultimate Gauge")
+	FGameplayTag WeaponTypeTag;
+
+	/** GameplayEffect to apply when this weapon type is equipped
+	 * This GE should modify UltimateGaugeRegenRate and/or MaxUltimateGauge
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ultimate Gauge")
+	TSubclassOf<UGameplayEffect> UltimateGaugeConfigEffect;
+
+	FWeaponUltimateGaugeConfig()
+		: WeaponTypeTag()
+		, UltimateGaugeConfigEffect(nullptr)
+	{}
+};
+
+
 /**
  * Equipment slot types
  */

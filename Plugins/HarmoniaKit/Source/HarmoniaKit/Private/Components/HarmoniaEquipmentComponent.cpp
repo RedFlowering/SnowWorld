@@ -41,6 +41,9 @@ void UHarmoniaEquipmentComponent::EndPlay(const EEndPlayReason::Type EndPlayReas
 		ActiveEquipLoadPenaltyHandle.Invalidate();
 	}
 
+	// Remove ultimate gauge config effect
+	RemoveUltimateGaugeConfig();
+
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -134,6 +137,13 @@ bool UHarmoniaEquipmentComponent::EquipItem(const FHarmoniaID& EquipmentId, EEqu
 	OnEquipmentChanged.Broadcast(TargetSlot, OldEquipmentId, EquipmentId);
 	OnEquipmentStatsChanged.Broadcast(TargetSlot, EquipmentData.StatModifiers);
 
+	// Apply per-weapon Ultimate Gauge configuration for MainHand
+	if (TargetSlot == EEquipmentSlot::MainHand)
+	{
+		FGameplayTag WeaponTypeTag = GetMainHandWeaponTypeTag();
+		ApplyUltimateGaugeConfig(WeaponTypeTag);
+	}
+
 	UE_LOG(LogTemp, Log, TEXT("EquipItem: Successfully equipped %s to slot %d"),
 		*EquipmentData.DisplayName.ToString(), static_cast<int32>(TargetSlot));
 
@@ -181,6 +191,12 @@ bool UHarmoniaEquipmentComponent::UnequipItem(EEquipmentSlot Slot)
 
 	// Broadcast event
 	OnEquipmentChanged.Broadcast(Slot, OldEquipmentId, FHarmoniaID());
+
+	// Remove Ultimate Gauge config when MainHand is unequipped
+	if (Slot == EEquipmentSlot::MainHand)
+	{
+		RemoveUltimateGaugeConfig();
+	}
 
 	UE_LOG(LogTemp, Log, TEXT("UnequipItem: Successfully unequipped from slot %d"), static_cast<int32>(Slot));
 
@@ -1098,4 +1114,66 @@ bool UHarmoniaEquipmentComponent::ServerSwapEquipment_Validate(EEquipmentSlot Sl
 	}
 
 	return true;
+}
+
+// ============================================================================
+// Ultimate Gauge Configuration
+// ============================================================================
+
+void UHarmoniaEquipmentComponent::ApplyUltimateGaugeConfig(const FGameplayTag& WeaponTypeTag)
+{
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC)
+	{
+		return;
+	}
+
+	// Remove previous config if any
+	RemoveUltimateGaugeConfig();
+
+	// Find matching config for this weapon type
+	const FWeaponUltimateGaugeConfig* MatchingConfig = nullptr;
+	for (const FWeaponUltimateGaugeConfig& Config : WeaponUltimateGaugeConfigs)
+	{
+		if (Config.WeaponTypeTag.MatchesTagExact(WeaponTypeTag))
+		{
+			MatchingConfig = &Config;
+			break;
+		}
+	}
+
+	if (!MatchingConfig || !MatchingConfig->UltimateGaugeConfigEffect)
+	{
+		return;
+	}
+
+	// Adjust gauge ratio before applying new max (if needed)
+	if (UHarmoniaAttributeSet* AttributeSet = GetAttributeSet())
+	{
+		// Store current ratio for potential adjustment after GE applies
+		// Note: The actual ratio adjustment should happen in the GE or via AdjustUltimateGaugeForNewMax
+	}
+
+	// Apply the config effect
+	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+	EffectContext.AddSourceObject(this);
+
+	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(MatchingConfig->UltimateGaugeConfigEffect, 1.0f, EffectContext);
+	if (SpecHandle.IsValid())
+	{
+		ActiveUltimateGaugeConfigHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		UE_LOG(LogTemp, Log, TEXT("ApplyUltimateGaugeConfig: Applied config for weapon type %s"), *WeaponTypeTag.ToString());
+	}
+}
+
+void UHarmoniaEquipmentComponent::RemoveUltimateGaugeConfig()
+{
+	if (ActiveUltimateGaugeConfigHandle.IsValid())
+	{
+		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+		{
+			ASC->RemoveActiveGameplayEffect(ActiveUltimateGaugeConfigHandle);
+		}
+		ActiveUltimateGaugeConfigHandle.Invalidate();
+	}
 }

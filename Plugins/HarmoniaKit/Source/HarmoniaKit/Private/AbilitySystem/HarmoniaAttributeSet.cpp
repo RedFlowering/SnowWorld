@@ -44,6 +44,7 @@ UHarmoniaAttributeSet::UHarmoniaAttributeSet()
 	// Ultimate gauge
 	UltimateGauge = 0.0f;
 	MaxUltimateGauge = 100.0f;
+	UltimateGaugeRegenRate = 5.0f; // 5 ultimate gauge per second
 }
 
 void UHarmoniaAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -88,6 +89,7 @@ void UHarmoniaAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	// Ultimate gauge
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, UltimateGauge, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, MaxUltimateGauge, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, UltimateGaugeRegenRate, COND_None, REPNOTIFY_Always);
 }
 
 bool UHarmoniaAttributeSet::PreGameplayEffectExecute(FGameplayEffectModCallbackData& Data)
@@ -536,6 +538,10 @@ void UHarmoniaAttributeSet::ClampAttribute(const FGameplayAttribute& Attribute, 
 	{
 		NewValue = FMath::Max(NewValue, 1.0f);
 	}
+	else if (Attribute == GetUltimateGaugeRegenRateAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 0.0f);
+	}
 }
 
 UAbilitySystemComponent* UHarmoniaAttributeSet::GetAbilitySystemComponent() const
@@ -676,4 +682,30 @@ void UHarmoniaAttributeSet::OnRep_UltimateGauge(const FGameplayAttributeData& Ol
 void UHarmoniaAttributeSet::OnRep_MaxUltimateGauge(const FGameplayAttributeData& OldValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxUltimateGauge, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_UltimateGaugeRegenRate(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, UltimateGaugeRegenRate, OldValue);
+}
+
+void UHarmoniaAttributeSet::AdjustUltimateGaugeForNewMax(float NewMaxUltimateGauge)
+{
+	if (NewMaxUltimateGauge <= 0.0f)
+	{
+		return;
+	}
+
+	const float CurrentMax = GetMaxUltimateGauge();
+	if (CurrentMax <= 0.0f)
+	{
+		return;
+	}
+
+	// Calculate current ratio
+	const float CurrentRatio = GetUltimateGauge() / CurrentMax;
+
+	// Set new max and adjust gauge to maintain ratio
+	SetMaxUltimateGauge(NewMaxUltimateGauge);
+	SetUltimateGauge(CurrentRatio * NewMaxUltimateGauge);
 }
