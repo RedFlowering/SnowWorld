@@ -45,19 +45,33 @@ bool UHarmoniaGameplayAbility_MeleeAttack::CanActivateAbility(
 		return false;
 	}
 
-	// For Ultimate attacks, check if we have enough gauge
+	// For Ultimate attacks, check if we have enough gauge and not on cooldown
 	if (AttackType == EHarmoniaAttackType::Ultimate)
 	{
-		// Get combo sequence to check required gauge
+		// Get combo sequence to check required gauge and cooldown
 		FHarmoniaComboAttackSequence UltimateSequence;
 		if (MeleeComp->GetComboSequence(EHarmoniaAttackType::Ultimate, UltimateSequence))
 		{
 			if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
 			{
+				// Check gauge
 				const float CurrentGauge = ASC->GetNumericAttribute(UHarmoniaAttributeSet::GetUltimateGaugeAttribute());
 				if (CurrentGauge < UltimateSequence.UltimateGaugeRequired)
 				{
 					return false;
+				}
+			}
+
+			// Check cooldown (timestamp-based)
+			if (UltimateSequence.UltimateCooldown > 0.0f)
+			{
+				if (const UWorld* World = GEngine->GetWorldFromContextObject(ActorInfo->OwnerActor.Get(), EGetWorldErrorMode::LogAndReturnNull))
+				{
+					const float CurrentTime = World->GetTimeSeconds();
+					if (CurrentTime < LastUltimateUseTime + UltimateSequence.UltimateCooldown)
+					{
+						return false; // Still on cooldown
+					}
 				}
 			}
 		}
@@ -106,6 +120,18 @@ void UHarmoniaGameplayAbility_MeleeAttack::ActivateAbility(
 		// For charged attacks, start charging and wait for input release
 		StartCharging();
 	}
+	else if (AttackType == EHarmoniaAttackType::Ultimate)
+	{
+		// Record use time for cooldown (gauge consumption handled by CostGameplayEffectClass)
+		if (AActor* Avatar = GetAvatarActorFromActorInfo())
+		{
+			LastUltimateUseTime = Avatar->GetWorld()->GetTimeSeconds();
+		}
+
+		// Perform the attack
+		PerformMeleeAttack();
+		StartWaitingForComboInput();
+	}
 	else
 	{
 		// For normal attacks, perform immediately
@@ -123,6 +149,20 @@ void UHarmoniaGameplayAbility_MeleeAttack::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
+	// Clean up charge state
+	if (bIsCharging)
+	{
+		bIsCharging = false;
+
+		// Stop charge timer
+		if (AActor* Avatar = GetAvatarActorFromActorInfo())
+		{
+			Avatar->GetWorldTimerManager().ClearTimer(ChargeTickTimerHandle);
+		}
+
+		// Note: State.Charging tag is removed automatically by GA's Activation Owned Tags
+	}
+
 	// End attack in melee combat component
 	if (MeleeCombatComponent)
 	{
@@ -582,10 +622,11 @@ void UHarmoniaGameplayAbility_MeleeAttack::OnChargeTick()
 	// Increment charge time
 	CurrentChargeTime += 0.05f;
 
-	// Clamp to max charge time
-	if (CurrentChargeTime > ChargeConfig.MaxChargeTime)
+	// Clamp to max charge time (calculated from last charge level)
+	const float MaxChargeTime = ChargeConfig.GetMaxChargeTime();
+	if (CurrentChargeTime > MaxChargeTime)
 	{
-		CurrentChargeTime = ChargeConfig.MaxChargeTime;
+		CurrentChargeTime = MaxChargeTime;
 	}
 
 	// Update charge level and trigger cue if level changed
@@ -608,7 +649,11 @@ void UHarmoniaGameplayAbility_MeleeAttack::OnChargeTick()
 		}
 	}
 
-	// TODO: Drain stamina based on ChargeConfig.StaminaDrainPerSecond
+	// Update charge state in combat component (for debug display)
+	if (MeleeCombatComponent)
+	{
+		MeleeCombatComponent->UpdateChargeState(CurrentChargeTime, CachedChargeLevel, MaxChargeTime);
+	}
 }
 
 void UHarmoniaGameplayAbility_MeleeAttack::ReleaseChargeAttack()
@@ -620,6 +665,13 @@ void UHarmoniaGameplayAbility_MeleeAttack::ReleaseChargeAttack()
 	}
 
 	bIsCharging = false;
+
+	// Clear charge state in combat component (for debug display)
+	if (MeleeCombatComponent)
+	{
+		MeleeCombatComponent->ClearChargeState();
+	}
+
 	const int32 ChargeLevel = GetCurrentChargeLevel();
 	const FHarmoniaChargeConfig& ChargeConfig = GetChargeConfig();
 

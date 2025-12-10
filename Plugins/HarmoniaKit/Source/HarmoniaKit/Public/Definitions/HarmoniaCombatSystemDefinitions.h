@@ -590,25 +590,23 @@ struct HARMONIAKIT_API FHarmoniaChargeConfig
 {
 	GENERATED_BODY()
 
-	/** Maximum charge time (seconds) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Charge")
-	float MaxChargeTime = 2.0f;
-
-	/** Charge level thresholds */
+	/** Charge level thresholds (RequiredTime should be cumulative) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Charge")
 	TArray<FHarmoniaChargeLevel> ChargeLevels;
-
-	/** Stamina drain rate while charging (per second) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Charge|Stamina")
-	float StaminaDrainPerSecond = 5.0f;
-
-	/** Gameplay tags that can cancel charging (e.g., dodge, block) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Charge")
-	FGameplayTagContainer CancelableTags;
 
 	/** Montage to play during charging */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Charge|Animation")
 	TObjectPtr<UAnimMontage> ChargeMontage = nullptr;
+
+	/** Get maximum charge time from the last charge level */
+	float GetMaxChargeTime() const
+	{
+		if (ChargeLevels.Num() > 0)
+		{
+			return ChargeLevels.Last().RequiredTime;
+		}
+		return 0.0f;
+	}
 };
 
 /**

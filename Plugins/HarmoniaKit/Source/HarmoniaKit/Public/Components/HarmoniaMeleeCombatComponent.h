@@ -365,6 +365,55 @@ protected:
 	TWeakObjectPtr<AActor> ParriedTarget;
 
 	// ============================================================================
+	// Charge Attack State (updated by GA for debug display)
+	// ============================================================================
+
+	/** Current charge time (set by GA) */
+	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|Charge")
+	float CurrentChargeTime = 0.0f;
+
+	/** Current charge level (set by GA) */
+	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|Charge")
+	int32 CurrentChargeLevel = 0;
+
+	/** Max charge time (set by GA) */
+	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|Charge")
+	float MaxChargeTime = 0.0f;
+
+public:
+	/** Update charge state (called by MeleeAttack ability) */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Charge")
+	void UpdateChargeState(float InChargeTime, int32 InChargeLevel, float InMaxChargeTime)
+	{
+		CurrentChargeTime = InChargeTime;
+		CurrentChargeLevel = InChargeLevel;
+		MaxChargeTime = InMaxChargeTime;
+	}
+
+	/** Clear charge state */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Charge")
+	void ClearChargeState()
+	{
+		CurrentChargeTime = 0.0f;
+		CurrentChargeLevel = 0;
+		MaxChargeTime = 0.0f;
+	}
+
+	/** Get current charge time */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Charge")
+	float GetCurrentChargeTime() const { return CurrentChargeTime; }
+
+	/** Get current charge level */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Charge")
+	int32 GetCurrentChargeLevel() const { return CurrentChargeLevel; }
+
+	/** Get max charge time */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Charge")
+	float GetMaxChargeTime() const { return MaxChargeTime; }
+
+protected:
+
+	// ============================================================================
 	// Timers
 	// ============================================================================
 

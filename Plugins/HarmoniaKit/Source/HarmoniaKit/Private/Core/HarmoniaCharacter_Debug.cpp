@@ -12,6 +12,7 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
+#include "Components/HarmoniaMeleeCombatComponent.h"
 #include "GameplayTagContainer.h"
 #include "CanvasItem.h"
 
@@ -351,6 +352,36 @@ void AHarmoniaCharacter::DisplayDebugStats(const UCanvas* Canvas, float Scale,
 	DrawAttributeBar(TEXT("Stamina"), AttributeSet->GetStamina(), AttributeSet->GetMaxStamina(), FLinearColor::Yellow);
 	DrawAttributeBar(TEXT("Poise"), AttributeSet->GetPoise(), AttributeSet->GetMaxPoise(), FLinearColor(0.6f, 0.3f, 0.0f)); // Brown/Orange for Poise
 	DrawAttributeBar(TEXT("Ultimate"), AttributeSet->GetUltimateGauge(), AttributeSet->GetMaxUltimateGauge(), FLinearColor(1.0f, 0.0f, 1.0f)); // Magenta for Ultimate
+
+	// ==== Charge Attack Debug ====
+	FGameplayTag ChargingTag = FGameplayTag::RequestGameplayTag(FName("State.Charging"), false);
+	FGameplayTagContainer OwnedTags;
+	ASC->GetOwnedGameplayTags(OwnedTags);
+	
+	if (ChargingTag.IsValid() && OwnedTags.HasTag(ChargingTag))
+	{
+		// Get charge info from MeleeCombatComponent
+		if (UHarmoniaMeleeCombatComponent* MeleeComp = FindComponentByClass<UHarmoniaMeleeCombatComponent>())
+		{
+			const float ChargeTime = MeleeComp->GetCurrentChargeTime();
+			const int32 ChargeLevel = MeleeComp->GetCurrentChargeLevel();
+			const float MaxTime = MeleeComp->GetMaxChargeTime();
+
+			// Draw charge bar
+			Text.SetColor(FLinearColor(1.0f, 0.0f, 1.0f));
+			FString ChargeText = FString::Printf(TEXT("[CHARGING] Lv.%d  %.1fs / %.1fs"), ChargeLevel, ChargeTime, MaxTime);
+			Text.Text = FText::FromString(ChargeText);
+			Text.Draw(Canvas->Canvas, {HorizontalLocation, VerticalLocation});
+			VerticalLocation += RowOffset;
+		}
+		else
+		{
+			Text.SetColor(FLinearColor(1.0f, 0.0f, 1.0f));
+			Text.Text = FText::FromString(TEXT("[CHARGING] Hold to charge..."));
+			Text.Draw(Canvas->Canvas, {HorizontalLocation, VerticalLocation});
+			VerticalLocation += RowOffset;
+		}
+	}
 }
 
 #endif // !UE_BUILD_SHIPPING

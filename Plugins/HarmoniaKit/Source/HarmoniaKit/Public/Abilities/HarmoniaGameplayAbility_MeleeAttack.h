@@ -179,8 +179,12 @@ protected:
 	/** Timer handle for charge tick */
 	FTimerHandle ChargeTickTimerHandle;
 
-	/** Timer handle for stamina drain */
-	FTimerHandle StaminaDrainTimerHandle;
+	// ============================================================================
+	// Ultimate Attack State
+	// ============================================================================
+
+	/** Last time ultimate attack was used (for cooldown check) */
+	float LastUltimateUseTime = -9999.0f;
 
 private:
 	/** Get melee combat component from owner */
