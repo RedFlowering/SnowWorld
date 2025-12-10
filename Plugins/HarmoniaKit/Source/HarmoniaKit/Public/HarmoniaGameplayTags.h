@@ -162,6 +162,29 @@ namespace HarmoniaGameplayTags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Attack_Heavy);
 
 	// ============================================================
+	// Charge Attack System Tags
+	// ============================================================
+
+	// Input Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Attack_Charge);
+
+	// Ability Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Attack_Charge);
+
+	// State Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Charging);
+
+	// ============================================================
+	// Ultimate Attack System Tags
+	// ============================================================
+
+	// Input Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Attack_Ultimate);
+
+	// Ability Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Attack_Ultimate);
+
+	// ============================================================
 	// Dodge System Tags (Already implemented)
 	// ============================================================
 

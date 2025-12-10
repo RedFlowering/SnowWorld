@@ -85,7 +85,7 @@ enum class EHarmoniaAttackType : uint8
 {
 	Light UMETA(DisplayName = "Light Attack"),
 	Heavy UMETA(DisplayName = "Heavy Attack"),
-	Special UMETA(DisplayName = "Special Attack"),
+	Ultimate UMETA(DisplayName = "Ultimate Attack"),
 	Charged UMETA(DisplayName = "Charged Attack")
 };
 
@@ -552,6 +552,66 @@ struct HARMONIAKIT_API FHarmoniaComboAttackStep
 };
 
 /**
+ * Charge Level Configuration
+ * Individual charge level threshold and properties
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaChargeLevel
+{
+	GENERATED_BODY()
+
+	/** Time required to reach this charge level (seconds from start) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Charge Level")
+	float RequiredTime = 0.5f;
+
+	/** Damage multiplier at this charge level */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Charge Level")
+	float DamageMultiplier = 1.5f;
+
+	/** Montage section to play when released at this level */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Charge Level|Animation")
+	FName ReleaseMontageSectionName = NAME_None;
+
+	/** GameplayCue to trigger when this level is reached */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Charge Level|Effects")
+	FGameplayTag ChargeLevelCueTag;
+
+	/** Bonus poise damage at this charge level */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Charge Level")
+	float BonusPoiseDamage = 0.0f;
+};
+
+/**
+ * Charge Attack Configuration
+ * Settings for charged attack behavior
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaChargeConfig
+{
+	GENERATED_BODY()
+
+	/** Maximum charge time (seconds) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Charge")
+	float MaxChargeTime = 2.0f;
+
+	/** Charge level thresholds */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Charge")
+	TArray<FHarmoniaChargeLevel> ChargeLevels;
+
+	/** Stamina drain rate while charging (per second) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Charge|Stamina")
+	float StaminaDrainPerSecond = 5.0f;
+
+	/** Gameplay tags that can cancel charging (e.g., dodge, block) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Charge")
+	FGameplayTagContainer CancelableTags;
+
+	/** Montage to play during charging */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Charge|Animation")
+	TObjectPtr<UAnimMontage> ChargeMontage = nullptr;
+};
+
+/**
  * Combo Attack Sequence
  * Full combo chain for a weapon
  */
@@ -568,7 +628,7 @@ struct HARMONIAKIT_API FHarmoniaComboAttackSequence : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo", meta = (Categories = "Weapon.Type"))
 	FGameplayTag WeaponTypeTag;
 
-	// Attack type (Light, Heavy, Special, etc.)
+	// Attack type (Light, Heavy, Ultimate, Charged)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
 	EHarmoniaAttackType AttackType = EHarmoniaAttackType::Light;
 
@@ -588,6 +648,31 @@ struct HARMONIAKIT_API FHarmoniaComboAttackSequence : public FTableRowBase
 	// Gameplay tags blocked by this combo
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combo")
 	FGameplayTagContainer BlockedTags;
+
+	// ============================================================================
+	// Charged Attack Options (only valid when AttackType == Charged)
+	// ============================================================================
+
+	/** [Charged] Charge attack configuration */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Charged Attack",
+	          meta = (EditCondition = "AttackType == EHarmoniaAttackType::Charged", EditConditionHides))
+	FHarmoniaChargeConfig ChargeConfig;
+
+	// ============================================================================
+	// Ultimate Attack Options (only valid when AttackType == Ultimate)
+	// ============================================================================
+
+	/** [Ultimate] Required gauge amount (0-100) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ultimate Attack",
+	          meta = (EditCondition = "AttackType == EHarmoniaAttackType::Ultimate", EditConditionHides,
+	                  ClampMin = "0.0", ClampMax = "100.0"))
+	float UltimateGaugeRequired = 100.0f;
+
+	/** [Ultimate] Cooldown time in seconds (0 = no cooldown) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ultimate Attack",
+	          meta = (EditCondition = "AttackType == EHarmoniaAttackType::Ultimate", EditConditionHides,
+	                  ClampMin = "0.0"))
+	float UltimateCooldown = 0.0f;
 };
 
 /**

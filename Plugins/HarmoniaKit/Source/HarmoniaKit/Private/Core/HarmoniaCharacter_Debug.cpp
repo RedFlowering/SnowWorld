@@ -165,6 +165,7 @@ void AHarmoniaCharacter::DisplayDebugCombat(const UCanvas* Canvas, float Scale,
 		{FName("Character.State.Attacking"), TEXT("Attacking"), FLinearColor::Red},
 		{FName("Character.State.Sprinting"), TEXT("Sprinting"), FLinearColor(0.0f, 1.0f, 1.0f)},
 		{FName("State.InAir"), TEXT("In Air"), FLinearColor::Yellow},
+		{FName("State.Charging"), TEXT("Charging"), FLinearColor(1.0f, 0.0f, 1.0f)},
 		{FName("Debuff.StaminaRecoveryBlocked"), TEXT("Stamina Recovery Blocked"), FLinearColor{1.0f, 0.5f, 0.0f}},
 		{FName("Ability.Cooldown.Block"), TEXT("Block Cooldown"), FLinearColor::Gray},
 	};
@@ -349,6 +350,7 @@ void AHarmoniaCharacter::DisplayDebugStats(const UCanvas* Canvas, float Scale,
 	DrawAttributeBar(TEXT("Mana"), AttributeSet->GetMana(), AttributeSet->GetMaxMana(), FLinearColor::Blue);
 	DrawAttributeBar(TEXT("Stamina"), AttributeSet->GetStamina(), AttributeSet->GetMaxStamina(), FLinearColor::Yellow);
 	DrawAttributeBar(TEXT("Poise"), AttributeSet->GetPoise(), AttributeSet->GetMaxPoise(), FLinearColor(0.6f, 0.3f, 0.0f)); // Brown/Orange for Poise
+	DrawAttributeBar(TEXT("Ultimate"), AttributeSet->GetUltimateGauge(), AttributeSet->GetMaxUltimateGauge(), FLinearColor(1.0f, 0.0f, 1.0f)); // Magenta for Ultimate
 }
 
 #endif // !UE_BUILD_SHIPPING

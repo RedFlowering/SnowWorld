@@ -12,6 +12,7 @@
 #include "GameplayCueManager.h"
 #include "Camera/CameraShakeBase.h"
 #include "Abilities/GameplayAbilityTargetTypes.h"
+#include "AbilitySystem/HarmoniaAttributeSet.h"
 
 UHarmoniaGameplayAbility_MeleeAttack::UHarmoniaGameplayAbility_MeleeAttack(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -42,6 +43,24 @@ bool UHarmoniaGameplayAbility_MeleeAttack::CanActivateAbility(
 	if (!MeleeComp || !MeleeComp->CanAttack())
 	{
 		return false;
+	}
+
+	// For Ultimate attacks, check if we have enough gauge
+	if (AttackType == EHarmoniaAttackType::Ultimate)
+	{
+		// Get combo sequence to check required gauge
+		FHarmoniaComboAttackSequence UltimateSequence;
+		if (MeleeComp->GetComboSequence(EHarmoniaAttackType::Ultimate, UltimateSequence))
+		{
+			if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
+			{
+				const float CurrentGauge = ASC->GetNumericAttribute(UHarmoniaAttributeSet::GetUltimateGaugeAttribute());
+				if (CurrentGauge < UltimateSequence.UltimateGaugeRequired)
+				{
+					return false;
+				}
+			}
+		}
 	}
 
 	// Note: Stamina cost is handled by CommitAbilityCost via CostGameplayEffectClass
@@ -81,11 +100,20 @@ void UHarmoniaGameplayAbility_MeleeAttack::ActivateAbility(
 	// Start attack in melee combat component
 	MeleeCombatComponent->StartAttack(AttackType);
 
-	// Perform the attack
-	PerformMeleeAttack();
-	
-	// Start waiting for combo input during the attack
-	StartWaitingForComboInput();
+	// Branch based on attack type
+	if (AttackType == EHarmoniaAttackType::Charged)
+	{
+		// For charged attacks, start charging and wait for input release
+		StartCharging();
+	}
+	else
+	{
+		// For normal attacks, perform immediately
+		PerformMeleeAttack();
+		
+		// Start waiting for combo input during the attack
+		StartWaitingForComboInput();
+	}
 }
 
 void UHarmoniaGameplayAbility_MeleeAttack::EndAbility(
@@ -108,6 +136,20 @@ void UHarmoniaGameplayAbility_MeleeAttack::EndAbility(
 	}
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+void UHarmoniaGameplayAbility_MeleeAttack::InputReleased(
+	const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo)
+{
+	// For charged attacks, release triggers the attack
+	if (AttackType == EHarmoniaAttackType::Charged && bIsCharging)
+	{
+		ReleaseChargeAttack();
+	}
+
+	Super::InputReleased(Handle, ActorInfo, ActivationInfo);
 }
 
 // ============================================================================
@@ -480,6 +522,191 @@ void UHarmoniaGameplayAbility_MeleeAttack::TriggerHitEffects(const FHarmoniaAtta
 			PC->ClientStartCameraShake(HitCameraShakeClass);
 		}
 	}
+}
+
+// ============================================================================
+// Charge Attack
+// ============================================================================
+
+void UHarmoniaGameplayAbility_MeleeAttack::StartCharging()
+{
+	bIsCharging = true;
+	CurrentChargeTime = 0.0f;
+	CachedChargeLevel = 0;
+
+	const FHarmoniaChargeConfig& ChargeConfig = GetChargeConfig();
+
+	// Play charge montage if specified
+	if (ChargeConfig.ChargeMontage)
+	{
+		UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+			this,
+			NAME_None,
+			ChargeConfig.ChargeMontage,
+			1.0f,
+			NAME_None,
+			true,  // Loop
+			1.0f
+		);
+
+		if (MontageTask)
+		{
+			MontageTask->OnCancelled.AddDynamic(this, &UHarmoniaGameplayAbility_MeleeAttack::OnMontageCancelled);
+			MontageTask->OnInterrupted.AddDynamic(this, &UHarmoniaGameplayAbility_MeleeAttack::OnMontageInterrupted);
+			MontageTask->ReadyForActivation();
+		}
+	}
+
+	// Start charge tick timer
+	if (AActor* Avatar = GetAvatarActorFromActorInfo())
+	{
+		Avatar->GetWorldTimerManager().SetTimer(
+			ChargeTickTimerHandle,
+			this,
+			&UHarmoniaGameplayAbility_MeleeAttack::OnChargeTick,
+			0.05f, // 50ms tick
+			true
+		);
+	}
+}
+
+void UHarmoniaGameplayAbility_MeleeAttack::OnChargeTick()
+{
+	if (!bIsCharging)
+	{
+		return;
+	}
+
+	const FHarmoniaChargeConfig& ChargeConfig = GetChargeConfig();
+
+	// Increment charge time
+	CurrentChargeTime += 0.05f;
+
+	// Clamp to max charge time
+	if (CurrentChargeTime > ChargeConfig.MaxChargeTime)
+	{
+		CurrentChargeTime = ChargeConfig.MaxChargeTime;
+	}
+
+	// Update charge level and trigger cue if level changed
+	const int32 NewChargeLevel = GetCurrentChargeLevel();
+	if (NewChargeLevel != CachedChargeLevel)
+	{
+		CachedChargeLevel = NewChargeLevel;
+
+		// Trigger charge level cue if specified
+		if (ChargeConfig.ChargeLevels.IsValidIndex(NewChargeLevel - 1))
+		{
+			const FHarmoniaChargeLevel& Level = ChargeConfig.ChargeLevels[NewChargeLevel - 1];
+			if (Level.ChargeLevelCueTag.IsValid())
+			{
+				if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+				{
+					ASC->ExecuteGameplayCue(Level.ChargeLevelCueTag);
+				}
+			}
+		}
+	}
+
+	// TODO: Drain stamina based on ChargeConfig.StaminaDrainPerSecond
+}
+
+void UHarmoniaGameplayAbility_MeleeAttack::ReleaseChargeAttack()
+{
+	// Stop charge tick timer
+	if (AActor* Avatar = GetAvatarActorFromActorInfo())
+	{
+		Avatar->GetWorldTimerManager().ClearTimer(ChargeTickTimerHandle);
+	}
+
+	bIsCharging = false;
+	const int32 ChargeLevel = GetCurrentChargeLevel();
+	const FHarmoniaChargeConfig& ChargeConfig = GetChargeConfig();
+
+	// Determine which animation to play and damage multiplier
+	FName SectionToPlay = NAME_None;
+	float DamageMultiplier = 1.0f;
+
+	if (ChargeLevel > 0 && ChargeConfig.ChargeLevels.IsValidIndex(ChargeLevel - 1))
+	{
+		const FHarmoniaChargeLevel& Level = ChargeConfig.ChargeLevels[ChargeLevel - 1];
+		SectionToPlay = Level.ReleaseMontageSectionName;
+		DamageMultiplier = Level.DamageMultiplier;
+	}
+
+	// Stop the charging montage first
+	if (ChargeConfig.ChargeMontage)
+	{
+		if (USkeletalMeshComponent* Mesh = GetActorInfo().SkeletalMeshComponent.Get())
+		{
+			if (UAnimInstance* AnimInstance = Mesh->GetAnimInstance())
+			{
+				AnimInstance->Montage_Stop(0.2f, ChargeConfig.ChargeMontage);
+			}
+		}
+	}
+
+	// Get the release montage from combo steps (or use charge config)
+	FHarmoniaComboAttackStep CurrentStep;
+	if (GetCurrentAttackStep(CurrentStep) && CurrentStep.AttackMontage)
+	{
+		// If section name is specified in charge level, use it
+		// Otherwise use the combo step's section
+		FName FinalSection = (SectionToPlay != NAME_None) ? SectionToPlay : CurrentStep.MontageSectionName;
+
+		// Play the release attack montage
+		UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+			this,
+			NAME_None,
+			CurrentStep.AttackMontage,
+			1.0f,
+			FinalSection,
+			false,
+			1.0f
+		);
+
+		if (MontageTask)
+		{
+			MontageTask->OnCompleted.AddDynamic(this, &UHarmoniaGameplayAbility_MeleeAttack::OnMontageCompleted);
+			MontageTask->OnCancelled.AddDynamic(this, &UHarmoniaGameplayAbility_MeleeAttack::OnMontageCancelled);
+			MontageTask->OnInterrupted.AddDynamic(this, &UHarmoniaGameplayAbility_MeleeAttack::OnMontageInterrupted);
+			MontageTask->ReadyForActivation();
+		}
+	}
+	else
+	{
+		// No attack montage, end ability
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+	}
+
+	// Reset charge state
+	CurrentChargeTime = 0.0f;
+	CachedChargeLevel = 0;
+}
+
+int32 UHarmoniaGameplayAbility_MeleeAttack::GetCurrentChargeLevel() const
+{
+	const FHarmoniaChargeConfig& ChargeConfig = GetChargeConfig();
+	int32 Level = 0;
+
+	for (int32 i = 0; i < ChargeConfig.ChargeLevels.Num(); ++i)
+	{
+		if (CurrentChargeTime >= ChargeConfig.ChargeLevels[i].RequiredTime)
+		{
+			Level = i + 1;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return Level;
+}
+
+const FHarmoniaChargeConfig& UHarmoniaGameplayAbility_MeleeAttack::GetChargeConfig() const
+{
+	return CurrentComboSequence.ChargeConfig;
 }
 
 FGameplayAbilityTargetDataHandle UHarmoniaGameplayAbility_MeleeAttack::MakeTargetData(AActor* TargetActor) const

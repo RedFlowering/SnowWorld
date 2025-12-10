@@ -26,7 +26,13 @@ void UHarmoniaBuildingInstanceManager::Initialize(FSubsystemCollectionBase& Coll
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Name = FName(TEXT("BuildingISMManager"));
-	ISMManagerActor = World->SpawnActor<AActor>(AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+	SpawnParams.ObjectFlags |= RF_Transient; // Don't save this actor
+	SpawnParams.bNoFail = true; // Ensure spawn succeeds
+	ISMManagerActor = World->SpawnActorDeferred<AActor>(AActor::StaticClass(), FTransform::Identity, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+	if (ISMManagerActor)
+	{
+		ISMManagerActor->FinishSpawning(FTransform::Identity);
+	}
 
 	if (!ISMManagerActor)
 	{
@@ -567,11 +573,13 @@ AActor* UHarmoniaBuildingInstanceManager::SpawnWorldActor(const FHarmoniaInstanc
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Name = FName(*FString::Printf(TEXT("BuildingPart_%s"), *Data.InstanceGuid.ToString()));
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParams.bNoFail = true;
 
-	AActor* NewActor = World->SpawnActor<AActor>(AActor::StaticClass(),
-		Data.WorldTransform.GetLocation(),
-		Data.WorldTransform.GetRotation().Rotator(),
-		SpawnParams);
+	AActor* NewActor = World->SpawnActorDeferred<AActor>(AActor::StaticClass(), Data.WorldTransform);
+	if (NewActor)
+	{
+		NewActor->FinishSpawning(Data.WorldTransform);
+	}
 
 	if (!NewActor)
 	{

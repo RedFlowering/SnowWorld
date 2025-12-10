@@ -106,6 +106,10 @@ public:
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, EquipLoad);
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, MaxEquipLoad);
 
+	// Ultimate Gauge
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, UltimateGauge);
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, MaxUltimateGauge);
+
 	// Note: Healing and Damage meta attributes are inherited from ULyraHealthSet
 
 	// ============================================================================
@@ -150,6 +154,12 @@ public:
 
 	// Called when stamina is recovered
 	mutable FHarmoniaAttributeEvent OnStaminaRecovered;
+
+	// Called when ultimate gauge changes
+	mutable FHarmoniaAttributeEvent OnUltimateGaugeChanged;
+
+	// Called when ultimate gauge is full
+	mutable FHarmoniaAttributeEvent OnUltimateGaugeFull;
 
 protected:
 	/**
@@ -227,6 +237,12 @@ protected:
 
 	UFUNCTION()
 	void OnRep_MaxEquipLoad(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_UltimateGauge(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_MaxUltimateGauge(const FGameplayAttributeData& OldValue);
 
 	/**
 	 * Helper function to clamp attribute values
@@ -435,6 +451,23 @@ private:
 	FGameplayAttributeData MaxEquipLoad;
 
 	// Note: Healing and Damage meta attributes are inherited from ULyraHealthSet
+
+	// ============================================================================
+	// Ultimate Gauge
+	// ============================================================================
+
+	/**
+	 * Current ultimate gauge (0 to MaxUltimateGauge)
+	 * Charged by successful attacks, used for ultimate abilities
+	 */
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_UltimateGauge, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData UltimateGauge;
+
+	/**
+	 * Maximum ultimate gauge
+	 */
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxUltimateGauge, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData MaxUltimateGauge;
 
 	// ============================================================================
 	// Internal State

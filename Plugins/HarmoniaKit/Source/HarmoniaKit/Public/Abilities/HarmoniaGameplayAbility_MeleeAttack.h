@@ -37,6 +37,7 @@ protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+	virtual void InputReleased(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) override;
 	//~End of UGameplayAbility interface
 
 	// ============================================================================
@@ -102,12 +103,31 @@ protected:
 	UFUNCTION()
 	void OnAttackHit(const FHarmoniaAttackHitResult& HitResult);
 
+	// ============================================================================
+	// Charge Attack
+	// ============================================================================
+
+	/** Start charging (for Charged AttackType) */
+	void StartCharging();
+
+	/** Called each tick while charging */
+	void OnChargeTick();
+
+	/** Release charge and perform attack based on charge level */
+	void ReleaseChargeAttack();
+
+	/** Get current charge level based on charge time */
+	int32 GetCurrentChargeLevel() const;
+
+	/** Get charge config from current combo sequence */
+	const FHarmoniaChargeConfig& GetChargeConfig() const;
+
 protected:
 	// ============================================================================
 	// Configuration
 	// ============================================================================
 
-	/** Attack type (Light, Heavy, Special, Charged) */
+	/** Attack type (Light, Heavy, Ultimate, Charged) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Attack")
 	EHarmoniaAttackType AttackType = EHarmoniaAttackType::Light;
 
@@ -142,6 +162,25 @@ protected:
 	/** Current combo sequence */
 	UPROPERTY()
 	FHarmoniaComboAttackSequence CurrentComboSequence;
+
+	// ============================================================================
+	// Charge Attack State
+	// ============================================================================
+
+	/** Whether currently charging */
+	bool bIsCharging = false;
+
+	/** Time spent charging */
+	float CurrentChargeTime = 0.0f;
+
+	/** Cached charge level */
+	int32 CachedChargeLevel = 0;
+
+	/** Timer handle for charge tick */
+	FTimerHandle ChargeTickTimerHandle;
+
+	/** Timer handle for stamina drain */
+	FTimerHandle StaminaDrainTimerHandle;
 
 private:
 	/** Get melee combat component from owner */

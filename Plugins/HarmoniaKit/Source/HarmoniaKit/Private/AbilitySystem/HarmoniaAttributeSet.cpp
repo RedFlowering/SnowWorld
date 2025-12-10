@@ -40,6 +40,10 @@ UHarmoniaAttributeSet::UHarmoniaAttributeSet()
 	AttackSpeed = 1.0f;
 	EquipLoad = 0.0f;
 	MaxEquipLoad = 100.0f;
+
+	// Ultimate gauge
+	UltimateGauge = 0.0f;
+	MaxUltimateGauge = 100.0f;
 }
 
 void UHarmoniaAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -80,6 +84,10 @@ void UHarmoniaAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, AttackSpeed, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, EquipLoad, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, MaxEquipLoad, COND_None, REPNOTIFY_Always);
+
+	// Ultimate gauge
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, UltimateGauge, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, MaxUltimateGauge, COND_None, REPNOTIFY_Always);
 }
 
 bool UHarmoniaAttributeSet::PreGameplayEffectExecute(FGameplayEffectModCallbackData& Data)
@@ -519,6 +527,15 @@ void UHarmoniaAttributeSet::ClampAttribute(const FGameplayAttribute& Attribute, 
 	{
 		NewValue = FMath::Max(NewValue, 1.0f);
 	}
+	// Ultimate gauge
+	else if (Attribute == GetUltimateGaugeAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxUltimateGauge());
+	}
+	else if (Attribute == GetMaxUltimateGaugeAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 1.0f);
+	}
 }
 
 UAbilitySystemComponent* UHarmoniaAttributeSet::GetAbilitySystemComponent() const
@@ -649,4 +666,14 @@ void UHarmoniaAttributeSet::OnRep_EquipLoad(const FGameplayAttributeData& OldVal
 void UHarmoniaAttributeSet::OnRep_MaxEquipLoad(const FGameplayAttributeData& OldValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxEquipLoad, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_UltimateGauge(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, UltimateGauge, OldValue);
+}
+
+void UHarmoniaAttributeSet::OnRep_MaxUltimateGauge(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxUltimateGauge, OldValue);
 }

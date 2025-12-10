@@ -164,6 +164,29 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Attack_Heavy, "Ability.Attack.Heavy", "Heavy attack ability");
 
 	// ============================================================
+	// Charge Attack System Tags
+	// ============================================================
+
+	// Input Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Attack_Charge, "InputTag.Attack.Charge", "Charge attack input");
+
+	// Ability Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Attack_Charge, "Ability.Attack.Charge", "Charge attack ability");
+
+	// State Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Charging, "State.Charging", "Character is charging an attack");
+
+	// ============================================================
+	// Ultimate Attack System Tags
+	// ============================================================
+
+	// Input Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Attack_Ultimate, "InputTag.Attack.Ultimate", "Ultimate attack input");
+
+	// Ability Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Attack_Ultimate, "Ability.Attack.Ultimate", "Ultimate attack ability");
+
+	// ============================================================
 	// Dodge System Tags (Already implemented)
 	// ============================================================
 
