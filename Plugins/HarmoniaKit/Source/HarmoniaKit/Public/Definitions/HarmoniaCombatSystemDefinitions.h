@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "GameplayEffectTypes.h"
+#include "SenseSysHelpers.h"
 #include "HarmoniaCombatSystemDefinitions.generated.h"
 
 class UGameplayEffect;
@@ -178,6 +179,10 @@ struct HARMONIAKIT_API FHarmoniaAttackTraceConfig
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Trace")
 	FVector TraceOffset = FVector::ZeroVector;
 
+	// Rotation offset from socket rotation
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Trace")
+	FRotator RotationOffset = FRotator::ZeroRotator;
+
 	// Socket name to attach trace to (if empty, uses component location)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Trace")
 	FName SocketName = NAME_None;
@@ -213,6 +218,14 @@ struct HARMONIAKIT_API FHarmoniaAttackTraceConfig
 	// Debug visualization
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
 	bool bShowDebugTrace = false;
+
+	// Enable SenseSystem sensor debug visualization (shows sensor detection)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug", meta = (EditCondition = "bShowDebugTrace"))
+	bool bEnableSenseSystemTrace = false;
+
+	// SenseSystem debug configuration (controls what sensor info to display)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug", meta = (EditCondition = "bShowDebugTrace && bEnableSenseSystemTrace"))
+	FSenseSysDebugDraw SenseDebugConfig;
 };
 
 /**

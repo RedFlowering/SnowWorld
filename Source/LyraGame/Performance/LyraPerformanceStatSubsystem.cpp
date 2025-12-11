@@ -163,7 +163,10 @@ void ULyraPerformanceStatSubsystem::Initialize(FSubsystemCollectionBase& Collect
 
 void ULyraPerformanceStatSubsystem::Deinitialize()
 {
-	GEngine->RemovePerformanceDataConsumer(Tracker);
+	if (GEngine)
+	{
+		GEngine->RemovePerformanceDataConsumer(Tracker);
+	}
 	Tracker.Reset();
 }
 

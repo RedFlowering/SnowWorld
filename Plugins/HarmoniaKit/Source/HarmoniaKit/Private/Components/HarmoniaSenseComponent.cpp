@@ -13,9 +13,11 @@
 #include "Sensors/SensorSight.h"
 #include "GameplayEffect.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/Character.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "DrawDebugHelpers.h"
+#include "CosmeticBFL.h"
 
 UHarmoniaSenseComponent::UHarmoniaSenseComponent()
 {
@@ -63,6 +65,12 @@ void UHarmoniaSenseComponent::TickComponent(float DeltaTime, ELevelTick TickType
 	if (bIsAttacking && CurrentAttackData.TraceConfig.bShowDebugTrace)
 	{
 		DrawDebugAttackTrace();
+
+		// SenseSystem sensor debug visualization
+		if (CurrentAttackData.TraceConfig.bEnableSenseSystemTrace)
+		{
+			DrawSenseSystemDebug();
+		}
 	}
 }
 
@@ -1032,34 +1040,81 @@ void UHarmoniaSenseComponent::OnAttackTimerComplete()
 
 FVector UHarmoniaSenseComponent::GetTraceLocation() const
 {
-	if (!CurrentAttackData.TraceConfig.SocketName.IsNone())
+	const FName& SocketName = CurrentAttackData.TraceConfig.SocketName;
+	const FVector& TraceOffset = CurrentAttackData.TraceConfig.TraceOffset;
+	const FRotator& RotationOffset = CurrentAttackData.TraceConfig.RotationOffset;
+
+	if (!SocketName.IsNone())
 	{
+		// Try cosmetic actor's visual mesh first (for equipment attached to cosmetic)
+		if (ACharacter* OwnerChar = Cast<ACharacter>(GetOwner()))
+		{
+			if (USkeletalMeshComponent* VisualMesh = UCosmeticBFL::GetVisualMesh(OwnerChar))
+			{
+				if (VisualMesh->DoesSocketExist(SocketName))
+				{
+					// Compose transforms: Socket * LocalOffset (rotation first, then position)
+					FTransform SocketTransform = VisualMesh->GetSocketTransform(SocketName);
+					FTransform LocalOffset(FQuat(RotationOffset), TraceOffset);
+					FTransform FinalTransform = LocalOffset * SocketTransform;
+					return FinalTransform.GetLocation();
+				}
+			}
+		}
+
+		// Fallback to attach parent
 		if (USceneComponent* ParentComp = GetAttachParent())
 		{
-			if (ParentComp->DoesSocketExist(CurrentAttackData.TraceConfig.SocketName))
+			if (ParentComp->DoesSocketExist(SocketName))
 			{
-				return ParentComp->GetSocketLocation(CurrentAttackData.TraceConfig.SocketName);
+				FTransform SocketTransform = ParentComp->GetSocketTransform(SocketName);
+				FTransform LocalOffset(FQuat(RotationOffset), TraceOffset);
+				FTransform FinalTransform = LocalOffset * SocketTransform;
+				return FinalTransform.GetLocation();
 			}
 		}
 	}
 
-	return GetComponentLocation() + CurrentAttackData.TraceConfig.TraceOffset;
+	return GetComponentLocation() + TraceOffset;
 }
 
 FRotator UHarmoniaSenseComponent::GetTraceRotation() const
 {
-	if (!CurrentAttackData.TraceConfig.SocketName.IsNone())
+	const FName& SocketName = CurrentAttackData.TraceConfig.SocketName;
+	const FRotator& RotationOffset = CurrentAttackData.TraceConfig.RotationOffset;
+
+	if (!SocketName.IsNone())
 	{
+		// Try cosmetic actor's visual mesh first
+		if (ACharacter* OwnerChar = Cast<ACharacter>(GetOwner()))
+		{
+			if (USkeletalMeshComponent* VisualMesh = UCosmeticBFL::GetVisualMesh(OwnerChar))
+			{
+				if (VisualMesh->DoesSocketExist(SocketName))
+				{
+					// Compose transforms: Socket * LocalOffset
+					FTransform SocketTransform = VisualMesh->GetSocketTransform(SocketName);
+					FTransform LocalOffset(FQuat(RotationOffset), FVector::ZeroVector);
+					FTransform FinalTransform = LocalOffset * SocketTransform;
+					return FinalTransform.Rotator();
+				}
+			}
+		}
+
+		// Fallback to attach parent
 		if (USceneComponent* ParentComp = GetAttachParent())
 		{
-			if (ParentComp->DoesSocketExist(CurrentAttackData.TraceConfig.SocketName))
+			if (ParentComp->DoesSocketExist(SocketName))
 			{
-				return ParentComp->GetSocketRotation(CurrentAttackData.TraceConfig.SocketName);
+				FTransform SocketTransform = ParentComp->GetSocketTransform(SocketName);
+				FTransform LocalOffset(FQuat(RotationOffset), FVector::ZeroVector);
+				FTransform FinalTransform = LocalOffset * SocketTransform;
+				return FinalTransform.Rotator();
 			}
 		}
 	}
 
-	return GetComponentRotation();
+	return GetComponentRotation() + RotationOffset;
 }
 
 void UHarmoniaSenseComponent::DrawDebugAttackTrace() const
@@ -1072,30 +1127,71 @@ void UHarmoniaSenseComponent::DrawDebugAttackTrace() const
 	const FVector Location = GetTraceLocation();
 	const FRotator Rotation = GetTraceRotation();
 	const FVector Extent = CurrentAttackData.TraceConfig.TraceExtent;
-	const FColor DebugColor = bIsAttacking ? FColor::Green : FColor::Red;
+	constexpr float TraceDuration = 0.1f; // Persist between frames
+	constexpr float LineThickness = 1.0f; // Thinner lines for visibility
+
+	// Color based on state: Yellow = hit detected, Green = attacking, Red = not attacking
+	FColor DebugColor = FColor::Red;
+	if (bIsAttacking)
+	{
+		DebugColor = HitTargets.Num() > 0 ? FColor::Yellow : FColor::Green;
+	}
+
+	UE_LOG(LogTemp, Verbose, TEXT("DrawDebugAttackTrace - Socket: %s, Location: %s, Shape: %d"), 
+		*CurrentAttackData.TraceConfig.SocketName.ToString(), *Location.ToString(), (int32)CurrentAttackData.TraceConfig.TraceShape);
 
 	switch (CurrentAttackData.TraceConfig.TraceShape)
 	{
 	case EHarmoniaAttackTraceShape::Box:
-		DrawDebugBox(GetWorld(), Location, Extent, Rotation.Quaternion(), DebugColor, false, -1.0f, 0, 2.0f);
+		DrawDebugBox(GetWorld(), Location, Extent, Rotation.Quaternion(), DebugColor, false, TraceDuration, 0, LineThickness);
 		break;
 
 	case EHarmoniaAttackTraceShape::Sphere:
-		DrawDebugSphere(GetWorld(), Location, Extent.X, 12, DebugColor, false, -1.0f, 0, 2.0f);
+		DrawDebugSphere(GetWorld(), Location, Extent.X, 12, DebugColor, false, TraceDuration, 0, LineThickness);
 		break;
 
 	case EHarmoniaAttackTraceShape::Capsule:
-		DrawDebugCapsule(GetWorld(), Location, Extent.Z, Extent.X, Rotation.Quaternion(), DebugColor, false, -1.0f, 0, 2.0f);
+		DrawDebugCapsule(GetWorld(), Location, Extent.Z, Extent.X, Rotation.Quaternion(), DebugColor, false, TraceDuration, 0, LineThickness);
 		break;
 
 	case EHarmoniaAttackTraceShape::Line:
 		{
 			const FVector EndLocation = Location + Rotation.Vector() * Extent.X;
-			DrawDebugLine(GetWorld(), Location, EndLocation, DebugColor, false, -1.0f, 0, 2.0f);
+			DrawDebugLine(GetWorld(), Location, EndLocation, DebugColor, false, TraceDuration, 0, LineThickness);
 		}
 		break;
 
 	default:
 		break;
 	}
+}
+
+void UHarmoniaSenseComponent::DrawSenseSystemDebug() const
+{
+#if ENABLE_DRAW_DEBUG
+	if (!GetWorld() || !SenseReceiver)
+	{
+		return;
+	}
+
+	const FSenseSysDebugDraw& DebugConfig = CurrentAttackData.TraceConfig.SenseDebugConfig;
+	constexpr float DebugDuration = -1.0f; // Frame-by-frame drawing
+
+	// Draw debug for each active sensor in the receiver
+	TArray<TObjectPtr<USensorBase>> Sensors = SenseReceiver->GetSensorsByType(ESensorType::Active);
+	for (const TObjectPtr<USensorBase>& Sensor : Sensors)
+	{
+		if (IsValid(Sensor) && Sensor->SensorTag == CurrentAttackData.TraceConfig.SensorTag)
+		{
+			Sensor->DrawDebugSensor(
+				DebugConfig.Sensor_DebugTest,
+				DebugConfig.Sensor_DebugCurrentSensed,
+				DebugConfig.Sensor_DebugLostSensed,
+				DebugConfig.Sensor_DebugBestSensed,
+				DebugConfig.SenseSys_DebugAge,
+				DebugDuration
+			);
+		}
+	}
+#endif // ENABLE_DRAW_DEBUG
 }

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
+#include "Definitions/HarmoniaCombatSystemDefinitions.h"
 #include "AnimNotifyState_MeleeAttackWindow.generated.h"
 
 class UHarmoniaMeleeCombatComponent;
@@ -39,7 +40,6 @@ public:
 	virtual FString GetNotifyName_Implementation() const override;
 	//~End of UAnimNotifyState interface
 
-protected:
 	/**
 	 * Name of attack component to use (leave empty for default MainHand)
 	 * Use this for off-hand attacks or specific weapon components
@@ -48,10 +48,55 @@ protected:
 	FName AttackComponentName = NAME_None;
 
 	/**
-	 * Show debug visualization for hit detection
+	 * Show debug visualization for hit detection during gameplay
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
 	bool bShowDebug = false;
+
+	/**
+	 * Preview trace in Persona animation editor
+	 * Enable this to visualize trace bounds while adjusting animation timing
+	 */
+	UPROPERTY(EditAnywhere, Category = "Debug|Editor Preview")
+	bool bShowPreviewTrace = false;
+
+#if WITH_EDITORONLY_DATA
+	/**
+	 * Socket name for preview trace (used when component data unavailable in Persona)
+	 */
+	UPROPERTY(EditAnywhere, Category = "Debug|Editor Preview", meta = (EditCondition = "bShowPreviewTrace"))
+	FName PreviewSocketName = FName("hand_r");
+
+	/**
+	 * Preview trace shape
+	 */
+	UPROPERTY(EditAnywhere, Category = "Debug|Editor Preview", meta = (EditCondition = "bShowPreviewTrace"))
+	EHarmoniaAttackTraceShape PreviewTraceShape = EHarmoniaAttackTraceShape::Sphere;
+
+	/**
+	 * Preview trace extent (size)
+	 */
+	UPROPERTY(EditAnywhere, Category = "Debug|Editor Preview", meta = (EditCondition = "bShowPreviewTrace"))
+	FVector PreviewTraceExtent = FVector(50.0f, 50.0f, 50.0f);
+
+	/**
+	 * Preview trace offset from socket
+	 */
+	UPROPERTY(EditAnywhere, Category = "Debug|Editor Preview", meta = (EditCondition = "bShowPreviewTrace"))
+	FVector PreviewTraceOffset = FVector::ZeroVector;
+
+	/**
+	 * Preview trace rotation offset
+	 */
+	UPROPERTY(EditAnywhere, Category = "Debug|Editor Preview", meta = (EditCondition = "bShowPreviewTrace"))
+	FRotator PreviewRotationOffset = FRotator::ZeroRotator;
+
+	/**
+	 * Preview trace color
+	 */
+	UPROPERTY(EditAnywhere, Category = "Debug|Editor Preview", meta = (EditCondition = "bShowPreviewTrace"))
+	FColor PreviewTraceColor = FColor::Cyan;
+#endif
 
 private:
 	/** Find melee combat component on actor */
@@ -59,4 +104,12 @@ private:
 
 	/** Find attack component on actor */
 	UHarmoniaSenseComponent* FindAttackComponent(AActor* Owner) const;
+
+#if WITH_EDITOR
+protected:
+	/**
+	 * Draw preview trace in animation editor (Persona)
+	 */
+	void DrawPreviewTrace(USkeletalMeshComponent* MeshComp) const;
+#endif
 };

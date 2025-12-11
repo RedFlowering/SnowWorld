@@ -5,6 +5,7 @@
 #include "Components/HarmoniaSenseComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/Actor.h"
+#include "DrawDebugHelpers.h"
 
 UAnimNotifyState_MeleeAttackWindow::UAnimNotifyState_MeleeAttackWindow()
 {
@@ -72,9 +73,21 @@ void UAnimNotifyState_MeleeAttackWindow::NotifyTick(
 	const FAnimNotifyEventReference& EventReference)
 {
 	Super::NotifyTick(MeshComp, Animation, FrameDeltaTime, EventReference);
-	
-	// Tick is handled by SenseAttackComponent internally
-	// No additional logic needed here
+
+#if WITH_EDITOR
+	// Editor preview trace visualization
+	if (bShowPreviewTrace && MeshComp)
+	{
+		if (UWorld* World = MeshComp->GetWorld())
+		{
+			// Only draw in editor preview (not in PIE/game)
+			if (!World->IsGameWorld())
+			{
+				DrawPreviewTrace(MeshComp);
+			}
+		}
+	}
+#endif
 }
 
 void UAnimNotifyState_MeleeAttackWindow::NotifyEnd(
@@ -142,3 +155,55 @@ UHarmoniaSenseComponent* UAnimNotifyState_MeleeAttackWindow::FindAttackComponent
 	// Default: find first attack component
 	return Owner->FindComponentByClass<UHarmoniaSenseComponent>();
 }
+
+#if WITH_EDITOR
+void UAnimNotifyState_MeleeAttackWindow::DrawPreviewTrace(USkeletalMeshComponent* MeshComp) const
+{
+	if (!MeshComp)
+	{
+		return;
+	}
+
+	// Get trace transform from preview socket with local offset
+	FVector Location = MeshComp->GetComponentLocation() + PreviewTraceOffset;
+	FRotator Rotation = MeshComp->GetComponentRotation() + PreviewRotationOffset;
+	
+	if (!PreviewSocketName.IsNone() && MeshComp->DoesSocketExist(PreviewSocketName))
+	{
+		// Compose transforms: Socket * LocalOffset (rotation first, then position)
+		FTransform SocketTransform = MeshComp->GetSocketTransform(PreviewSocketName);
+		FTransform LocalOffset(FQuat(PreviewRotationOffset), PreviewTraceOffset);
+		FTransform FinalTransform = LocalOffset * SocketTransform;
+		
+		Location = FinalTransform.GetLocation();
+		Rotation = FinalTransform.Rotator();
+	}
+
+	constexpr float TraceDuration = 0.1f; // Persist until next tick
+
+	switch (PreviewTraceShape)
+	{
+	case EHarmoniaAttackTraceShape::Box:
+		DrawDebugBox(MeshComp->GetWorld(), Location, PreviewTraceExtent, Rotation.Quaternion(), PreviewTraceColor, false, TraceDuration, 0, 2.0f);
+		break;
+
+	case EHarmoniaAttackTraceShape::Sphere:
+		DrawDebugSphere(MeshComp->GetWorld(), Location, PreviewTraceExtent.X, 12, PreviewTraceColor, false, TraceDuration, 0, 2.0f);
+		break;
+
+	case EHarmoniaAttackTraceShape::Capsule:
+		DrawDebugCapsule(MeshComp->GetWorld(), Location, PreviewTraceExtent.Z, PreviewTraceExtent.X, Rotation.Quaternion(), PreviewTraceColor, false, TraceDuration, 0, 2.0f);
+		break;
+
+	case EHarmoniaAttackTraceShape::Line:
+		{
+			const FVector EndLocation = Location + Rotation.Vector() * PreviewTraceExtent.X;
+			DrawDebugLine(MeshComp->GetWorld(), Location, EndLocation, PreviewTraceColor, false, TraceDuration, 0, 2.0f);
+		}
+		break;
+
+	default:
+		break;
+	}
+}
+#endif

@@ -163,6 +163,9 @@ void ULyraExperienceManagerComponent::StartExperienceLoad()
 		BundlesToLoad.Add(UGameFeaturesSubsystemSettings::LoadStateServer);
 	}
 
+	UE_LOG(LogLyraExperience, Log, TEXT("EXPERIENCE: Loading bundles - bLoadClient=%d, bLoadServer=%d, BundleAssetList.Num=%d"),
+		bLoadClient, bLoadServer, BundleAssetList.Num());
+
 	TSharedPtr<FStreamableHandle> BundleLoadHandle = nullptr;
 	if (BundleAssetList.Num() > 0)
 	{
@@ -186,18 +189,24 @@ void ULyraExperienceManagerComponent::StartExperienceLoad()
 		Handle = BundleLoadHandle.IsValid() ? BundleLoadHandle : RawLoadHandle;
 	}
 
+	UE_LOG(LogLyraExperience, Log, TEXT("EXPERIENCE: Handle valid=%d, HasLoadCompleted=%d"),
+		Handle.IsValid(), Handle.IsValid() ? Handle->HasLoadCompleted() : false);
+
 	FStreamableDelegate OnAssetsLoadedDelegate = FStreamableDelegate::CreateUObject(this, &ThisClass::OnExperienceLoadComplete);
 	if (!Handle.IsValid() || Handle->HasLoadCompleted())
 	{
 		// Assets were already loaded, call the delegate now
+		UE_LOG(LogLyraExperience, Log, TEXT("EXPERIENCE: Assets already loaded, executing delegate immediately"));
 		FStreamableHandle::ExecuteDelegate(OnAssetsLoadedDelegate);
 	}
 	else
 	{
+		UE_LOG(LogLyraExperience, Log, TEXT("EXPERIENCE: Waiting for async asset load..."));
 		Handle->BindCompleteDelegate(OnAssetsLoadedDelegate);
 
 		Handle->BindCancelDelegate(FStreamableDelegate::CreateLambda([OnAssetsLoadedDelegate]()
 			{
+				UE_LOG(LogLyraExperience, Warning, TEXT("EXPERIENCE: Asset load was cancelled!"));
 				OnAssetsLoadedDelegate.ExecuteIfBound();
 			}));
 	}

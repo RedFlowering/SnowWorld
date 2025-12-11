@@ -5,30 +5,30 @@
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 #include "Definitions/HarmoniaCombatSystemDefinitions.h"
-#include "AnimNotifyState_HarmoniaAttackWindow.generated.h"
+#include "AnimNotifyState_CustomAttackWindow.generated.h"
 
 class UHarmoniaSenseComponent;
 
 /**
- * UAnimNotifyState_HarmoniaAttackWindow
+ * UAnimNotifyState_CustomAttackWindow
  *
  * Animation Notify State that maintains attack hit detection window
- * The attack component will continuously check for hits during this window
+ * Uses custom attack data configured in the notify itself
  *
  * Usage:
  * 1. Add this notify state to attack animation montages
- * 2. Set the duration to cover the entire attack swing/motion
- * 3. Configure attack data or use component's default
+ * 2. Set bUseCustomAttackData = true
+ * 3. Configure CustomAttackData with desired trace settings
  *
- * This is ideal for slower, sweeping attacks where the weapon moves through space
+ * This is ideal for special attacks that need unique trace configurations
  */
-UCLASS(const, hidecategories = Object, collapsecategories, meta = (DisplayName = "Harmonia Attack Window"))
-class HARMONIAKIT_API UAnimNotifyState_HarmoniaAttackWindow : public UAnimNotifyState
+UCLASS(const, hidecategories = Object, collapsecategories, meta = (DisplayName = "Custom Attack Window"))
+class HARMONIAKIT_API UAnimNotifyState_CustomAttackWindow : public UAnimNotifyState
 {
 	GENERATED_BODY()
 
 public:
-	UAnimNotifyState_HarmoniaAttackWindow();
+	UAnimNotifyState_CustomAttackWindow();
 
 	//~UAnimNotifyState interface
 	virtual void NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference) override;
@@ -65,7 +65,30 @@ protected:
 	bool bClearHitTargetsOnStart = true;
 
 	/**
+	 * Preview trace in Persona animation editor
+	 * Enable this to visualize trace bounds while adjusting animation timing
+	 */
+	UPROPERTY(EditAnywhere, Category = "Debug|Editor Preview")
+	bool bShowPreviewTrace = false;
+
+#if WITH_EDITORONLY_DATA
+	/**
+	 * Preview trace color
+	 */
+	UPROPERTY(EditAnywhere, Category = "Debug|Editor Preview", meta = (EditCondition = "bShowPreviewTrace"))
+	FColor PreviewTraceColor = FColor::Cyan;
+#endif
+
+	/**
 	 * Find attack component on actor
 	 */
 	virtual UHarmoniaSenseComponent* FindAttackComponent(AActor* Owner) const;
+
+#if WITH_EDITOR
+protected:
+	/**
+	 * Draw preview trace in animation editor (Persona)
+	 */
+	void DrawPreviewTrace(USkeletalMeshComponent* MeshComp) const;
+#endif
 };

@@ -306,6 +306,12 @@ protected:
 	virtual void DrawDebugAttackTrace() const;
 
 	/**
+	 * Draw SenseSystem debug visualization (sensor detection, stimulus, scores)
+	 * Only available with ENABLE_DRAW_DEBUG macro
+	 */
+	virtual void DrawSenseSystemDebug() const;
+
+	/**
 	 * Minimum interval between attacks (anti-spam)
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack|AntiCheat")
