@@ -54,7 +54,7 @@ struct FHarmoniaWorkshopItem
 	FString InstallPath;
 
 	UPROPERTY(BlueprintReadOnly)
-	EHarmoniaWorkshopDownloadStatus DownloadStatus;
+	EHarmoniaWorkshopDownloadStatus DownloadStatus = EHarmoniaWorkshopDownloadStatus::NotStarted;
 
 	UPROPERTY(BlueprintReadOnly)
 	bool bIsSubscribed = false;

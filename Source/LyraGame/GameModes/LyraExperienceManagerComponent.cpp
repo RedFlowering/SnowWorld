@@ -201,14 +201,26 @@ void ULyraExperienceManagerComponent::StartExperienceLoad()
 	}
 	else
 	{
-		UE_LOG(LogLyraExperience, Log, TEXT("EXPERIENCE: Waiting for async asset load..."));
-		Handle->BindCompleteDelegate(OnAssetsLoadedDelegate);
+		// In standalone game mode (not editor), we need to wait synchronously because 
+		// async callbacks may not be processed properly
+		if (!GIsEditor)
+		{
+			UE_LOG(LogLyraExperience, Log, TEXT("EXPERIENCE: Standalone mode - waiting synchronously for asset load..."));
+			Handle->WaitUntilComplete(0.0f, false);
+			UE_LOG(LogLyraExperience, Log, TEXT("EXPERIENCE: Synchronous wait completed"));
+			FStreamableHandle::ExecuteDelegate(OnAssetsLoadedDelegate);
+		}
+		else
+		{
+			UE_LOG(LogLyraExperience, Log, TEXT("EXPERIENCE: Waiting for async asset load..."));
+			Handle->BindCompleteDelegate(OnAssetsLoadedDelegate);
 
-		Handle->BindCancelDelegate(FStreamableDelegate::CreateLambda([OnAssetsLoadedDelegate]()
-			{
-				UE_LOG(LogLyraExperience, Warning, TEXT("EXPERIENCE: Asset load was cancelled!"));
-				OnAssetsLoadedDelegate.ExecuteIfBound();
-			}));
+			Handle->BindCancelDelegate(FStreamableDelegate::CreateLambda([OnAssetsLoadedDelegate]()
+				{
+					UE_LOG(LogLyraExperience, Warning, TEXT("EXPERIENCE: Asset load was cancelled!"));
+					OnAssetsLoadedDelegate.ExecuteIfBound();
+				}));
+		}
 	}
 
 	// This set of assets gets preloaded, but we don't block the start of the experience based on it

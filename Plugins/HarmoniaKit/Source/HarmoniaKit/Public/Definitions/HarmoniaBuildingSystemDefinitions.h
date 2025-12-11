@@ -163,16 +163,16 @@ struct FBuildingSaveRecord
     GENERATED_BODY()
 
     UPROPERTY()
-    FName PartID;
+    FName PartID = NAME_None;
 
     UPROPERTY()
-    FVector SavedLocation;
+    FVector SavedLocation = FVector::ZeroVector;
 
     UPROPERTY()
-    FRotator SavedRotation;
+    FRotator SavedRotation = FRotator::ZeroRotator;
 
     UPROPERTY()
-    float Health;
+    float Health = 0.0f;
 
     UPROPERTY()
     FString OwnerPlayerID;

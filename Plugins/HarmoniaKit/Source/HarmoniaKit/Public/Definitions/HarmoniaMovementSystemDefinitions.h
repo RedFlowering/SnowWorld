@@ -422,11 +422,11 @@ struct FHarmoniaWaypointData : public FTableRowBase
 
 	/** World location */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waypoint")
-	FVector Location;
+	FVector Location = FVector::ZeroVector;
 
 	/** World rotation */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waypoint")
-	FRotator Rotation;
+	FRotator Rotation = FRotator::ZeroRotator;
 
 	/** Icon for map/UI */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waypoint|UI")

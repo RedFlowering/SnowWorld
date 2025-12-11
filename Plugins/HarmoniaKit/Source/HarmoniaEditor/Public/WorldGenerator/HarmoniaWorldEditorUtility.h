@@ -43,11 +43,11 @@ struct FTerrainEditHistory
 
 	/** 편집 타입 / Edit type */
 	UPROPERTY()
-	ETerrainModificationType EditType;
+	ETerrainModificationType EditType = ETerrainModificationType::Raise;
 
 	/** 편집 위치 / Edit location */
 	UPROPERTY()
-	FVector Location;
+	FVector Location = FVector::ZeroVector;
 
 	/** 영향 받은 지형 데이터 (before) / Affected terrain data (before) */
 	UPROPERTY()

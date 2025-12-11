@@ -147,7 +147,7 @@ public:
     static UDataTable* GetSkillTreeDataTable();
 
     UFUNCTION(BlueprintPure, Category = "Harmonia|LoadManager")
-    static UDataTable* GetBuildingPartDataTable();
+    static UDataTable* GetBuildingPartsDataTable();
 
     UFUNCTION(BlueprintPure, Category = "Harmonia|LoadManager")
     static UDataTable* GetWeaponUpgradeDataTable();

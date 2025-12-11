@@ -344,18 +344,13 @@ struct FTradeOffer
 {
 	GENERATED_BODY()
 
-	FTradeOffer()
-	{
-		TradeID = FGuid::NewGuid();
-	}
-
-	UPROPERTY(BlueprintReadOnly, Category = "Trade")
+	UPROPERTY(BlueprintReadOnly, Category = "Trade", meta = (IgnoreForMemberInitializationTest))
 	FGuid TradeID;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Trade")
+	UPROPERTY(BlueprintReadOnly, Category = "Trade", meta = (IgnoreForMemberInitializationTest))
 	FGuid InitiatorPlayerId;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Trade")
+	UPROPERTY(BlueprintReadOnly, Category = "Trade", meta = (IgnoreForMemberInitializationTest))
 	FGuid TargetPlayerId;
 
 	// Player controller weak references for runtime use

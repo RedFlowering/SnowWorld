@@ -90,7 +90,7 @@ struct HARMONIAKIT_API FHarmoniaSkillNodeData : public FTableRowBase
 
 	/** Position in skill tree UI (grid-based) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	FVector2D GridPosition;
+	FVector2D GridPosition = FVector2D::ZeroVector;
 
 	/** Connections to other nodes (for visual lines) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")

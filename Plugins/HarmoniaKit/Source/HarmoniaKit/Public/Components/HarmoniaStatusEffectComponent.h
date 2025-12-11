@@ -46,7 +46,7 @@ struct HARMONIAKIT_API FHarmoniaStatusEffectUIData
 	GENERATED_BODY()
 
 	/** Unique identifier */
-	UPROPERTY(BlueprintReadOnly, Category = "StatusEffect")
+	UPROPERTY(BlueprintReadOnly, Category = "StatusEffect", meta = (IgnoreForMemberInitializationTest))
 	FGuid EffectID;
 
 	/** Effect tag for identification */
@@ -132,11 +132,6 @@ struct HARMONIAKIT_API FHarmoniaStatusEffectUIData
 	/** Active effect handle (from GAS) */
 	UPROPERTY(BlueprintReadOnly, Category = "StatusEffect")
 	FActiveGameplayEffectHandle ActiveHandle;
-
-	FHarmoniaStatusEffectUIData()
-	{
-		EffectID = FGuid::NewGuid();
-	}
 };
 
 /**

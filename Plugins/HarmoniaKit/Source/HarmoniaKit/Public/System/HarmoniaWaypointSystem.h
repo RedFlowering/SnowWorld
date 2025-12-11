@@ -30,12 +30,12 @@ struct FWaypointData
     GENERATED_BODY()
 
     // Waypoint ID (unique identifier)
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waypoint")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waypoint", meta = (IgnoreForMemberInitializationTest))
     FGuid WaypointID;
 
     // World location
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waypoint")
-    FVector WorldLocation;
+    FVector WorldLocation = FVector::ZeroVector;
 
     // Waypoint name/description
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waypoint")
@@ -43,7 +43,7 @@ struct FWaypointData
 
     // Icon for this waypoint
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waypoint")
-    TObjectPtr<UTexture2D> Icon;
+    TObjectPtr<UTexture2D> Icon = nullptr;
 
     // Waypoint color
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waypoint")
@@ -76,29 +76,6 @@ struct FWaypointData
     // Custom data
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waypoint")
     FString CustomData;
-
-    FWaypointData()
-    {
-        WaypointID = FGuid::NewGuid();
-        WorldLocation = FVector::ZeroVector;
-        WaypointName = FText::GetEmpty();
-        Icon = nullptr;
-        Color = FLinearColor::Yellow;
-        Priority = EWaypointPriority::Normal;
-        WaypointTag = FGameplayTag();
-        Distance = 0.0f;
-        bShowDistance = true;
-        bShowPath = true;
-        bShow3DMarker = true;
-        CustomData = TEXT("");
-    }
-
-    FWaypointData(const FVector& InLocation, const FText& InName)
-        : FWaypointData()
-    {
-        WorldLocation = InLocation;
-        WaypointName = InName;
-    }
 };
 
 // Delegates

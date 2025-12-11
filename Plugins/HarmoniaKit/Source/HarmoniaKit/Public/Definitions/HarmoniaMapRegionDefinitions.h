@@ -95,12 +95,12 @@ struct FCustomMarkerData
     GENERATED_BODY()
 
     // Marker ID
-    UPROPERTY(BlueprintReadWrite, Category = "Marker")
+    UPROPERTY(BlueprintReadWrite, Category = "Marker", meta = (IgnoreForMemberInitializationTest))
     FGuid MarkerID;
 
     // World position
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Marker")
-    FVector WorldPosition;
+    FVector WorldPosition = FVector::ZeroVector;
 
     // Marker name/label
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Marker")
@@ -112,7 +112,7 @@ struct FCustomMarkerData
 
     // Marker icon
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Marker")
-    TObjectPtr<UTexture2D> Icon;
+    TObjectPtr<UTexture2D> Icon = nullptr;
 
     // Marker color
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Marker")
@@ -137,21 +137,6 @@ struct FCustomMarkerData
     // Whether this marker is shared with party/friends
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Marker")
     bool bShared = false;
-
-    FCustomMarkerData()
-    {
-        MarkerID = FGuid::NewGuid();
-        WorldPosition = FVector::ZeroVector;
-        MarkerLabel = FText::GetEmpty();
-        MarkerNote = FText::GetEmpty();
-        Icon = nullptr;
-        Color = FLinearColor::White;
-        MarkerTag = FGameplayTag();
-        CreationTime = 0.0f;
-        CreatorPlayerID = -1;
-        CreatorPlayerName = TEXT("");
-        bShared = false;
-    }
 };
 
 /**

@@ -29,11 +29,11 @@ struct FHarmoniaDeathMemory
 
 	/** Death location */
 	UPROPERTY(BlueprintReadOnly)
-	FVector DeathLocation;
+	FVector DeathLocation = FVector::ZeroVector;
 
 	/** Cause of death */
 	UPROPERTY(BlueprintReadOnly)
-	EHarmoniaDeathCause Cause;
+	EHarmoniaDeathCause Cause = EHarmoniaDeathCause::Unknown;
 
 	/** Killer actor */
 	UPROPERTY(BlueprintReadOnly)
@@ -45,11 +45,11 @@ struct FHarmoniaDeathMemory
 
 	/** Time of death */
 	UPROPERTY(BlueprintReadOnly)
-	float DeathTime;
+	float DeathTime = 0.0f;
 
 	/** Health at time of death attempt */
 	UPROPERTY(BlueprintReadOnly)
-	float HealthBeforeDeath;
+	float HealthBeforeDeath = 0.0f;
 };
 
 /**

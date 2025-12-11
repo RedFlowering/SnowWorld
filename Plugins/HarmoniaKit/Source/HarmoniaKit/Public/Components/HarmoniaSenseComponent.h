@@ -214,6 +214,19 @@ protected:
 	// ============================================================================
 
 	/**
+	 * Initialize persistent combat sensor (called once in BeginPlay)
+	 * Creates SenseReceiver that stays active for component's lifetime
+	 */
+	virtual void InitializeCombatSensor();
+
+	/**
+	 * Create or update sensor for attack using DataTable configuration
+	 * @param SensorTag Tag from TraceConfig.SensorTag
+	 * @param SenseChannel Channel from TraceConfig.SenseChannel
+	 */
+	virtual void CreateOrUpdateSensorForAttack(FName SensorTag, int32 SenseChannel);
+
+	/**
 	 * Initialize sense stimulus component
 	 */
 	virtual void InitializeSenseStimulus();
@@ -240,7 +253,7 @@ protected:
 	virtual void OnSenseDetected(const USensorBase* SensorPtr, int32 Channel, const TArray<FSensedStimulus> SensedStimuli);
 
 	/**
-	 * Process a single detected target
+	 * Process a single detected target from SenseSystem
 	 * @return true if hit was processed
 	 */
 	virtual bool ProcessHitTarget(const FSensedStimulus& Stimulus);
@@ -337,6 +350,13 @@ private:
 	TObjectPtr<USenseReceiverComponent> SenseReceiver = nullptr;
 
 	/**
+	 * Combat sensor created for hit detection
+	 * Stored to prevent garbage collection
+	 */
+	UPROPERTY()
+	TObjectPtr<USensorBase> CombatSensor = nullptr;
+
+	/**
 	 * Current attack state
 	 */
 	bool bIsAttacking = false;
@@ -366,5 +386,15 @@ private:
 	 * Attack start time
 	 */
 	float AttackStartTime = 0.0f;
+
+	/**
+	 * Current sensor tag from TraceConfig (set per attack)
+	 */
+	FName CurrentSensorTag = NAME_None;
+
+	/**
+	 * Current sense channel from TraceConfig (set per attack)
+	 */
+	int32 CurrentSenseChannel = 1;
 };
 

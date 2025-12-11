@@ -20,11 +20,11 @@ struct FDungeonCheckpoint
 
 	/** Checkpoint location */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
-	FVector Location;
+	FVector Location = FVector::ZeroVector;
 
 	/** Checkpoint rotation */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
-	FRotator Rotation;
+	FRotator Rotation = FRotator::ZeroRotator;
 
 	/** Checkpoint name */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")

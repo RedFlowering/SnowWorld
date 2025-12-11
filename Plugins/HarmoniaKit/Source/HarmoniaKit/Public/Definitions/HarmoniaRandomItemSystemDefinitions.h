@@ -226,7 +226,7 @@ struct FGeneratedItemData
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadOnly, Category = "Item")
+	UPROPERTY(BlueprintReadOnly, Category = "Item", meta = (IgnoreForMemberInitializationTest))
 	FGuid ItemGUID;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Item")
@@ -249,11 +249,6 @@ struct FGeneratedItemData
 
 	UPROPERTY(BlueprintReadOnly, Category = "Item")
 	int32 GenerationSeed = 0;
-
-	FGeneratedItemData()
-	{
-		ItemGUID = FGuid::NewGuid();
-	}
 };
 
 /**

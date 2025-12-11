@@ -11,6 +11,8 @@
 #include "SenseStimulusComponent.h"
 #include "Sensors/SensorBase.h"
 #include "Sensors/SensorSight.h"
+#include "Sensors/ActiveSensor.h"
+#include "SenseManager.h"
 #include "GameplayEffect.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Character.h"
@@ -24,6 +26,9 @@ UHarmoniaSenseComponent::UHarmoniaSenseComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.TickGroup = TG_PostPhysics;
 	bAutoActivate = true;
+
+	// Enable replication for Server RPCs to work
+	SetIsReplicatedByDefault(true);
 }
 
 void UHarmoniaSenseComponent::BeginPlay()
@@ -47,11 +52,21 @@ void UHarmoniaSenseComponent::BeginPlay()
 			OwnerAbilitySystem = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Owner);
 		}
 	}
+
+	// Initialize persistent combat sensor (stays active for component lifetime)
+	// This allows the SenseSystem to properly tick and detect targets
+	InitializeCombatSensor();
 }
 
 void UHarmoniaSenseComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	StopAttack();
+	// Local cleanup only - don't call StopAttack() which requires authority
+	// This avoids "StopAttack called on client" warning during PIE shutdown
+	bIsAttacking = false;
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(AttackTimerHandle);
+	}
 	CleanupSenseReceiver();
 
 	Super::EndPlay(EndPlayReason);
@@ -81,15 +96,27 @@ void UHarmoniaSenseComponent::TickComponent(float DeltaTime, ELevelTick TickType
 void UHarmoniaSenseComponent::RequestStartAttack(const FHarmoniaAttackData& InAttackData)
 {
 	AActor* Owner = GetOwner();
-	if (Owner && Owner->HasAuthority())
+	if (!Owner)
 	{
-		// Server: Execute directly
-		StartAttack(InAttackData);
+		return;
 	}
-	else
+
+	// Server or listen server host: Execute directly
+	if (Owner->HasAuthority())
 	{
-		// Client: Send to server
-		ServerStartAttack(InAttackData);
+		StartAttack(InAttackData);
+		return;
+	}
+
+	// Client: Only call Server RPC if we're locally controlled
+	// Simulated proxies (other players' characters) should not call Server RPCs
+	if (const APawn* OwnerPawn = Cast<APawn>(Owner))
+	{
+		if (OwnerPawn->IsLocallyControlled())
+		{
+			ServerStartAttack(InAttackData);
+		}
+		// else: Simulated proxy - don't send RPC, server will handle it
 	}
 }
 
@@ -101,15 +128,27 @@ void UHarmoniaSenseComponent::RequestStartAttackDefault()
 void UHarmoniaSenseComponent::RequestStopAttack()
 {
 	AActor* Owner = GetOwner();
-	if (Owner && Owner->HasAuthority())
+	if (!Owner)
 	{
-		// Server: Execute directly
-		StopAttack();
+		return;
 	}
-	else
+
+	// Server or listen server host: Execute directly
+	if (Owner->HasAuthority())
 	{
-		// Client: Send to server
-		ServerStopAttack();
+		StopAttack();
+		return;
+	}
+
+	// Client: Only call Server RPC if we're locally controlled
+	// Simulated proxies (other players' characters) should not call Server RPCs
+	if (const APawn* OwnerPawn = Cast<APawn>(Owner))
+	{
+		if (OwnerPawn->IsLocallyControlled())
+		{
+			ServerStopAttack();
+		}
+		// else: Simulated proxy - don't send RPC, server will handle it
 	}
 }
 
@@ -236,11 +275,21 @@ void UHarmoniaSenseComponent::StartAttack(const FHarmoniaAttackData& InAttackDat
 		AttackStartTime = World->GetTimeSeconds();
 	}
 
-	// Update sense stimulus for this attack
+	// Update sense stimulus for this attack (activates the attacker's stimulus)
 	UpdateSenseStimulus();
 
-	// Setup sense receiver for hit detection
-	SetupSenseReceiver();
+	// Sensor is already created and always active from InitializeCombatSensor()
+	// Just ensure it exists
+	if (!CombatSensor)
+	{
+		InitializeCombatSensor();
+	}
+	
+	// Force manual sensor detection to trigger immediately
+	if (UActiveSensor* ActiveSen = Cast<UActiveSensor>(CombatSensor))
+	{
+		ActiveSen->RunManualSensor(true);
+	}
 
 	// Broadcast attack start
 	OnAttackStart.Broadcast();
@@ -340,6 +389,7 @@ void UHarmoniaSenseComponent::EnsureOwnerInteractable()
 	// Check if owner already has HarmoniaSenseInteractableComponent
 	OwnerInteractable = Owner->FindComponentByClass<UHarmoniaSenseInteractableComponent>();
 	
+
 	if (!OwnerInteractable)
 	{
 		// Create HarmoniaSenseInteractableComponent dynamically
@@ -350,20 +400,42 @@ void UHarmoniaSenseComponent::EnsureOwnerInteractable()
 
 		if (OwnerInteractable)
 		{
+			// Note: USenseStimulusBase is ActorComponent, not SceneComponent
+			// It uses Owner's actor location via GetSingleSensePoint() - no attach needed
+			
+			// Disable before register to defer SenseSystem registration until Owner is fully ready
+			OwnerInteractable->SetEnableSenseStimulus(false);
 			OwnerInteractable->RegisterComponent();
 			
-			// Configure for combat detection
+			// Set mobility to MovableOwner for moving characters
+			OwnerInteractable->SetStimulusMobility(EStimulusMobility::MovableOwner);
+			
+			// Configure for combat detection - register BOTH common tags
+			// "Combat" (hardcoded default) and "Attack" (common DataTable default)
+			// This ensures the owner can be detected regardless of which tag the attacker uses
+			const FName AttackTag = FName("Attack");
+			
+			// Register default Combat tag
 			OwnerInteractable->SetResponseChannel(CombatSensorTag, static_cast<uint8>(CombatSenseChannel), true);
 			OwnerInteractable->SetScore(CombatSensorTag, 1.0f);
 			
-			UE_LOG(LogTemp, Log, TEXT("HarmoniaSenseComponent: Created OwnerInteractable for %s"), *Owner->GetName());
+			// Also register Attack tag (common DataTable default)
+			OwnerInteractable->SetResponseChannel(AttackTag, static_cast<uint8>(CombatSenseChannel), true);
+			OwnerInteractable->SetScore(AttackTag, 1.0f);
+			
+			// Now enable - Owner is properly set after RegisterComponent
+			OwnerInteractable->SetEnableSenseStimulus(true);
 		}
 	}
 	else
 	{
-		// Configure existing component for combat
+		// Configure existing component for combat using both tags
+		const FName AttackTag = FName("Attack");
+		
 		OwnerInteractable->SetResponseChannel(CombatSensorTag, static_cast<uint8>(CombatSenseChannel), true);
 		OwnerInteractable->SetScore(CombatSensorTag, 1.0f);
+		OwnerInteractable->SetResponseChannel(AttackTag, static_cast<uint8>(CombatSenseChannel), true);
+		OwnerInteractable->SetScore(AttackTag, 1.0f);
 	}
 }
 
@@ -393,8 +465,6 @@ void UHarmoniaSenseComponent::EnsureOwnerInteraction()
 			// Configure for combat (track all actors, not just interactables)
 			OwnerInteraction->bInteractableOnly = false;
 			OwnerInteraction->bEnableAutomaticInteractions = false;
-			
-			UE_LOG(LogTemp, Log, TEXT("HarmoniaSenseComponent: Created OwnerInteraction for %s"), *Owner->GetName());
 		}
 	}
 	else
@@ -408,6 +478,211 @@ void UHarmoniaSenseComponent::EnsureOwnerInteraction()
 // ============================================================================
 // Initialization
 // ============================================================================
+
+void UHarmoniaSenseComponent::InitializeCombatSensor()
+{
+	// Now just creates the SenseReceiver without a sensor
+	// Sensor creation is deferred to StartAttack when we have the TraceConfig
+	AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("InitializeCombatSensor: No Owner"));
+		return;
+	}
+	
+	// Note: This authority check means clients won't create sensors themselves
+	// The server handles all hit detection
+	if (!Owner->HasAuthority())
+	{
+		return;
+	}
+
+	// Create persistent sense receiver that stays active for component lifetime
+	if (!SenseReceiver)
+	{
+		SenseReceiver = NewObject<USenseReceiverComponent>(
+			Owner,
+			USenseReceiverComponent::StaticClass(),
+			FName("CombatSenseReceiver"));
+
+		if (SenseReceiver)
+		{
+			// Attach to owner's root component for proper world position
+			if (USceneComponent* RootComp = Owner->GetRootComponent())
+			{
+				SenseReceiver->AttachToComponent(RootComp, FAttachmentTransformRules::SnapToTargetIncludingScale);
+			}
+			SenseReceiver->RegisterComponent();
+			
+			// Bind delegates - these will fire when targets are in range
+			SenseReceiver->OnNewSense.AddDynamic(this, &UHarmoniaSenseComponent::OnSenseDetected);
+			SenseReceiver->OnCurrentSense.AddDynamic(this, &UHarmoniaSenseComponent::OnSenseDetected);
+			
+			// Enable receiver - REQUIRED for sensors to tick
+			SenseReceiver->SetEnableSenseReceiver(true);
+		}
+	}
+	
+	// Create persistent combat sensor that stays ALWAYS ACTIVE
+	// NOTE: CreateNewSensor has a bug where it adds to a local copy of the array.
+	// We create the sensor manually and add it directly to ActiveSensors.
+	if (SenseReceiver && !CombatSensor)
+	{
+		// Check if sensor with this tag already exists
+		ESuccessState CheckState;
+		USensorBase* ExistingSensor = SenseReceiver->GetSensor_ByTag(ESensorType::Active, CombatSensorTag, CheckState);
+		if (ExistingSensor && CheckState == ESuccessState::Success)
+		{
+			CombatSensor = ExistingSensor;
+		}
+		else
+		{
+			// Create sensor manually and add directly to ActiveSensors
+			USensorSight* NewSensor = NewObject<USensorSight>(SenseReceiver, USensorSight::StaticClass(), CombatSensorTag);
+			if (NewSensor)
+			{
+				NewSensor->bEnable = false;  // Disable initially
+				NewSensor->SensorTag = CombatSensorTag;
+				NewSensor->SensorType = ESensorType::Active;
+				NewSensor->SensorThreadType = ESensorThreadType::Main_Thread;
+				
+				// Add directly to ActiveSensors array (this is the fix!)
+				SenseReceiver->ActiveSensors.Add(NewSensor);
+				
+				// Initialize sensor from receiver
+				NewSensor->InitializeFromReceiver(SenseReceiver);
+				NewSensor->InitializeForSense(SenseReceiver);
+				
+				// Register with SenseManager
+				if (USenseManager* SM = SenseReceiver->GetSenseManager())
+				{
+					SM->Add_ReceiverSensor(SenseReceiver, NewSensor, false);
+				}
+				
+				// Configure sensor to listen on combat channel
+				NewSensor->SetSenseResponseChannelBit(CombatSenseChannel, true);
+				
+				// Configure sight sensor for 360-degree always-on detection
+				const float DetectionRange = 500.0f;
+				NewSensor->SetDistanceAngleParam(
+					DetectionRange,
+					DetectionRange * 1.2f,
+					180.0f,  // Full 360-degree detection
+					180.0f,
+					true,
+					0.0f
+				);
+				
+				// Disable line-of-sight trace for combat
+				NewSensor->SetTraceParam(
+					ETraceTestParam::BoolTraceTest,
+					ECC_PhysicsBody,
+					false,
+					true,
+					0.0f
+				);
+				
+				// Now enable the sensor
+				NewSensor->SetEnableSensor(true);
+				
+				CombatSensor = NewSensor;
+			}
+		}
+		
+		// Store the current sensor configuration
+		CurrentSensorTag = CombatSensorTag;
+		CurrentSenseChannel = CombatSenseChannel;
+	}
+}
+
+void UHarmoniaSenseComponent::CreateOrUpdateSensorForAttack(FName SensorTag, int32 SenseChannel)
+{
+	if (!SenseReceiver)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CreateOrUpdateSensorForAttack: No SenseReceiver"));
+		InitializeCombatSensor();
+		if (!SenseReceiver)
+		{
+			return;
+		}
+	}
+
+	// Use default values if not specified
+	if (SensorTag.IsNone())
+	{
+		SensorTag = CombatSensorTag;
+	}
+	const int32 ActualChannel = SenseChannel > 0 ? SenseChannel : CombatSenseChannel;
+
+	// Check if we already have a sensor with this tag
+	bool bSensorExists = false;
+	for (UActiveSensor* ActiveSensor : SenseReceiver->ActiveSensors)
+	{
+		if (ActiveSensor && ActiveSensor->SensorTag == SensorTag)
+		{
+			bSensorExists = true;
+			CombatSensor = ActiveSensor;
+			break;
+		}
+	}
+
+	// If sensor with different tag exists, we might need to reconfigure
+	// For now, create a new one if the tag doesn't match
+	if (!bSensorExists || !CombatSensor || CombatSensor->SensorTag != SensorTag)
+	{
+		ESuccessState SuccessState;
+		CombatSensor = SenseReceiver->CreateNewSensor(
+			USensorSight::StaticClass(),
+			ESensorType::Active,
+			SensorTag,
+			ESensorThreadType::Main_Thread,
+			true,
+			SuccessState);
+
+		if (CombatSensor && SuccessState == ESuccessState::Success)
+		{
+			// Configure sensor to listen on the specified channel
+			CombatSensor->SetSenseResponseChannelBit(ActualChannel, true);
+
+			// Configure sight sensor for combat detection
+			if (USensorSight* SightSensor = Cast<USensorSight>(CombatSensor))
+			{
+				const float DefaultDetectionRange = 300.0f;
+				SightSensor->SetDistanceAngleParam(
+					DefaultDetectionRange,
+					DefaultDetectionRange * 1.2f,
+					180.0f,  // Full sphere detection
+					180.0f,
+					true,
+					0.0f     // Allow all detections
+				);
+				
+				// Disable line-of-sight trace for combat
+				SightSensor->SetTraceParam(
+					ETraceTestParam::BoolTraceTest,
+					ECC_PhysicsBody,
+					false,
+					true,
+					0.0f
+				);
+			}
+
+			// Store the tag/channel used for this sensor
+			CurrentSensorTag = SensorTag;
+			CurrentSenseChannel = ActualChannel;
+			
+			// Force sensor to run detection immediately
+			if (UActiveSensor* ActiveSen = Cast<UActiveSensor>(CombatSensor))
+			{
+				ActiveSen->RunManualSensor(true);
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("CreateOrUpdateSensorForAttack: FAILED to create sensor"));
+		}
+	}
+}
 
 void UHarmoniaSenseComponent::InitializeSenseStimulus()
 {
@@ -427,8 +702,10 @@ void UHarmoniaSenseComponent::InitializeSenseStimulus()
 
 		if (SenseStimulus)
 		{
+			// Disable before register to defer SenseSystem registration until Owner is fully ready
+			SenseStimulus->SetEnableSenseStimulus(false);
 			SenseStimulus->RegisterComponent();
-			SenseStimulus->SetActive(false); // Start inactive, activate during attacks
+			// Keep inactive - will be activated during attacks via SetActive()
 		}
 	}
 }
@@ -463,85 +740,44 @@ void UHarmoniaSenseComponent::UpdateSenseStimulus()
 
 void UHarmoniaSenseComponent::SetupSenseReceiver()
 {
-	AActor* Owner = GetOwner();
-	if (!Owner)
+	// Sensor is now created once in InitializeCombatSensor()
+	// This function only updates detection range based on current attack data
+	
+	if (!SenseReceiver)
+	{
+		InitializeCombatSensor();
+	}
+	
+	if (!SenseReceiver)
 	{
 		return;
 	}
 
 	const FHarmoniaAttackTraceConfig& TraceConfig = CurrentAttackData.TraceConfig;
-
-	// Create temporary sense receiver for this attack
-	if (!SenseReceiver)
+	const float DetectionRange = FMath::Max(TraceConfig.TraceExtent.X, 200.0f);
+	
+	// Use the stored CombatSensor directly
+	if (CombatSensor)
 	{
-		SenseReceiver = NewObject<USenseReceiverComponent>(
-			Owner,
-			USenseReceiverComponent::StaticClass(),
-			FName("AttackSenseReceiver"));
-
-		if (SenseReceiver)
+		if (USensorSight* SightSensor = Cast<USensorSight>(CombatSensor))
 		{
-			SenseReceiver->RegisterComponent();
-
-			// Create and configure sensor for attack detection using table values
-			ESuccessState SuccessState;
-			USensorBase* AttackSensor = SenseReceiver->CreateNewSensor(
-				USensorSight::StaticClass(),
-				ESensorType::Active,
-				TraceConfig.SensorTag,
-				ESensorThreadType::Main_Thread,
+			SightSensor->SetDistanceAngleParam(
+				DetectionRange,
+				DetectionRange * 1.2f,
+				180.0f,
+				180.0f,
 				true,
-				SuccessState);
-
-			if (AttackSensor && SuccessState == ESuccessState::Success)
-			{
-				// Configure sensor response channel from table
-				const uint8 Channel = static_cast<uint8>(FMath::Clamp(TraceConfig.SenseChannel, 0, 63));
-				if (Channel > 0)
-				{
-					AttackSensor->SetSenseResponseChannelBit(Channel, true);
-				}
-				else
-				{
-					// Default to channel 1 if not specified
-					AttackSensor->SetSenseResponseChannelBit(1, true);
-				}
-
-				// Configure sensor sight parameters using TraceExtent as detection range
-				if (USensorSight* SightSensor = Cast<USensorSight>(AttackSensor))
-				{
-					const float DetectionRange = TraceConfig.TraceExtent.X; // Use X as primary range
-					SightSensor->SetDistanceAngleParam(
-						DetectionRange,         // MaxDistance
-						DetectionRange * 1.2f,  // MaxDistanceLost (slightly larger for hysteresis)
-						180.0f,                 // MaxAngle (full sphere for attack detection)
-						180.0f,                 // MaxAngleLost
-						true,                   // TestBySingleLocation
-						TraceConfig.MinimumSenseScore  // MinScore from table
-					);
-				}
-			}
+				0.0f
+			);
 		}
-	}
-
-	// Bind to sense detection
-	if (SenseReceiver)
-	{
-		SenseReceiver->OnNewSense.AddDynamic(this, &UHarmoniaSenseComponent::OnSenseDetected);
-		SenseReceiver->OnCurrentSense.AddDynamic(this, &UHarmoniaSenseComponent::OnSenseDetected);
 	}
 }
 
 void UHarmoniaSenseComponent::CleanupSenseReceiver()
 {
-	if (SenseReceiver)
-	{
-		SenseReceiver->OnNewSense.RemoveDynamic(this, &UHarmoniaSenseComponent::OnSenseDetected);
-		SenseReceiver->OnCurrentSense.RemoveDynamic(this, &UHarmoniaSenseComponent::OnSenseDetected);
-		SenseReceiver->DestroyComponent(false);
-		SenseReceiver = nullptr;
-	}
-
+	// SenseReceiver is now persistent and created once in InitializeCombatSensor()
+	// We do NOT destroy it here - just deactivate the stimulus
+	
 	if (SenseStimulus)
 	{
 		SenseStimulus->SetActive(false);
@@ -554,19 +790,25 @@ void UHarmoniaSenseComponent::CleanupSenseReceiver()
 
 void UHarmoniaSenseComponent::OnSenseDetected(const USensorBase* SensorPtr, int32 Channel, const TArray<FSensedStimulus> SensedStimuli)
 {
-	if (!bIsAttacking || !SensorPtr)
+	// Sensor is always active - only process when attacking
+	if (!bIsAttacking)
 	{
 		return;
 	}
 
-	// Check if this is the correct sensor
-	if (SensorPtr->SensorTag != CurrentAttackData.TraceConfig.SensorTag)
+	if (!SensorPtr)
+	{
+		return;
+	}
+
+	// Check if this is the combat sensor (uses CombatSensorTag)
+	if (SensorPtr->SensorTag != CombatSensorTag)
 	{
 		return;
 	}
 
 	// Check channel
-	if (Channel != CurrentAttackData.TraceConfig.SenseChannel)
+	if (Channel != CombatSenseChannel)
 	{
 		return;
 	}
@@ -581,7 +823,7 @@ void UHarmoniaSenseComponent::OnSenseDetected(const USensorBase* SensorPtr, int3
 		}
 
 		// Process hit
-		ProcessHitTarget(Stimulus);
+		bool bHit = ProcessHitTarget(Stimulus);
 
 		// Check if we've hit max targets
 		if (HitTargets.Num() >= CurrentAttackData.TraceConfig.MaxTargets)
@@ -751,6 +993,16 @@ float UHarmoniaSenseComponent::ApplyDamageToTarget(
 
 	AActor* Owner = GetOwner();
 	UAbilitySystemComponent* SourceASC = OwnerAbilitySystem;
+	
+	// Fallback: Get ASC if not cached (Lyra ASC might not be ready at BeginPlay)
+	if (!SourceASC && Owner)
+	{
+		SourceASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Owner);
+		if (SourceASC)
+		{
+			OwnerAbilitySystem = SourceASC;  // Cache for future use
+		}
+	}
 
 	// Calculate final damage using AttackPower from attributes as base
 	float FinalDamage = 0.0f;
@@ -791,7 +1043,7 @@ float UHarmoniaSenseComponent::ApplyDamageToTarget(
 	case EHarmoniaDamageType::Instant:
 		{
 			// Apply instant damage via Gameplay Effect
-			if (DamageConfig.DamageEffectClass)
+			if (DamageConfig.DamageEffectClass && SourceASC)
 			{
 				FGameplayEffectContextHandle EffectContext = CreateDamageEffectContext(TargetActor, HitLocation, HitNormal);
 				FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(DamageConfig.DamageEffectClass, 1.0f, EffectContext);
@@ -1130,12 +1382,8 @@ void UHarmoniaSenseComponent::DrawDebugAttackTrace() const
 	constexpr float TraceDuration = 0.1f; // Persist between frames
 	constexpr float LineThickness = 1.0f; // Thinner lines for visibility
 
-	// Color based on state: Yellow = hit detected, Green = attacking, Red = not attacking
-	FColor DebugColor = FColor::Red;
-	if (bIsAttacking)
-	{
-		DebugColor = HitTargets.Num() > 0 ? FColor::Yellow : FColor::Green;
-	}
+	// Color based on state: Red = hit detected, Green = attacking (no hit yet)
+	const FColor DebugColor = HitTargets.Num() > 0 ? FColor::Red : FColor::Green;
 
 	UE_LOG(LogTemp, Verbose, TEXT("DrawDebugAttackTrace - Socket: %s, Location: %s, Shape: %d"), 
 		*CurrentAttackData.TraceConfig.SocketName.ToString(), *Location.ToString(), (int32)CurrentAttackData.TraceConfig.TraceShape);

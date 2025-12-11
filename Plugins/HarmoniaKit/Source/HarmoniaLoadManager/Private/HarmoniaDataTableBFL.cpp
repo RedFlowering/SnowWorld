@@ -220,9 +220,9 @@ UDataTable* UHarmoniaDataTableBFL::GetSkillTreeDataTable()
     return HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("SkillTree"));
 }
 
-UDataTable* UHarmoniaDataTableBFL::GetBuildingPartDataTable()
+UDataTable* UHarmoniaDataTableBFL::GetBuildingPartsDataTable()
 {
-    return HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("BuildingPart"));
+    return HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("BuildingParts"));
 }
 
 UDataTable* UHarmoniaDataTableBFL::GetWeaponUpgradeDataTable()

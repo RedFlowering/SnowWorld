@@ -20,7 +20,7 @@ struct HARMONIAKIT_API FHarmoniaMinimapIcon
 	GENERATED_BODY()
 
 	/** Unique identifier */
-	UPROPERTY(BlueprintReadWrite, Category = "Icon")
+	UPROPERTY(BlueprintReadWrite, Category = "Icon", meta = (IgnoreForMemberInitializationTest))
 	FGuid IconID;
 
 	/** World location */
@@ -78,11 +78,6 @@ struct HARMONIAKIT_API FHarmoniaMinimapIcon
 	/** Current position on minimap (UV) */
 	UPROPERTY(BlueprintReadWrite, Category = "Icon")
 	FVector2D MinimapPosition = FVector2D::ZeroVector;
-
-	FHarmoniaMinimapIcon()
-	{
-		IconID = FGuid::NewGuid();
-	}
 };
 
 /**

@@ -32,7 +32,7 @@ struct HARMONIAKIT_API FHarmoniaWorldMarkerData
 	GENERATED_BODY()
 
 	/** Unique marker ID */
-	UPROPERTY(BlueprintReadWrite, Category = "Marker")
+	UPROPERTY(BlueprintReadWrite, Category = "Marker", meta = (IgnoreForMemberInitializationTest))
 	FGuid MarkerID;
 
 	/** Display name */
@@ -126,11 +126,6 @@ struct HARMONIAKIT_API FHarmoniaWorldMarkerData
 	/** Internal: Current distance */
 	UPROPERTY(BlueprintReadOnly, Category = "Internal")
 	float CurrentDistance = 0.0f;
-
-	FHarmoniaWorldMarkerData()
-	{
-		MarkerID = FGuid::NewGuid();
-	}
 };
 
 /**

@@ -50,11 +50,11 @@ struct FDungeonRoom
 
 	/** Room position (grid coordinates) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
-	FIntPoint GridPosition;
+	FIntPoint GridPosition = FIntPoint::ZeroValue;
 
 	/** Actual world position */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
-	FVector WorldPosition;
+	FVector WorldPosition = FVector::ZeroVector;
 
 	/** Room size */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
@@ -88,11 +88,11 @@ struct FDungeonCorridor
 
 	/** Start room */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
-	FIntPoint StartRoom;
+	FIntPoint StartRoom = FIntPoint::ZeroValue;
 
 	/** End room */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")
-	FIntPoint EndRoom;
+	FIntPoint EndRoom = FIntPoint::ZeroValue;
 
 	/** Path waypoints */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dungeon")

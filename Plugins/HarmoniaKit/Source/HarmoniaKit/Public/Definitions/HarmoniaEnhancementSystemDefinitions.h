@@ -692,12 +692,12 @@ struct FEnhancementSession
 	GENERATED_BODY()
 
 	/** Session ID */
-	UPROPERTY(BlueprintReadOnly, Category = "Enhancement")
-	FGuid SessionId = FGuid();
+	UPROPERTY(BlueprintReadOnly, Category = "Enhancement", meta = (IgnoreForMemberInitializationTest))
+	FGuid SessionId;
 
 	/** Target item GUID */
-	UPROPERTY(BlueprintReadWrite, Category = "Enhancement")
-	FGuid TargetItemGUID = FGuid();
+	UPROPERTY(BlueprintReadWrite, Category = "Enhancement", meta = (IgnoreForMemberInitializationTest))
+	FGuid TargetItemGUID;
 
 	/** Current enhancement level */
 	UPROPERTY(BlueprintReadWrite, Category = "Enhancement")
@@ -710,14 +710,6 @@ struct FEnhancementSession
 	/** Start time */
 	UPROPERTY(BlueprintReadOnly, Category = "Enhancement")
 	FDateTime StartTime = FDateTime::Now();
-
-	FEnhancementSession()
-		: SessionId(FGuid::NewGuid())
-		, TargetItemGUID()
-		, CurrentLevel(0)
-		, TargetLevel(0)
-		, StartTime(FDateTime::Now())
-	{}
 };
 
 /**

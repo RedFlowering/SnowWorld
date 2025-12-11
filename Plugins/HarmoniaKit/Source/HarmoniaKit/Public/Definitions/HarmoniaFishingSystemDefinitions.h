@@ -231,7 +231,7 @@ struct FCaughtFish
 
 	/** World location where caught */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caught Fish")
-	FVector CaughtLocation;
+	FVector CaughtLocation = FVector::ZeroVector;
 
 	/** Quality score (0-100) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Caught Fish")

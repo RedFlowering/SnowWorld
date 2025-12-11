@@ -33,11 +33,11 @@ struct FHarmoniaEnvironmentalOpportunity
 
 	/** Feature type */
 	UPROPERTY(BlueprintReadOnly)
-	EHarmoniaEnvironmentFeature FeatureType;
+	EHarmoniaEnvironmentFeature FeatureType = EHarmoniaEnvironmentFeature::Water;
 
 	/** Location of feature */
 	UPROPERTY(BlueprintReadOnly)
-	FVector Location;
+	FVector Location = FVector::ZeroVector;
 
 	/** Tactical value (0-1) */
 	UPROPERTY(BlueprintReadOnly)
