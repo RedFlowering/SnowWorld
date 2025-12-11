@@ -136,6 +136,9 @@ public:
 	bool TryMantleFromGA();
 
 protected:
+	/** Override from ALS - detect when rolling starts to trigger Roll GA */
+	virtual void NotifyLocomotionActionChanged(const FGameplayTag& PreviousLocomotionAction) override;
+
 	/** Override from ALS - only allows mantling when GA requests it. */
 	virtual bool StartMantling(const FAlsMantlingTraceSettings& TraceSettings) override;
 

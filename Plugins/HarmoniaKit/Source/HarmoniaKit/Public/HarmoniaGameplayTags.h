@@ -203,6 +203,22 @@ namespace HarmoniaGameplayTags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_State_Invulnerable);
 
 	// ============================================================
+	// Roll System Tags
+	// ============================================================
+
+	// Input Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Roll);
+
+	// Ability Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Roll);
+
+	// State Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Rolling);
+
+	// Event Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Roll_Landing);
+
+	// ============================================================
 	// Common Character State Tags
 	// ============================================================
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Dead);

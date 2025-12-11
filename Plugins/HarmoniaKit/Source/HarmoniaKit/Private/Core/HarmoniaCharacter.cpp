@@ -65,6 +65,31 @@ void AHarmoniaCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, u
 	}
 }
 
+void AHarmoniaCharacter::NotifyLocomotionActionChanged(const FGameplayTag& PreviousLocomotionAction)
+{
+	Super::NotifyLocomotionActionChanged(PreviousLocomotionAction);
+	
+	// Check if rolling just started (ALS has already validated all conditions)
+	if (GetLocomotionAction() == AlsLocomotionActionTags::Rolling && 
+	    PreviousLocomotionAction != AlsLocomotionActionTags::Rolling)
+	{
+		// Send GameplayEvent to trigger the Roll GA
+		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+		{
+			static FGameplayTag RollLandingEventTag = FGameplayTag::RequestGameplayTag(FName("GameplayEvent.Roll.Landing"));
+			
+			FGameplayEventData EventData;
+			EventData.Instigator = this;
+			EventData.Target = this;
+			EventData.EventMagnitude = GetLocomotionState().bHasVelocity 
+				? GetLocomotionState().VelocityYawAngle 
+				: FMath::UnwindDegrees(GetActorRotation().Yaw);
+			
+			ASC->HandleGameplayEvent(RollLandingEventTag, &EventData);
+		}
+	}
+}
+
 void AHarmoniaCharacter::SetDesiredOverlayMode(const FGameplayTag& NewModeTag)
 {
 	if (DesiredOverlayMode != NewModeTag)

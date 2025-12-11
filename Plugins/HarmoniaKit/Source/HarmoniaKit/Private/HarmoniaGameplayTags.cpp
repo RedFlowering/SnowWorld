@@ -212,6 +212,22 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Incapacitated, "State.Incapacitated", "Character is incapacitated");
 
 	// ============================================================
+	// Roll System Tags
+	// ============================================================
+
+	// Input Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Roll, "InputTag.Roll", "Roll input");
+
+	// Ability Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Roll, "Ability.Roll", "Roll ability");
+
+	// State Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Rolling, "State.Rolling", "Character is rolling");
+
+	// Event Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Roll_Landing, "GameplayEvent.Roll.Landing", "Trigger roll on high-speed landing");
+
+	// ============================================================
 	// Debuff Tags
 	// ============================================================
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Debuff_StaminaRecoveryBlocked, "Debuff.StaminaRecoveryBlocked", "Stamina recovery is blocked for a duration after consumption");
@@ -529,7 +545,6 @@ namespace HarmoniaGameplayTags
 			{
 				if (TestTag.ToString().Contains(TagString))
 				{
-					UE_LOG(LogTemp, Display, TEXT("Could not find exact match for tag [%s] but found partial match on tag [%s]."), *TagString, *TestTag.ToString());
 					Tag = TestTag;
 					break;
 				}
