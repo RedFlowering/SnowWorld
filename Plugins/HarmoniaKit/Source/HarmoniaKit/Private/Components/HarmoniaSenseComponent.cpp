@@ -200,6 +200,28 @@ bool UHarmoniaSenseComponent::RemoveSensor(FName SensorTag)
 	}
 
 	USensorBase* Sensor = ActiveSensors[SensorTag];
+	
+	// Wait for async task completion before removal (multithreading safety)
+	// This prevents removing a sensor while it's still processing in another thread
+	if (Sensor && !Sensor->IsSensorTaskWorkDone())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] RemoveSensor: Waiting for async task completion on '%s'"), *SensorTag.ToString());
+		
+		// Brief wait for async completion (max ~100ms to avoid blocking game thread too long)
+		constexpr int32 MaxWaitIterations = 100;
+		int32 WaitCount = 0;
+		while (!Sensor->IsSensorTaskWorkDone() && WaitCount < MaxWaitIterations)
+		{
+			FPlatformProcess::Sleep(0.001f);
+			++WaitCount;
+		}
+		
+		if (WaitCount >= MaxWaitIterations)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_SENSOR] RemoveSensor: Timeout waiting for async task on '%s'"), *SensorTag.ToString());
+		}
+	}
+	
 	ActiveSensors.Remove(SensorTag);
 
 	// Determine sensor type for DestroySensor call
