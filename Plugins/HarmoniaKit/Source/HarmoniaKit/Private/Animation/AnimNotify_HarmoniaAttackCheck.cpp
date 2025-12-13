@@ -1,6 +1,7 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "Animation/AnimNotify_HarmoniaAttackCheck.h"
+#include "Components/HarmoniaMeleeCombatComponent.h"
 #include "Components/HarmoniaSenseComponent.h"
 #include "GameFramework/Actor.h"
 
@@ -26,29 +27,22 @@ void UAnimNotify_HarmoniaAttackCheck::Notify(USkeletalMeshComponent* MeshComp, U
 		return;
 	}
 
-	// Find attack component
-	UHarmoniaSenseComponent* AttackComponent = FindAttackComponent(Owner);
-	if (!AttackComponent)
+	// Find combat component (attack control moved from SenseComponent to MeleeCombatComponent)
+	UHarmoniaMeleeCombatComponent* CombatComp = Owner->FindComponentByClass<UHarmoniaMeleeCombatComponent>();
+	if (!CombatComp)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AnimNotify_HarmoniaAttackCheck: No HarmoniaSenseComponent found on %s"), *Owner->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("AnimNotify_HarmoniaAttackCheck: No HarmoniaMeleeCombatComponent found on %s"), *Owner->GetName());
 		return;
 	}
 
 	// Stop previous attack if requested
-	if (bStopPreviousAttack && AttackComponent->IsAttacking())
+	if (bStopPreviousAttack && CombatComp->IsAttacking())
 	{
-		AttackComponent->RequestStopAttack();
+		CombatComp->EndAttack();
 	}
 
-	// Start attack with appropriate data
-	if (bUseCustomAttackData)
-	{
-		AttackComponent->RequestStartAttack(CustomAttackData);
-	}
-	else
-	{
-		AttackComponent->RequestStartAttackDefault();
-	}
+	// Start attack via combat component
+	CombatComp->StartAttack(CombatComp->GetCurrentAttackType());
 }
 
 FString UAnimNotify_HarmoniaAttackCheck::GetNotifyName_Implementation() const
@@ -68,24 +62,6 @@ UHarmoniaSenseComponent* UAnimNotify_HarmoniaAttackCheck::FindAttackComponent(AA
 		return nullptr;
 	}
 
-	// If component name is specified, find by name
-	if (!AttackComponentName.IsNone())
-	{
-		TArray<UHarmoniaSenseComponent*> AttackComponents;
-		Owner->GetComponents<UHarmoniaSenseComponent>(AttackComponents);
-
-		for (UHarmoniaSenseComponent* Component : AttackComponents)
-		{
-			if (Component && Component->GetFName() == AttackComponentName)
-			{
-				return Component;
-			}
-		}
-
-		UE_LOG(LogTemp, Warning, TEXT("AnimNotify_HarmoniaAttackCheck: Could not find component named '%s' on %s"), *AttackComponentName.ToString(), *Owner->GetName());
-		return nullptr;
-	}
-
-	// Otherwise, return first found component
+	// Legacy - returns HarmoniaSenseComponent for compatibility
 	return Owner->FindComponentByClass<UHarmoniaSenseComponent>();
 }

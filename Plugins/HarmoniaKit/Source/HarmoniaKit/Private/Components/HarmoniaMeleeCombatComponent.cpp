@@ -176,6 +176,11 @@ void UHarmoniaMeleeCombatComponent::ClearInvulnerability()
 	SetInvulnerable(false);
 }
 
+void UHarmoniaMeleeCombatComponent::SetInAttackWindow(bool bInWindow)
+{
+	bInAttackWindow = bInWindow;
+}
+
 // ============================================================================
 // Combo System
 // ============================================================================

@@ -6,6 +6,7 @@
 #include "GameplayTagContainer.h"
 #include "GameplayEffectTypes.h"
 #include "SenseSysHelpers.h"
+#include "SenseStimulusBase.h"
 #include "HarmoniaCombatSystemDefinitions.generated.h"
 
 class UGameplayEffect;
@@ -38,28 +39,6 @@ enum class EHarmoniaDamageType : uint8
 	Custom UMETA(DisplayName = "Custom Damage")
 };
 
-/**
- * Attack Trace Shape
- * Defines the shape used for attack detection via Sense System
- */
-UENUM(BlueprintType)
-enum class EHarmoniaAttackTraceShape : uint8
-{
-	// Box shape
-	Box UMETA(DisplayName = "Box"),
-
-	// Sphere shape
-	Sphere UMETA(DisplayName = "Sphere"),
-
-	// Capsule shape
-	Capsule UMETA(DisplayName = "Capsule"),
-
-	// Line trace
-	Line UMETA(DisplayName = "Line"),
-
-	// Custom shape (defined in component)
-	Custom UMETA(DisplayName = "Custom")
-};
 
 /**
  * Hit Reaction Type
@@ -156,76 +135,76 @@ enum class EHarmoniaCriticalAttackType : uint8
 
 /**
  * Attack Trace Configuration
- * Defines how to trace for attack hits using Sense System
+ * References a Sensor Blueprint class via DT_SenseConfig DataTable
+ * All detection settings (shape, range, score, etc.) are configured in the Sensor BP class
  */
 USTRUCT(BlueprintType)
 struct HARMONIAKIT_API FHarmoniaAttackTraceConfig
 {
 	GENERATED_BODY()
 
-	// Shape of the trace
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Trace")
-	EHarmoniaAttackTraceShape TraceShape = EHarmoniaAttackTraceShape::Sphere;
+	// Row name in SenseConfigDataTable to use for this attack
+	// The referenced sensor class contains all detection parameters
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sensor Config")
+	FName SenseConfigRowName = NAME_None;
+};
 
-	// Extent/size of the trace shape (meaning depends on shape)
-	// Box: X=Width, Y=Height, Z=Depth
-	// Sphere: X=Radius
-	// Capsule: X=Radius, Z=HalfHeight
-	// Line: X=Length
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Trace")
-	FVector TraceExtent = FVector(50.0f, 50.0f, 50.0f);
+/**
+ * Sense System Configuration Data (DataTable Row)
+ * References a Blueprint sensor class with all settings configured in the class itself
+ */
+USTRUCT(BlueprintType)
+struct HARMONIAKIT_API FHarmoniaSenseConfigData : public FTableRowBase
+{
+	GENERATED_BODY()
 
-	// Offset from component location
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Trace")
-	FVector TraceOffset = FVector::ZeroVector;
+	// ========================================
+	// Sensor Reference
+	// ========================================
+	
+	// Sensor class to use (Blueprint class with all settings configured)
+	// Create BP subclass of USensorSight, USensorHearing, etc. and configure there
+	// SensorTag and SenseChannel are configured in the Sensor BP class itself
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sensor")
+	TSubclassOf<class USensorBase> SensorClass;
 
-	// Rotation offset from socket rotation
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Trace")
-	FRotator RotationOffset = FRotator::ZeroRotator;
+	// ========================================
+	// Stimulus Response (for targets)
+	// ========================================
+	
+	// Stimulus mobility for the owner (how the stimulus position updates)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stimulus")
+	EStimulusMobility StimulusMobility = EStimulusMobility::MovableOwner;
 
-	// Socket name to attach trace to (if empty, uses component location)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Trace")
-	FName SocketName = NAME_None;
+	// Additional tags that stimuli should respond to
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stimulus")
+	TArray<FName> ResponseTags;
 
-	// Whether to use continuous detection or single check
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Trace")
-	bool bContinuousDetection = false;
+	// Base sense score for detection
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stimulus")
+	float BaseScore = 1.0f;
 
-	// Duration of continuous detection (0 = until manually stopped)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Trace", meta = (EditCondition = "bContinuousDetection"))
-	float DetectionDuration = 0.3f;
+	// Note: Hit Detection settings (MaxTargets, bHitOncePerTarget, etc.) are configured in Sensor BP class
 
-	// Sensor tag to use for detection
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Trace")
-	FName SensorTag = FName("Attack");
+	// ========================================
+	// Debug Settings
+	// ========================================
 
-	// Channel for sense detection
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Trace")
-	int32 SenseChannel = 0;
-
-	// Minimum score required to register hit
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Trace")
-	float MinimumSenseScore = 0.5f;
-
-	// Maximum number of targets to hit per attack
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Trace")
-	int32 MaxTargets = 10;
-
-	// Whether to hit each target only once per attack
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Trace")
-	bool bHitOncePerTarget = true;
-
-	// Debug visualization
+	// Enable debug visualization for this sensor
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
-	bool bShowDebugTrace = false;
+	bool bEnableDebugDraw = false;
 
-	// Enable SenseSystem sensor debug visualization (shows sensor detection)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug", meta = (EditCondition = "bShowDebugTrace"))
-	bool bEnableSenseSystemTrace = false;
+	// Debug draw configuration (controls what sensor info to display)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug", meta = (EditCondition = "bEnableDebugDraw"))
+	FSenseSysDebugDraw DebugDrawConfig;
 
-	// SenseSystem debug configuration (controls what sensor info to display)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug", meta = (EditCondition = "bShowDebugTrace && bEnableSenseSystemTrace"))
-	FSenseSysDebugDraw SenseDebugConfig;
+	// ========================================
+	// Info
+	// ========================================
+	
+	// Description for this configuration (editor only)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
+	FString Description;
 };
 
 /**

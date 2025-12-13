@@ -252,6 +252,13 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Sense Interaction")
 	FOnInteractionCompletedDelegate OnInteractionCompleted;
 
+	/**
+	 * Register a sensor directly to the correct array (bypasses CreateNewSensor bug)
+	 * Adds to ActiveSensors, PassiveSensors, or ManualSensors based on SensorType
+	 * @return true if successfully registered
+	 */
+	bool RegisterSensorDirectly(USensorBase* NewSensor);
+
 protected:
 	/**
 	 * Setup input bindings
@@ -271,7 +278,6 @@ protected:
 	// ============================================================================
 	// Sense System Callbacks
 	// ============================================================================
-
 	/**
 	 * Called when a new sense is detected
 	 */

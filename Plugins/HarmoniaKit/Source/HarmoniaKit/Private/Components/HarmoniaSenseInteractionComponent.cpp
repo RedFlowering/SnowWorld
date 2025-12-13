@@ -6,6 +6,8 @@
 #include "SenseReceiverComponent.h"
 #include "SenseStimulusComponent.h"
 #include "Sensors/SensorBase.h"
+#include "Sensors/ActiveSensor.h"
+#include "Sensors/PassiveSensor.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/PlayerController.h"
@@ -18,11 +20,10 @@ UHarmoniaSenseInteractionComponent::UHarmoniaSenseInteractionComponent(const FOb
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.TickGroup = TG_PostPhysics;
 
-	// Default sensor tags to monitor
-	MonitoredSensorTags.Add(FName("Proximity"));
-	MonitoredSensorTags.Add(FName("Vision"));
-	MonitoredSensorTags.Add(FName("Hearing"));
+	// MonitoredSensorTags should be configured via Blueprint or DataTable
+	// No hardcoded defaults - configure in component properties
 }
+
 
 void UHarmoniaSenseInteractionComponent::BeginPlay()
 {
@@ -90,9 +91,43 @@ void UHarmoniaSenseInteractionComponent::TickComponent(
 	}
 }
 
+bool UHarmoniaSenseInteractionComponent::RegisterSensorDirectly(USensorBase* NewSensor)
+{
+	if (!NewSensor)
+	{
+		return false;
+	}
+
+	// Add directly to the correct member array based on sensor type
+	switch (NewSensor->SensorType)
+	{
+		case ESensorType::Active:
+			ActiveSensors.Add(Cast<UActiveSensor>(NewSensor));
+			break;
+		case ESensorType::Passive:
+			PassiveSensors.Add(Cast<UPassiveSensor>(NewSensor));
+			break;
+		case ESensorType::Manual:
+			ManualSensors.Add(Cast<UActiveSensor>(NewSensor));
+			break;
+		default:
+			UE_LOG(LogTemp, Warning, TEXT("[HarmoniaSenseInteraction] RegisterSensorDirectly: Unknown SensorType %d"), 
+				static_cast<int32>(NewSensor->SensorType));
+			return false;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[HarmoniaSenseInteraction] RegisterSensorDirectly: Added sensor '%s' to %s array"),
+		*NewSensor->SensorTag.ToString(),
+		NewSensor->SensorType == ESensorType::Active ? TEXT("Active") : 
+		(NewSensor->SensorType == ESensorType::Passive ? TEXT("Passive") : TEXT("Manual")));
+
+	return true;
+}
+
 // ============================================================================
 // Target Management
 // ============================================================================
+
 
 FInteractableTargetInfo UHarmoniaSenseInteractionComponent::GetBestInteractionTarget() const
 {

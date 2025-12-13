@@ -179,4 +179,7 @@ public:
     UFUNCTION(BlueprintPure, Category = "Harmonia|LoadManager")
     static UDataTable* GetBuffDataTable();
 
+    UFUNCTION(BlueprintPure, Category = "Harmonia|LoadManager")
+    static UDataTable* GetSenseConfigDataTable();
+
 };

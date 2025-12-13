@@ -193,28 +193,8 @@ void UAnimNotify_PlayHitEffect::GetSpawnTransform(USkeletalMeshComponent* MeshCo
 
 bool UAnimNotify_PlayHitEffect::GetLastHitResult(AActor* Owner, FVector& OutLocation, FVector& OutNormal) const
 {
-	if (!Owner)
-	{
-		return false;
-	}
-
-	// Find attack component
-	UHarmoniaSenseComponent* AttackComponent = Owner->FindComponentByClass<UHarmoniaSenseComponent>();
-	if (!AttackComponent)
-	{
-		return false;
-	}
-
-	// Get last hit targets
-	TArray<FHarmoniaAttackHitResult> HitTargets = AttackComponent->GetHitTargets();
-	if (HitTargets.Num() > 0)
-	{
-		// Use most recent hit
-		const FHarmoniaAttackHitResult& LastHit = HitTargets.Last();
-		OutLocation = LastHit.HitLocation;
-		OutNormal = LastHit.HitNormal;
-		return true;
-	}
-
+	// Hit results are now managed by MeleeCombatComponent via SenseSystem callbacks
+	// This function returns false to use fallback spawn location
 	return false;
 }
+

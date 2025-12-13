@@ -275,3 +275,8 @@ UDataTable* UHarmoniaDataTableBFL::GetBuffDataTable()
     return HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("Buff"));
 }
 
+UDataTable* UHarmoniaDataTableBFL::GetSenseConfigDataTable()
+{
+    return HARMONIALOADMANAGER()->GetDataTableByKey(TEXT("SenseConfig"));
+}
+

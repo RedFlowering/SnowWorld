@@ -4,39 +4,36 @@
 
 #include "CoreMinimal.h"
 #include "Components/SceneComponent.h"
-#include "SenseStimulusComponent.h"
 #include "Definitions/HarmoniaCombatSystemDefinitions.h"
 #include "HarmoniaSenseComponent.generated.h"
 
 class UAbilitySystemComponent;
-class USenseReceiverComponent;
-class UGameplayEffect;
-struct FSensedStimulus;
+class USensorBase;
 class UHarmoniaSenseInteractableComponent;
 class UHarmoniaSenseInteractionComponent;
+struct FSensedStimulus;
 
 /**
- * Delegate for attack hit events
+ * Delegate for sense detection events
+ * Fired when SenseSystem detects targets, for processing by combat components
  */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAttackHitDelegate, const FHarmoniaAttackHitResult&, HitResult);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAttackStartDelegate);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAttackEndDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
+	FOnSenseHitDelegate, 
+	const USensorBase*, Sensor,
+	int32, Channel,
+	const TArray<FSensedStimulus>&, SensedStimuli);
 
 /**
  * UHarmoniaSenseComponent
  *
- * Central SenseSystem management component for characters.
- * Automatically ensures owner has required SenseSystem components and manages combat/interaction detection.
+ * Manages SenseSystem sensor setup for characters.
+ * Responsibilities:
+ * - Set up sensors from DataTable (data-driven)
+ * - Add/remove sensors on equipment change
+ * - Forward detection callbacks to combat components
  *
- * Features:
- * - Auto-creates HarmoniaSenseInteractableComponent (Stimulus) if missing
- * - Auto-creates HarmoniaSenseInteractionComponent (Receiver) if missing
- * - Attack hit detection using multithreaded sense detection
- * - Multiple trace shapes (Box, Sphere, Capsule, Line)
- * - Continuous or single-shot detection
- * - Damage type support (Instant, Duration, Explosion)
- * - Gameplay Effect and Cue integration
- * - Critical hit calculation
+ * All detection logic is handled by SenseSystem plugin.
+ * Attack state and damage processing handled by MeleeCombatComponent.
  */
 UCLASS(Blueprintable, ClassGroup = (HarmoniaKit), meta = (BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaSenseComponent : public USceneComponent
@@ -50,351 +47,141 @@ public:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	// ============================================================================
-	// Attack Configuration
-	// ============================================================================
-
-	/**
-	 * Attack data configuration
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack|Configuration")
-	FHarmoniaAttackData AttackData;
-
-	/**
-	 * Whether to auto-initialize sense stimulus on BeginPlay
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack|Configuration")
-	bool bAutoInitializeSenseStimulus = true;
-
-	/**
-	 * Owner's ability system component (auto-found if null)
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack|Configuration")
-	TObjectPtr<UAbilitySystemComponent> OwnerAbilitySystem = nullptr;
 
 	// ============================================================================
-	// Owner SenseSystem Component Management
-	// ============================================================================
-
-	/** Owner's interactable component (Stimulus) - created if missing */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sense|Owner Components")
-	TObjectPtr<UHarmoniaSenseInteractableComponent> OwnerInteractable = nullptr;
-
-	/** Owner's interaction component (Receiver) - created if missing */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sense|Owner Components")
-	TObjectPtr<UHarmoniaSenseInteractionComponent> OwnerInteraction = nullptr;
-
-	/** Sensor tag used for combat interactions */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sense|Configuration")
-	FName CombatSensorTag = FName("Combat");
-
-	/** Sense channel used for combat detection */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sense|Configuration")
-	int32 CombatSenseChannel = 1;
-
-	// ============================================================================
-	// Attack Control
+	// Sensor Management
 	// ============================================================================
 
 	/**
-	 * Request to start attack detection (Client -> Server)
-	 * @param InAttackData Optional attack data to override default configuration
+	 * Add a sensor from DataTable configuration
+	 * @param SenseConfigRowName Row name in DT_SenseConfig
+	 * @return Created sensor, or nullptr if failed
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Attack")
-	void RequestStartAttack(const FHarmoniaAttackData& InAttackData);
+	UFUNCTION(BlueprintCallable, Category = "Sense|Sensors")
+	USensorBase* AddSensor(FName SenseConfigRowName);
 
 	/**
-	 * Request to start attack detection with default configuration (Client -> Server)
+	 * Remove a sensor by its tag
+	 * @param SensorTag Tag of sensor to remove
+	 * @return true if sensor was found and removed
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Attack")
-	void RequestStartAttackDefault();
+	UFUNCTION(BlueprintCallable, Category = "Sense|Sensors")
+	bool RemoveSensor(FName SensorTag);
 
 	/**
-	 * Request to stop attack detection (Client -> Server)
+	 * Remove all sensors
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Attack")
-	void RequestStopAttack();
+	UFUNCTION(BlueprintCallable, Category = "Sense|Sensors")
+	void RemoveAllSensors();
 
 	/**
-	 * Check if currently attacking
+	 * Called when equipment changes - updates sensor configuration
+	 * Removes old sensors, adds new ones from config list
+	 * @param NewSensorConfigs List of SenseConfigRowNames for new equipment
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Attack")
-	bool IsAttacking() const { return bIsAttacking; }
+	UFUNCTION(BlueprintCallable, Category = "Sense|Equipment")
+	void OnEquipmentChanged(const TArray<FName>& NewSensorConfigs);
 
 	/**
-	 * Get all targets hit this attack
+	 * Get sensor by tag
+	 * @return Sensor with matching tag, or nullptr
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Attack")
-	TArray<FHarmoniaAttackHitResult> GetHitTargets() const { return HitTargets; }
+	UFUNCTION(BlueprintCallable, Category = "Sense|Sensors")
+	USensorBase* GetSensor(FName SensorTag) const;
 
 	/**
-	 * Clear hit target history
+	 * Get all active sensors
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Attack")
-	void ClearHitTargets();
+	UFUNCTION(BlueprintCallable, Category = "Sense|Sensors")
+	TArray<USensorBase*> GetAllSensors() const;
+
+	/**
+	 * Get sensor configuration from DataTable
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sense|Configuration")
+	FHarmoniaSenseConfigData GetSenseConfigByRowName(FName RowName) const;
+
+	/**
+	 * Trigger all Manual-type sensors to run their tests
+	 * Call this during attack window (e.g., from AnimNotify tick)
+	 * Active sensors auto-update via timer, but Manual sensors need explicit trigger
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sense|Sensors")
+	void TriggerManualSensors();
 
 	// ============================================================================
 	// Delegates
 	// ============================================================================
 
 	/**
-	 * Called when an attack hits a target
+	 * Called when any sensor detects targets
+	 * Subscribe to this in combat components to process hits
 	 */
-	UPROPERTY(BlueprintAssignable, Category = "Attack|Events")
-	FOnAttackHitDelegate OnAttackHit;
+	UPROPERTY(BlueprintAssignable, Category = "Sense|Events")
+	FOnSenseHitDelegate OnSenseHit;
 
-	/**
-	 * Called when attack starts
-	 */
-	UPROPERTY(BlueprintAssignable, Category = "Attack|Events")
-	FOnAttackStartDelegate OnAttackStart;
+	// ============================================================================
+	// Owner Components
+	// ============================================================================
 
-	/**
-	 * Called when attack ends
-	 */
-	UPROPERTY(BlueprintAssignable, Category = "Attack|Events")
-	FOnAttackEndDelegate OnAttackEnd;
+	/** Owner's interactable component (Stimulus) - makes owner detectable */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sense|Owner Components")
+	TObjectPtr<UHarmoniaSenseInteractableComponent> OwnerInteractable = nullptr;
+
+	/** Owner's interaction component (Receiver) - detects others */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sense|Owner Components")
+	TObjectPtr<UHarmoniaSenseInteractionComponent> OwnerInteraction = nullptr;
+
+	/** Owner's ability system (for GAS integration) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sense|Configuration")
+	TObjectPtr<UAbilitySystemComponent> OwnerAbilitySystem = nullptr;
 
 protected:
 	// ============================================================================
-	// Server RPCs
+	// Initialization
 	// ============================================================================
 
 	/**
-	 * Server RPC for starting attack
-	 */
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerStartAttack(const FHarmoniaAttackData& InAttackData);
-
-	/**
-	 * Server RPC for stopping attack
-	 */
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerStopAttack();
-
-	// ============================================================================
-	// Owner SenseSystem Initialization
-	// ============================================================================
-
-	/**
-	 * Initialize owner's SenseSystem components (Interactable + Interaction)
-	 * Called during BeginPlay - ensures owner can be detected and can detect others
+	 * Initialize owner's SenseSystem components
 	 */
 	virtual void InitializeOwnerSenseComponents();
 
 	/**
-	 * Ensure owner has HarmoniaSenseInteractableComponent (Stimulus)
-	 * Creates one if not present and configures for combat detection
+	 * Ensure owner has Interactable component (Stimulus)
 	 */
 	virtual void EnsureOwnerInteractable();
 
 	/**
-	 * Ensure owner has HarmoniaSenseInteractionComponent (Receiver)
-	 * Creates one if not present and configures for combat detection
+	 * Ensure owner has Interaction component (Receiver)
 	 */
 	virtual void EnsureOwnerInteraction();
 
-	// ============================================================================
-	// Internal Attack Functions (Server-only)
-	// ============================================================================
+	/**
+	 * Register stimulus responses from DataTable
+	 */
+	virtual void RegisterStimulusResponsesFromDataTable();
 
 	/**
-	 * Start attack detection (Server-only)
-	 * @param InAttackData Optional attack data to override default configuration
+	 * Initialize sensors from DataTable at BeginPlay
 	 */
-	virtual void StartAttack(const FHarmoniaAttackData& InAttackData);
-
-	/**
-	 * Stop attack detection (Server-only)
-	 */
-	virtual void StopAttack();
+	virtual void InitializeSensorsFromDataTable();
 
 	// ============================================================================
-	// Sense System Integration
+	// SenseSystem Callbacks
 	// ============================================================================
 
 	/**
-	 * Initialize persistent combat sensor (called once in BeginPlay)
-	 * Creates SenseReceiver that stays active for component's lifetime
-	 */
-	virtual void InitializeCombatSensor();
-
-	/**
-	 * Create or update sensor for attack using DataTable configuration
-	 * @param SensorTag Tag from TraceConfig.SensorTag
-	 * @param SenseChannel Channel from TraceConfig.SenseChannel
-	 */
-	virtual void CreateOrUpdateSensorForAttack(FName SensorTag, int32 SenseChannel);
-
-	/**
-	 * Initialize sense stimulus component
-	 */
-	virtual void InitializeSenseStimulus();
-
-	/**
-	 * Update sense stimulus based on attack config
-	 */
-	virtual void UpdateSenseStimulus();
-
-	/**
-	 * Setup sense receiver for hit detection
-	 */
-	virtual void SetupSenseReceiver();
-
-	/**
-	 * Cleanup sense receiver
-	 */
-	virtual void CleanupSenseReceiver();
-
-	/**
-	 * Process detected stimuli and check for hits
+	 * Handle detection callback from SenseSystem
+	 * Forwards to OnSenseHit delegate for combat components
 	 */
 	UFUNCTION()
 	virtual void OnSenseDetected(const USensorBase* SensorPtr, int32 Channel, const TArray<FSensedStimulus> SensedStimuli);
 
-	/**
-	 * Process a single detected target from SenseSystem
-	 * @return true if hit was processed
-	 */
-	virtual bool ProcessHitTarget(const FSensedStimulus& Stimulus);
-
-	/**
-	 * Check if target should be hit
-	 * @return true if target passes all checks
-	 */
-	virtual bool ShouldHitTarget(AActor* TargetActor, const FSensedStimulus& Stimulus) const;
-
-	/**
-	 * Calculate if hit is critical
-	 */
-	virtual bool CalculateCriticalHit(float CritChance) const;
-
-	/**
-	 * Apply damage to target using Gameplay Effect
-	 * @return The actual damage dealt (after all calculations)
-	 */
-	virtual float ApplyDamageToTarget(
-		AActor* TargetActor,
-		const FHarmoniaDamageEffectConfig& DamageConfig,
-		bool bWasCritical,
-		const FVector& HitLocation,
-		const FVector& HitNormal);
-
-	/**
-	 * Apply hit reaction to target using Gameplay Cue
-	 */
-	virtual void ApplyHitReaction(
-		AActor* TargetActor,
-		const FHarmoniaHitReactionConfig& ReactionConfig,
-		bool bWasCritical,
-		const FVector& HitLocation,
-		const FVector& HitDirection);
-
-	/**
-	 * Create Gameplay Effect Context for damage application
-	 */
-	virtual FGameplayEffectContextHandle CreateDamageEffectContext(
-		AActor* TargetActor,
-		const FVector& HitLocation,
-		const FVector& HitNormal) const;
-
-	/**
-	 * Handle attack timer completion
-	 */
-	virtual void OnAttackTimerComplete();
-
-	/**
-	 * Get socket location for trace (or component location if no socket)
-	 */
-	virtual FVector GetTraceLocation() const;
-
-	/**
-	 * Get socket rotation for trace (or component rotation if no socket)
-	 */
-	virtual FRotator GetTraceRotation() const;
-
-	/**
-	 * Draw debug visualization for current attack
-	 */
-	virtual void DrawDebugAttackTrace() const;
-
-	/**
-	 * Draw SenseSystem debug visualization (sensor detection, stimulus, scores)
-	 * Only available with ENABLE_DRAW_DEBUG macro
-	 */
-	virtual void DrawSenseSystemDebug() const;
-
-	/**
-	 * Minimum interval between attacks (anti-spam)
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack|AntiCheat")
-	float MinAttackInterval = 0.1f;
-
-	/**
-	 * Last attack request time (for rate limiting)
-	 */
-	float LastAttackRequestTime = 0.0f;
-
 private:
 	/**
-	 * Sense stimulus component for attack detection
+	 * Currently active sensors (managed by OwnerInteraction's SenseReceiver)
+	 * Key: SensorTag, Value: Sensor pointer
 	 */
 	UPROPERTY()
-	TObjectPtr<USenseStimulusComponent> SenseStimulus = nullptr;
-
-	/**
-	 * Temporary sense receiver for detecting hits
-	 * Created dynamically during attacks
-	 */
-	UPROPERTY()
-	TObjectPtr<USenseReceiverComponent> SenseReceiver = nullptr;
-
-	/**
-	 * Combat sensor created for hit detection
-	 * Stored to prevent garbage collection
-	 */
-	UPROPERTY()
-	TObjectPtr<USensorBase> CombatSensor = nullptr;
-
-	/**
-	 * Current attack state
-	 */
-	bool bIsAttacking = false;
-
-	/**
-	 * Current attack data being used
-	 */
-	FHarmoniaAttackData CurrentAttackData;
-
-	/**
-	 * Targets hit during current attack
-	 */
-	UPROPERTY(Transient)
-	TArray<FHarmoniaAttackHitResult> HitTargets;
-
-	/**
-	 * Set of actors already hit (for hit-once tracking)
-	 */
-	TSet<TObjectPtr<AActor>> HitActors;
-
-	/**
-	 * Timer handle for continuous attack duration
-	 */
-	FTimerHandle AttackTimerHandle;
-
-	/**
-	 * Attack start time
-	 */
-	float AttackStartTime = 0.0f;
-
-	/**
-	 * Current sensor tag from TraceConfig (set per attack)
-	 */
-	FName CurrentSensorTag = NAME_None;
-
-	/**
-	 * Current sense channel from TraceConfig (set per attack)
-	 */
-	int32 CurrentSenseChannel = 1;
+	TMap<FName, TObjectPtr<USensorBase>> ActiveSensors;
 };
-

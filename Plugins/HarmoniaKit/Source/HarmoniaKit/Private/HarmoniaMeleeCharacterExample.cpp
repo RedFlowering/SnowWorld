@@ -33,11 +33,8 @@ AHarmoniaMeleeCharacterExample::AHarmoniaMeleeCharacterExample(const FObjectInit
 	OffHandAttackComponent->SetAutoActivate(false); // Disabled by default
 
 	// Configure main hand attack component
-	MainHandAttackComponent->AttackData.TraceConfig.TraceShape = EHarmoniaAttackTraceShape::Box;
-	MainHandAttackComponent->AttackData.TraceConfig.TraceExtent = FVector(100.0f, 50.0f, 50.0f);
-	MainHandAttackComponent->AttackData.TraceConfig.TraceOffset = FVector(50.0f, 0.0f, 0.0f);
-	MainHandAttackComponent->AttackData.TraceConfig.bHitOncePerTarget = true;
-	MainHandAttackComponent->AttackData.TraceConfig.MaxTargets = 5;
+	// All detection settings are configured in DT_SenseConfig
+	// Sensor setup is data-driven via SenseComponent
 }
 
 void AHarmoniaMeleeCharacterExample::BeginPlay()

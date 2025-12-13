@@ -1,16 +1,16 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "Animation/AnimNotifyState_MeleeAttackWindow.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/HarmoniaMeleeCombatComponent.h"
 #include "Components/HarmoniaSenseComponent.h"
-#include "Components/SkeletalMeshComponent.h"
-#include "GameFramework/Actor.h"
+#include "GameFramework/Character.h"
 #include "DrawDebugHelpers.h"
 
 UAnimNotifyState_MeleeAttackWindow::UAnimNotifyState_MeleeAttackWindow()
 {
 #if WITH_EDITORONLY_DATA
-	NotifyColor = FColor(255, 100, 100, 255); // Red-ish color for attack window
+	NotifyColor = FColor(255, 150, 100, 255);
 #endif
 }
 
@@ -33,37 +33,17 @@ void UAnimNotifyState_MeleeAttackWindow::NotifyBegin(
 		return;
 	}
 
-	UHarmoniaSenseComponent* AttackComp = FindAttackComponent(Owner);
-	if (!AttackComp)
+	// Find combat component
+	UHarmoniaMeleeCombatComponent* MeleeComp = FindMeleeCombatComponent(Owner);
+	if (!MeleeComp)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("AnimNotifyState_MeleeAttackWindow: No HarmoniaMeleeCombatComponent found on %s"), *Owner->GetName());
 		return;
 	}
 
-	// Try to get attack data from combo table first
-	UHarmoniaMeleeCombatComponent* MeleeComp = FindMeleeCombatComponent(Owner);
-	FHarmoniaAttackData AttackData;
-	bool bGotAttackData = false;
-
-	if (MeleeComp)
-	{
-		// Get attack data from current combo step in table
-		bGotAttackData = MeleeComp->GetCurrentComboAttackData(AttackData);
-	}
-
-	// Fallback to component's default if no combo data
-	if (!bGotAttackData)
-	{
-		AttackData = AttackComp->AttackData;
-	}
-
-	// Apply debug setting
-	if (bShowDebug)
-	{
-		AttackData.TraceConfig.bShowDebugTrace = true;
-	}
-
-	// Start attack detection with the resolved attack data
-	AttackComp->RequestStartAttack(AttackData);
+	// Start attack via combat component (also opens attack window)
+	MeleeComp->StartAttack(MeleeComp->GetCurrentAttackType());
+	MeleeComp->SetInAttackWindow(true);
 }
 
 void UAnimNotifyState_MeleeAttackWindow::NotifyTick(
@@ -74,13 +54,29 @@ void UAnimNotifyState_MeleeAttackWindow::NotifyTick(
 {
 	Super::NotifyTick(MeshComp, Animation, FrameDeltaTime, EventReference);
 
+	if (!MeshComp)
+	{
+		return;
+	}
+
+	AActor* Owner = MeshComp->GetOwner();
+	if (!Owner)
+	{
+		return;
+	}
+
+	// Trigger Manual sensors during attack window
+	if (UHarmoniaSenseComponent* SenseComp = Owner->FindComponentByClass<UHarmoniaSenseComponent>())
+	{
+		SenseComp->TriggerManualSensors();
+	}
+
 #if WITH_EDITOR
 	// Editor preview trace visualization
 	if (bShowPreviewTrace && MeshComp)
 	{
 		if (UWorld* World = MeshComp->GetWorld())
 		{
-			// Only draw in editor preview (not in PIE/game)
 			if (!World->IsGameWorld())
 			{
 				DrawPreviewTrace(MeshComp);
@@ -89,6 +85,7 @@ void UAnimNotifyState_MeleeAttackWindow::NotifyTick(
 	}
 #endif
 }
+
 
 void UAnimNotifyState_MeleeAttackWindow::NotifyEnd(
 	USkeletalMeshComponent* MeshComp,
@@ -108,10 +105,16 @@ void UAnimNotifyState_MeleeAttackWindow::NotifyEnd(
 		return;
 	}
 
-	UHarmoniaSenseComponent* AttackComp = FindAttackComponent(Owner);
-	if (AttackComp && AttackComp->IsAttacking())
+	// Find combat component
+	UHarmoniaMeleeCombatComponent* MeleeComp = FindMeleeCombatComponent(Owner);
+	if (MeleeComp)
 	{
-		AttackComp->RequestStopAttack();
+		// Close attack window and end attack
+		MeleeComp->SetInAttackWindow(false);
+		if (MeleeComp->IsAttacking())
+		{
+			MeleeComp->EndAttack();
+		}
 	}
 }
 
@@ -137,22 +140,6 @@ UHarmoniaSenseComponent* UAnimNotifyState_MeleeAttackWindow::FindAttackComponent
 		return nullptr;
 	}
 
-	// If specific component name is provided, find by name
-	if (!AttackComponentName.IsNone())
-	{
-		TArray<UHarmoniaSenseComponent*> AttackComponents;
-		Owner->GetComponents<UHarmoniaSenseComponent>(AttackComponents);
-		
-		for (UHarmoniaSenseComponent* Comp : AttackComponents)
-		{
-			if (Comp && Comp->GetFName() == AttackComponentName)
-			{
-				return Comp;
-			}
-		}
-	}
-
-	// Default: find first attack component
 	return Owner->FindComponentByClass<UHarmoniaSenseComponent>();
 }
 
@@ -164,46 +151,9 @@ void UAnimNotifyState_MeleeAttackWindow::DrawPreviewTrace(USkeletalMeshComponent
 		return;
 	}
 
-	// Get trace transform from preview socket with local offset
-	FVector Location = MeshComp->GetComponentLocation() + PreviewTraceOffset;
-	FRotator Rotation = MeshComp->GetComponentRotation() + PreviewRotationOffset;
-	
-	if (!PreviewSocketName.IsNone() && MeshComp->DoesSocketExist(PreviewSocketName))
-	{
-		// Compose transforms: Socket * LocalOffset (rotation first, then position)
-		FTransform SocketTransform = MeshComp->GetSocketTransform(PreviewSocketName);
-		FTransform LocalOffset(FQuat(PreviewRotationOffset), PreviewTraceOffset);
-		FTransform FinalTransform = LocalOffset * SocketTransform;
-		
-		Location = FinalTransform.GetLocation();
-		Rotation = FinalTransform.Rotator();
-	}
-
-	constexpr float TraceDuration = 0.1f; // Persist until next tick
-
-	switch (PreviewTraceShape)
-	{
-	case EHarmoniaAttackTraceShape::Box:
-		DrawDebugBox(MeshComp->GetWorld(), Location, PreviewTraceExtent, Rotation.Quaternion(), PreviewTraceColor, false, TraceDuration, 0, 2.0f);
-		break;
-
-	case EHarmoniaAttackTraceShape::Sphere:
-		DrawDebugSphere(MeshComp->GetWorld(), Location, PreviewTraceExtent.X, 12, PreviewTraceColor, false, TraceDuration, 0, 2.0f);
-		break;
-
-	case EHarmoniaAttackTraceShape::Capsule:
-		DrawDebugCapsule(MeshComp->GetWorld(), Location, PreviewTraceExtent.Z, PreviewTraceExtent.X, Rotation.Quaternion(), PreviewTraceColor, false, TraceDuration, 0, 2.0f);
-		break;
-
-	case EHarmoniaAttackTraceShape::Line:
-		{
-			const FVector EndLocation = Location + Rotation.Vector() * PreviewTraceExtent.X;
-			DrawDebugLine(MeshComp->GetWorld(), Location, EndLocation, PreviewTraceColor, false, TraceDuration, 0, 2.0f);
-		}
-		break;
-
-	default:
-		break;
-	}
+	// Draw simple sphere preview at component location
+	FVector Location = MeshComp->GetComponentLocation();
+	constexpr float PreviewRadius = 50.0f;
+	DrawDebugSphere(MeshComp->GetWorld(), Location, PreviewRadius, 12, PreviewTraceColor, false, -1.0f, 0, 2.0f);
 }
 #endif

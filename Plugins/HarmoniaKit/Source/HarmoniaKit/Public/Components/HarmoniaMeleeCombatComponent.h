@@ -82,6 +82,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat")
 	void SetInvulnerable(bool bInvulnerable, float Duration = 0.0f);
 
+	/** Is currently in attack window? (hit detection is active) */
+	UFUNCTION(BlueprintPure, Category = "Melee Combat")
+	bool IsInAttackWindow() const { return bInAttackWindow; }
+
+	/** Set attack window state (called by AnimNotify) */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat")
+	void SetInAttackWindow(bool bInWindow);
+
+
 	// ============================================================================
 	// Combo System
 	// ============================================================================
@@ -343,6 +352,10 @@ protected:
 	/** Is currently attacking? */
 	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|State")
 	bool bIsAttacking = false;
+
+	/** Is in attack window? (hit detection active) */
+	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|State")
+	bool bInAttackWindow = false;
 
 	/** Current attack type */
 	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|State")

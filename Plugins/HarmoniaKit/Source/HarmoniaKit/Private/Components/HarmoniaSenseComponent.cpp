@@ -1,33 +1,29 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "Components/HarmoniaSenseComponent.h"
-#include "Components/HarmoniaMeleeCombatComponent.h"
 #include "Components/HarmoniaSenseInteractableComponent.h"
 #include "Components/HarmoniaSenseInteractionComponent.h"
+#include "Components/HarmoniaMeleeCombatComponent.h"
+#include "HarmoniaDataTableBFL.h"
+#include "SenseReceiverComponent.h"
+#include "Sensors/SensorBase.h"
+#include "Sensors/ActiveSensor.h"
+#include "Sensors/PassiveSensor.h"
+#include "SenseSysHelpers.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
-#include "AbilitySystem/HarmoniaAttributeSet.h"
-#include "SenseReceiverComponent.h"
-#include "SenseStimulusComponent.h"
-#include "Sensors/SensorBase.h"
-#include "Sensors/SensorSight.h"
-#include "Sensors/ActiveSensor.h"
-#include "SenseManager.h"
-#include "GameplayEffect.h"
-#include "GameFramework/Actor.h"
 #include "GameFramework/Character.h"
-#include "Engine/World.h"
-#include "TimerManager.h"
+#include "Engine/DataTable.h"
 #include "DrawDebugHelpers.h"
-#include "CosmeticBFL.h"
 
 UHarmoniaSenseComponent::UHarmoniaSenseComponent()
 {
-	PrimaryComponentTick.bCanEverTick = true;
-	PrimaryComponentTick.TickGroup = TG_PostPhysics;
-	bAutoActivate = true;
-
-	// Enable replication for Server RPCs to work
+#if WITH_EDITOR || UE_BUILD_DEBUG
+	PrimaryComponentTick.bCanEverTick = true;  // Enable for debug draw
+	PrimaryComponentTick.bStartWithTickEnabled = true;
+#else
+	PrimaryComponentTick.bCanEverTick = false;
+#endif
 	SetIsReplicatedByDefault(true);
 }
 
@@ -35,40 +31,22 @@ void UHarmoniaSenseComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Initialize owner's SenseSystem components (Interactable + Interaction)
-	InitializeOwnerSenseComponents();
-
-	if (bAutoInitializeSenseStimulus)
-	{
-		InitializeSenseStimulus();
-	}
-
-	// Find owner's ability system if not set
+	// Auto-find ASC if not set
 	if (!OwnerAbilitySystem)
 	{
-		AActor* Owner = GetOwner();
-		if (Owner)
-		{
-			OwnerAbilitySystem = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Owner);
-		}
+		OwnerAbilitySystem = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetOwner());
 	}
 
-	// Initialize persistent combat sensor (stays active for component lifetime)
-	// This allows the SenseSystem to properly tick and detect targets
-	InitializeCombatSensor();
+	// Initialize SenseSystem components on owner
+	InitializeOwnerSenseComponents();
+
+	// Initialize sensors from DataTable
+	InitializeSensorsFromDataTable();
 }
 
 void UHarmoniaSenseComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// Local cleanup only - don't call StopAttack() which requires authority
-	// This avoids "StopAttack called on client" warning during PIE shutdown
-	bIsAttacking = false;
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(AttackTimerHandle);
-	}
-	CleanupSenseReceiver();
-
+	RemoveAllSensors();
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -76,304 +54,246 @@ void UHarmoniaSenseComponent::TickComponent(float DeltaTime, ELevelTick TickType
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// Debug visualization
-	if (bIsAttacking && CurrentAttackData.TraceConfig.bShowDebugTrace)
-	{
-		DrawDebugAttackTrace();
-
-		// SenseSystem sensor debug visualization
-		if (CurrentAttackData.TraceConfig.bEnableSenseSystemTrace)
-		{
-			DrawSenseSystemDebug();
-		}
-	}
-}
-
-// ============================================================================
-// Attack Control - Public Request Functions
-// ============================================================================
-
-void UHarmoniaSenseComponent::RequestStartAttack(const FHarmoniaAttackData& InAttackData)
-{
-	AActor* Owner = GetOwner();
-	if (!Owner)
+#if WITH_EDITOR || UE_BUILD_DEBUG
+	// Draw debug for all active sensors based on their settings
+	UDataTable* SenseConfigDT = UHarmoniaDataTableBFL::GetSenseConfigDataTable();
+	if (!SenseConfigDT)
 	{
 		return;
 	}
 
-	// Server or listen server host: Execute directly
-	if (Owner->HasAuthority())
+	for (const auto& Pair : ActiveSensors)
 	{
-		StartAttack(InAttackData);
-		return;
-	}
-
-	// Client: Only call Server RPC if we're locally controlled
-	// Simulated proxies (other players' characters) should not call Server RPCs
-	if (const APawn* OwnerPawn = Cast<APawn>(Owner))
-	{
-		if (OwnerPawn->IsLocallyControlled())
+		if (USensorBase* Sensor = Pair.Value)
 		{
-			ServerStartAttack(InAttackData);
+			// Only draw if sensor has bDrawSensor enabled
+			if (!Sensor->bDrawSensor)
+			{
+				continue;
+			}
+
+			// Get debug config from DataTable by sensor tag
+			TArray<FName> RowNames = SenseConfigDT->GetRowNames();
+			for (const FName& RowName : RowNames)
+			{
+				FHarmoniaSenseConfigData* ConfigPtr = SenseConfigDT->FindRow<FHarmoniaSenseConfigData>(RowName, TEXT("TickComponent"));
+				if (ConfigPtr && ConfigPtr->bEnableDebugDraw && ConfigPtr->SensorClass)
+				{
+					USensorBase* ConfigCDO = ConfigPtr->SensorClass->GetDefaultObject<USensorBase>();
+					if (ConfigCDO && ConfigCDO->SensorTag == Sensor->SensorTag)
+					{
+						const FSenseSysDebugDraw& DebugConfig = ConfigPtr->DebugDrawConfig;
+						Sensor->DrawDebugSensor(
+							DebugConfig.Sensor_DebugTest,
+							DebugConfig.Sensor_DebugCurrentSensed,
+							DebugConfig.Sensor_DebugLostSensed,
+							DebugConfig.Sensor_DebugBestSensed,
+							DebugConfig.SenseSys_DebugAge,
+							0.0f  // Duration (0 = single frame)
+						);
+						break;
+					}
+				}
+			}
 		}
-		// else: Simulated proxy - don't send RPC, server will handle it
 	}
-}
-
-void UHarmoniaSenseComponent::RequestStartAttackDefault()
-{
-	RequestStartAttack(AttackData);
-}
-
-void UHarmoniaSenseComponent::RequestStopAttack()
-{
-	AActor* Owner = GetOwner();
-	if (!Owner)
-	{
-		return;
-	}
-
-	// Server or listen server host: Execute directly
-	if (Owner->HasAuthority())
-	{
-		StopAttack();
-		return;
-	}
-
-	// Client: Only call Server RPC if we're locally controlled
-	// Simulated proxies (other players' characters) should not call Server RPCs
-	if (const APawn* OwnerPawn = Cast<APawn>(Owner))
-	{
-		if (OwnerPawn->IsLocallyControlled())
-		{
-			ServerStopAttack();
-		}
-		// else: Simulated proxy - don't send RPC, server will handle it
-	}
+#endif
 }
 
 // ============================================================================
-// Server RPCs
+// Sensor Management
 // ============================================================================
 
-bool UHarmoniaSenseComponent::ServerStartAttack_Validate(const FHarmoniaAttackData& InAttackData)
+
+USensorBase* UHarmoniaSenseComponent::AddSensor(FName SenseConfigRowName)
 {
-	// Validate attack data is enabled
-	if (!InAttackData.bEnabled)
+	if (SenseConfigRowName.IsNone())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartAttack: Attack data disabled"));
-		return false;
+		return nullptr;
 	}
 
-	// Validate damage multiplier is reasonable
-	if (InAttackData.DamageConfig.DamageMultiplier < 0.0f || InAttackData.DamageConfig.DamageMultiplier > 100.0f)
+	// Get config from DataTable
+	FHarmoniaSenseConfigData Config = GetSenseConfigByRowName(SenseConfigRowName);
+	if (!Config.SensorClass)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartAttack: Invalid damage multiplier %.1f"),
-			InAttackData.DamageConfig.DamageMultiplier);
-		return false;
+		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_SENSOR] AddSensor: SensorClass not set for '%s'"), *SenseConfigRowName.ToString());
+		return nullptr;
 	}
 
-	// [ANTI-CHEAT] Validate critical chance is reasonable (0-100%)
-	if (InAttackData.DamageConfig.CriticalChance < 0.0f || InAttackData.DamageConfig.CriticalChance > 1.0f)
+	// Get SensorTag from the Sensor BP class CDO
+	USensorBase* SensorCDO = Config.SensorClass->GetDefaultObject<USensorBase>();
+	if (!SensorCDO)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartAttack: Invalid critical chance %.2f (must be 0.0-1.0)"),
-			InAttackData.DamageConfig.CriticalChance);
-		return false;
+		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_SENSOR] AddSensor: Failed to get Sensor CDO for '%s'"), *SenseConfigRowName.ToString());
+		return nullptr;
+	}
+	FName SensorTag = SensorCDO->SensorTag;
+
+	// Check if sensor already exists
+	if (ActiveSensors.Contains(SensorTag))
+	{
+		UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] AddSensor: Sensor '%s' already exists"), *SensorTag.ToString());
+		return ActiveSensors[SensorTag];
 	}
 
-	// [ANTI-CHEAT] Validate critical multiplier is reasonable (1x-10x)
-	if (InAttackData.DamageConfig.CriticalMultiplier < 1.0f || InAttackData.DamageConfig.CriticalMultiplier > 10.0f)
+	// Get the SenseReceiver from OwnerInteraction
+	USenseReceiverComponent* Receiver = OwnerInteraction;
+	if (!Receiver)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartAttack: Invalid critical multiplier %.2f (must be 1.0-10.0)"),
-			InAttackData.DamageConfig.CriticalMultiplier);
-		return false;
+		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_SENSOR] AddSensor: OwnerInteraction (SenseReceiver) is null"));
+		return nullptr;
 	}
 
-	// [ANTI-CHEAT] Attack rate limiting - prevent spam attacks
-	if (const UWorld* World = GetWorld())
+	// Get sensor type and thread type from CDO
+	ESensorType SensorType = SensorCDO->SensorType;
+	ESensorThreadType ThreadType = SensorCDO->SensorThreadType;
+
+	// Fallback: determine sensor type based on class hierarchy if CDO has None
+	if (SensorType == ESensorType::None)
 	{
-		const float CurrentTime = World->GetTimeSeconds();
-		if (CurrentTime - LastAttackRequestTime < MinAttackInterval)
+		SensorType = Config.SensorClass->IsChildOf(UPassiveSensor::StaticClass()) ? ESensorType::Passive : ESensorType::Active;
+	}
+
+	// Create sensor using SenseReceiver's CreateNewSensor API
+	// All settings come from the Sensor BP CDO
+	ESuccessState SuccessState = ESuccessState::Failed;
+	USensorBase* NewSensor = Receiver->CreateNewSensor(
+		Config.SensorClass,
+		SensorType,
+		SensorTag,
+		ThreadType,
+		true,  // Enable immediately
+		SuccessState
+	);
+
+	if (SuccessState == ESuccessState::Success && NewSensor)
+	{
+		ActiveSensors.Add(SensorTag, NewSensor);
+		
+		// Also register directly to OwnerInteraction's arrays (workaround for CreateNewSensor bug)
+		if (OwnerInteraction)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartAttack: Attack rate too fast (%.3fs since last attack, min: %.3fs)"),
-				CurrentTime - LastAttackRequestTime, MinAttackInterval);
-			return false;
+			OwnerInteraction->RegisterSensorDirectly(NewSensor);
 		}
-		// Note: We update LastAttackRequestTime in Implementation, not here
-		// to avoid issues if validation passes but implementation fails
+		
+		UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] AddSensor: Created sensor '%s' - Enabled=%d, SensorType=%d, Owner='%s', SensorOuter='%s'"),
+			*SensorTag.ToString(),
+			NewSensor->bEnable,
+			static_cast<int32>(NewSensor->SensorType),
+			*GetOwner()->GetName(),
+			NewSensor->GetOuter() ? *NewSensor->GetOuter()->GetName() : TEXT("NULL"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_SENSOR] AddSensor: Failed to create sensor '%s' - SuccessState=%d"),
+			*SensorTag.ToString(), static_cast<int32>(SuccessState));
 	}
 
-	// Validate attack trace extent
-	const FVector& TraceExtent = InAttackData.TraceConfig.TraceExtent;
-	if (TraceExtent.X < 0.0f || TraceExtent.X > 10000.0f ||
-		TraceExtent.Y < 0.0f || TraceExtent.Y > 10000.0f ||
-		TraceExtent.Z < 0.0f || TraceExtent.Z > 10000.0f)
+	return NewSensor;
+}
+
+bool UHarmoniaSenseComponent::RemoveSensor(FName SensorTag)
+{
+	if (!ActiveSensors.Contains(SensorTag))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ANTI-CHEAT] ServerStartAttack: Invalid trace extent (%.1f, %.1f, %.1f)"),
-			TraceExtent.X, TraceExtent.Y, TraceExtent.Z);
 		return false;
+	}
+
+	USensorBase* Sensor = ActiveSensors[SensorTag];
+	ActiveSensors.Remove(SensorTag);
+
+	// Determine sensor type for DestroySensor call
+	if (OwnerInteraction && Sensor)
+	{
+		ESensorType SensorType = ESensorType::Active;
+		if (Cast<UPassiveSensor>(Sensor))
+		{
+			SensorType = ESensorType::Passive;
+		}
+
+		OwnerInteraction->DestroySensor(SensorType, SensorTag);
+		UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] RemoveSensor: Removed sensor '%s'"), *SensorTag.ToString());
 	}
 
 	return true;
 }
 
-void UHarmoniaSenseComponent::ServerStartAttack_Implementation(const FHarmoniaAttackData& InAttackData)
+void UHarmoniaSenseComponent::RemoveAllSensors()
 {
-	// Update attack request time for rate limiting
-	if (const UWorld* World = GetWorld())
-	{
-		LastAttackRequestTime = World->GetTimeSeconds();
-	}
+	TArray<FName> SensorTags;
+	ActiveSensors.GetKeys(SensorTags);
 
-	StartAttack(InAttackData);
+	for (const FName& Tag : SensorTags)
+	{
+		RemoveSensor(Tag);
+	}
 }
 
-bool UHarmoniaSenseComponent::ServerStopAttack_Validate()
+void UHarmoniaSenseComponent::OnEquipmentChanged(const TArray<FName>& NewSensorConfigs)
 {
-	// Basic validation - always allow stopping
-	return true;
+	// Remove all current sensors
+	RemoveAllSensors();
+
+	// Add new sensors from config list
+	for (const FName& ConfigRowName : NewSensorConfigs)
+	{
+		AddSensor(ConfigRowName);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] OnEquipmentChanged: Configured %d sensors"), NewSensorConfigs.Num());
 }
 
-void UHarmoniaSenseComponent::ServerStopAttack_Implementation()
+USensorBase* UHarmoniaSenseComponent::GetSensor(FName SensorTag) const
 {
-	StopAttack();
+	const TObjectPtr<USensorBase>* Found = ActiveSensors.Find(SensorTag);
+	return Found ? Found->Get() : nullptr;
 }
 
-// ============================================================================
-// Internal Attack Functions (Server-only)
-// ============================================================================
-
-void UHarmoniaSenseComponent::StartAttack(const FHarmoniaAttackData& InAttackData)
+TArray<USensorBase*> UHarmoniaSenseComponent::GetAllSensors() const
 {
-	// Server authority check
-	AActor* Owner = GetOwner();
-	if (!Owner || !Owner->HasAuthority())
+	TArray<USensorBase*> Result;
+	for (const auto& Pair : ActiveSensors)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("StartAttack called on client - use RequestStartAttack instead"));
-		return;
-	}
-
-	if (bIsAttacking)
-	{
-		StopAttack();
-	}
-
-	if (!InAttackData.bEnabled)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("HarmoniaSenseComponent: Attack data is disabled"));
-		return;
-	}
-
-	CurrentAttackData = InAttackData;
-	bIsAttacking = true;
-	HitTargets.Empty();
-	HitActors.Empty();
-
-	UWorld* World = GetWorld();
-	if (World)
-	{
-		AttackStartTime = World->GetTimeSeconds();
-	}
-
-	// Update sense stimulus for this attack (activates the attacker's stimulus)
-	UpdateSenseStimulus();
-
-	// Sensor is already created and always active from InitializeCombatSensor()
-	// Just ensure it exists
-	if (!CombatSensor)
-	{
-		InitializeCombatSensor();
-	}
-	
-	// Force manual sensor detection to trigger immediately
-	if (UActiveSensor* ActiveSen = Cast<UActiveSensor>(CombatSensor))
-	{
-		ActiveSen->RunManualSensor(true);
-	}
-
-	// Broadcast attack start
-	OnAttackStart.Broadcast();
-
-	// Setup timer for continuous detection
-	if (CurrentAttackData.TraceConfig.bContinuousDetection && CurrentAttackData.TraceConfig.DetectionDuration > 0.0f)
-	{
-		if (World)
+		if (Pair.Value)
 		{
-			World->GetTimerManager().SetTimer(
-				AttackTimerHandle,
-				this,
-				&UHarmoniaSenseComponent::OnAttackTimerComplete,
-				CurrentAttackData.TraceConfig.DetectionDuration,
-				false);
+			Result.Add(Pair.Value);
 		}
 	}
-	else if (!CurrentAttackData.TraceConfig.bContinuousDetection)
+	return Result;
+}
+
+FHarmoniaSenseConfigData UHarmoniaSenseComponent::GetSenseConfigByRowName(FName RowName) const
+{
+	UDataTable* SenseConfigDT = UHarmoniaDataTableBFL::GetSenseConfigDataTable();
+	if (!SenseConfigDT)
 	{
-		// For single-shot, stop after a short delay to allow detection
-		if (World)
+		return FHarmoniaSenseConfigData();
+	}
+
+	FHarmoniaSenseConfigData* ConfigPtr = SenseConfigDT->FindRow<FHarmoniaSenseConfigData>(RowName, TEXT("GetSenseConfigByRowName"));
+	return ConfigPtr ? *ConfigPtr : FHarmoniaSenseConfigData();
+}
+
+void UHarmoniaSenseComponent::TriggerManualSensors()
+{
+	for (const auto& Pair : ActiveSensors)
+	{
+		if (USensorBase* Sensor = Pair.Value)
 		{
-			World->GetTimerManager().SetTimer(
-				AttackTimerHandle,
-				this,
-				&UHarmoniaSenseComponent::OnAttackTimerComplete,
-				0.1f,
-				false);
+			// Only trigger Manual sensors - Active sensors auto-update via timer
+			if (Sensor->SensorType == ESensorType::Manual && Sensor->bEnable)
+			{
+				Sensor->UpdateSensor();
+			}
 		}
 	}
 }
 
-void UHarmoniaSenseComponent::StopAttack()
-{
-	// Server authority check
-	AActor* Owner = GetOwner();
-	if (!Owner || !Owner->HasAuthority())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("StopAttack called on client - use RequestStopAttack instead"));
-		return;
-	}
-
-	if (!bIsAttacking)
-	{
-		return;
-	}
-
-	bIsAttacking = false;
-
-	// Clear timer
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(AttackTimerHandle);
-	}
-
-	// Cleanup sense receiver
-	CleanupSenseReceiver();
-
-	// Broadcast attack end
-	OnAttackEnd.Broadcast();
-
-	// Reset attack data to prevent stale data usage
-	CurrentAttackData = FHarmoniaAttackData();
-}
-
-void UHarmoniaSenseComponent::ClearHitTargets()
-{
-	HitTargets.Empty();
-	HitActors.Empty();
-}
-
 // ============================================================================
-// Owner SenseSystem Initialization
+// Initialization
 // ============================================================================
-
 void UHarmoniaSenseComponent::InitializeOwnerSenseComponents()
 {
-	AActor* Owner = GetOwner();
-	if (!Owner)
-	{
-		return;
-	}
-
-	// Ensure owner has SenseSystem components for combat
 	EnsureOwnerInteractable();
 	EnsureOwnerInteraction();
 }
@@ -386,56 +306,57 @@ void UHarmoniaSenseComponent::EnsureOwnerInteractable()
 		return;
 	}
 
-	// Check if owner already has HarmoniaSenseInteractableComponent
+	// Already have a valid reference?
+	if (OwnerInteractable && IsValid(OwnerInteractable))
+	{
+		RegisterStimulusResponsesFromDataTable();
+		return;
+	}
+
+	// Try to find existing component
 	OwnerInteractable = Owner->FindComponentByClass<UHarmoniaSenseInteractableComponent>();
-	
 
 	if (!OwnerInteractable)
 	{
-		// Create HarmoniaSenseInteractableComponent dynamically
 		OwnerInteractable = NewObject<UHarmoniaSenseInteractableComponent>(
 			Owner,
 			UHarmoniaSenseInteractableComponent::StaticClass(),
-			FName("CombatSenseInteractable"));
+			FName("SenseInteractable"));
 
 		if (OwnerInteractable)
 		{
-			// Note: USenseStimulusBase is ActorComponent, not SceneComponent
-			// It uses Owner's actor location via GetSingleSensePoint() - no attach needed
-			
-			// Disable before register to defer SenseSystem registration until Owner is fully ready
 			OwnerInteractable->SetEnableSenseStimulus(false);
+			Owner->AddInstanceComponent(OwnerInteractable);  // Add to Actor's component list
 			OwnerInteractable->RegisterComponent();
-			
-			// Set mobility to MovableOwner for moving characters
-			OwnerInteractable->SetStimulusMobility(EStimulusMobility::MovableOwner);
-			
-			// Configure for combat detection - register BOTH common tags
-			// "Combat" (hardcoded default) and "Attack" (common DataTable default)
-			// This ensures the owner can be detected regardless of which tag the attacker uses
-			const FName AttackTag = FName("Attack");
-			
-			// Register default Combat tag
-			OwnerInteractable->SetResponseChannel(CombatSensorTag, static_cast<uint8>(CombatSenseChannel), true);
-			OwnerInteractable->SetScore(CombatSensorTag, 1.0f);
-			
-			// Also register Attack tag (common DataTable default)
-			OwnerInteractable->SetResponseChannel(AttackTag, static_cast<uint8>(CombatSenseChannel), true);
-			OwnerInteractable->SetScore(AttackTag, 1.0f);
-			
-			// Now enable - Owner is properly set after RegisterComponent
+			OwnerInteractable->Activate(true);  // Explicitly activate
+
+			// Stimulus doesn't need attachment - it follows owner via StimulusMobility setting
+			// Get StimulusMobility from DataTable (use first row as default)
+			EStimulusMobility StimulusMobility = EStimulusMobility::MovableOwner;
+			UDataTable* SenseConfigDT = UHarmoniaDataTableBFL::GetSenseConfigDataTable();
+			if (SenseConfigDT)
+			{
+				TArray<FName> RowNames = SenseConfigDT->GetRowNames();
+				if (RowNames.Num() > 0)
+				{
+					FHarmoniaSenseConfigData* ConfigPtr = SenseConfigDT->FindRow<FHarmoniaSenseConfigData>(RowNames[0], TEXT("EnsureOwnerInteractable"));
+					if (ConfigPtr)
+					{
+						StimulusMobility = ConfigPtr->StimulusMobility;
+					}
+				}
+			}
+			OwnerInteractable->SetStimulusMobility(StimulusMobility);
+			RegisterStimulusResponsesFromDataTable();
 			OwnerInteractable->SetEnableSenseStimulus(true);
+			
+			UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] EnsureOwnerInteractable: CREATED Stimulus for '%s', Enabled=%d"),
+				*Owner->GetName(), OwnerInteractable->IsActive());
 		}
 	}
 	else
 	{
-		// Configure existing component for combat using both tags
-		const FName AttackTag = FName("Attack");
-		
-		OwnerInteractable->SetResponseChannel(CombatSensorTag, static_cast<uint8>(CombatSenseChannel), true);
-		OwnerInteractable->SetScore(CombatSensorTag, 1.0f);
-		OwnerInteractable->SetResponseChannel(AttackTag, static_cast<uint8>(CombatSenseChannel), true);
-		OwnerInteractable->SetScore(AttackTag, 1.0f);
+		RegisterStimulusResponsesFromDataTable();
 	}
 }
 
@@ -447,999 +368,176 @@ void UHarmoniaSenseComponent::EnsureOwnerInteraction()
 		return;
 	}
 
-	// Check if owner already has HarmoniaSenseInteractionComponent
+	// Already have a valid reference? Just bind callbacks
+	if (OwnerInteraction && IsValid(OwnerInteraction))
+	{
+		// Ensure callbacks are bound (might not be if called again)
+		if (!OwnerInteraction->OnNewSense.IsAlreadyBound(this, &UHarmoniaSenseComponent::OnSenseDetected))
+		{
+			OwnerInteraction->OnNewSense.AddDynamic(this, &UHarmoniaSenseComponent::OnSenseDetected);
+			OwnerInteraction->OnCurrentSense.AddDynamic(this, &UHarmoniaSenseComponent::OnSenseDetected);
+		}
+		return;
+	}
+
+	// Try to find existing component
 	OwnerInteraction = Owner->FindComponentByClass<UHarmoniaSenseInteractionComponent>();
-	
+
 	if (!OwnerInteraction)
 	{
-		// Create HarmoniaSenseInteractionComponent dynamically
 		OwnerInteraction = NewObject<UHarmoniaSenseInteractionComponent>(
 			Owner,
 			UHarmoniaSenseInteractionComponent::StaticClass(),
-			FName("CombatSenseInteraction"));
+			FName("SenseInteraction"));
 
 		if (OwnerInteraction)
 		{
+			Owner->AddInstanceComponent(OwnerInteraction);  // Add to Actor's component list
 			OwnerInteraction->RegisterComponent();
+			OwnerInteraction->Activate(true);  // Explicitly activate
 			
-			// Configure for combat (track all actors, not just interactables)
-			OwnerInteraction->bInteractableOnly = false;
-			OwnerInteraction->bEnableAutomaticInteractions = false;
+			// Attach to root component so sensor follows character
+			if (Owner->GetRootComponent())
+			{
+				bool bAttached = OwnerInteraction->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+				UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] EnsureOwnerInteraction: Attached=%d, RootLoc='%s', ReceiverLoc='%s'"),
+					bAttached,
+					*Owner->GetRootComponent()->GetComponentLocation().ToString(),
+					*OwnerInteraction->GetComponentLocation().ToString());
+			}
+			
+			UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] EnsureOwnerInteraction: CREATED Receiver for '%s', Enabled=%d"),
+				*Owner->GetName(), OwnerInteraction->IsActive());
 		}
 	}
-	else
+
+	// Bind to sense detection callbacks
+	if (OwnerInteraction)
 	{
-		// Configure existing component for combat
-		OwnerInteraction->bInteractableOnly = false;
-		OwnerInteraction->bEnableAutomaticInteractions = false;
+		OwnerInteraction->OnNewSense.AddDynamic(this, &UHarmoniaSenseComponent::OnSenseDetected);
+		OwnerInteraction->OnCurrentSense.AddDynamic(this, &UHarmoniaSenseComponent::OnSenseDetected);
 	}
 }
 
-// ============================================================================
-// Initialization
-// ============================================================================
-
-void UHarmoniaSenseComponent::InitializeCombatSensor()
+void UHarmoniaSenseComponent::RegisterStimulusResponsesFromDataTable()
 {
-	// Now just creates the SenseReceiver without a sensor
-	// Sensor creation is deferred to StartAttack when we have the TraceConfig
-	AActor* Owner = GetOwner();
-	if (!Owner)
+	if (!OwnerInteractable)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("InitializeCombatSensor: No Owner"));
-		return;
-	}
-	
-	// Note: This authority check means clients won't create sensors themselves
-	// The server handles all hit detection
-	if (!Owner->HasAuthority())
-	{
+		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_SENSOR] RegisterStimulusResponsesFromDataTable: OwnerInteractable is null"));
 		return;
 	}
 
-	// Create persistent sense receiver that stays active for component lifetime
-	if (!SenseReceiver)
+	UDataTable* SenseConfigDT = UHarmoniaDataTableBFL::GetSenseConfigDataTable();
+	if (!SenseConfigDT)
 	{
-		SenseReceiver = NewObject<USenseReceiverComponent>(
-			Owner,
-			USenseReceiverComponent::StaticClass(),
-			FName("CombatSenseReceiver"));
-
-		if (SenseReceiver)
-		{
-			// Attach to owner's root component for proper world position
-			if (USceneComponent* RootComp = Owner->GetRootComponent())
-			{
-				SenseReceiver->AttachToComponent(RootComp, FAttachmentTransformRules::SnapToTargetIncludingScale);
-			}
-			SenseReceiver->RegisterComponent();
-			
-			// Bind delegates - these will fire when targets are in range
-			SenseReceiver->OnNewSense.AddDynamic(this, &UHarmoniaSenseComponent::OnSenseDetected);
-			SenseReceiver->OnCurrentSense.AddDynamic(this, &UHarmoniaSenseComponent::OnSenseDetected);
-			
-			// Enable receiver - REQUIRED for sensors to tick
-			SenseReceiver->SetEnableSenseReceiver(true);
-		}
+		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_SENSOR] RegisterStimulusResponsesFromDataTable: SenseConfigDataTable not found"));
+		return;
 	}
-	
-	// Create persistent combat sensor that stays ALWAYS ACTIVE
-	// NOTE: CreateNewSensor has a bug where it adds to a local copy of the array.
-	// We create the sensor manually and add it directly to ActiveSensors.
-	if (SenseReceiver && !CombatSensor)
+
+	TArray<FName> RowNames = SenseConfigDT->GetRowNames();
+	for (const FName& RowName : RowNames)
 	{
-		// Check if sensor with this tag already exists
-		ESuccessState CheckState;
-		USensorBase* ExistingSensor = SenseReceiver->GetSensor_ByTag(ESensorType::Active, CombatSensorTag, CheckState);
-		if (ExistingSensor && CheckState == ESuccessState::Success)
+		FHarmoniaSenseConfigData* ConfigPtr = SenseConfigDT->FindRow<FHarmoniaSenseConfigData>(RowName, TEXT("RegisterStimulusResponses"));
+		if (ConfigPtr && ConfigPtr->SensorClass)
 		{
-			CombatSensor = ExistingSensor;
-		}
-		else
-		{
-			// Create sensor manually and add directly to ActiveSensors
-			USensorSight* NewSensor = NewObject<USensorSight>(SenseReceiver, USensorSight::StaticClass(), CombatSensorTag);
-			if (NewSensor)
+			// Get SensorTag and Channel from Sensor BP CDO
+			USensorBase* SensorCDO = ConfigPtr->SensorClass->GetDefaultObject<USensorBase>();
+			if (SensorCDO)
 			{
-				NewSensor->bEnable = false;  // Disable initially
-				NewSensor->SensorTag = CombatSensorTag;
-				NewSensor->SensorType = ESensorType::Active;
-				NewSensor->SensorThreadType = ESensorThreadType::Main_Thread;
+				FName SensorTag = SensorCDO->SensorTag;
 				
-				// Add directly to ActiveSensors array (this is the fix!)
-				SenseReceiver->ActiveSensors.Add(NewSensor);
-				
-				// Initialize sensor from receiver
-				NewSensor->InitializeFromReceiver(SenseReceiver);
-				NewSensor->InitializeForSense(SenseReceiver);
-				
-				// Register with SenseManager
-				if (USenseManager* SM = SenseReceiver->GetSenseManager())
+				// Skip if SensorTag is not set
+				if (SensorTag.IsNone())
 				{
-					SM->Add_ReceiverSensor(SenseReceiver, NewSensor, false);
+					UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_SENSOR] Skipping stimulus registration: SensorTag is None for SensorClass '%s'"),
+						*ConfigPtr->SensorClass->GetName());
+					continue;
 				}
 				
-				// Configure sensor to listen on combat channel
-				NewSensor->SetSenseResponseChannelBit(CombatSenseChannel, true);
+				// Get channels from sensor BP's ChannelSetup
+				const TArray<FChannelSetup>& Channels = SensorCDO->ChannelSetup;
+				for (const FChannelSetup& Ch : Channels)
+				{
+					OwnerInteractable->SetResponseChannel(SensorTag, Ch.Channel, true);
+					UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] Registered Stimulus response: SensorTag='%s', Channel=%d"),
+						*SensorTag.ToString(), Ch.Channel);
+				}
+
+				// If no channels configured, use default Channel 1
+				if (Channels.Num() == 0)
+				{
+					OwnerInteractable->SetResponseChannel(SensorTag, 1, true);
+					UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] Registered Stimulus response (default): SensorTag='%s', Channel=1"),
+						*SensorTag.ToString());
+				}
 				
-				// Configure sight sensor for 360-degree always-on detection
-				const float DetectionRange = 500.0f;
-				NewSensor->SetDistanceAngleParam(
-					DetectionRange,
-					DetectionRange * 1.2f,
-					180.0f,  // Full 360-degree detection
-					180.0f,
-					true,
-					0.0f
-				);
+				OwnerInteractable->SetScore(SensorTag, ConfigPtr->BaseScore);
 				
-				// Disable line-of-sight trace for combat
-				NewSensor->SetTraceParam(
-					ETraceTestParam::BoolTraceTest,
-					ECC_PhysicsBody,
-					false,
-					true,
-					0.0f
-				);
-				
-				// Now enable the sensor
-				NewSensor->SetEnableSensor(true);
-				
-				CombatSensor = NewSensor;
-			}
-		}
-		
-		// Store the current sensor configuration
-		CurrentSensorTag = CombatSensorTag;
-		CurrentSenseChannel = CombatSenseChannel;
-	}
-}
-
-void UHarmoniaSenseComponent::CreateOrUpdateSensorForAttack(FName SensorTag, int32 SenseChannel)
-{
-	if (!SenseReceiver)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("CreateOrUpdateSensorForAttack: No SenseReceiver"));
-		InitializeCombatSensor();
-		if (!SenseReceiver)
-		{
-			return;
-		}
-	}
-
-	// Use default values if not specified
-	if (SensorTag.IsNone())
-	{
-		SensorTag = CombatSensorTag;
-	}
-	const int32 ActualChannel = SenseChannel > 0 ? SenseChannel : CombatSenseChannel;
-
-	// Check if we already have a sensor with this tag
-	bool bSensorExists = false;
-	for (UActiveSensor* ActiveSensor : SenseReceiver->ActiveSensors)
-	{
-		if (ActiveSensor && ActiveSensor->SensorTag == SensorTag)
-		{
-			bSensorExists = true;
-			CombatSensor = ActiveSensor;
-			break;
-		}
-	}
-
-	// If sensor with different tag exists, we might need to reconfigure
-	// For now, create a new one if the tag doesn't match
-	if (!bSensorExists || !CombatSensor || CombatSensor->SensorTag != SensorTag)
-	{
-		ESuccessState SuccessState;
-		CombatSensor = SenseReceiver->CreateNewSensor(
-			USensorSight::StaticClass(),
-			ESensorType::Active,
-			SensorTag,
-			ESensorThreadType::Main_Thread,
-			true,
-			SuccessState);
-
-		if (CombatSensor && SuccessState == ESuccessState::Success)
-		{
-			// Configure sensor to listen on the specified channel
-			CombatSensor->SetSenseResponseChannelBit(ActualChannel, true);
-
-			// Configure sight sensor for combat detection
-			if (USensorSight* SightSensor = Cast<USensorSight>(CombatSensor))
-			{
-				const float DefaultDetectionRange = 300.0f;
-				SightSensor->SetDistanceAngleParam(
-					DefaultDetectionRange,
-					DefaultDetectionRange * 1.2f,
-					180.0f,  // Full sphere detection
-					180.0f,
-					true,
-					0.0f     // Allow all detections
-				);
-				
-				// Disable line-of-sight trace for combat
-				SightSensor->SetTraceParam(
-					ETraceTestParam::BoolTraceTest,
-					ECC_PhysicsBody,
-					false,
-					true,
-					0.0f
-				);
+				// Also register additional ResponseTags from DataTable (same channels)
+				for (const FName& ResponseTag : ConfigPtr->ResponseTags)
+				{
+					for (const FChannelSetup& Ch : Channels)
+					{
+						OwnerInteractable->SetResponseChannel(ResponseTag, Ch.Channel, true);
+					}
+					if (Channels.Num() == 0)
+					{
+						OwnerInteractable->SetResponseChannel(ResponseTag, 1, true);
+					}
+					OwnerInteractable->SetScore(ResponseTag, ConfigPtr->BaseScore);
+					UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] Registered additional ResponseTag: '%s'"),
+						*ResponseTag.ToString());
+				}
 			}
 
-			// Store the tag/channel used for this sensor
-			CurrentSensorTag = SensorTag;
-			CurrentSenseChannel = ActualChannel;
-			
-			// Force sensor to run detection immediately
-			if (UActiveSensor* ActiveSen = Cast<UActiveSensor>(CombatSensor))
-			{
-				ActiveSen->RunManualSensor(true);
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("CreateOrUpdateSensorForAttack: FAILED to create sensor"));
 		}
 	}
 }
 
-void UHarmoniaSenseComponent::InitializeSenseStimulus()
+void UHarmoniaSenseComponent::InitializeSensorsFromDataTable()
 {
-	AActor* Owner = GetOwner();
-	if (!Owner)
+	UDataTable* SenseConfigDT = UHarmoniaDataTableBFL::GetSenseConfigDataTable();
+	if (!SenseConfigDT)
 	{
 		return;
 	}
 
-	// Create sense stimulus if not exists
-	if (!SenseStimulus)
+	TArray<FName> RowNames = SenseConfigDT->GetRowNames();
+	for (const FName& RowName : RowNames)
 	{
-		SenseStimulus = NewObject<USenseStimulusComponent>(
-			Owner,
-			USenseStimulusComponent::StaticClass(),
-			FName("AttackSenseStimulus"));
-
-		if (SenseStimulus)
-		{
-			// Disable before register to defer SenseSystem registration until Owner is fully ready
-			SenseStimulus->SetEnableSenseStimulus(false);
-			SenseStimulus->RegisterComponent();
-			// Keep inactive - will be activated during attacks via SetActive()
-		}
-	}
-}
-
-void UHarmoniaSenseComponent::UpdateSenseStimulus()
-{
-	if (!SenseStimulus)
-	{
-		return;
-	}
-
-	const FHarmoniaAttackTraceConfig& TraceConfig = CurrentAttackData.TraceConfig;
-
-	// Configure response channel for attack detection using table values
-	const uint8 Channel = static_cast<uint8>(FMath::Clamp(TraceConfig.SenseChannel, 0, 63));
-	if (Channel > 0)
-	{
-		SenseStimulus->SetResponseChannel(TraceConfig.SensorTag, Channel, true);
-	}
-	else
-	{
-		// Default to channel 1 if not specified
-		SenseStimulus->SetResponseChannel(TraceConfig.SensorTag, 1, true);
-	}
-
-	// Set appropriate score for detection priority (default 1.0 for reliable detection)
-	SenseStimulus->SetScore(TraceConfig.SensorTag, 1.0f);
-
-	// Activate stimulus
-	SenseStimulus->SetActive(true);
-}
-
-void UHarmoniaSenseComponent::SetupSenseReceiver()
-{
-	// Sensor is now created once in InitializeCombatSensor()
-	// This function only updates detection range based on current attack data
-	
-	if (!SenseReceiver)
-	{
-		InitializeCombatSensor();
-	}
-	
-	if (!SenseReceiver)
-	{
-		return;
-	}
-
-	const FHarmoniaAttackTraceConfig& TraceConfig = CurrentAttackData.TraceConfig;
-	const float DetectionRange = FMath::Max(TraceConfig.TraceExtent.X, 200.0f);
-	
-	// Use the stored CombatSensor directly
-	if (CombatSensor)
-	{
-		if (USensorSight* SightSensor = Cast<USensorSight>(CombatSensor))
-		{
-			SightSensor->SetDistanceAngleParam(
-				DetectionRange,
-				DetectionRange * 1.2f,
-				180.0f,
-				180.0f,
-				true,
-				0.0f
-			);
-		}
-	}
-}
-
-void UHarmoniaSenseComponent::CleanupSenseReceiver()
-{
-	// SenseReceiver is now persistent and created once in InitializeCombatSensor()
-	// We do NOT destroy it here - just deactivate the stimulus
-	
-	if (SenseStimulus)
-	{
-		SenseStimulus->SetActive(false);
+		AddSensor(RowName);
 	}
 }
 
 // ============================================================================
-// Hit Detection
+// SenseSystem Callbacks
 // ============================================================================
 
 void UHarmoniaSenseComponent::OnSenseDetected(const USensorBase* SensorPtr, int32 Channel, const TArray<FSensedStimulus> SensedStimuli)
 {
-	// Sensor is always active - only process when attacking
-	if (!bIsAttacking)
+	if (!SensorPtr || SensedStimuli.Num() == 0)
 	{
 		return;
 	}
 
-	if (!SensorPtr)
-	{
-		return;
-	}
-
-	// Check if this is the combat sensor (uses CombatSensorTag)
-	if (SensorPtr->SensorTag != CombatSensorTag)
-	{
-		return;
-	}
-
-	// Check channel
-	if (Channel != CombatSenseChannel)
-	{
-		return;
-	}
-
-	// Process each detected stimulus
-	for (const FSensedStimulus& Stimulus : SensedStimuli)
-	{
-		// Check sense score threshold
-		if (Stimulus.Score < CurrentAttackData.TraceConfig.MinimumSenseScore)
-		{
-			continue;
-		}
-
-		// Process hit
-		bool bHit = ProcessHitTarget(Stimulus);
-
-		// Check if we've hit max targets
-		if (HitTargets.Num() >= CurrentAttackData.TraceConfig.MaxTargets)
-		{
-			StopAttack();
-			return;
-		}
-	}
-}
-
-bool UHarmoniaSenseComponent::ProcessHitTarget(const FSensedStimulus& Stimulus)
-{
-	if (!Stimulus.StimulusComponent.IsValid())
-	{
-		return false;
-	}
-
-	AActor* TargetActor = Stimulus.StimulusComponent->GetOwner();
-	if (!ShouldHitTarget(TargetActor, Stimulus))
-	{
-		return false;
-	}
-
-	// Check if already hit (for hit-once tracking)
-	if (CurrentAttackData.TraceConfig.bHitOncePerTarget && HitActors.Contains(TargetActor))
-	{
-		return false;
-	}
-
-	// Calculate critical hit
-	const bool bWasCritical = CalculateCriticalHit(CurrentAttackData.DamageConfig.CriticalChance);
-
-	// Get hit location and normal
-	FVector HitLocation = Stimulus.SensedPoints.Num() > 0 ? Stimulus.SensedPoints[0].SensedPoint : GetOwner()->GetActorLocation();
-	FVector HitNormal = (GetOwner()->GetActorLocation() - HitLocation).GetSafeNormal();
-	float HitDistance = Stimulus.SensedPoints.Num() > 0 ? (HitLocation - GetTraceLocation()).Length() : 0.0f;
-
-	// Apply damage and get actual damage dealt
-	float ActualDamage = ApplyDamageToTarget(TargetActor, CurrentAttackData.DamageConfig, bWasCritical, HitLocation, HitNormal);
-
-	// Apply hit reaction
-	const FVector HitDirection = (HitLocation - GetTraceLocation()).GetSafeNormal();
-	ApplyHitReaction(TargetActor, CurrentAttackData.HitReactionConfig, bWasCritical, HitLocation, HitDirection);
-
-	// Record hit
-	FHarmoniaAttackHitResult HitResult;
-	HitResult.HitActor = TargetActor;
-	HitResult.HitComponent = Stimulus.StimulusComponent.Get();
-	HitResult.HitLocation = HitLocation;
-	HitResult.HitNormal = HitNormal;
-	HitResult.Distance = HitDistance;
-	HitResult.bWasCriticalHit = bWasCritical;
-	HitResult.SenseScore = Stimulus.Score;
-
-	if (UWorld* World = GetWorld())
-	{
-		HitResult.HitTime = World->GetTimeSeconds();
-	}
-
-	// Use actual damage from ApplyDamageToTarget
-	HitResult.DamageDealt = ActualDamage;
-
-	HitTargets.Add(HitResult);
-	HitActors.Add(TargetActor);
-
-	// Broadcast hit event
-	OnAttackHit.Broadcast(HitResult);
-
-	return true;
-}
-
-bool UHarmoniaSenseComponent::ShouldHitTarget(AActor* TargetActor, const FSensedStimulus& Stimulus) const
-{
-	if (!TargetActor)
-	{
-		return false;
-	}
-
-	// Don't hit self
+	// Only process hits during attack window (managed by MeleeCombatComponent)
 	AActor* Owner = GetOwner();
-	if (TargetActor == Owner)
+	if (Owner)
 	{
-		return false;
-	}
-
-	// Check if target has ability system (needed for damage)
-	UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(TargetActor);
-	if (!TargetASC)
-	{
-		return false;
-	}
-
-	// Check if target is blocking and within defense angle
-	if (UHarmoniaMeleeCombatComponent* TargetMeleeComp = TargetActor->FindComponentByClass<UHarmoniaMeleeCombatComponent>())
-	{
-		if (TargetMeleeComp->IsBlocking())
+		if (UHarmoniaMeleeCombatComponent* CombatComp = Owner->FindComponentByClass<UHarmoniaMeleeCombatComponent>())
 		{
-			// Check if attacker is within target's defense angle
-			if (Owner && TargetMeleeComp->IsDefenseAngleValid(Owner->GetActorLocation()))
+			if (!CombatComp->IsInAttackWindow())
 			{
-				// Attack blocked - calculate actual blocked damage
-				float BlockedDamage = 0.0f;
-				if (OwnerAbilitySystem)
-				{
-					const UHarmoniaAttributeSet* AttackerAttributeSet = OwnerAbilitySystem->GetSet<UHarmoniaAttributeSet>();
-					if (AttackerAttributeSet)
-					{
-						BlockedDamage = AttackerAttributeSet->GetAttackPower() * CurrentAttackData.DamageConfig.DamageMultiplier;
-					}
-				}
-				
-				// Broadcast blocked events and reject hit
-				TargetMeleeComp->OnBlockedByDefense.Broadcast(Owner, BlockedDamage, true);
-				TargetMeleeComp->OnBlockedAttack.Broadcast(Owner, BlockedDamage);
-				return false;
-			}
-			// Attacker is behind/outside defense angle - allow hit (backstab while blocking)
-		}
-	}
-
-	return true;
-}
-
-bool UHarmoniaSenseComponent::CalculateCriticalHit(float CritChance) const
-{
-	if (!CurrentAttackData.DamageConfig.bCanCritical)
-	{
-		return false;
-	}
-
-	// Get critical chance from owner's attributes if available
-	float FinalCritChance = CritChance;
-
-	if (OwnerAbilitySystem)
-	{
-		const UHarmoniaAttributeSet* CombatSet = OwnerAbilitySystem->GetSet<UHarmoniaAttributeSet>();
-		if (CombatSet)
-		{
-			FinalCritChance = CombatSet->GetCriticalChance();
-		}
-	}
-
-	return FMath::FRand() < FinalCritChance;
-}
-
-// ============================================================================
-// Damage Application
-// ============================================================================
-
-float UHarmoniaSenseComponent::ApplyDamageToTarget(
-	AActor* TargetActor,
-	const FHarmoniaDamageEffectConfig& DamageConfig,
-	bool bWasCritical,
-	const FVector& HitLocation,
-	const FVector& HitNormal)
-{
-	if (!TargetActor)
-	{
-		return 0.0f;
-	}
-
-	UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(TargetActor);
-	if (!TargetASC)
-	{
-		return 0.0f;
-	}
-
-	AActor* Owner = GetOwner();
-	UAbilitySystemComponent* SourceASC = OwnerAbilitySystem;
-	
-	// Fallback: Get ASC if not cached (Lyra ASC might not be ready at BeginPlay)
-	if (!SourceASC && Owner)
-	{
-		SourceASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Owner);
-		if (SourceASC)
-		{
-			OwnerAbilitySystem = SourceASC;  // Cache for future use
-		}
-	}
-
-	// Calculate final damage using AttackPower from attributes as base
-	float FinalDamage = 0.0f;
-
-	if (SourceASC)
-	{
-		const UHarmoniaAttributeSet* CombatSet = SourceASC->GetSet<UHarmoniaAttributeSet>();
-		if (CombatSet)
-		{
-			// Use AttackPower as base damage (includes weapon, stats, buffs)
-			FinalDamage = CombatSet->GetAttackPower();
-		}
-	}
-
-	// Apply combo/attack multiplier from table
-	FinalDamage *= DamageConfig.DamageMultiplier;
-
-	// Apply critical multiplier
-	if (bWasCritical)
-	{
-		float CritMultiplier = DamageConfig.CriticalMultiplier;
-
-		if (SourceASC)
-		{
-			const UHarmoniaAttributeSet* CombatSet = SourceASC->GetSet<UHarmoniaAttributeSet>();
-			if (CombatSet)
-			{
-				CritMultiplier = CombatSet->GetCriticalDamage();
-			}
-		}
-
-		FinalDamage *= CritMultiplier;
-	}
-
-	// Apply damage based on type
-	switch (DamageConfig.DamageType)
-	{
-	case EHarmoniaDamageType::Instant:
-		{
-			// Apply instant damage via Gameplay Effect
-			if (DamageConfig.DamageEffectClass && SourceASC)
-			{
-				FGameplayEffectContextHandle EffectContext = CreateDamageEffectContext(TargetActor, HitLocation, HitNormal);
-				FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(DamageConfig.DamageEffectClass, 1.0f, EffectContext);
-
-				if (SpecHandle.IsValid())
-				{
-					// Set damage magnitude using configured tag
-					if (DamageConfig.SetByCallerDamageTag.IsValid())
-					{
-						SpecHandle.Data->SetSetByCallerMagnitude(DamageConfig.SetByCallerDamageTag, FinalDamage);
-					}
-
-					// Add damage tags
-					SpecHandle.Data->DynamicGrantedTags.AppendTags(DamageConfig.DamageTags);
-
-					// Apply effect
-					SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-				}
-			}
-			else
-			{
-				// Fallback: Apply damage directly to attribute
-				const UHarmoniaAttributeSet* TargetCombatSet = TargetASC->GetSet<UHarmoniaAttributeSet>();
-				if (TargetCombatSet)
-				{
-					TargetASC->ApplyModToAttribute(
-						TargetCombatSet->GetDamageAttribute(),
-						EGameplayModOp::Additive,
-						FinalDamage);
-				}
-			}
-		}
-		break;
-
-	case EHarmoniaDamageType::Duration:
-		{
-			// Apply DoT effect
-			if (DamageConfig.DamageEffectClass)
-			{
-				FGameplayEffectContextHandle EffectContext = CreateDamageEffectContext(TargetActor, HitLocation, HitNormal);
-				FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(DamageConfig.DamageEffectClass, 1.0f, EffectContext);
-
-				if (SpecHandle.IsValid())
-				{
-					// Calculate damage per tick
-					const float DamagePerTick = FinalDamage / (DamageConfig.DurationSeconds / DamageConfig.TickInterval);
-					if (DamageConfig.SetByCallerDamageTag.IsValid())
-					{
-						SpecHandle.Data->SetSetByCallerMagnitude(DamageConfig.SetByCallerDamageTag, DamagePerTick);
-					}
-
-					// Add damage tags
-					SpecHandle.Data->DynamicGrantedTags.AppendTags(DamageConfig.DamageTags);
-
-					// Apply effect
-					SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-				}
-			}
-		}
-		break;
-
-	case EHarmoniaDamageType::Explosion:
-		{
-			// For explosion, damage falloff is handled separately
-			// Apply reduced damage based on distance from center
-			const float Distance = FVector::Dist(HitLocation, GetTraceLocation());
-			const float DistanceRatio = FMath::Clamp(Distance / DamageConfig.ExplosionRadius, 0.0f, 1.0f);
-			const float Falloff = FMath::Pow(1.0f - DistanceRatio, DamageConfig.ExplosionFalloff);
-			FinalDamage *= Falloff;
-
-			if (DamageConfig.DamageEffectClass)
-			{
-				FGameplayEffectContextHandle EffectContext = CreateDamageEffectContext(TargetActor, HitLocation, HitNormal);
-				FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(DamageConfig.DamageEffectClass, 1.0f, EffectContext);
-
-				if (SpecHandle.IsValid())
-				{
-					if (DamageConfig.SetByCallerDamageTag.IsValid())
-					{
-						SpecHandle.Data->SetSetByCallerMagnitude(DamageConfig.SetByCallerDamageTag, FinalDamage);
-					}
-					SpecHandle.Data->DynamicGrantedTags.AppendTags(DamageConfig.DamageTags);
-					SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-				}
-			}
-		}
-		break;
-
-	case EHarmoniaDamageType::Percentage:
-		{
-			// Apply percentage-based damage (ignores defense)
-			const UHarmoniaAttributeSet* TargetCombatSet = TargetASC->GetSet<UHarmoniaAttributeSet>();
-			if (TargetCombatSet)
-			{
-				const float PercentageDamage = TargetCombatSet->GetMaxHealth() * (FinalDamage / 100.0f);
-				TargetASC->ApplyModToAttribute(
-					TargetCombatSet->GetDamageAttribute(),
-					EGameplayModOp::Additive,
-					PercentageDamage);
-			}
-		}
-		break;
-
-	default:
-		break;
-	}
-
-	// Apply additional effects
-	if (SourceASC)
-	{
-		for (const TSubclassOf<UGameplayEffect>& AdditionalEffect : DamageConfig.AdditionalEffects)
-		{
-			if (AdditionalEffect)
-			{
-				FGameplayEffectContextHandle EffectContext = CreateDamageEffectContext(TargetActor, HitLocation, HitNormal);
-				FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(AdditionalEffect, 1.0f, EffectContext);
-
-				if (SpecHandle.IsValid())
-				{
-					SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-				}
+				return;
 			}
 		}
 	}
 
-	return FinalDamage;
-}
+	UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] OnSenseDetected: Sensor='%s' Channel=%d NumStimuli=%d"),
+		*SensorPtr->SensorTag.ToString(),
+		Channel,
+		SensedStimuli.Num());
 
-void UHarmoniaSenseComponent::ApplyHitReaction(
-	AActor* TargetActor,
-	const FHarmoniaHitReactionConfig& ReactionConfig,
-	bool bWasCritical,
-	const FVector& HitLocation,
-	const FVector& HitDirection)
-{
-	if (!TargetActor)
-	{
-		return;
-	}
-
-	UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(TargetActor);
-	if (!TargetASC)
-	{
-		return;
-	}
-
-	// Trigger Gameplay Cue
-	if (ReactionConfig.GameplayCueTag.IsValid())
-	{
-		FGameplayCueParameters CueParams;
-		CueParams.Location = HitLocation;
-		CueParams.Normal = HitDirection;
-		CueParams.Instigator = GetOwner();
-		CueParams.EffectCauser = GetOwner();
-		CueParams.TargetAttachComponent = TargetActor->GetRootComponent();
-		CueParams.RawMagnitude = bWasCritical ? 2.0f : 1.0f;
-
-		TargetASC->ExecuteGameplayCue(ReactionConfig.GameplayCueTag, CueParams);
-	}
-
-	// Apply impact force (if target has physics)
-	if (ReactionConfig.ImpactForce > 0.0f)
-	{
-		if (UPrimitiveComponent* RootPrimitive = Cast<UPrimitiveComponent>(TargetActor->GetRootComponent()))
-		{
-			if (RootPrimitive->IsSimulatingPhysics())
-			{
-				FVector ForceDirection = ReactionConfig.ImpactDirection.IsNearlyZero() ? HitDirection : ReactionConfig.ImpactDirection;
-				ForceDirection.Normalize();
-
-				RootPrimitive->AddImpulse(ForceDirection * ReactionConfig.ImpactForce, NAME_None, true);
-			}
-		}
-	}
-
-	// Apply camera shake to the attacker's player controller
-	if (ReactionConfig.CameraShakeClass)
-	{
-		AActor* Owner = GetOwner();
-		if (Owner)
-		{
-			APlayerController* PC = Cast<APlayerController>(Owner->GetInstigatorController());
-			if (PC)
-			{
-				PC->ClientStartCameraShake(ReactionConfig.CameraShakeClass, ReactionConfig.CameraShakeScale);
-			}
-		}
-	}
-
-	// Apply hit pause (time dilation effect)
-	if (ReactionConfig.bApplyHitPause && ReactionConfig.HitPauseDuration > 0.0f)
-	{
-		UWorld* World = GetWorld();
-		if (World)
-		{
-			// Store original time dilation
-			const float OriginalTimeDilation = World->GetWorldSettings()->TimeDilation;
-
-			// Apply hit pause (slow down time)
-			World->GetWorldSettings()->SetTimeDilation(0.1f);
-
-			// Set timer to restore normal time
-			FTimerHandle HitPauseTimerHandle;
-			World->GetTimerManager().SetTimer(
-				HitPauseTimerHandle,
-				[World, OriginalTimeDilation]()
-				{
-					if (World && World->GetWorldSettings())
-					{
-						World->GetWorldSettings()->SetTimeDilation(OriginalTimeDilation);
-					}
-				},
-				ReactionConfig.HitPauseDuration * 0.1f, // Adjust for dilated time
-				false
-			);
-		}
-	}
-}
-
-FGameplayEffectContextHandle UHarmoniaSenseComponent::CreateDamageEffectContext(
-	AActor* TargetActor,
-	const FVector& HitLocation,
-	const FVector& HitNormal) const
-{
-	FGameplayEffectContextHandle ContextHandle;
-
-	if (OwnerAbilitySystem)
-	{
-		ContextHandle = OwnerAbilitySystem->MakeEffectContext();
-		ContextHandle.AddInstigator(GetOwner(), GetOwner());
-		ContextHandle.AddHitResult(FHitResult(TargetActor, nullptr, HitLocation, HitNormal));
-		ContextHandle.AddOrigin(GetTraceLocation());
-	}
-
-	return ContextHandle;
-}
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-void UHarmoniaSenseComponent::OnAttackTimerComplete()
-{
-	StopAttack();
-}
-
-FVector UHarmoniaSenseComponent::GetTraceLocation() const
-{
-	const FName& SocketName = CurrentAttackData.TraceConfig.SocketName;
-	const FVector& TraceOffset = CurrentAttackData.TraceConfig.TraceOffset;
-	const FRotator& RotationOffset = CurrentAttackData.TraceConfig.RotationOffset;
-
-	if (!SocketName.IsNone())
-	{
-		// Try cosmetic actor's visual mesh first (for equipment attached to cosmetic)
-		if (ACharacter* OwnerChar = Cast<ACharacter>(GetOwner()))
-		{
-			if (USkeletalMeshComponent* VisualMesh = UCosmeticBFL::GetVisualMesh(OwnerChar))
-			{
-				if (VisualMesh->DoesSocketExist(SocketName))
-				{
-					// Compose transforms: Socket * LocalOffset (rotation first, then position)
-					FTransform SocketTransform = VisualMesh->GetSocketTransform(SocketName);
-					FTransform LocalOffset(FQuat(RotationOffset), TraceOffset);
-					FTransform FinalTransform = LocalOffset * SocketTransform;
-					return FinalTransform.GetLocation();
-				}
-			}
-		}
-
-		// Fallback to attach parent
-		if (USceneComponent* ParentComp = GetAttachParent())
-		{
-			if (ParentComp->DoesSocketExist(SocketName))
-			{
-				FTransform SocketTransform = ParentComp->GetSocketTransform(SocketName);
-				FTransform LocalOffset(FQuat(RotationOffset), TraceOffset);
-				FTransform FinalTransform = LocalOffset * SocketTransform;
-				return FinalTransform.GetLocation();
-			}
-		}
-	}
-
-	return GetComponentLocation() + TraceOffset;
-}
-
-FRotator UHarmoniaSenseComponent::GetTraceRotation() const
-{
-	const FName& SocketName = CurrentAttackData.TraceConfig.SocketName;
-	const FRotator& RotationOffset = CurrentAttackData.TraceConfig.RotationOffset;
-
-	if (!SocketName.IsNone())
-	{
-		// Try cosmetic actor's visual mesh first
-		if (ACharacter* OwnerChar = Cast<ACharacter>(GetOwner()))
-		{
-			if (USkeletalMeshComponent* VisualMesh = UCosmeticBFL::GetVisualMesh(OwnerChar))
-			{
-				if (VisualMesh->DoesSocketExist(SocketName))
-				{
-					// Compose transforms: Socket * LocalOffset
-					FTransform SocketTransform = VisualMesh->GetSocketTransform(SocketName);
-					FTransform LocalOffset(FQuat(RotationOffset), FVector::ZeroVector);
-					FTransform FinalTransform = LocalOffset * SocketTransform;
-					return FinalTransform.Rotator();
-				}
-			}
-		}
-
-		// Fallback to attach parent
-		if (USceneComponent* ParentComp = GetAttachParent())
-		{
-			if (ParentComp->DoesSocketExist(SocketName))
-			{
-				FTransform SocketTransform = ParentComp->GetSocketTransform(SocketName);
-				FTransform LocalOffset(FQuat(RotationOffset), FVector::ZeroVector);
-				FTransform FinalTransform = LocalOffset * SocketTransform;
-				return FinalTransform.Rotator();
-			}
-		}
-	}
-
-	return GetComponentRotation() + RotationOffset;
-}
-
-void UHarmoniaSenseComponent::DrawDebugAttackTrace() const
-{
-	if (!GetWorld())
-	{
-		return;
-	}
-
-	const FVector Location = GetTraceLocation();
-	const FRotator Rotation = GetTraceRotation();
-	const FVector Extent = CurrentAttackData.TraceConfig.TraceExtent;
-	constexpr float TraceDuration = 0.1f; // Persist between frames
-	constexpr float LineThickness = 1.0f; // Thinner lines for visibility
-
-	// Color based on state: Red = hit detected, Green = attacking (no hit yet)
-	const FColor DebugColor = HitTargets.Num() > 0 ? FColor::Red : FColor::Green;
-
-	UE_LOG(LogTemp, Verbose, TEXT("DrawDebugAttackTrace - Socket: %s, Location: %s, Shape: %d"), 
-		*CurrentAttackData.TraceConfig.SocketName.ToString(), *Location.ToString(), (int32)CurrentAttackData.TraceConfig.TraceShape);
-
-	switch (CurrentAttackData.TraceConfig.TraceShape)
-	{
-	case EHarmoniaAttackTraceShape::Box:
-		DrawDebugBox(GetWorld(), Location, Extent, Rotation.Quaternion(), DebugColor, false, TraceDuration, 0, LineThickness);
-		break;
-
-	case EHarmoniaAttackTraceShape::Sphere:
-		DrawDebugSphere(GetWorld(), Location, Extent.X, 12, DebugColor, false, TraceDuration, 0, LineThickness);
-		break;
-
-	case EHarmoniaAttackTraceShape::Capsule:
-		DrawDebugCapsule(GetWorld(), Location, Extent.Z, Extent.X, Rotation.Quaternion(), DebugColor, false, TraceDuration, 0, LineThickness);
-		break;
-
-	case EHarmoniaAttackTraceShape::Line:
-		{
-			const FVector EndLocation = Location + Rotation.Vector() * Extent.X;
-			DrawDebugLine(GetWorld(), Location, EndLocation, DebugColor, false, TraceDuration, 0, LineThickness);
-		}
-		break;
-
-	default:
-		break;
-	}
-}
-
-void UHarmoniaSenseComponent::DrawSenseSystemDebug() const
-{
-#if ENABLE_DRAW_DEBUG
-	if (!GetWorld() || !SenseReceiver)
-	{
-		return;
-	}
-
-	const FSenseSysDebugDraw& DebugConfig = CurrentAttackData.TraceConfig.SenseDebugConfig;
-	constexpr float DebugDuration = -1.0f; // Frame-by-frame drawing
-
-	// Draw debug for each active sensor in the receiver
-	TArray<TObjectPtr<USensorBase>> Sensors = SenseReceiver->GetSensorsByType(ESensorType::Active);
-	for (const TObjectPtr<USensorBase>& Sensor : Sensors)
-	{
-		if (IsValid(Sensor) && Sensor->SensorTag == CurrentAttackData.TraceConfig.SensorTag)
-		{
-			Sensor->DrawDebugSensor(
-				DebugConfig.Sensor_DebugTest,
-				DebugConfig.Sensor_DebugCurrentSensed,
-				DebugConfig.Sensor_DebugLostSensed,
-				DebugConfig.Sensor_DebugBestSensed,
-				DebugConfig.SenseSys_DebugAge,
-				DebugDuration
-			);
-		}
-	}
-#endif // ENABLE_DRAW_DEBUG
+	// Forward to delegate for combat components to process
+	OnSenseHit.Broadcast(SensorPtr, Channel, SensedStimuli);
 }

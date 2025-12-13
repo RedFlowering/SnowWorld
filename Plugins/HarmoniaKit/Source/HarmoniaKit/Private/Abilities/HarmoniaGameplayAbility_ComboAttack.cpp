@@ -170,46 +170,14 @@ void UHarmoniaGameplayAbility_ComboAttack::PerformComboAttack()
 				AttackComponent = Owner->FindComponentByClass<UHarmoniaSenseComponent>();
 			}
 
-			if (AttackComponent)
-			{
-				// Modify attack data based on combo multipliers
-				FHarmoniaAttackData ModifiedAttackData = AttackComponent->AttackData;
-
-				// Apply damage multiplier
-				ModifiedAttackData.DamageConfig.DamageMultiplier *= ComboData.DamageMultiplier;
-
-				// Apply range multiplier to trace config
-				if (ModifiedAttackData.TraceConfig.TraceShape == EHarmoniaAttackTraceShape::Box)
-				{
-					// Box: TraceExtent = (Width, Height, Depth)
-					ModifiedAttackData.TraceConfig.TraceExtent *= ComboData.RangeMultiplier;
-				}
-				else if (ModifiedAttackData.TraceConfig.TraceShape == EHarmoniaAttackTraceShape::Sphere)
-				{
-					// Sphere: TraceExtent.X = Radius
-					ModifiedAttackData.TraceConfig.TraceExtent.X *= ComboData.RangeMultiplier;
-				}
-				else if (ModifiedAttackData.TraceConfig.TraceShape == EHarmoniaAttackTraceShape::Capsule)
-				{
-					// Capsule: TraceExtent.X = Radius, TraceExtent.Z = HalfHeight
-					ModifiedAttackData.TraceConfig.TraceExtent.X *= ComboData.RangeMultiplier;
-					ModifiedAttackData.TraceConfig.TraceExtent.Z *= ComboData.RangeMultiplier;
-				}
-
-				// Start attack with modified data
-				AttackComponent->RequestStartAttack(ModifiedAttackData);
-
-				UE_LOG(LogTemp, Log, TEXT("ComboAttack: Triggered attack component for combo %d - %s (Damage: %.2fx, Range: %.2fx)"),
-					CurrentComboIndex,
-					*ComboData.DisplayName.ToString(),
-					ComboData.DamageMultiplier,
-					ComboData.RangeMultiplier);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("ComboAttack: Attack component not found for combo %d"), CurrentComboIndex);
-			}
+			// Attack data is now managed by MeleeCombatComponent
+			// SenseComponent only handles sensor setup - attack triggering done by AnimNotify
+			UE_LOG(LogTemp, Log, TEXT("ComboAttack: Triggered combo %d - %s (Damage: %.2fx)"),
+				CurrentComboIndex,
+				*ComboData.DisplayName.ToString(),
+				ComboData.DamageMultiplier);
 		}
+
 	}
 	else
 	{

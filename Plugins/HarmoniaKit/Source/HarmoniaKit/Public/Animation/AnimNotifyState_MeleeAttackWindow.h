@@ -54,6 +54,13 @@ public:
 	bool bShowDebug = false;
 
 	/**
+	 * SenseConfig row name for preview drawing
+	 * Used to get Sensor BP class for debug visualization
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
+	FName PreviewSenseConfigRowName = NAME_None;
+
+	/**
 	 * Preview trace in Persona animation editor
 	 * Enable this to visualize trace bounds while adjusting animation timing
 	 */
@@ -66,18 +73,6 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, Category = "Debug|Editor Preview", meta = (EditCondition = "bShowPreviewTrace"))
 	FName PreviewSocketName = FName("hand_r");
-
-	/**
-	 * Preview trace shape
-	 */
-	UPROPERTY(EditAnywhere, Category = "Debug|Editor Preview", meta = (EditCondition = "bShowPreviewTrace"))
-	EHarmoniaAttackTraceShape PreviewTraceShape = EHarmoniaAttackTraceShape::Sphere;
-
-	/**
-	 * Preview trace extent (size)
-	 */
-	UPROPERTY(EditAnywhere, Category = "Debug|Editor Preview", meta = (EditCondition = "bShowPreviewTrace"))
-	FVector PreviewTraceExtent = FVector(50.0f, 50.0f, 50.0f);
 
 	/**
 	 * Preview trace offset from socket
@@ -96,6 +91,12 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, Category = "Debug|Editor Preview", meta = (EditCondition = "bShowPreviewTrace"))
 	FColor PreviewTraceColor = FColor::Cyan;
+
+	/**
+	 * Preview trace radius (fallback when Sensor CDO not available)
+	 */
+	UPROPERTY(EditAnywhere, Category = "Debug|Editor Preview", meta = (EditCondition = "bShowPreviewTrace"))
+	float PreviewTraceRadius = 50.0f;
 #endif
 
 private:

@@ -28,29 +28,17 @@ void UAnimNotify_MeleeAttackHit::Notify(USkeletalMeshComponent* MeshComp, UAnimS
 		return;
 	}
 
-	// Find components
+	// Find combat component (attack control moved from SenseComponent)
 	UHarmoniaMeleeCombatComponent* MeleeComponent = FindMeleeCombatComponent(Owner);
-	UHarmoniaSenseComponent* AttackComponent = FindAttackComponent(Owner);
-
-	if (!AttackComponent)
+	if (!MeleeComponent)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AnimNotify_MeleeAttackHit: No HarmoniaSenseComponent found on %s"), *Owner->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("AnimNotify_MeleeAttackHit: No HarmoniaMeleeCombatComponent found on %s"), *Owner->GetName());
 		return;
 	}
 
-	// Get attack data from MeleeCombatComponent (includes combo step data)
-	FHarmoniaAttackData AttackData;
-	
-	if (MeleeComponent && MeleeComponent->GetCurrentComboAttackData(AttackData))
-	{
-		// Use combo attack data from MeleeCombatComponent
-		AttackComponent->RequestStartAttack(AttackData);
-	}
-	else
-	{
-		// Fallback: Use component's default attack data
-		AttackComponent->RequestStartAttackDefault();
-	}
+	// Start attack via combat component
+	// Attack data is managed by MeleeCombatComponent's combo system
+	MeleeComponent->StartAttack(MeleeComponent->GetCurrentAttackType());
 }
 
 FString UAnimNotify_MeleeAttackHit::GetNotifyName_Implementation() const
@@ -75,24 +63,6 @@ UHarmoniaSenseComponent* UAnimNotify_MeleeAttackHit::FindAttackComponent(AActor*
 		return nullptr;
 	}
 
-	// If component name is specified, find by name
-	if (!AttackComponentName.IsNone())
-	{
-		TArray<UHarmoniaSenseComponent*> AttackComponents;
-		Owner->GetComponents<UHarmoniaSenseComponent>(AttackComponents);
-
-		for (UHarmoniaSenseComponent* Component : AttackComponents)
-		{
-			if (Component && Component->GetFName() == AttackComponentName)
-			{
-				return Component;
-			}
-		}
-
-		return nullptr;
-	}
-
-	// Otherwise, return first found component
+	// Legacy - returns HarmoniaSenseComponent for compatibility
 	return Owner->FindComponentByClass<UHarmoniaSenseComponent>();
 }
-
