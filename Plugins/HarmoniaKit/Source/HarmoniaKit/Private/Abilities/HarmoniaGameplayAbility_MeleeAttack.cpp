@@ -364,14 +364,40 @@ void UHarmoniaGameplayAbility_MeleeAttack::OnMontageCompleted()
 		const int32 NextComboIndex = MeleeCombatComponent->GetCurrentComboIndex() + 1;
 		if (CurrentComboSequence.ComboSteps.IsValidIndex(NextComboIndex))
 		{
-			// Advance combo and continue
+			// Advance combo
 			MeleeCombatComponent->EndAttack(); // This will call AdvanceCombo() since bNextComboQueued is true
 			MeleeCombatComponent->StartAttack(MeleeCombatComponent->GetCurrentAttackType());
 			
-			// Perform next attack
-			PerformMeleeAttack();
+			// For section-based combos: Jump to next section instead of creating new task
+			FHarmoniaComboAttackStep NextStep;
+			if (GetCurrentAttackStep(NextStep) && NextStep.MontageSectionName != NAME_None)
+			{
+				if (USkeletalMeshComponent* Mesh = GetActorInfo().SkeletalMeshComponent.Get())
+				{
+					if (UAnimInstance* AnimInstance = Mesh->GetAnimInstance())
+					{
+						UAnimMontage* Montage = NextStep.AttackMontage;
+						if (Montage && AnimInstance->Montage_IsPlaying(Montage))
+						{
+							// Montage still playing - just jump to next section
+							AnimInstance->Montage_JumpToSection(NextStep.MontageSectionName, Montage);
+							
+							// Set end section link for this new section
+							if (NextStep.EndSectionName != NAME_None)
+							{
+								AnimInstance->Montage_SetNextSection(NextStep.MontageSectionName, NextStep.EndSectionName, Montage);
+							}
+							
+							// Continue listening for input
+							StartWaitingForComboInput();
+							return;
+						}
+					}
+				}
+			}
 			
-			// Continue listening for input
+			// Fallback: If montage not playing, start fresh
+			PerformMeleeAttack();
 			StartWaitingForComboInput();
 			return;
 		}

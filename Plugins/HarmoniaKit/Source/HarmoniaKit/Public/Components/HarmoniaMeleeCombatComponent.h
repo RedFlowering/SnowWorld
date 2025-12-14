@@ -39,6 +39,7 @@ public:
 
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	// ============================================================================
 	// Weapon Management
@@ -127,9 +128,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Combo")
 	void OpenComboWindow(float Duration);
 
-	/** Queue next combo attack */
+	/** Queue next combo attack (calls Server RPC if on client) */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Combo")
 	void QueueNextCombo();
+
+	/** Server RPC to queue combo (called by client) */
+	UFUNCTION(Server, Reliable)
+	void ServerQueueNextCombo();
 
 	/** Is next combo queued? */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Combo")
@@ -397,7 +402,7 @@ protected:
 	EHarmoniaDefenseState DefenseState = EHarmoniaDefenseState::None;
 
 	/** Is currently attacking? */
-	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|State")
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Melee Combat|State")
 	bool bIsAttacking = false;
 
 	/** Is in attack window? (hit detection active) */
@@ -405,15 +410,15 @@ protected:
 	bool bInAttackWindow = false;
 
 	/** Current attack type */
-	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|State")
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Melee Combat|State")
 	EHarmoniaAttackType CurrentAttackType = EHarmoniaAttackType::Light;
 
 	/** Current combo index */
-	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|State")
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Melee Combat|State")
 	int32 CurrentComboIndex = 0;
 
 	/** Is next combo queued? */
-	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|State")
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Melee Combat|State")
 	bool bNextComboQueued = false;
 
 	/** Is in i-frames? */

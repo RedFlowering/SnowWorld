@@ -19,6 +19,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
 #include "Camera/CameraShakeBase.h"
+#include "Net/UnrealNetwork.h"
 
 namespace HarmoniaCombatASC
 {
@@ -80,6 +81,16 @@ UHarmoniaMeleeCombatComponent::UHarmoniaMeleeCombatComponent()
 	ParryingTag = HarmoniaGameplayTags::Character_State_Parrying;
 	DodgingTag = HarmoniaGameplayTags::Character_State_Dodging;
 	InvulnerableTag = HarmoniaGameplayTags::Character_State_Invulnerable;
+}
+
+void UHarmoniaMeleeCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UHarmoniaMeleeCombatComponent, bIsAttacking);
+	DOREPLIFETIME(UHarmoniaMeleeCombatComponent, CurrentAttackType);
+	DOREPLIFETIME(UHarmoniaMeleeCombatComponent, CurrentComboIndex);
+	DOREPLIFETIME(UHarmoniaMeleeCombatComponent, bNextComboQueued);
 }
 
 void UHarmoniaMeleeCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -238,10 +249,8 @@ void UHarmoniaMeleeCombatComponent::SetInAttackWindow(bool bInWindow)
 {
 	bInAttackWindow = bInWindow;
 
-	if (!bInWindow)
-	{
-		HitActorsThisAttack.Empty();
-	}
+	// Always clear hit tracking to ensure fresh hit detection for each attack
+	HitActorsThisAttack.Empty();
 }
 
 // ============================================================================
@@ -294,6 +303,22 @@ void UHarmoniaMeleeCombatComponent::OpenComboWindow(float Duration)
 
 void UHarmoniaMeleeCombatComponent::QueueNextCombo()
 {
+	if (IsInComboWindow())
+	{
+		bNextComboQueued = true;
+		
+		// If we're the client, notify the server
+		AActor* Owner = GetOwner();
+		if (Owner && !Owner->HasAuthority())
+		{
+			ServerQueueNextCombo();
+		}
+	}
+}
+
+void UHarmoniaMeleeCombatComponent::ServerQueueNextCombo_Implementation()
+{
+	// Server receives the combo queue request from client
 	if (IsInComboWindow())
 	{
 		bNextComboQueued = true;
