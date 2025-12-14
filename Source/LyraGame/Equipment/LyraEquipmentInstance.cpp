@@ -113,3 +113,24 @@ void ULyraEquipmentInstance::OnRep_Instigator()
 {
 }
 
+void ULyraEquipmentInstance::OnRep_SpawnedActors()
+{
+	if (APawn* OwningPawn = GetPawn())
+	{
+		USceneComponent* AttachTarget = OwningPawn->GetRootComponent();
+		if (ACharacter* Char = Cast<ACharacter>(OwningPawn))
+		{
+			AttachTarget = Char->GetMesh();
+		}
+
+		for (AActor* Actor : SpawnedActors)
+		{
+			if (Actor && !Actor->GetAttachParentActor())
+			{
+				// Actor is not attached, attach it to the pawn's mesh
+				Actor->AttachToComponent(AttachTarget, FAttachmentTransformRules::KeepWorldTransform);
+			}
+		}
+	}
+}
+

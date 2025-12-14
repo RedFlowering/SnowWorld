@@ -27,4 +27,3 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|PlayerState")
 	const UHarmoniaAttributeSet* GetHarmoniaAttributeSet() const;
 };
-

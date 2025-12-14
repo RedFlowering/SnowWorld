@@ -50,10 +50,8 @@ void UHarmoniaEquipmentComponent::EndPlay(const EEndPlayReason::Type EndPlayReas
 void UHarmoniaEquipmentComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	// [BANDWIDTH OPTIMIZATION] Only replicate equipment to the owning client
-	// Other players don't need to know about this player's full equipment details
-	// Visual meshes are still replicated separately for all clients
-	DOREPLIFETIME_CONDITION(UHarmoniaEquipmentComponent, EquippedItems, COND_OwnerOnly);
+	// Replicate to ALL clients so visual equipment is visible to everyone
+	DOREPLIFETIME(UHarmoniaEquipmentComponent, EquippedItems);
 }
 
 // ============================================================================
@@ -1032,8 +1030,35 @@ USkeletalMeshComponent* UHarmoniaEquipmentComponent::GetOwnerMesh() const
 
 void UHarmoniaEquipmentComponent::OnRep_EquippedItems()
 {
-	// Notify clients of equipment changes
-	// Visual updates would happen here
+	// Clear existing visual meshes to avoid duplicates
+	for (USkeletalMeshComponent* MeshComponent : EquipmentMeshes)
+	{
+		if (MeshComponent)
+		{
+			MeshComponent->DestroyComponent();
+		}
+	}
+	EquipmentMeshes.Empty();
+
+	// Apply visual meshes for all equipped items on client
+	for (const FEquippedItem& EquippedItem : EquippedItems)
+	{
+		FHarmoniaEquipmentData EquipmentData;
+		if (GetEquipmentData(EquippedItem.EquipmentId, EquipmentData))
+		{
+			ApplyVisualMesh(EquipmentData);
+		}
+	}
+
+	// Broadcast equipment change events for UI updates
+	for (const FEquippedItem& EquippedItem : EquippedItems)
+	{
+		FHarmoniaEquipmentData EquipmentData;
+		if (GetEquipmentData(EquippedItem.EquipmentId, EquipmentData))
+		{
+			OnEquipmentChanged.Broadcast(EquippedItem.Slot, FHarmoniaID(), EquippedItem.EquipmentId);
+		}
+	}
 }
 
 void UHarmoniaEquipmentComponent::ServerEquipItem_Implementation(const FHarmoniaID& EquipmentId, EEquipmentSlot Slot)

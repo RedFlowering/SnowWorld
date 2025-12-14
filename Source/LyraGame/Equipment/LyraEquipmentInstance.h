@@ -63,10 +63,13 @@ private:
 	UFUNCTION()
 	void OnRep_Instigator();
 
+	UFUNCTION()
+	void OnRep_SpawnedActors();
+
 private:
 	UPROPERTY(ReplicatedUsing=OnRep_Instigator)
 	TObjectPtr<UObject> Instigator;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing=OnRep_SpawnedActors)
 	TArray<TObjectPtr<AActor>> SpawnedActors;
 };
