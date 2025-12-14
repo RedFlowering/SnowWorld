@@ -60,6 +60,7 @@ namespace HarmoniaGameplayTags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Damage);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Healing);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_StaminaRecovery);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(SetByCaller_DamageMultiplier);
 
 	// ============================================================
 	// Hit Reaction System Tags

@@ -13,7 +13,7 @@ class UHarmoniaAttributeSet;
  *
  * Extended player state for Soul-like RPG gameplay.
  * Inherits from ALyraPlayerState to maintain compatibility with Lyra systems (LyraPlayerController, etc).
- * Adds HarmoniaAttributeSet for RPG attributes.
+ * Uses SetDefaultSubobjectClass to replace LyraHealthSet with HarmoniaAttributeSet.
  */
 UCLASS(Config = Game)
 class HARMONIAKIT_API AHarmoniaPlayerState : public ALyraPlayerState
@@ -23,15 +23,8 @@ class HARMONIAKIT_API AHarmoniaPlayerState : public ALyraPlayerState
 public:
 	AHarmoniaPlayerState(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
-	/** Get the Harmonia attribute set */
+	/** Get the Harmonia attribute set (dynamically retrieved from ASC) */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|PlayerState")
-	const UHarmoniaAttributeSet* GetHarmoniaAttributeSet() const { return HarmoniaSet; }
-
-private:
-	/** 
-	 * Harmonia attribute set (Soul-like RPG attributes)
-	 * Note: LyraHealthSet and LyraCombatSet are also inherited from ALyraPlayerState.
-	 */
-	UPROPERTY(VisibleAnywhere, Category = "Harmonia|PlayerState")
-	TObjectPtr<const UHarmoniaAttributeSet> HarmoniaSet;
+	const UHarmoniaAttributeSet* GetHarmoniaAttributeSet() const;
 };
+

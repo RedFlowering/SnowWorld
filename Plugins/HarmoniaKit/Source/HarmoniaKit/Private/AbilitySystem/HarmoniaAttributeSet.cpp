@@ -2,21 +2,21 @@
 
 #include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "GameplayEffectExtension.h"
-#include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
+#include "HarmoniaLogCategories.h"
 
 UHarmoniaAttributeSet::UHarmoniaAttributeSet()
 {
 	// Note: Health and MaxHealth are initialized by parent class ULyraHealthSet
-	
+
 	// Set default values for stamina attributes
 	Stamina = 100.0f;
 	MaxStamina = 100.0f;
-	StaminaRegenRate = 10.0f; // 10 stamina per second
-	StaminaRecoveryDelay = 1.5f; // 1.5 seconds delay before recovery starts
+	StaminaRegenRate = 10.0f;			// 10 stamina per second
+	StaminaRecoveryDelay = 1.5f;		// 1.5 seconds delay before recovery starts
 	Mana = 50.0f;
 	MaxMana = 50.0f;
-	ManaRegenRate = 5.0f; // 5 mana per second
+	ManaRegenRate = 5.0f;				// 5 mana per second
 
 	// Primary stats (Soul-like RPG system) - start at 10 each
 	Vitality = 10.0f;
@@ -30,8 +30,8 @@ UHarmoniaAttributeSet::UHarmoniaAttributeSet()
 	// Combat stats
 	AttackPower = 10.0f;
 	Defense = 5.0f;
-	CriticalChance = 0.1f;  // 10% base crit chance
-	CriticalDamage = 2.0f;  // 2x damage on crit
+	CriticalChance = 0.1f;				// 10% base crit chance
+	CriticalDamage = 2.0f;				// 2x damage on crit
 	Poise = 50.0f;
 	MaxPoise = 50.0f;
 
@@ -44,7 +44,7 @@ UHarmoniaAttributeSet::UHarmoniaAttributeSet()
 	// Ultimate gauge
 	UltimateGauge = 0.0f;
 	MaxUltimateGauge = 100.0f;
-	UltimateGaugeRegenRate = 5.0f; // 5 ultimate gauge per second
+	UltimateGaugeRegenRate = 5.0f;		// 5 ultimate gauge per second
 }
 
 void UHarmoniaAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -52,7 +52,7 @@ void UHarmoniaAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	// Note: Health and MaxHealth replication is handled by parent class ULyraHealthSet
-	
+
 	// Stamina attributes
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, Stamina, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UHarmoniaAttributeSet, MaxStamina, COND_None, REPNOTIFY_Always);
@@ -99,7 +99,6 @@ bool UHarmoniaAttributeSet::PreGameplayEffectExecute(FGameplayEffectModCallbackD
 		return false;
 	}
 
-	// Store pre-change values for damage/healing/stamina/mana calculation
 	HealthBeforeAttributeChange = GetHealth();
 	MaxHealthBeforeAttributeChange = GetMaxHealth();
 	StaminaBeforeAttributeChange = GetStamina();
@@ -114,83 +113,114 @@ bool UHarmoniaAttributeSet::PreGameplayEffectExecute(FGameplayEffectModCallbackD
 
 void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
-	Super::PostGameplayEffectExecute(Data);
-
 	const FGameplayEffectContextHandle& EffectContext = Data.EffectSpec.GetEffectContext();
 	AActor* Instigator = EffectContext.GetOriginalInstigator();
 	AActor* Causer = EffectContext.GetEffectCauser();
+	UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent();
 
-	// ============================================================================
-	// Handle Healing
-	// ============================================================================
-	if (Data.EvaluatedData.Attribute == ULyraHealthSet::GetHealingAttribute())
+	// IncomingDamage (Harmonia Custom Meta) - Defense already handled in HarmoniaDamageExecution
+	if (Data.EvaluatedData.Attribute == GetIncomingDamageAttribute())
 	{
-		const float LocalHealing = GetHealing();
-		SetHealing(0.0f); // Clear meta attribute
-
-		if (LocalHealing > 0.0f)
-		{
-			const float OldHealth = GetHealth();
-			const float NewHealth = FMath::Clamp(OldHealth + LocalHealing, 0.0f, GetMaxHealth());
-			SetHealth(NewHealth);
-
-			// Broadcast healing event
-			OnHealingReceived.Broadcast(Instigator, Causer, &Data.EffectSpec, LocalHealing, OldHealth, NewHealth);
-		}
-	}
-
-	// ============================================================================
-	// Handle Damage
-	// ============================================================================
-	else if (Data.EvaluatedData.Attribute == ULyraHealthSet::GetDamageAttribute())
-	{
-		float LocalDamage = GetDamage();
-		SetDamage(0.0f); // Clear meta attribute
+		const float LocalDamage = GetIncomingDamage();
+		SetIncomingDamage(0.0f);
 
 		if (LocalDamage > 0.0f)
 		{
-			// Apply defense reduction
-			const float DefenseReduction = GetDefense();
-			LocalDamage = FMath::Max(LocalDamage - DefenseReduction, 0.0f);
-
+			// Defense already applied in HarmoniaDamageExecution, so use LocalDamage directly
 			const float OldHealth = GetHealth();
 			const float NewHealth = FMath::Clamp(OldHealth - LocalDamage, 0.0f, GetMaxHealth());
-			SetHealth(NewHealth);
+			
+			// Directly modify the Health attribute on THIS instance
+			// SetHealth() and ASC->SetNumericAttributeBase() don't work because there are multiple AttributeSets
+			Health.SetBaseValue(NewHealth);
+			Health.SetCurrentValue(NewHealth);
 
-			// Broadcast damage event
 			OnDamageReceived.Broadcast(Instigator, Causer, &Data.EffectSpec, LocalDamage, OldHealth, NewHealth);
 
-			// Trigger hit reaction event if damage was dealt
-			if (LocalDamage > 0.0f && Instigator)
+			if (LocalDamage > 0.0f && ASC)
 			{
 				FGameplayEventData HitEventData;
 				HitEventData.Instigator = Instigator;
 				HitEventData.Target = GetOwningActor();
 				HitEventData.EventMagnitude = LocalDamage;
-
-				UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-				if (ASC)
-				{
-					ASC->HandleGameplayEvent(
-						FGameplayTag::RequestGameplayTag(FName("GameplayEvent.HitReaction")),
-						&HitEventData
-					);
-				}
+				ASC->HandleGameplayEvent(FGameplayTag::RequestGameplayTag(FName("GameplayEvent.HitReaction")), &HitEventData);
 			}
 
-			// Check if health reached zero
 			if (NewHealth <= 0.0f && OldHealth > 0.0f)
 			{
 				bOutOfHealth = true;
 				OnOutOfHealth.Broadcast(Instigator, Causer, &Data.EffectSpec, LocalDamage, OldHealth, NewHealth);
 			}
 		}
+		return;
 	}
 
-	// ============================================================================
-	// Handle Health Changes
-	// ============================================================================
-	else if (Data.EvaluatedData.Attribute == ULyraHealthSet::GetHealthAttribute())
+	// Healing (Lyra Meta)
+	if (Data.EvaluatedData.Attribute == ULyraHealthSet::GetHealingAttribute())
+	{
+		const float LocalHealing = GetHealing();
+		SetHealing(0.0f);
+
+		if (LocalHealing > 0.0f)
+		{
+			const float OldHealth = GetHealth();
+			const float NewHealth = FMath::Clamp(OldHealth + LocalHealing, 0.0f, GetMaxHealth());
+			
+			if (ASC)
+			{
+				ASC->SetNumericAttributeBase(GetHealthAttribute(), NewHealth);
+			}
+
+			OnHealingReceived.Broadcast(Instigator, Causer, &Data.EffectSpec, LocalHealing, OldHealth, NewHealth);
+		}
+		return;
+	}
+
+	// Damage (Lyra Meta) - Defense already applied in HarmoniaDamageExecution
+	if (Data.EvaluatedData.Attribute == ULyraHealthSet::GetDamageAttribute())
+	{
+		const float LocalDamage = GetDamage();
+		UE_LOG(LogHarmoniaCombat, Log, TEXT("[AttributeSet] Damage attr detected: LocalDamage=%.2f"), LocalDamage);
+		SetDamage(0.0f);
+
+		if (LocalDamage > 0.0f)
+		{
+			const float OldHealth = GetHealth();
+			const float NewHealth = FMath::Clamp(OldHealth - LocalDamage, 0.0f, GetMaxHealth());
+			
+			UE_LOG(LogHarmoniaCombat, Log, TEXT("[AttributeSet] Health: %.2f -> %.2f"), OldHealth, NewHealth);
+			
+			if (ASC)
+			{
+				ASC->SetNumericAttributeBase(GetHealthAttribute(), NewHealth);
+				UE_LOG(LogHarmoniaCombat, Log, TEXT("[AttributeSet] SetNumericAttributeBase called, Verify=%.2f"), GetHealth());
+			}
+
+			OnDamageReceived.Broadcast(Instigator, Causer, &Data.EffectSpec, LocalDamage, OldHealth, NewHealth);
+
+			if (LocalDamage > 0.0f && ASC)
+			{
+				FGameplayEventData HitEventData;
+				HitEventData.Instigator = Instigator;
+				HitEventData.Target = GetOwningActor();
+				HitEventData.EventMagnitude = LocalDamage;
+				ASC->HandleGameplayEvent(FGameplayTag::RequestGameplayTag(FName("GameplayEvent.HitReaction")), &HitEventData);
+			}
+
+			if (NewHealth <= 0.0f && OldHealth > 0.0f)
+			{
+				bOutOfHealth = true;
+				OnOutOfHealth.Broadcast(Instigator, Causer, &Data.EffectSpec, LocalDamage, OldHealth, NewHealth);
+			}
+		}
+		return;
+	}
+
+
+	Super::PostGameplayEffectExecute(Data);
+
+	// Health direct changes
+	if (Data.EvaluatedData.Attribute == ULyraHealthSet::GetHealthAttribute())
 	{
 		const float NewHealth = FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth());
 		SetHealth(NewHealth);
@@ -203,10 +233,20 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 
 		OnHealthChanged.Broadcast(Instigator, Causer, &Data.EffectSpec, 0.0f, HealthBeforeAttributeChange, NewHealth);
 	}
+	else if (Data.EvaluatedData.Attribute == ULyraHealthSet::GetMaxHealthAttribute())
+	{
+		const float NewMaxHealth = FMath::Max(GetMaxHealth(), 1.0f);
+		SetMaxHealth(NewMaxHealth);
 
-	// ============================================================================
-	// Handle Stamina Changes
-	// ============================================================================
+		if (GetHealth() > NewMaxHealth)
+		{
+			SetHealth(NewMaxHealth);
+		}
+
+		OnMaxHealthChanged.Broadcast(Instigator, Causer, &Data.EffectSpec, 0.0f, MaxHealthBeforeAttributeChange, NewMaxHealth);
+	}
+
+	// Stamina
 	else if (Data.EvaluatedData.Attribute == GetStaminaAttribute())
 	{
 		const float NewStamina = FMath::Clamp(GetStamina(), 0.0f, GetMaxStamina());
@@ -224,10 +264,6 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 
 		OnStaminaChanged.Broadcast(Instigator, Causer, &Data.EffectSpec, 0.0f, StaminaBeforeAttributeChange, NewStamina);
 	}
-
-	// ============================================================================
-	// Handle Stamina Recovery (Meta Attribute - similar to Lyra's Healing)
-	// ============================================================================
 	else if (Data.EvaluatedData.Attribute == GetStaminaRecoveryAttribute())
 	{
 		const float LocalRecovery = GetStaminaRecovery();
@@ -247,33 +283,11 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 			}
 		}
 	}
-
-	// ============================================================================
-	// Handle Max Health Changes
-	// ============================================================================
-	else if (Data.EvaluatedData.Attribute == ULyraHealthSet::GetMaxHealthAttribute())
-	{
-		const float NewMaxHealth = FMath::Max(GetMaxHealth(), 1.0f);
-		SetMaxHealth(NewMaxHealth);
-
-		// Adjust current health if it exceeds new max
-		if (GetHealth() > NewMaxHealth)
-		{
-			SetHealth(NewMaxHealth);
-		}
-
-		OnMaxHealthChanged.Broadcast(Instigator, Causer, &Data.EffectSpec, 0.0f, MaxHealthBeforeAttributeChange, NewMaxHealth);
-	}
-
-	// ============================================================================
-	// Handle Max Stamina Changes
-	// ============================================================================
 	else if (Data.EvaluatedData.Attribute == GetMaxStaminaAttribute())
 	{
 		const float NewMaxStamina = FMath::Max(GetMaxStamina(), 1.0f);
 		SetMaxStamina(NewMaxStamina);
 
-		// Adjust current stamina if it exceeds new max
 		if (GetStamina() > NewMaxStamina)
 		{
 			SetStamina(NewMaxStamina);
@@ -283,7 +297,7 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 	}
 
 	// ============================================================================
-	// Handle Mana Changes
+	// Mana
 	// ============================================================================
 	else if (Data.EvaluatedData.Attribute == GetManaAttribute())
 	{
@@ -302,16 +316,11 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 
 		OnManaChanged.Broadcast(Instigator, Causer, &Data.EffectSpec, 0.0f, ManaBeforeAttributeChange, NewMana);
 	}
-
-	// ============================================================================
-	// Handle Max Mana Changes
-	// ============================================================================
 	else if (Data.EvaluatedData.Attribute == GetMaxManaAttribute())
 	{
 		const float NewMaxMana = FMath::Max(GetMaxMana(), 1.0f);
 		SetMaxMana(NewMaxMana);
 
-		// Adjust current mana if it exceeds new max
 		if (GetMana() > NewMaxMana)
 		{
 			SetMana(NewMaxMana);
@@ -321,7 +330,7 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 	}
 
 	// ============================================================================
-	// Handle Poise Changes
+	// Poise
 	// ============================================================================
 	else if (Data.EvaluatedData.Attribute == GetPoiseAttribute())
 	{
@@ -338,16 +347,11 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 			bPoiseBroken = false;
 		}
 	}
-
-	// ============================================================================
-	// Handle Max Poise Changes
-	// ============================================================================
 	else if (Data.EvaluatedData.Attribute == GetMaxPoiseAttribute())
 	{
 		const float NewMaxPoise = FMath::Max(GetMaxPoise(), 1.0f);
 		SetMaxPoise(NewMaxPoise);
 
-		// Adjust current poise if it exceeds new max
 		if (GetPoise() > NewMaxPoise)
 		{
 			SetPoise(NewMaxPoise);
@@ -358,14 +362,12 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 void UHarmoniaAttributeSet::PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue) const
 {
 	Super::PreAttributeBaseChange(Attribute, NewValue);
-
 	ClampAttribute(Attribute, NewValue);
 }
 
 void UHarmoniaAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
 {
 	Super::PreAttributeChange(Attribute, NewValue);
-
 	ClampAttribute(Attribute, NewValue);
 }
 
@@ -373,22 +375,25 @@ void UHarmoniaAttributeSet::PostAttributeChange(const FGameplayAttribute& Attrib
 {
 	Super::PostAttributeChange(Attribute, OldValue, NewValue);
 
-	// NOTE: Do NOT call SetXXX() here - it causes infinite recursion!
-	// Clamping is already handled in PreAttributeChange via ClampAttribute()
-	
-	// Broadcast stamina change events
+	// NOTE:
+	// - SetXXX() 호출 금지 (재귀)
+	// - 여기서 GE 적용은 "서버만" 허용 (클라가 ApplyGameplayEffect 하면 동기화 망가짐)
+
+	AActor* OwningActor = GetOwningActor();
+	const bool bIsServer = (OwningActor && OwningActor->HasAuthority());
+
 	if (Attribute == GetStaminaAttribute())
 	{
 		OnStaminaChanged.Broadcast(nullptr, nullptr, nullptr, NewValue - OldValue, OldValue, NewValue);
-		
-		// Apply recovery block effect when stamina decreases
-		if (NewValue < OldValue && StaminaRecoveryBlockEffectClass)
+
+		// Stamina 감소 시 회복 차단 GE 적용 (서버만)
+		if (bIsServer && NewValue < OldValue && StaminaRecoveryBlockEffectClass)
 		{
 			if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
 			{
 				FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
-				ContextHandle.AddSourceObject(GetOwningActor());
-				
+				ContextHandle.AddSourceObject(OwningActor);
+
 				FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(StaminaRecoveryBlockEffectClass, 1.0f, ContextHandle);
 				if (SpecHandle.IsValid())
 				{
@@ -396,8 +401,7 @@ void UHarmoniaAttributeSet::PostAttributeChange(const FGameplayAttribute& Attrib
 				}
 			}
 		}
-		
-		// Check if stamina reached zero
+
 		if (NewValue <= 0.0f && OldValue > 0.0f)
 		{
 			OnOutOfStamina.Broadcast(nullptr, nullptr, nullptr, 0.0f, OldValue, NewValue);
@@ -407,12 +411,10 @@ void UHarmoniaAttributeSet::PostAttributeChange(const FGameplayAttribute& Attrib
 	{
 		OnMaxStaminaChanged.Broadcast(nullptr, nullptr, nullptr, NewValue - OldValue, OldValue, NewValue);
 	}
-	// Broadcast mana change events
 	else if (Attribute == GetManaAttribute())
 	{
 		OnManaChanged.Broadcast(nullptr, nullptr, nullptr, NewValue - OldValue, OldValue, NewValue);
-		
-		// Check if mana reached zero
+
 		if (NewValue <= 0.0f && OldValue > 0.0f)
 		{
 			OnOutOfMana.Broadcast(nullptr, nullptr, nullptr, 0.0f, OldValue, NewValue);
@@ -422,10 +424,8 @@ void UHarmoniaAttributeSet::PostAttributeChange(const FGameplayAttribute& Attrib
 	{
 		OnMaxManaChanged.Broadcast(nullptr, nullptr, nullptr, NewValue - OldValue, OldValue, NewValue);
 	}
-	// Broadcast poise events
 	else if (Attribute == GetPoiseAttribute())
 	{
-		// Check if poise is broken (reached zero)
 		if (NewValue <= 0.0f && OldValue > 0.0f)
 		{
 			OnPoiseBroken.Broadcast(nullptr, nullptr, nullptr, 0.0f, OldValue, NewValue);
@@ -435,7 +435,6 @@ void UHarmoniaAttributeSet::PostAttributeChange(const FGameplayAttribute& Attrib
 
 void UHarmoniaAttributeSet::ClampAttribute(const FGameplayAttribute& Attribute, float& NewValue) const
 {
-	// Health attributes - use parent class (ULyraHealthSet) accessors
 	if (Attribute == ULyraHealthSet::GetHealthAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxHealth());
@@ -470,23 +469,19 @@ void UHarmoniaAttributeSet::ClampAttribute(const FGameplayAttribute& Attribute, 
 	}
 	else if (Attribute == GetStaminaRecoveryDelayAttribute())
 	{
-		NewValue = FMath::Max(NewValue, 0.0f); // Delay can be 0 (instant recovery)
+		NewValue = FMath::Max(NewValue, 0.0f);
 	}
 	else if (Attribute == GetStaminaRecoveryAttribute())
 	{
-		NewValue = FMath::Max(NewValue, 0.0f); // Recovery can't be negative
+		NewValue = FMath::Max(NewValue, 0.0f);
 	}
-
-	// Primary stats - minimum 1, maximum 99 (typical soul-like cap)
 	else if (Attribute == GetVitalityAttribute() || Attribute == GetEnduranceAttribute() ||
-	         Attribute == GetStrengthAttribute() || Attribute == GetDexterityAttribute() ||
-	         Attribute == GetIntelligenceAttribute() || Attribute == GetFaithAttribute() ||
-	         Attribute == GetLuckAttribute())
+			 Attribute == GetStrengthAttribute() || Attribute == GetDexterityAttribute() ||
+			 Attribute == GetIntelligenceAttribute() || Attribute == GetFaithAttribute() ||
+			 Attribute == GetLuckAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 1.0f, 99.0f);
 	}
-
-	// Combat stats
 	else if (Attribute == GetCriticalChanceAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.0f, 1.0f);
@@ -511,8 +506,6 @@ void UHarmoniaAttributeSet::ClampAttribute(const FGameplayAttribute& Attribute, 
 	{
 		NewValue = FMath::Max(NewValue, 1.0f);
 	}
-
-	// Movement & equipment
 	else if (Attribute == GetMovementSpeedAttribute())
 	{
 		NewValue = FMath::Max(NewValue, 0.1f);
@@ -529,7 +522,6 @@ void UHarmoniaAttributeSet::ClampAttribute(const FGameplayAttribute& Attribute, 
 	{
 		NewValue = FMath::Max(NewValue, 1.0f);
 	}
-	// Ultimate gauge
 	else if (Attribute == GetUltimateGaugeAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxUltimateGauge());
@@ -549,145 +541,34 @@ UAbilitySystemComponent* UHarmoniaAttributeSet::GetAbilitySystemComponent() cons
 	return GetOwningAbilitySystemComponent();
 }
 
-// ============================================================================
-// Replication Callbacks
-// Note: OnRep_Health and OnRep_MaxHealth are handled by parent class ULyraHealthSet
-// ============================================================================
-
-void UHarmoniaAttributeSet::OnRep_Stamina(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Stamina, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_MaxStamina(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxStamina, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_AttackPower(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, AttackPower, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_Defense(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Defense, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_CriticalChance(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, CriticalChance, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_CriticalDamage(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, CriticalDamage, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_MovementSpeed(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MovementSpeed, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_AttackSpeed(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, AttackSpeed, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_StaminaRegenRate(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, StaminaRegenRate, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_StaminaRecoveryDelay(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, StaminaRecoveryDelay, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_Mana(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Mana, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_MaxMana(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxMana, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_ManaRegenRate(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, ManaRegenRate, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_Vitality(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Vitality, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_Endurance(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Endurance, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_Strength(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Strength, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_Dexterity(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Dexterity, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_Intelligence(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Intelligence, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_Faith(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Faith, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_Luck(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Luck, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_Poise(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Poise, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_MaxPoise(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxPoise, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_EquipLoad(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, EquipLoad, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_MaxEquipLoad(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxEquipLoad, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_UltimateGauge(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, UltimateGauge, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_MaxUltimateGauge(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxUltimateGauge, OldValue);
-}
-
-void UHarmoniaAttributeSet::OnRep_UltimateGaugeRegenRate(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, UltimateGaugeRegenRate, OldValue);
-}
+// Replication callbacks (그대로 유지)
+void UHarmoniaAttributeSet::OnRep_Stamina(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Stamina, OldValue); }
+void UHarmoniaAttributeSet::OnRep_MaxStamina(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxStamina, OldValue); }
+void UHarmoniaAttributeSet::OnRep_AttackPower(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, AttackPower, OldValue); }
+void UHarmoniaAttributeSet::OnRep_Defense(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Defense, OldValue); }
+void UHarmoniaAttributeSet::OnRep_CriticalChance(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, CriticalChance, OldValue); }
+void UHarmoniaAttributeSet::OnRep_CriticalDamage(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, CriticalDamage, OldValue); }
+void UHarmoniaAttributeSet::OnRep_MovementSpeed(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MovementSpeed, OldValue); }
+void UHarmoniaAttributeSet::OnRep_AttackSpeed(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, AttackSpeed, OldValue); }
+void UHarmoniaAttributeSet::OnRep_StaminaRegenRate(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, StaminaRegenRate, OldValue); }
+void UHarmoniaAttributeSet::OnRep_StaminaRecoveryDelay(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, StaminaRecoveryDelay, OldValue); }
+void UHarmoniaAttributeSet::OnRep_Mana(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Mana, OldValue); }
+void UHarmoniaAttributeSet::OnRep_MaxMana(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxMana, OldValue); }
+void UHarmoniaAttributeSet::OnRep_ManaRegenRate(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, ManaRegenRate, OldValue); }
+void UHarmoniaAttributeSet::OnRep_Vitality(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Vitality, OldValue); }
+void UHarmoniaAttributeSet::OnRep_Endurance(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Endurance, OldValue); }
+void UHarmoniaAttributeSet::OnRep_Strength(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Strength, OldValue); }
+void UHarmoniaAttributeSet::OnRep_Dexterity(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Dexterity, OldValue); }
+void UHarmoniaAttributeSet::OnRep_Intelligence(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Intelligence, OldValue); }
+void UHarmoniaAttributeSet::OnRep_Faith(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Faith, OldValue); }
+void UHarmoniaAttributeSet::OnRep_Luck(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Luck, OldValue); }
+void UHarmoniaAttributeSet::OnRep_Poise(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, Poise, OldValue); }
+void UHarmoniaAttributeSet::OnRep_MaxPoise(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxPoise, OldValue); }
+void UHarmoniaAttributeSet::OnRep_EquipLoad(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, EquipLoad, OldValue); }
+void UHarmoniaAttributeSet::OnRep_MaxEquipLoad(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxEquipLoad, OldValue); }
+void UHarmoniaAttributeSet::OnRep_UltimateGauge(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, UltimateGauge, OldValue); }
+void UHarmoniaAttributeSet::OnRep_MaxUltimateGauge(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, MaxUltimateGauge, OldValue); }
+void UHarmoniaAttributeSet::OnRep_UltimateGaugeRegenRate(const FGameplayAttributeData& OldValue) { GAMEPLAYATTRIBUTE_REPNOTIFY(UHarmoniaAttributeSet, UltimateGaugeRegenRate, OldValue); }
 
 void UHarmoniaAttributeSet::AdjustUltimateGaugeForNewMax(float NewMaxUltimateGauge)
 {
@@ -702,10 +583,7 @@ void UHarmoniaAttributeSet::AdjustUltimateGaugeForNewMax(float NewMaxUltimateGau
 		return;
 	}
 
-	// Calculate current ratio
 	const float CurrentRatio = GetUltimateGauge() / CurrentMax;
-
-	// Set new max and adjust gauge to maintain ratio
 	SetMaxUltimateGauge(NewMaxUltimateGauge);
 	SetUltimateGauge(CurrentRatio * NewMaxUltimateGauge);
 }

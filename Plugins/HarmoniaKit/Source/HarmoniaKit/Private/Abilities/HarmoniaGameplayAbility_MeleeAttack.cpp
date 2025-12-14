@@ -2,7 +2,6 @@
 
 #include "Abilities/HarmoniaGameplayAbility_MeleeAttack.h"
 #include "Components/HarmoniaMeleeCombatComponent.h"
-#include "Components/HarmoniaSenseComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "Animation/AnimMontage.h"
@@ -10,8 +9,6 @@
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
 #include "GameplayCueManager.h"
-#include "Camera/CameraShakeBase.h"
-#include "Abilities/GameplayAbilityTargetTypes.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "HarmoniaGameplayTags.h"
 
@@ -89,9 +86,7 @@ void UHarmoniaGameplayAbility_MeleeAttack::ActivateAbility(
 	const FGameplayAbilityActivationInfo ActivationInfo,
 	const FGameplayEventData* TriggerEventData)
 {
-	// Cache components first
 	MeleeCombatComponent = GetMeleeCombatComponent();
-	AttackComponent = GetAttackComponent();
 
 	if (!MeleeCombatComponent)
 	{
@@ -402,24 +397,6 @@ void UHarmoniaGameplayAbility_MeleeAttack::OnMontageBlendOut()
 }
 
 // ============================================================================
-// Hit Detection
-// ============================================================================
-
-void UHarmoniaGameplayAbility_MeleeAttack::OnAttackHit(const FHarmoniaAttackHitResult& HitResult)
-{
-	if (!HitResult.IsValid())
-	{
-		return;
-	}
-
-	// Apply damage to target
-	ApplyDamageToTarget(HitResult.HitActor, HitResult);
-
-	// Trigger visual effects
-	TriggerHitEffects(HitResult);
-}
-
-// ============================================================================
 // Private Methods
 // ============================================================================
 
@@ -440,129 +417,6 @@ UHarmoniaMeleeCombatComponent* UHarmoniaGameplayAbility_MeleeAttack::GetMeleeCom
 	}
 
 	return nullptr;
-}
-
-UHarmoniaSenseComponent* UHarmoniaGameplayAbility_MeleeAttack::GetAttackComponent() const
-{
-	if (AttackComponent)
-	{
-		return AttackComponent;
-	}
-
-	// In Lyra, OwnerActor is PlayerState but components are on the Avatar (Character/Pawn)
-	if (const FGameplayAbilityActorInfo* ActorInfo = GetCurrentActorInfo())
-	{
-		if (AActor* Avatar = ActorInfo->AvatarActor.Get())
-		{
-			return Avatar->FindComponentByClass<UHarmoniaSenseComponent>();
-		}
-	}
-
-	return nullptr;
-}
-
-void UHarmoniaGameplayAbility_MeleeAttack::ApplyDamageToTarget(AActor* TargetActor, const FHarmoniaAttackHitResult& HitResult)
-{
-	if (!TargetActor || !DamageEffectClass)
-	{
-		return;
-	}
-
-	UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(TargetActor);
-	if (!TargetASC)
-	{
-		return;
-	}
-
-	// Check for backstab
-	bool bIsBackstab = false;
-	float DamageMultiplier = 1.0f;
-	EHarmoniaCriticalAttackType CriticalType = EHarmoniaCriticalAttackType::Normal;
-
-	if (MeleeCombatComponent)
-	{
-		const FVector AttackOrigin = GetAvatarActorFromActorInfo()->GetActorLocation();
-		bIsBackstab = MeleeCombatComponent->IsBackstabAttack(TargetActor, AttackOrigin);
-
-		if (bIsBackstab)
-		{
-			DamageMultiplier = MeleeCombatComponent->GetBackstabDamageMultiplier();
-			CriticalType = EHarmoniaCriticalAttackType::Backstab;
-		}
-	}
-
-	// Create effect context
-	FGameplayEffectContextHandle EffectContext = MakeEffectContext(CurrentSpecHandle, CurrentActorInfo);
-	EffectContext.AddHitResult(FHitResult()); // Could pass actual hit info here
-
-	// Apply damage effect
-	FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass, GetAbilityLevel());
-	if (SpecHandle.IsValid())
-	{
-		// Apply damage multiplier for backstab
-		if (bIsBackstab)
-		{
-			SpecHandle.Data->SetSetByCallerMagnitude(
-				FGameplayTag::RequestGameplayTag(FName("Data.DamageMultiplier")),
-				DamageMultiplier
-			);
-
-			// Set as critical hit
-			SpecHandle.Data->SetSetByCallerMagnitude(
-				FGameplayTag::RequestGameplayTag(FName("Data.Critical")),
-				1.0f
-			);
-
-			// Set critical type
-			SpecHandle.Data->SetSetByCallerMagnitude(
-				FGameplayTag::RequestGameplayTag(FName("Data.CriticalType")),
-				static_cast<float>(CriticalType)
-			);
-		}
-
-		ApplyGameplayEffectSpecToTarget(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, SpecHandle, MakeTargetData(TargetActor));
-	}
-
-	// Apply additional effects
-	for (TSubclassOf<UGameplayEffect> AdditionalEffect : AdditionalHitEffects)
-	{
-		if (AdditionalEffect)
-		{
-			FGameplayEffectSpecHandle AdditionalSpecHandle = MakeOutgoingGameplayEffectSpec(AdditionalEffect, GetAbilityLevel());
-			if (AdditionalSpecHandle.IsValid())
-			{
-				ApplyGameplayEffectSpecToTarget(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, AdditionalSpecHandle, MakeTargetData(TargetActor));
-			}
-		}
-	}
-}
-
-void UHarmoniaGameplayAbility_MeleeAttack::TriggerHitEffects(const FHarmoniaAttackHitResult& HitResult)
-{
-	// Trigger gameplay cue
-	if (HitGameplayCueTag.IsValid())
-	{
-		FGameplayCueParameters CueParams;
-		CueParams.Location = HitResult.HitLocation;
-		CueParams.Normal = HitResult.HitNormal;
-		CueParams.Instigator = GetAvatarActorFromActorInfo();
-		CueParams.EffectCauser = GetAvatarActorFromActorInfo();
-
-		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-		if (ASC)
-		{
-			ASC->ExecuteGameplayCue(HitGameplayCueTag, CueParams);
-		}
-	}
-
-	// Trigger camera shake
-	if (HitCameraShakeClass)
-	{
-		if (APlayerController* PC = Cast<APlayerController>(GetOwningActorFromActorInfo()->GetInstigatorController()))
-		{
-			PC->ClientStartCameraShake(HitCameraShakeClass);
-		}
-	}
 }
 
 // ============================================================================
@@ -683,15 +537,13 @@ void UHarmoniaGameplayAbility_MeleeAttack::ReleaseChargeAttack()
 	const int32 ChargeLevel = GetCurrentChargeLevel();
 	const FHarmoniaChargeConfig& ChargeConfig = GetChargeConfig();
 
-	// Determine which animation to play and damage multiplier
+	// Determine which animation to play
 	FName SectionToPlay = NAME_None;
-	float DamageMultiplier = 1.0f;
 
 	if (ChargeLevel > 0 && ChargeConfig.ChargeLevels.IsValidIndex(ChargeLevel - 1))
 	{
 		const FHarmoniaChargeLevel& Level = ChargeConfig.ChargeLevels[ChargeLevel - 1];
 		SectionToPlay = Level.ReleaseMontageSectionName;
-		DamageMultiplier = Level.DamageMultiplier;
 	}
 
 	// Stop the charging montage first
@@ -767,26 +619,4 @@ int32 UHarmoniaGameplayAbility_MeleeAttack::GetCurrentChargeLevel() const
 const FHarmoniaChargeConfig& UHarmoniaGameplayAbility_MeleeAttack::GetChargeConfig() const
 {
 	return CurrentComboSequence.ChargeConfig;
-}
-
-FGameplayAbilityTargetDataHandle UHarmoniaGameplayAbility_MeleeAttack::MakeTargetData(AActor* TargetActor) const
-{
-	FGameplayAbilityTargetDataHandle TargetData;
-
-	if (TargetActor)
-	{
-		FGameplayAbilityTargetData_SingleTargetHit* NewTargetData = new FGameplayAbilityTargetData_SingleTargetHit();
-
-		// Create a proper FHitResult
-		FHitResult HitResult;
-		HitResult.HitObjectHandle = FActorInstanceHandle(TargetActor);
-		HitResult.Location = TargetActor->GetActorLocation();
-		HitResult.ImpactPoint = TargetActor->GetActorLocation();
-
-		NewTargetData->HitResult = HitResult;
-
-		TargetData.Add(NewTargetData);
-	}
-
-	return TargetData;
 }

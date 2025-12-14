@@ -32,6 +32,22 @@ void AHarmoniaCharacter::PostInitializeComponents()
 	}
 }
 
+void AHarmoniaCharacter::OnAbilitySystemInitialized()
+{
+	// Call parent first (this will call LyraHealthComponent::InitializeWithAbilitySystem)
+	Super::OnAbilitySystemInitialized();
+	
+	// But since InitializeWithAbilitySystem is non-virtual in LyraHealthComponent,
+	// we need to explicitly call HarmoniaHealthComponent's version
+	if (ULyraAbilitySystemComponent* LyraASC = GetLyraAbilitySystemComponent())
+	{
+		if (HarmoniaHealthComponent)
+		{
+			HarmoniaHealthComponent->InitializeWithAbilitySystem(LyraASC);
+		}
+	}
+}
+
 void AHarmoniaCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);

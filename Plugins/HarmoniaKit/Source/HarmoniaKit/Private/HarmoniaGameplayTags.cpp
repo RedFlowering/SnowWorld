@@ -62,6 +62,7 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Data_Damage, "Data.Damage", "Damage magnitude for SetByCaller");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Data_Healing, "Data.Healing", "Healing magnitude for SetByCaller");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Data_StaminaRecovery, "Data.StaminaRecovery", "Stamina recovery magnitude for SetByCaller");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(SetByCaller_DamageMultiplier, "SetByCaller.DamageMultiplier", "Damage multiplier for execution calculation");
 
 	// ============================================================
 	// Hit Reaction System Tags

@@ -68,7 +68,7 @@ protected:
 
 	UE_API void ClampAttribute(const FGameplayAttribute& Attribute, float& NewValue) const;
 
-private:
+protected:
 
 	// The current health attribute.  The health will be capped by the max health attribute.  Health is hidden from modifiers so only executions can modify it.
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Health, Category = "Lyra|Health", Meta = (HideFromModifiers, AllowPrivateAccess = true))

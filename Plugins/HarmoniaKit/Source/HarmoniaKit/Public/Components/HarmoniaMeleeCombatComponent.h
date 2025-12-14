@@ -14,6 +14,8 @@ class UAbilitySystemComponent;
 class UHarmoniaEquipmentComponent;
 class UHarmoniaSenseComponent;
 class UDataTable;
+class USensorBase;
+struct FSensedStimulus;
 
 /** Delegate broadcast when attack is blocked. Damage is the incoming damage before reduction. */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBlockedAttackSignature, AActor*, Attacker, float, Damage);
@@ -41,6 +43,12 @@ public:
 	// ============================================================================
 	// Weapon Management
 	// ============================================================================
+
+	/** Get the owner's AbilitySystemComponent (handles Lyra-style PlayerState ASC) */
+	UAbilitySystemComponent* GetAbilitySystemComponent() const;
+
+	/** Get the owner's HarmoniaAttributeSet */
+	UHarmoniaAttributeSet* GetAttributeSet() const;
 
 	/** Get current equipped weapon type tag from EquipmentComponent */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat")
@@ -265,6 +273,29 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Backstab")
 	float GetBackstabDamageMultiplier() const;
 
+	// ============================================================================
+	// Damage Processing
+	// ============================================================================
+
+	/** Apply damage to target actor */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Damage")
+	void ApplyDamageToTarget(AActor* TargetActor, const FVector& HitLocation = FVector::ZeroVector);
+
+	// ============================================================================
+	// Hit Reaction (Network)
+	// ============================================================================
+
+	/**
+	 * Client RPC to receive hit reaction from server
+	 * Handles camera shake (from combo sequence table) and GameplayEvent on the owning client
+	 * @param Damage The damage amount received
+	 * @param HitLocation The location where the hit occurred
+	 * @param CameraShakePath Soft path to camera shake class (serialized as string for network safety)
+	 * @param CameraShakeScale Scale for the camera shake
+	 */
+	UFUNCTION(Client, Reliable)
+	void ClientReceiveHitReaction(float Damage, const FVector& HitLocation, const FSoftClassPath& CameraShakePath, float CameraShakeScale);
+
 protected:
 	// ============================================================================
 	// Data Tables
@@ -312,6 +343,22 @@ protected:
 	/** Default backstab configuration */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Combat|Backstab")
 	FHarmoniaBackstabConfig DefaultBackstabConfig;
+
+	// ============================================================================
+	// Damage Configuration
+	// ============================================================================
+
+	/** Damage gameplay effect to apply on hit */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Combat|Damage")
+	TSubclassOf<UGameplayEffect> DamageEffectClass;
+
+	/** Additional effects to apply on hit */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Combat|Damage")
+	TArray<TSubclassOf<UGameplayEffect>> AdditionalHitEffects;
+
+	/** Gameplay cue to trigger on hit */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Combat|Damage")
+	FGameplayTag HitGameplayCueTag;
 
 	// ============================================================================
 	// Gameplay Tags
@@ -376,6 +423,10 @@ protected:
 	/** Parried target (for riposte) */
 	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|State")
 	TWeakObjectPtr<AActor> ParriedTarget;
+
+	/** Actors hit during current attack window (prevents duplicate hits) */
+	UPROPERTY(Transient)
+	TSet<TObjectPtr<AActor>> HitActorsThisAttack;
 
 	// ============================================================================
 	// Charge Attack State (updated by GA for debug display)
@@ -456,4 +507,11 @@ private:
 
 	/** Riposte window expired */
 	void OnRiposteWindowExpired();
+
+	/** Handle SenseSystem hit detection */
+	UFUNCTION()
+	void OnSenseHit(const USensorBase* SensorPtr, int32 Channel, const TArray<FSensedStimulus>& SensedStimuli);
+
+	/** Cached SenseComponent reference */
+	TObjectPtr<UHarmoniaSenseComponent> CachedSenseComponent;
 };

@@ -37,6 +37,10 @@ public:
 	AHarmoniaCharacter(const FObjectInitializer& ObjectInitializer);
 
 	virtual void PostInitializeComponents() override;
+	
+	// Override to properly initialize HarmoniaHealthComponent (since InitializeWithAbilitySystem is non-virtual in parent)
+	virtual void OnAbilitySystemInitialized() override;
+
 
 	UFUNCTION(BlueprintCallable, Category = "Harmonia Character", Meta = (AutoCreateRefTerm = "NewModeTag", GameplayTagFilter  = "Als.OverlayMode"))
 	void SetDesiredOverlayMode(const FGameplayTag& NewModeTag);

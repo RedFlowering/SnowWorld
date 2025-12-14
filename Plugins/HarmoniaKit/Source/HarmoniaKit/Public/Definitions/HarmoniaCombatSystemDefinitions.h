@@ -311,13 +311,29 @@ struct HARMONIAKIT_API FHarmoniaHitReactionConfig
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit Reaction", meta = (EditCondition = "bApplyHitPause"))
 	float HitPauseDuration = 0.1f;
 
-	// Camera shake class to apply
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+	// ============================================================================
+	// Target Camera Shake (피격자에게 적용)
+	// ============================================================================
+
+	// Camera shake class to apply to target (victim)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Target")
 	TSubclassOf<class UCameraShakeBase> CameraShakeClass;
 
-	// Camera shake scale
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+	// Camera shake scale for target
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Target")
 	float CameraShakeScale = 1.0f;
+
+	// ============================================================================
+	// Attacker Camera Shake (공격자에게 적용)
+	// ============================================================================
+
+	// Camera shake class to apply to attacker for hit feedback
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Attacker")
+	TSubclassOf<class UCameraShakeBase> AttackerCameraShakeClass;
+
+	// Camera shake scale for attacker
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Attacker")
+	float AttackerCameraShakeScale = 1.0f;
 };
 
 /**

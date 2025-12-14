@@ -279,6 +279,12 @@ bool USensorBase::UpdateSensor()
 		this->UpdateState = ESensorState::Update;
 	}
 
+	// For Manual sensors, TrySensorUpdate() is not called (timer disabled), so we need to update SensorUpdateReady here
+	if (SensorType == ESensorType::Manual)
+	{
+		SensorUpdateReady = GetSensorReady();
+	}
+
 	if (GetSensorUpdateReady() == EUpdateReady::Ready)
 	{
 		if (SensorType == ESensorType::Passive)

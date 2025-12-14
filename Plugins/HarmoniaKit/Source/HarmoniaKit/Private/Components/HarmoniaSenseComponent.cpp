@@ -6,6 +6,7 @@
 #include "Components/HarmoniaMeleeCombatComponent.h"
 #include "HarmoniaDataTableBFL.h"
 #include "SenseReceiverComponent.h"
+#include "SenseManager.h"
 #include "Sensors/SensorBase.h"
 #include "Sensors/ActiveSensor.h"
 #include "Sensors/PassiveSensor.h"
@@ -129,10 +130,8 @@ USensorBase* UHarmoniaSenseComponent::AddSensor(FName SenseConfigRowName)
 	}
 	FName SensorTag = SensorCDO->SensorTag;
 
-	// Check if sensor already exists
 	if (ActiveSensors.Contains(SensorTag))
 	{
-		UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] AddSensor: Sensor '%s' already exists"), *SensorTag.ToString());
 		return ActiveSensors[SensorTag];
 	}
 
@@ -175,18 +174,10 @@ USensorBase* UHarmoniaSenseComponent::AddSensor(FName SenseConfigRowName)
 		{
 			OwnerInteraction->RegisterSensorDirectly(NewSensor);
 		}
-		
-		UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] AddSensor: Created sensor '%s' - Enabled=%d, SensorType=%d, Owner='%s', SensorOuter='%s'"),
-			*SensorTag.ToString(),
-			NewSensor->bEnable,
-			static_cast<int32>(NewSensor->SensorType),
-			*GetOwner()->GetName(),
-			NewSensor->GetOuter() ? *NewSensor->GetOuter()->GetName() : TEXT("NULL"));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_SENSOR] AddSensor: Failed to create sensor '%s' - SuccessState=%d"),
-			*SensorTag.ToString(), static_cast<int32>(SuccessState));
+		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_SENSOR] AddSensor: Failed to create sensor '%s'"), *SensorTag.ToString());
 	}
 
 	return NewSensor;
@@ -201,12 +192,8 @@ bool UHarmoniaSenseComponent::RemoveSensor(FName SensorTag)
 
 	USensorBase* Sensor = ActiveSensors[SensorTag];
 	
-	// Wait for async task completion before removal (multithreading safety)
-	// This prevents removing a sensor while it's still processing in another thread
 	if (Sensor && !Sensor->IsSensorTaskWorkDone())
 	{
-		UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] RemoveSensor: Waiting for async task completion on '%s'"), *SensorTag.ToString());
-		
 		// Brief wait for async completion (max ~100ms to avoid blocking game thread too long)
 		constexpr int32 MaxWaitIterations = 100;
 		int32 WaitCount = 0;
@@ -234,7 +221,6 @@ bool UHarmoniaSenseComponent::RemoveSensor(FName SensorTag)
 		}
 
 		OwnerInteraction->DestroySensor(SensorType, SensorTag);
-		UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] RemoveSensor: Removed sensor '%s'"), *SensorTag.ToString());
 	}
 
 	return true;
@@ -261,8 +247,6 @@ void UHarmoniaSenseComponent::OnEquipmentChanged(const TArray<FName>& NewSensorC
 	{
 		AddSensor(ConfigRowName);
 	}
-
-	UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] OnEquipmentChanged: Configured %d sensors"), NewSensorConfigs.Num());
 }
 
 USensorBase* UHarmoniaSenseComponent::GetSensor(FName SensorTag) const
@@ -371,9 +355,6 @@ void UHarmoniaSenseComponent::EnsureOwnerInteractable()
 			OwnerInteractable->SetStimulusMobility(StimulusMobility);
 			RegisterStimulusResponsesFromDataTable();
 			OwnerInteractable->SetEnableSenseStimulus(true);
-			
-			UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] EnsureOwnerInteractable: CREATED Stimulus for '%s', Enabled=%d"),
-				*Owner->GetName(), OwnerInteractable->IsActive());
 		}
 	}
 	else
@@ -418,18 +399,10 @@ void UHarmoniaSenseComponent::EnsureOwnerInteraction()
 			OwnerInteraction->RegisterComponent();
 			OwnerInteraction->Activate(true);  // Explicitly activate
 			
-			// Attach to root component so sensor follows character
 			if (Owner->GetRootComponent())
 			{
-				bool bAttached = OwnerInteraction->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-				UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] EnsureOwnerInteraction: Attached=%d, RootLoc='%s', ReceiverLoc='%s'"),
-					bAttached,
-					*Owner->GetRootComponent()->GetComponentLocation().ToString(),
-					*OwnerInteraction->GetComponentLocation().ToString());
+				OwnerInteraction->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 			}
-			
-			UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] EnsureOwnerInteraction: CREATED Receiver for '%s', Enabled=%d"),
-				*Owner->GetName(), OwnerInteraction->IsActive());
 		}
 	}
 
@@ -481,16 +454,11 @@ void UHarmoniaSenseComponent::RegisterStimulusResponsesFromDataTable()
 				for (const FChannelSetup& Ch : Channels)
 				{
 					OwnerInteractable->SetResponseChannel(SensorTag, Ch.Channel, true);
-					UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] Registered Stimulus response: SensorTag='%s', Channel=%d"),
-						*SensorTag.ToString(), Ch.Channel);
 				}
 
-				// If no channels configured, use default Channel 1
 				if (Channels.Num() == 0)
 				{
 					OwnerInteractable->SetResponseChannel(SensorTag, 1, true);
-					UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] Registered Stimulus response (default): SensorTag='%s', Channel=1"),
-						*SensorTag.ToString());
 				}
 				
 				OwnerInteractable->SetScore(SensorTag, ConfigPtr->BaseScore);
@@ -507,11 +475,8 @@ void UHarmoniaSenseComponent::RegisterStimulusResponsesFromDataTable()
 						OwnerInteractable->SetResponseChannel(ResponseTag, 1, true);
 					}
 					OwnerInteractable->SetScore(ResponseTag, ConfigPtr->BaseScore);
-					UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] Registered additional ResponseTag: '%s'"),
-						*ResponseTag.ToString());
 				}
 			}
-
 		}
 	}
 }
@@ -554,11 +519,6 @@ void UHarmoniaSenseComponent::OnSenseDetected(const USensorBase* SensorPtr, int3
 			}
 		}
 	}
-
-	UE_LOG(LogTemp, Log, TEXT("[HARMONIA_SENSOR] OnSenseDetected: Sensor='%s' Channel=%d NumStimuli=%d"),
-		*SensorPtr->SensorTag.ToString(),
-		Channel,
-		SensedStimuli.Num());
 
 	// Forward to delegate for combat components to process
 	OnSenseHit.Broadcast(SensorPtr, Channel, SensedStimuli);

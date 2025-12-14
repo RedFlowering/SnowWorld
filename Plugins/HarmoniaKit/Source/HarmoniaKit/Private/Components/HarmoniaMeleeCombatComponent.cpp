@@ -7,19 +7,74 @@
 #include "Components/HarmoniaSenseComponent.h"
 #include "Components/HarmoniaEquipmentComponent.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
-#include "AbilitySystem/HarmoniaAbilitySystemLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
 #include "AbilitySystemGlobals.h"
-#include "Engine/DataTable.h"
+#include "SensedStimulStruct.h"
+#include "GameplayCueManager.h"
+#include "GameplayTagContainer.h"
 #include "TimerManager.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/PlayerState.h"
+#include "Camera/CameraShakeBase.h"
+
+namespace HarmoniaCombatASC
+{
+	static UAbilitySystemComponent* ResolveASCFromActor(AActor* Actor)
+	{
+		if (!Actor)
+		{
+			return nullptr;
+		}
+
+		// 1) Actor가 IAbilitySystemInterface를 구현한 경우(가장 정석)
+		if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(Actor))
+		{
+			if (UAbilitySystemComponent* ASC = ASI->GetAbilitySystemComponent())
+			{
+				return ASC;
+			}
+		}
+
+		// 2) Actor에 ASC 컴포넌트가 직접 붙어있는 경우
+		if (UAbilitySystemComponent* DirectASC = Actor->FindComponentByClass<UAbilitySystemComponent>())
+		{
+			return DirectASC;
+		}
+
+		// 3) Lyra 스타일: Pawn(Avatar) -> PlayerState(Owner) 에 ASC가 붙어있는 경우
+		if (APawn* Pawn = Cast<APawn>(Actor))
+		{
+			if (APlayerState* PS = Pawn->GetPlayerState())
+			{
+				if (IAbilitySystemInterface* PS_ASI = Cast<IAbilitySystemInterface>(PS))
+				{
+					if (UAbilitySystemComponent* PS_ASC = PS_ASI->GetAbilitySystemComponent())
+					{
+						return PS_ASC;
+					}
+				}
+
+				if (UAbilitySystemComponent* PS_DirectASC = PS->FindComponentByClass<UAbilitySystemComponent>())
+				{
+					return PS_DirectASC;
+				}
+			}
+		}
+
+		return nullptr;
+	}
+}
 
 UHarmoniaMeleeCombatComponent::UHarmoniaMeleeCombatComponent()
 {
-	PrimaryComponentTick.bCanEverTick = true;
-	PrimaryComponentTick.bStartWithTickEnabled = false; // Enable only when needed
+	PrimaryComponentTick.bCanEverTick = false; // Tick 없음(필요 시 다시 켜기)
 
-	// Initialize default gameplay tags
+	// Enable network replication for Client RPCs (e.g., ClientReceiveHitReaction)
+	SetIsReplicatedByDefault(true);
+
 	AttackingTag = HarmoniaGameplayTags::Character_State_Attacking;
 	BlockingTag = HarmoniaGameplayTags::Character_State_Blocking;
 	ParryingTag = HarmoniaGameplayTags::Character_State_Parrying;
@@ -27,60 +82,72 @@ UHarmoniaMeleeCombatComponent::UHarmoniaMeleeCombatComponent()
 	InvulnerableTag = HarmoniaGameplayTags::Character_State_Invulnerable;
 }
 
+void UHarmoniaMeleeCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	// Ticking is disabled by default (bCanEverTick = false)
+}
+
 void UHarmoniaMeleeCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Auto-load DataTables from HarmoniaDataTableBFL if not already set
 	if (!ComboSequencesDataTable)
 	{
 		ComboSequencesDataTable = UHarmoniaDataTableBFL::GetComboAttackDataTable();
 	}
 
-	// Always refresh cache on BeginPlay
-	// Always refresh cache on BeginPlay
 	RefreshCachedCombos();
 
-	// Listen for equipment changes
 	if (AActor* Owner = GetOwner())
 	{
 		if (UHarmoniaEquipmentComponent* EquipComp = Owner->FindComponentByClass<UHarmoniaEquipmentComponent>())
 		{
 			EquipComp->OnEquipmentChanged.AddDynamic(this, &UHarmoniaMeleeCombatComponent::OnEquipmentChanged);
 		}
+
+		CachedSenseComponent = Owner->FindComponentByClass<UHarmoniaSenseComponent>();
+		if (CachedSenseComponent)
+		{
+			CachedSenseComponent->OnSenseHit.AddDynamic(this, &UHarmoniaMeleeCombatComponent::OnSenseHit);
+		}
 	}
-}
-
-
-void UHarmoniaMeleeCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
 void UHarmoniaMeleeCombatComponent::OnEquipmentChanged(EEquipmentSlot Slot, const FHarmoniaID& OldId, const FHarmoniaID& NewId)
 {
-	// Update combos if main hand weapon changed
 	if (Slot == EEquipmentSlot::MainHand)
 	{
 		RefreshCachedCombos();
 	}
 }
 
-
-// ============================================================================
-// Weapon Management
-// ============================================================================
-
 FGameplayTag UHarmoniaMeleeCombatComponent::GetCurrentWeaponTypeTag() const
 {
-	// Query EquipmentComponent as the single source of truth
-	if (UHarmoniaEquipmentComponent* EquipComp = GetOwner()->FindComponentByClass<UHarmoniaEquipmentComponent>())
+	if (AActor* Owner = GetOwner())
 	{
-		return EquipComp->GetMainHandWeaponTypeTag();
+		if (UHarmoniaEquipmentComponent* EquipComp = Owner->FindComponentByClass<UHarmoniaEquipmentComponent>())
+		{
+			return EquipComp->GetMainHandWeaponTypeTag();
+		}
 	}
 
-	// Default to Fist if no equipment component
 	return FGameplayTag::RequestGameplayTag(FName("Weapon.Type.Fist"), false);
+}
+
+UAbilitySystemComponent* UHarmoniaMeleeCombatComponent::GetAbilitySystemComponent() const
+{
+	// Owner가 Pawn이고 ASC가 PlayerState에 있는 구조까지 커버
+	return HarmoniaCombatASC::ResolveASCFromActor(GetOwner());
+}
+
+UHarmoniaAttributeSet* UHarmoniaMeleeCombatComponent::GetAttributeSet() const
+{
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+	{
+		return const_cast<UHarmoniaAttributeSet*>(ASC->GetSet<UHarmoniaAttributeSet>());
+	}
+	return nullptr;
 }
 
 // ============================================================================
@@ -89,9 +156,8 @@ FGameplayTag UHarmoniaMeleeCombatComponent::GetCurrentWeaponTypeTag() const
 
 void UHarmoniaMeleeCombatComponent::SetDefenseState(EHarmoniaDefenseState NewState)
 {
-	// Server authority check - prevent client manipulation
 	AActor* Owner = GetOwner();
-	if (Owner && !Owner->HasAuthority())
+	if (!Owner || !Owner->HasAuthority())
 	{
 		return;
 	}
@@ -107,38 +173,22 @@ void UHarmoniaMeleeCombatComponent::SetDefenseState(EHarmoniaDefenseState NewSta
 		return;
 	}
 
-	// Remove old state tag
 	switch (DefenseState)
 	{
-	case EHarmoniaDefenseState::Blocking:
-		ASC->RemoveLooseGameplayTag(BlockingTag);
-		break;
-	case EHarmoniaDefenseState::Parrying:
-		ASC->RemoveLooseGameplayTag(ParryingTag);
-		break;
-	case EHarmoniaDefenseState::Dodging:
-		ASC->RemoveLooseGameplayTag(DodgingTag);
-		break;
-	default:
-		break;
+	case EHarmoniaDefenseState::Blocking: ASC->RemoveLooseGameplayTag(BlockingTag); break;
+	case EHarmoniaDefenseState::Parrying: ASC->RemoveLooseGameplayTag(ParryingTag); break;
+	case EHarmoniaDefenseState::Dodging:  ASC->RemoveLooseGameplayTag(DodgingTag);  break;
+	default: break;
 	}
 
 	DefenseState = NewState;
 
-	// Apply new state tag
 	switch (DefenseState)
 	{
-	case EHarmoniaDefenseState::Blocking:
-		ASC->AddLooseGameplayTag(BlockingTag);
-		break;
-	case EHarmoniaDefenseState::Parrying:
-		ASC->AddLooseGameplayTag(ParryingTag);
-		break;
-	case EHarmoniaDefenseState::Dodging:
-		ASC->AddLooseGameplayTag(DodgingTag);
-		break;
-	default:
-		break;
+	case EHarmoniaDefenseState::Blocking: ASC->AddLooseGameplayTag(BlockingTag); break;
+	case EHarmoniaDefenseState::Parrying: ASC->AddLooseGameplayTag(ParryingTag); break;
+	case EHarmoniaDefenseState::Dodging:  ASC->AddLooseGameplayTag(DodgingTag);  break;
+	default: break;
 	}
 }
 
@@ -152,22 +202,30 @@ void UHarmoniaMeleeCombatComponent::SetInvulnerable(bool bInvulnerable, float Du
 	bInIFrames = bInvulnerable;
 
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	if (ASC)
+	if (!ASC || !GetWorld())
 	{
-		if (bInIFrames)
-		{
-			ASC->AddLooseGameplayTag(InvulnerableTag);
+		return;
+	}
 
-			if (Duration > 0.0f)
-			{
-				GetWorld()->GetTimerManager().SetTimer(IFrameTimerHandle, this, &UHarmoniaMeleeCombatComponent::ClearInvulnerability, Duration, false);
-			}
-		}
-		else
+	if (bInIFrames)
+	{
+		ASC->AddLooseGameplayTag(InvulnerableTag);
+
+		if (Duration > 0.0f)
 		{
-			ASC->RemoveLooseGameplayTag(InvulnerableTag);
-			GetWorld()->GetTimerManager().ClearTimer(IFrameTimerHandle);
+			GetWorld()->GetTimerManager().SetTimer(
+				IFrameTimerHandle,
+				this,
+				&UHarmoniaMeleeCombatComponent::ClearInvulnerability,
+				Duration,
+				false
+			);
 		}
+	}
+	else
+	{
+		ASC->RemoveLooseGameplayTag(InvulnerableTag);
+		GetWorld()->GetTimerManager().ClearTimer(IFrameTimerHandle);
 	}
 }
 
@@ -179,47 +237,50 @@ void UHarmoniaMeleeCombatComponent::ClearInvulnerability()
 void UHarmoniaMeleeCombatComponent::SetInAttackWindow(bool bInWindow)
 {
 	bInAttackWindow = bInWindow;
+
+	if (!bInWindow)
+	{
+		HitActorsThisAttack.Empty();
+	}
 }
 
 // ============================================================================
-// Combo System
+// Combo System (기존 로직 유지)
 // ============================================================================
 
 int32 UHarmoniaMeleeCombatComponent::GetMaxComboCount() const
 {
-	// Get from cached combo sequence
 	FHarmoniaComboAttackSequence ComboSequence;
 	if (GetComboSequence(CurrentAttackType, ComboSequence))
 	{
 		return ComboSequence.ComboSteps.Num();
 	}
-	return 3; // Default
+	return 3;
 }
 
 void UHarmoniaMeleeCombatComponent::AdvanceCombo()
 {
-	// Simply increment the index - validity is checked in the ability's OnMontageCompleted
 	CurrentComboIndex++;
-
-	// Combo window is managed by AnimNotifyState, not automatically started here
 }
 
 void UHarmoniaMeleeCombatComponent::ResetCombo()
 {
 	CurrentComboIndex = 0;
 	bNextComboQueued = false;
-	GetWorld()->GetTimerManager().ClearTimer(ComboWindowTimerHandle);
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(ComboWindowTimerHandle);
+	}
 }
 
 bool UHarmoniaMeleeCombatComponent::IsInComboWindow() const
 {
-	return GetWorld()->GetTimerManager().IsTimerActive(ComboWindowTimerHandle);
+	return GetWorld() ? GetWorld()->GetTimerManager().IsTimerActive(ComboWindowTimerHandle) : false;
 }
 
 void UHarmoniaMeleeCombatComponent::OpenComboWindow(float Duration)
 {
-	// Start combo window timer - allows input queueing during this window
-	if (Duration > 0.0f)
+	if (Duration > 0.0f && GetWorld())
 	{
 		GetWorld()->GetTimerManager().SetTimer(
 			ComboWindowTimerHandle,
@@ -228,13 +289,11 @@ void UHarmoniaMeleeCombatComponent::OpenComboWindow(float Duration)
 			Duration,
 			false
 		);
-		
 	}
 }
 
 void UHarmoniaMeleeCombatComponent::QueueNextCombo()
 {
-	// Strictly allow queueing only during combo window (controlled by AnimNotifyState)
 	if (IsInComboWindow())
 	{
 		bNextComboQueued = true;
@@ -243,14 +302,11 @@ void UHarmoniaMeleeCombatComponent::QueueNextCombo()
 
 void UHarmoniaMeleeCombatComponent::OnComboWindowExpired()
 {
-	// Don't clear bNextComboQueued here - let EndAttack handle it.
-	// We want to preserve the queued state if the user clicked successfully while the window was open,
-	// even if the timer expires before EndAttack is called.
+	// Preserve queued state
 }
 
 bool UHarmoniaMeleeCombatComponent::GetComboSequence(EHarmoniaAttackType AttackType, FHarmoniaComboAttackSequence& OutSequence) const
 {
-	// Return cached combo data
 	if (bComboCacheValid)
 	{
 		const FHarmoniaComboAttackSequence* CachedSequence = CachedCombos.Find(AttackType);
@@ -262,7 +318,6 @@ bool UHarmoniaMeleeCombatComponent::GetComboSequence(EHarmoniaAttackType AttackT
 		return false;
 	}
 
-	// Fallback: direct lookup if cache not valid
 	if (!ComboSequencesDataTable)
 	{
 		return false;
@@ -278,7 +333,6 @@ bool UHarmoniaMeleeCombatComponent::GetComboSequence(EHarmoniaAttackType AttackT
 	{
 		if (Row && Row->WeaponTypeTag.MatchesTagExact(CurrentWeaponTag) && Row->AttackType == AttackType)
 		{
-			// Check owner type tag if specified
 			if (OwnerTypeTag.IsValid() && Row->OwnerTypeTag.IsValid())
 			{
 				if (Row->OwnerTypeTag.MatchesTag(OwnerTypeTag))
@@ -289,7 +343,6 @@ bool UHarmoniaMeleeCombatComponent::GetComboSequence(EHarmoniaAttackType AttackT
 			}
 			else if (!OwnerTypeTag.IsValid() && !Row->OwnerTypeTag.IsValid())
 			{
-				// Both don't have owner tag - match
 				OutSequence = *Row;
 				return true;
 			}
@@ -322,7 +375,6 @@ void UHarmoniaMeleeCombatComponent::RefreshCachedCombos()
 			continue;
 		}
 
-		// Check owner type tag match
 		bool bOwnerMatch = false;
 		if (OwnerTypeTag.IsValid() && Row->OwnerTypeTag.IsValid())
 		{
@@ -335,7 +387,6 @@ void UHarmoniaMeleeCombatComponent::RefreshCachedCombos()
 
 		if (bOwnerMatch)
 		{
-			// Only cache if not already present (first match wins)
 			if (!CachedCombos.Contains(Row->AttackType))
 			{
 				CachedCombos.Add(Row->AttackType, *Row);
@@ -348,14 +399,12 @@ void UHarmoniaMeleeCombatComponent::RefreshCachedCombos()
 
 bool UHarmoniaMeleeCombatComponent::GetCurrentComboAttackData(FHarmoniaAttackData& OutAttackData) const
 {
-	// Get current combo sequence based on attack type
 	FHarmoniaComboAttackSequence ComboSequence;
 	if (!GetComboSequence(CurrentAttackType, ComboSequence))
 	{
 		return false;
 	}
 
-	// Check if current combo index is valid
 	if (!ComboSequence.ComboSteps.IsValidIndex(CurrentComboIndex))
 	{
 		return false;
@@ -363,18 +412,13 @@ bool UHarmoniaMeleeCombatComponent::GetCurrentComboAttackData(FHarmoniaAttackDat
 
 	const FHarmoniaComboAttackStep& ComboStep = ComboSequence.ComboSteps[CurrentComboIndex];
 
-	// Use AttackDataOverride if enabled
 	if (ComboStep.bUseAttackDataOverride)
 	{
 		OutAttackData = ComboStep.AttackDataOverride;
-
-		// Apply combo step's damage multiplier on top
 		OutAttackData.DamageConfig.DamageMultiplier *= ComboStep.DamageMultiplier;
 	}
 	else
 	{
-		// Use default attack data with combo step's damage multiplier
-		// Trace config and other settings should be configured in ComboStep's AttackDataOverride
 		OutAttackData = FHarmoniaAttackData();
 		OutAttackData.DamageConfig.DamageMultiplier = ComboStep.DamageMultiplier;
 	}
@@ -393,14 +437,12 @@ bool UHarmoniaMeleeCombatComponent::RequestLightAttack()
 		return false;
 	}
 
-	// If in combo window, queue next attack
 	if (IsInComboWindow())
 	{
 		QueueNextCombo();
 		return true;
 	}
 
-	// Start new attack (stamina cost handled by GA's CostGE)
 	StartAttack(EHarmoniaAttackType::Light);
 	return true;
 }
@@ -412,14 +454,12 @@ bool UHarmoniaMeleeCombatComponent::RequestHeavyAttack()
 		return false;
 	}
 
-	// If in combo window while attacking, queue the next attack
 	if (IsInComboWindow() && IsAttacking())
 	{
 		QueueNextCombo();
 		return true;
 	}
 
-	// Start new heavy attack combo (stamina cost handled by GA's CostGE)
 	StartAttack(EHarmoniaAttackType::Heavy);
 	return true;
 }
@@ -428,7 +468,6 @@ void UHarmoniaMeleeCombatComponent::StartAttack(EHarmoniaAttackType InAttackType
 {
 	bIsAttacking = true;
 
-	// Reset combo if attack type changed (e.g., switching from Light to Heavy)
 	if (CurrentAttackType != InAttackType)
 	{
 		CurrentComboIndex = 0;
@@ -437,26 +476,24 @@ void UHarmoniaMeleeCombatComponent::StartAttack(EHarmoniaAttackType InAttackType
 
 	CurrentAttackType = InAttackType;
 
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	if (ASC)
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
 	{
 		ASC->AddLooseGameplayTag(AttackingTag);
 	}
-
-	// Note: Stamina consumption is handled by the GA's CommitAbilityCost/CostGE
 }
 
 void UHarmoniaMeleeCombatComponent::EndAttack()
 {
 	bIsAttacking = false;
 
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	if (ASC && ASC->HasMatchingGameplayTag(AttackingTag))
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
 	{
-		ASC->RemoveLooseGameplayTag(AttackingTag);
+		if (ASC->HasMatchingGameplayTag(AttackingTag))
+		{
+			ASC->RemoveLooseGameplayTag(AttackingTag);
+		}
 	}
 
-	// Check if should advance combo (for both Light and Heavy attacks)
 	if (bNextComboQueued)
 	{
 		AdvanceCombo();
@@ -470,18 +507,14 @@ void UHarmoniaMeleeCombatComponent::EndAttack()
 
 bool UHarmoniaMeleeCombatComponent::CanAttack() const
 {
-	// Can't attack while blocking, parrying, or stunned
-	if (DefenseState == EHarmoniaDefenseState::Blocking ||
-		DefenseState == EHarmoniaDefenseState::Stunned)
+	if (DefenseState == EHarmoniaDefenseState::Blocking || DefenseState == EHarmoniaDefenseState::Stunned)
 	{
 		return false;
 	}
 
-	// Check ability system for blocking tags
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	if (ASC && AttackBlockedTag.IsValid())
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
 	{
-		if (ASC->HasMatchingGameplayTag(AttackBlockedTag))
+		if (AttackBlockedTag.IsValid() && ASC->HasMatchingGameplayTag(AttackBlockedTag))
 		{
 			return false;
 		}
@@ -491,31 +524,8 @@ bool UHarmoniaMeleeCombatComponent::CanAttack() const
 }
 
 // ============================================================================
-// Defense
+// Defense helpers
 // ============================================================================
-
-bool UHarmoniaMeleeCombatComponent::CanBlock() const
-{
-	// Can block if not already in a defense state
-	return DefenseState == EHarmoniaDefenseState::None;
-}
-
-bool UHarmoniaMeleeCombatComponent::CanParry() const
-{
-	// Can parry if not already in a defense state
-	return DefenseState == EHarmoniaDefenseState::None;
-}
-
-bool UHarmoniaMeleeCombatComponent::CanDodge() const
-{
-	// Can dodge from most states except stunned
-	if (DefenseState == EHarmoniaDefenseState::Stunned)
-	{
-		return false;
-	}
-
-	return true;
-}
 
 bool UHarmoniaMeleeCombatComponent::IsDefenseAngleValid(const FVector& AttackerLocation) const
 {
@@ -525,46 +535,36 @@ bool UHarmoniaMeleeCombatComponent::IsDefenseAngleValid(const FVector& AttackerL
 		return false;
 	}
 
-	// Get defender's forward direction (horizontal only)
 	FVector DefenderForward = Owner->GetActorForwardVector();
 	DefenderForward.Z = 0.0f;
 	DefenderForward.Normalize();
 
-	// Get direction from defender to attacker (horizontal only)
 	FVector ToAttacker = AttackerLocation - Owner->GetActorLocation();
 	ToAttacker.Z = 0.0f;
-	
+
 	if (ToAttacker.IsNearlyZero())
 	{
-		return true; // Attacker is on top of defender, consider it blockable
+		return true;
 	}
-	
+
 	ToAttacker.Normalize();
 
-	// Calculate angle between defender's forward and direction to attacker
-	// DotProduct = 1 when attacker is directly in front, -1 when behind
 	const float DotProduct = FVector::DotProduct(DefenderForward, ToAttacker);
 	const float AngleRadians = FMath::Acos(FMath::Clamp(DotProduct, -1.0f, 1.0f));
 	const float AngleDegrees = FMath::RadiansToDegrees(AngleRadians);
 
-	// Check if within half the defense angle (since DefenseAngle is full arc)
-	// e.g., DefenseAngle = 120 means 60 degrees each side of forward
 	const float HalfDefenseAngle = DefenseAngle / 2.0f;
-	
 	return AngleDegrees <= HalfDefenseAngle;
 }
 
 void UHarmoniaMeleeCombatComponent::OnAttackBlocked(AActor* Attacker, float Damage)
 {
-	// Broadcast delegate for subscribed abilities (e.g., Block ability for stamina cost)
 	OnBlockedAttack.Broadcast(Attacker, Damage);
 
-	// Check if stamina is sufficient - if not, guard break
 	if (UHarmoniaAttributeSet* AttributeSet = GetAttributeSet())
 	{
 		if (AttributeSet->GetStamina() <= 0.0f)
 		{
-			// Guard broken - stunned state
 			SetDefenseState(EHarmoniaDefenseState::Stunned);
 			UE_LOG(LogHarmoniaCombat, Log, TEXT("Guard broken - stunned state applied"));
 		}
@@ -573,65 +573,24 @@ void UHarmoniaMeleeCombatComponent::OnAttackBlocked(AActor* Attacker, float Dama
 
 void UHarmoniaMeleeCombatComponent::OnParrySuccess(AActor* Attacker)
 {
-	// Successful parry opens up attacker for riposte
 	StartRiposteWindow(Attacker, DefaultRiposteConfig.RiposteWindowDuration);
-
-	// Apply stun/parried effect to attacker
-	// Note: In full implementation, get the attacker's ASC and apply a parry stun effect
-	// This effect should:
-	// - Stun the attacker for a short duration
-	// - Make them vulnerable to riposte attacks
-	// - Play appropriate animations/VFX
-	//
-	// Example implementation:
-	// if (UAbilitySystemComponent* AttackerASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Attacker))
-	// {
-	//     FGameplayEffectContextHandle Context = AttackerASC->MakeEffectContext();
-	//     Context.AddInstigator(GetOwner(), GetOwner());
-	//     AttackerASC->ApplyGameplayEffectToSelf(ParryStunEffectClass, 1.0f, Context);
-	// }
-	UE_LOG(LogHarmoniaCombat, Log, TEXT("Parry successful - attacker %s is vulnerable to riposte"), *Attacker->GetName());
+	UE_LOG(LogHarmoniaCombat, Log, TEXT("Parry successful - attacker %s is vulnerable to riposte"), *GetNameSafe(Attacker));
 }
 
 // ============================================================================
-// Stamina Management
+// Backstab / Riposte (기존 유지)
 // ============================================================================
-
-
-
-// ============================================================================
-// Riposte System
-// ============================================================================
-
-bool UHarmoniaMeleeCombatComponent::CanRiposte() const
-{
-	return DefenseState == EHarmoniaDefenseState::RiposteWindow;
-}
-
-float UHarmoniaMeleeCombatComponent::GetRiposteWindowDuration() const
-{
-	return DefaultRiposteConfig.RiposteWindowDuration;
-}
-
-float UHarmoniaMeleeCombatComponent::GetRiposteDamageMultiplier() const
-{
-	return DefaultRiposteConfig.RiposteDamageMultiplier;
-}
 
 void UHarmoniaMeleeCombatComponent::StartRiposteWindow(AActor* ParriedTargetActor, float Duration)
 {
-	if (!ParriedTargetActor)
+	if (!ParriedTargetActor || !GetWorld())
 	{
 		return;
 	}
 
-	// Store parried target
 	ParriedTarget = ParriedTargetActor;
-
-	// Set defense state to riposte window
 	SetDefenseState(EHarmoniaDefenseState::RiposteWindow);
 
-	// Start riposte window timer
 	const float WindowDuration = (Duration > 0.0f) ? Duration : DefaultRiposteConfig.RiposteWindowDuration;
 	GetWorld()->GetTimerManager().SetTimer(
 		RiposteWindowTimerHandle,
@@ -646,12 +605,306 @@ void UHarmoniaMeleeCombatComponent::EndRiposteWindow()
 {
 	SetDefenseState(EHarmoniaDefenseState::None);
 	ParriedTarget.Reset();
-	GetWorld()->GetTimerManager().ClearTimer(RiposteWindowTimerHandle);
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(RiposteWindowTimerHandle);
+	}
 }
 
 void UHarmoniaMeleeCombatComponent::OnRiposteWindowExpired()
 {
 	EndRiposteWindow();
+}
+
+// Damage Processing
+// ============================================================================
+
+void UHarmoniaMeleeCombatComponent::ApplyDamageToTarget(AActor* TargetActor, const FVector& HitLocation)
+{
+	AActor* Owner = GetOwner();
+	if (!Owner || !TargetActor || TargetActor == Owner)
+	{
+		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[ApplyDamage] Early return: Invalid Owner or Target"));
+		return;
+	}
+
+	if (!Owner->HasAuthority())
+	{
+		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[ApplyDamage] Early return: No authority"));
+		return;
+	}
+
+	UAbilitySystemComponent* OwnerASC = GetAbilitySystemComponent();
+	if (!OwnerASC)
+	{
+		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[ApplyDamage] Early return: No OwnerASC"));
+		return;
+	}
+
+	UAbilitySystemComponent* TargetASC = HarmoniaCombatASC::ResolveASCFromActor(TargetActor);
+	if (!TargetASC)
+	{
+		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[ApplyDamage] Early return: No TargetASC"));
+		return;
+	}
+
+	if (TargetASC->HasMatchingGameplayTag(InvulnerableTag))
+	{
+		UE_LOG(LogHarmoniaCombat, Log, TEXT("[ApplyDamage] Target is invulnerable, skipping"));
+		return;
+	}
+
+	FHarmoniaAttackData AttackData;
+	if (!GetCurrentComboAttackData(AttackData))
+	{
+		AttackData.DamageConfig.DamageMultiplier = 1.0f;
+	}
+
+	float DamageMultiplier = AttackData.DamageConfig.DamageMultiplier;
+
+	if (IsBackstabAttack(TargetActor, Owner->GetActorLocation()))
+	{
+		DamageMultiplier *= GetBackstabDamageMultiplier();
+	}
+
+	if (AttackData.DamageConfig.bCanCritical)
+	{
+		float CritChance = AttackData.DamageConfig.CriticalChance;
+		float CritMultiplier = AttackData.DamageConfig.CriticalMultiplier;
+
+		if (const UHarmoniaAttributeSet* AttributeSet = OwnerASC->GetSet<UHarmoniaAttributeSet>())
+		{
+			CritChance = AttributeSet->GetCriticalChance();
+			CritMultiplier = AttributeSet->GetCriticalDamage();
+		}
+
+		if (FMath::FRand() < CritChance)
+		{
+			DamageMultiplier *= CritMultiplier;
+		}
+	}
+
+	FGameplayEffectContextHandle EffectContext = OwnerASC->MakeEffectContext();
+	EffectContext.AddSourceObject(this);
+	EffectContext.AddInstigator(Owner, Owner);
+
+	if (!HitLocation.IsZero())
+	{
+		FHitResult HitResult;
+		HitResult.ImpactPoint = HitLocation;
+		HitResult.Location = HitLocation;
+		EffectContext.AddHitResult(HitResult);
+	}
+
+	TSubclassOf<UGameplayEffect> EffectToApply = AttackData.DamageConfig.DamageEffectClass ? AttackData.DamageConfig.DamageEffectClass : DamageEffectClass;
+	if (!EffectToApply)
+	{
+		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[ApplyDamage] Early return: No DamageEffectClass"));
+		return;
+	}
+
+	FGameplayEffectSpecHandle SpecHandle = OwnerASC->MakeOutgoingSpec(EffectToApply, 1.0f, EffectContext);
+	if (!SpecHandle.IsValid())
+	{
+		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[ApplyDamage] Early return: Invalid SpecHandle"));
+		return;
+	}
+
+	const FGameplayTag DamageMultiplierTag = HarmoniaGameplayTags::SetByCaller_DamageMultiplier.GetTag();
+	if (DamageMultiplierTag.IsValid())
+	{
+		SpecHandle.Data->SetSetByCallerMagnitude(DamageMultiplierTag, DamageMultiplier);
+	}
+	OwnerASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+
+	for (const TSubclassOf<UGameplayEffect>& AdditionalEffect : AdditionalHitEffects)
+	{
+		if (AdditionalEffect)
+		{
+			FGameplayEffectSpecHandle ExtraSpec = OwnerASC->MakeOutgoingSpec(AdditionalEffect, 1.0f, EffectContext);
+			if (ExtraSpec.IsValid())
+			{
+				OwnerASC->ApplyGameplayEffectSpecToTarget(*ExtraSpec.Data.Get(), TargetASC);
+			}
+		}
+	}
+
+	if (HitGameplayCueTag.IsValid())
+	{
+		FGameplayCueParameters CueParams;
+		CueParams.Location = HitLocation.IsZero() ? TargetActor->GetActorLocation() : HitLocation;
+		CueParams.Normal = (Owner->GetActorLocation() - TargetActor->GetActorLocation()).GetSafeNormal();
+		CueParams.Instigator = Owner;
+		CueParams.EffectCauser = Owner;
+		TargetASC->ExecuteGameplayCue(HitGameplayCueTag, CueParams);
+	}
+
+	if (UHarmoniaMeleeCombatComponent* TargetCombat = TargetActor->FindComponentByClass<UHarmoniaMeleeCombatComponent>())
+	{
+		FSoftClassPath CameraShakePath;
+		float CameraShakeScale = 1.0f;
+		
+		if (AttackData.HitReactionConfig.CameraShakeClass)
+		{
+			CameraShakePath = FSoftClassPath(AttackData.HitReactionConfig.CameraShakeClass);
+			CameraShakeScale = AttackData.HitReactionConfig.CameraShakeScale;
+		}
+		
+		TargetCombat->ClientReceiveHitReaction(DamageMultiplier, HitLocation, CameraShakePath, CameraShakeScale);
+	}
+
+	if (AttackData.HitReactionConfig.AttackerCameraShakeClass)
+	{
+		if (APawn* OwnerPawn = Cast<APawn>(Owner))
+		{
+			if (APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController()))
+			{
+				PC->ClientStartCameraShake(
+					AttackData.HitReactionConfig.AttackerCameraShakeClass,
+					AttackData.HitReactionConfig.AttackerCameraShakeScale
+				);
+			}
+		}
+	}
+}
+
+void UHarmoniaMeleeCombatComponent::OnSenseHit(const USensorBase* SensorPtr, int32 Channel, const TArray<FSensedStimulus>& SensedStimuli)
+{
+	AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return;
+	}
+
+	if (!bInAttackWindow)
+	{
+		return;
+	}
+
+	for (const FSensedStimulus& Stimulus : SensedStimuli)
+	{
+		AActor* TargetActor = Stimulus.StimulusComponent.IsValid() ? Stimulus.StimulusComponent->GetOwner() : nullptr;
+		if (!TargetActor || TargetActor == Owner)
+		{
+			continue;
+		}
+
+		if (HitActorsThisAttack.Contains(TargetActor))
+		{
+			continue;
+		}
+
+		if (UHarmoniaMeleeCombatComponent* TargetCombat = TargetActor->FindComponentByClass<UHarmoniaMeleeCombatComponent>())
+		{
+			if (TargetCombat->IsInvulnerable())
+			{
+				continue;
+			}
+
+			if (TargetCombat->IsBlocking() && TargetCombat->IsDefenseAngleValid(Owner->GetActorLocation()))
+			{
+				FHarmoniaAttackData AttackData;
+				float BlockedDamage = 0.0f;
+				if (GetCurrentComboAttackData(AttackData))
+				{
+					if (const UHarmoniaAttributeSet* AttributeSet = GetAttributeSet())
+					{
+						BlockedDamage = AttributeSet->GetAttackPower() * AttackData.DamageConfig.DamageMultiplier;
+					}
+				}
+
+				TargetCombat->OnAttackBlocked(Owner, BlockedDamage);
+				OnBlockedByDefense.Broadcast(TargetActor, BlockedDamage, true);
+				HitActorsThisAttack.Add(TargetActor);
+				continue;
+			}
+
+			if (TargetCombat->IsParrying() && TargetCombat->IsDefenseAngleValid(Owner->GetActorLocation()))
+			{
+				TargetCombat->OnParrySuccess(Owner);
+				OnBlockedByDefense.Broadcast(TargetActor, 0.0f, true);
+				HitActorsThisAttack.Add(TargetActor);
+				continue;
+			}
+		}
+
+		const FVector HitLocation = TargetActor->GetActorLocation();
+		ApplyDamageToTarget(TargetActor, HitLocation);
+		HitActorsThisAttack.Add(TargetActor);
+	}
+}
+
+// ============================================================================
+// Defense (missing implementations)
+// ============================================================================
+
+bool UHarmoniaMeleeCombatComponent::CanBlock() const
+{
+	if (bIsAttacking || DefenseState != EHarmoniaDefenseState::None)
+	{
+		return false;
+	}
+
+	// Check for stamina if needed
+	if (const UHarmoniaAttributeSet* AttributeSet = GetAttributeSet())
+	{
+		if (AttributeSet->GetStamina() <= 0.0f)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool UHarmoniaMeleeCombatComponent::CanParry() const
+{
+	if (bIsAttacking || DefenseState != EHarmoniaDefenseState::None)
+	{
+		return false;
+	}
+
+	if (const UHarmoniaAttributeSet* AttributeSet = GetAttributeSet())
+	{
+		if (AttributeSet->GetStamina() <= 0.0f)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool UHarmoniaMeleeCombatComponent::CanDodge() const
+{
+	if (bIsAttacking || DefenseState == EHarmoniaDefenseState::Stunned)
+	{
+		return false;
+	}
+
+	if (const UHarmoniaAttributeSet* AttributeSet = GetAttributeSet())
+	{
+		if (AttributeSet->GetStamina() < DefaultDodgeConfig.StaminaCost)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+// ============================================================================
+// Riposte (missing implementations)
+// ============================================================================
+
+bool UHarmoniaMeleeCombatComponent::CanRiposte() const
+{
+	return DefenseState == EHarmoniaDefenseState::RiposteWindow && ParriedTarget.IsValid();
+}
+
+float UHarmoniaMeleeCombatComponent::GetRiposteWindowDuration() const
+{
+	return DefaultRiposteConfig.RiposteWindowDuration;
 }
 
 AActor* UHarmoniaMeleeCombatComponent::GetParriedTarget() const
@@ -664,8 +917,13 @@ void UHarmoniaMeleeCombatComponent::ClearParriedTarget()
 	ParriedTarget.Reset();
 }
 
+float UHarmoniaMeleeCombatComponent::GetRiposteDamageMultiplier() const
+{
+	return DefaultRiposteConfig.RiposteDamageMultiplier;
+}
+
 // ============================================================================
-// Backstab System
+// Backstab (missing implementations)
 // ============================================================================
 
 bool UHarmoniaMeleeCombatComponent::IsBackstabAttack(AActor* Target, FVector AttackOrigin) const
@@ -675,37 +933,64 @@ bool UHarmoniaMeleeCombatComponent::IsBackstabAttack(AActor* Target, FVector Att
 		return false;
 	}
 
-	// Get target's forward vector
 	FVector TargetForward = Target->GetActorForwardVector();
-	TargetForward.Z = 0.0f; // Ignore vertical component
+	TargetForward.Z = 0.0f;
 	TargetForward.Normalize();
 
-	// Get direction from target to attacker
 	FVector ToAttacker = AttackOrigin - Target->GetActorLocation();
-	ToAttacker.Z = 0.0f; // Ignore vertical component
+	ToAttacker.Z = 0.0f;
 
-	const float Distance = ToAttacker.Size();
-	if (Distance > DefaultBackstabConfig.BackstabMaxDistance)
+	if (ToAttacker.IsNearlyZero())
 	{
-		return false; // Too far away
+		return false;
 	}
 
 	ToAttacker.Normalize();
 
-	// Calculate angle between target's forward and direction to attacker
-	// If attacker is behind target, the angle should be close to 180 degrees
+	// Attacker should be behind the target (dot product < 0 means behind)
 	const float DotProduct = FVector::DotProduct(TargetForward, ToAttacker);
-	const float AngleRadians = FMath::Acos(DotProduct);
+
+	// Convert to angle
+	const float AngleRadians = FMath::Acos(FMath::Clamp(DotProduct, -1.0f, 1.0f));
 	const float AngleDegrees = FMath::RadiansToDegrees(AngleRadians);
 
-	// Check if within backstab angle tolerance
-	// 180 degrees means directly behind, lower tolerance = stricter backstab
-	const float RequiredAngle = 180.0f - DefaultBackstabConfig.BackstabAngleTolerance;
-
-	return AngleDegrees >= RequiredAngle;
+	// If angle from forward is greater than (180 - BackstabAngleTolerance/2), attacker is in backstab arc
+	const float BackstabThreshold = 180.0f - (DefaultBackstabConfig.BackstabAngleTolerance / 2.0f);
+	return AngleDegrees >= BackstabThreshold;
 }
 
 float UHarmoniaMeleeCombatComponent::GetBackstabDamageMultiplier() const
 {
 	return DefaultBackstabConfig.BackstabDamageMultiplier;
+}
+
+// ============================================================================
+// Network Hit Reaction
+// ============================================================================
+
+void UHarmoniaMeleeCombatComponent::ClientReceiveHitReaction_Implementation(float Damage, const FVector& HitLocation, const FSoftClassPath& CameraShakePath, float CameraShakeScale)
+{
+	// Apply camera shake on owning client using the path from combo sequence table
+	if (CameraShakePath.IsValid())
+	{
+		if (UClass* CameraShakeClass = CameraShakePath.TryLoadClass<UCameraShakeBase>())
+		{
+			if (APawn* OwnerPawn = Cast<APawn>(GetOwner()))
+			{
+				if (APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController()))
+				{
+					PC->ClientStartCameraShake(TSubclassOf<UCameraShakeBase>(CameraShakeClass), CameraShakeScale);
+				}
+			}
+		}
+	}
+
+	// Trigger local HitReaction GameplayEvent for any listening abilities
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+	{
+		FGameplayEventData HitEventData;
+		HitEventData.EventMagnitude = Damage;
+
+		ASC->HandleGameplayEvent(HarmoniaGameplayTags::GameplayEvent_HitReaction, &HitEventData);
+	}
 }

@@ -111,6 +111,9 @@ public:
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, MaxUltimateGauge);
 	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, UltimateGaugeRegenRate);
 
+	// Meta Attributes (for GE Modifiers - unlike Lyra's HideFromModifiers attributes)
+	ATTRIBUTE_ACCESSORS(UHarmoniaAttributeSet, IncomingDamage);
+
 	// Note: Healing and Damage meta attributes are inherited from ULyraHealthSet
 
 	// ============================================================================
@@ -302,6 +305,14 @@ private:
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData StaminaRecovery;
+
+	/**
+	 * Meta Attribute: Incoming damage
+	 * Unlike Lyra's Damage (which has HideFromModifiers), this CAN be set via GE Modifiers
+	 * Processed in PostGameplayEffectExecute to subtract from Health
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Harmonia|Attributes", Meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData IncomingDamage;
 
 	/**
 	 * Delay before stamina recovery starts after consumption (in seconds)

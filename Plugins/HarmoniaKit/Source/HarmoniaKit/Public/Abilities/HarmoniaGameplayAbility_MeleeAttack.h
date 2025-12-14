@@ -8,7 +8,6 @@
 #include "HarmoniaGameplayAbility_MeleeAttack.generated.h"
 
 class UHarmoniaMeleeCombatComponent;
-class UHarmoniaSenseComponent;
 class UAnimMontage;
 
 /**
@@ -19,7 +18,6 @@ class UAnimMontage;
  * - Light/Heavy attacks
  * - Weapon-specific combo chains
  * - Stamina consumption
- * - Hit detection via HarmoniaSenseComponent
  * - Animation-driven combat
  *
  * @see Docs/HarmoniaKit_Complete_Documentation.md Section 17.3.2 for tag configuration
@@ -96,14 +94,6 @@ protected:
 	void OnMontageBlendOut();
 
 	// ============================================================================
-	// Hit Detection
-	// ============================================================================
-
-	/** Called when attack hits target */
-	UFUNCTION()
-	void OnAttackHit(const FHarmoniaAttackHitResult& HitResult);
-
-	// ============================================================================
 	// Charge Attack
 	// ============================================================================
 
@@ -126,38 +116,18 @@ protected:
 	// ============================================================================
 	// Configuration
 	// ============================================================================
-
 	/** Attack type (Light, Heavy, Ultimate, Charged) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Attack")
 	EHarmoniaAttackType AttackType = EHarmoniaAttackType::Light;
 
-	/** Damage gameplay effect to apply on hit */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Attack|Damage")
-	TSubclassOf<UGameplayEffect> DamageEffectClass;
-
-	/** Additional effects to apply on hit */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Attack|Damage")
-	TArray<TSubclassOf<UGameplayEffect>> AdditionalHitEffects;
-
-	/** Gameplay cue to trigger on hit */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Attack|Visual")
-	FGameplayTag HitGameplayCueTag;
-
-	/** Camera shake on hit */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Attack|Visual")
-	TSubclassOf<class UCameraShakeBase> HitCameraShakeClass;
 
 	// ============================================================================
 	// State
 	// ============================================================================
-
 	/** Cached melee combat component */
 	UPROPERTY()
 	TObjectPtr<UHarmoniaMeleeCombatComponent> MeleeCombatComponent;
 
-	/** Cached attack component */
-	UPROPERTY()
-	TObjectPtr<UHarmoniaSenseComponent> AttackComponent;
 
 	/** Current combo sequence */
 	UPROPERTY()
@@ -166,7 +136,6 @@ protected:
 	// ============================================================================
 	// Charge Attack State
 	// ============================================================================
-
 	/** Whether currently charging */
 	bool bIsCharging = false;
 
@@ -182,23 +151,10 @@ protected:
 	// ============================================================================
 	// Ultimate Attack State
 	// ============================================================================
-
 	/** Last time ultimate attack was used (for cooldown check) */
 	float LastUltimateUseTime = -9999.0f;
 
 private:
 	/** Get melee combat component from owner */
 	UHarmoniaMeleeCombatComponent* GetMeleeCombatComponent() const;
-
-	/** Get attack component from owner */
-	UHarmoniaSenseComponent* GetAttackComponent() const;
-
-	/** Apply damage to hit actor */
-	void ApplyDamageToTarget(AActor* TargetActor, const FHarmoniaAttackHitResult& HitResult);
-
-	/** Trigger visual effects for hit */
-	void TriggerHitEffects(const FHarmoniaAttackHitResult& HitResult);
-
-	/** Create target data handle from actor */
-	FGameplayAbilityTargetDataHandle MakeTargetData(AActor* TargetActor) const;
 };
