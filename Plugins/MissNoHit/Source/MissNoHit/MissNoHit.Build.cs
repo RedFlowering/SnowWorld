@@ -1,13 +1,16 @@
-// Copyright 2021, Project Zero. All Rights Reserved.
+﻿// Copyright 2024 Eren Balatkan. All Rights Reserved.
 
 using UnrealBuildTool;
 
-public class DidItHit : ModuleRules
+public class MissNoHit : ModuleRules
 {
-	public DidItHit(ReadOnlyTargetRules Target) : base(Target)
+	public MissNoHit(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-
+		
+		bUseUnity = false;
+		bTreatAsEngineModule = true;
+		
 		PublicIncludePaths.AddRange(
 			new string[] {
 				// ... add public include paths required here ...
@@ -26,6 +29,7 @@ public class DidItHit : ModuleRules
 			new string[]
 			{
 				"Core",
+				"GameplayTags"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);

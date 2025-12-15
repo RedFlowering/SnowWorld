@@ -1,0 +1,26 @@
+{
+	"FileVersion": 3,
+	"Version": 160,
+	"VersionName": "1.60",
+	"FriendlyName": "MissNoHit",
+	"Description": "Intuitive & Efficient Hit Detection System",
+	"Category": "Code Plugins",
+	"CreatedBy": "Eren Balatkan",
+	"CreatedByURL": "https://github.com/ErenBalatkan",
+	"DocsURL": "https://missnohit.gitbook.io/home",
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/2986eaeb54174df8b21a5168d28daa4b",
+	"SupportURL": "",
+	"EngineVersion": "5.7.0",
+	"CanContainContent": false,
+	"Installed": true,
+	"Modules": [
+		{
+			"Name": "MissNoHit",
+			"Type": "Runtime",
+			"LoadingPhase": "PreLoadingScreen",
+			"PlatformAllowList": [
+				"Win64"
+			]
+		}
+	]
+}
