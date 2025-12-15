@@ -537,9 +537,23 @@ namespace HarmoniaGameplayTags
 	// ============================================================
 
 	// Tracer Identifier Tags (used in FWeaponTraceConfig.TracerTag)
-	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Weapon_MainHand);
-	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Weapon_OffHand);
-	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Weapon_TwoHand);
+	// Sword Tracer Types
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Weapon_Sword);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Weapon_Sword_TypeA);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Weapon_Sword_TypeB);
+	
+	// Axe Tracer Types
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Weapon_Axe);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Weapon_Axe_TypeA);
+	
+	// Dagger Tracer Types
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Weapon_Dagger);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Weapon_Dagger_TypeA);
+	
+	// Spear Tracer Types
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Weapon_Spear);
+	
+	// Body Tracer Types (unarmed)
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Body_RightHand);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Body_LeftHand);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Body_RightFoot);

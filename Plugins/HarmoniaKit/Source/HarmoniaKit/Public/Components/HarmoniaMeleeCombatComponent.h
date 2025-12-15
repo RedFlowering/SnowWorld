@@ -12,7 +12,6 @@
 class UHarmoniaAttributeSet;
 class UAbilitySystemComponent;
 class UHarmoniaEquipmentComponent;
-class UHarmoniaMnhTracerManagerComponent;
 class UDataTable;
 
 /** Delegate broadcast when attack is blocked. Damage is the incoming damage before reduction. */
@@ -510,7 +509,4 @@ private:
 
 	/** Riposte window expired */
 	void OnRiposteWindowExpired();
-
-	/** Cached MnhTracerManager reference */
-	TObjectPtr<UHarmoniaMnhTracerManagerComponent> CachedMnhTracerManager;
 };

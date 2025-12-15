@@ -4,8 +4,6 @@
 #include "HarmoniaGameplayTags.h"
 #include "HarmoniaLogCategories.h"
 #include "HarmoniaDataTableBFL.h"
-
-#include "Components/HarmoniaMnhTracerManagerComponent.h"
 #include "Components/HarmoniaEquipmentComponent.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "AbilitySystemComponent.h"
@@ -117,9 +115,6 @@ void UHarmoniaMeleeCombatComponent::BeginPlay()
 		{
 			EquipComp->OnEquipmentChanged.AddDynamic(this, &UHarmoniaMeleeCombatComponent::OnEquipmentChanged);
 		}
-
-		// Cache MnhTracerManager for attack window integration
-		CachedMnhTracerManager = Owner->FindComponentByClass<UHarmoniaMnhTracerManagerComponent>();
 	}
 }
 
@@ -249,19 +244,6 @@ void UHarmoniaMeleeCombatComponent::SetInAttackWindow(bool bInWindow)
 
 	// Always clear hit tracking to ensure fresh hit detection for each attack
 	HitActorsThisAttack.Empty();
-
-	// Control MnhTracer with attack window
-	if (CachedMnhTracerManager)
-	{
-		if (bInWindow)
-		{
-			CachedMnhTracerManager->StartWeaponTracers();
-		}
-		else
-		{
-			CachedMnhTracerManager->StopWeaponTracers();
-		}
-	}
 }
 
 // ============================================================================

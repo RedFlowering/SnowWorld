@@ -13,6 +13,7 @@
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
 #include "GameplayEffect.h"
+#include "MnhTracerComponent.h"
 
 UHarmoniaEquipmentComponent::UHarmoniaEquipmentComponent()
 {
@@ -937,6 +938,28 @@ void UHarmoniaEquipmentComponent::ApplyVisualMesh(const FHarmoniaEquipmentData& 
 
 	EquipmentMeshComponent->RegisterComponent();
 	EquipmentMeshes.Add(EquipmentMeshComponent);
+
+	// Initialize MnhTracer source component for socket-based tracers
+	// Only SkeletalMeshSockets and StaticMeshSockets need the weapon mesh as SourceComponent
+	if (UMnhTracerComponent* TracerComp = GetOwner()->FindComponentByClass<UMnhTracerComponent>())
+	{
+		FGameplayTagContainer TracerTags;
+		for (const auto& Config : TracerComp->TracerConfigs)
+		{
+			// Only initialize socket-based tracers - MnhShapeComponent and AnimNotify handle source differently
+			if (Config.TraceSource == EMnhTraceSource::SkeletalMeshSockets ||
+				Config.TraceSource == EMnhTraceSource::StaticMeshSockets)
+			{
+				TracerTags.AddTag(Config.TracerTag);
+			}
+		}
+		
+		if (!TracerTags.IsEmpty())
+		{
+			TracerComp->InitializeTracers(TracerTags, EquipmentMeshComponent);
+			UE_LOG(LogTemp, Log, TEXT("HarmoniaEquipment: Initialized MnhTracer source with weapon mesh for slot %d"), static_cast<int32>(EquipmentData.EquipmentSlot));
+		}
+	}
 }
 
 void UHarmoniaEquipmentComponent::RemoveVisualMesh(EEquipmentSlot Slot)

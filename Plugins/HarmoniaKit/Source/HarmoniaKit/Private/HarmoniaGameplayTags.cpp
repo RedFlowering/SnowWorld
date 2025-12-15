@@ -537,9 +537,23 @@ namespace HarmoniaGameplayTags
 	// ============================================================
 
 	// Tracer Identifier Tags (used in FWeaponTraceConfig.TracerTag)
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Weapon_MainHand, "Tracer.Weapon.MainHand", "Main hand weapon tracer");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Weapon_OffHand, "Tracer.Weapon.OffHand", "Off-hand weapon tracer");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Weapon_TwoHand, "Tracer.Weapon.TwoHand", "Two-handed weapon tracer");
+	// Sword Tracer Types
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Weapon_Sword, "Tracer.Weapon.Sword", "Sword tracer (default)");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Weapon_Sword_TypeA, "Tracer.Weapon.Sword.TypeA", "Sword tracer variant A");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Weapon_Sword_TypeB, "Tracer.Weapon.Sword.TypeB", "Sword tracer variant B");
+	
+	// Axe Tracer Types
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Weapon_Axe, "Tracer.Weapon.Axe", "Axe tracer (default)");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Weapon_Axe_TypeA, "Tracer.Weapon.Axe.TypeA", "Axe tracer variant A");
+	
+	// Dagger Tracer Types
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Weapon_Dagger, "Tracer.Weapon.Dagger", "Dagger tracer (default)");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Weapon_Dagger_TypeA, "Tracer.Weapon.Dagger.TypeA", "Dagger tracer variant A");
+	
+	// Spear Tracer Types
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Weapon_Spear, "Tracer.Weapon.Spear", "Spear tracer (default)");
+	
+	// Body Tracer Types (unarmed)
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Body_RightHand, "Tracer.Body.RightHand", "Right hand body tracer for unarmed");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Body_LeftHand, "Tracer.Body.LeftHand", "Left hand body tracer for unarmed");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Body_RightFoot, "Tracer.Body.RightFoot", "Right foot body tracer for kicks");
