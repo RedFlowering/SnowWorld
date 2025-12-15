@@ -113,6 +113,10 @@
     {
       "Name": "CosmeticSystem",
       "Enabled": true
+    },
+    {
+      "Name": "MissNoHit",
+      "Enabled": true
     }
   ]
 }

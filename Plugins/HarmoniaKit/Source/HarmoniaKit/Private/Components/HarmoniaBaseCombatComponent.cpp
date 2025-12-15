@@ -2,7 +2,6 @@
 
 #include "Components/HarmoniaBaseCombatComponent.h"
 #include "HarmoniaLogCategories.h"
-#include "Components/HarmoniaSenseComponent.h"
 #include "Components/HarmoniaEquipmentComponent.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "AbilitySystem/HarmoniaAbilitySystemLibrary.h"
@@ -23,7 +22,6 @@ void UHarmoniaBaseCombatComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// Pre-cache component references
-	GetAttackComponent();
 	GetAbilitySystemComponent();
 	GetAttributeSet();
 	GetEquipmentComponent();
@@ -32,19 +30,6 @@ void UHarmoniaBaseCombatComponent::BeginPlay()
 // ============================================================================
 // Component References
 // ============================================================================
-
-UHarmoniaSenseComponent* UHarmoniaBaseCombatComponent::GetAttackComponent() const
-{
-	if (!CachedAttackComponent)
-	{
-		AActor* Owner = GetOwner();
-		if (Owner)
-		{
-			CachedAttackComponent = Owner->FindComponentByClass<UHarmoniaSenseComponent>();
-		}
-	}
-	return CachedAttackComponent;
-}
 
 UAbilitySystemComponent* UHarmoniaBaseCombatComponent::GetAbilitySystemComponent() const
 {

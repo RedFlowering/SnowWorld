@@ -11,7 +11,6 @@
 
 class UAbilitySystemComponent;
 class UHarmoniaAttributeSet;
-class UHarmoniaSenseComponent;
 class UHarmoniaEquipmentComponent;
 class UDataTable;
 class UGameplayEffect;
@@ -41,10 +40,6 @@ public:
 	// ============================================================================
 	// Component References
 	// ============================================================================
-
-	/** Get the Sense Attack Component (cacheed) */
-	UFUNCTION(BlueprintPure, Category = "Harmonia|Combat")
-	UHarmoniaSenseComponent* GetAttackComponent() const;
 
 	/** Get the Ability System Component (cached) */
 	UFUNCTION(BlueprintPure, Category = "Harmonia|Combat")
@@ -156,9 +151,6 @@ protected:
 
 protected:
 	// Cached component references
-	UPROPERTY(Transient)
-	mutable TObjectPtr<UHarmoniaSenseComponent> CachedAttackComponent;
-
 	UPROPERTY(Transient)
 	mutable TObjectPtr<UAbilitySystemComponent> CachedAbilitySystemComponent;
 

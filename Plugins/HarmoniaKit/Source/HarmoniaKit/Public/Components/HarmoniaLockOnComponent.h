@@ -140,12 +140,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LockOn|Settings")
 	FName TargetSocketName = NAME_None;
 
-	/** Whether to use Sense System for target detection (recommended) */
+	/** Gameplay tag that identifies targetable actors */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LockOn|Settings")
-	bool bUseSenseSystem = true;
-
-	/** Gameplay tag that identifies targetable actors (if not using Sense System) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LockOn|Settings", meta = (EditCondition = "!bUseSenseSystem"))
 	FGameplayTag TargetableTag;
 
 	/** Whether to automatically break lock when target dies */

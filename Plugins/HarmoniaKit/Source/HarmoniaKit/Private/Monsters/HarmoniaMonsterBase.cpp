@@ -8,10 +8,7 @@
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
 #include "Components/CapsuleComponent.h"
-#include "Components/HarmoniaSenseInteractionComponent.h"
-#include "SenseStimulusComponent.h"
 #include "Components/HarmoniaThreatComponent.h"
-#include "SensedStimulStruct.h"
 #include "HarmoniaItemPickup.h"
 #include "Components/HarmoniaAdvancedAIComponent.h"
 #include "Components/HarmoniaAILODComponent.h"
@@ -27,19 +24,6 @@ AHarmoniaMonsterBase::AHarmoniaMonsterBase(const FObjectInitializer& ObjectIniti
 
 	// Create attribute set
 	AttributeSet = CreateDefaultSubobject<UHarmoniaAttributeSet>(TEXT("AttributeSet"));
-
-	// Create Harmonia Sense Interaction Component for target detection
-	// Configured for combat: tracks all actors, not just interactables
-	SenseInteractionComponent = CreateDefaultSubobject<UHarmoniaSenseInteractionComponent>(TEXT("SenseInteractionComponent"));
-	if (SenseInteractionComponent)
-	{
-		SenseInteractionComponent->bInteractableOnly = false;  // Track all actors for combat
-		SenseInteractionComponent->bEnableAutomaticInteractions = false;  // Disable auto-interactions
-		SenseInteractionComponent->bPrioritizeByDistance = true;  // Sort by distance
-	}
-
-	// Create Sense Stimulus Component for being detected
-	SenseStimulusComponent = CreateDefaultSubobject<USenseStimulusComponent>(TEXT("SenseStimulusComponent"));
 
 	// Create Threat Component for aggro management
 	ThreatComponent = CreateDefaultSubobject<UHarmoniaThreatComponent>(TEXT("ThreatComponent"));
@@ -766,133 +750,6 @@ void AHarmoniaMonsterBase::HandleDeathCleanup()
 void AHarmoniaMonsterBase::DestroyCorpse()
 {
 	Destroy();
-}
-
-// ============================================================================
-// Sense System Integration
-// ============================================================================
-
-TArray<AActor*> AHarmoniaMonsterBase::GetSensedTargets(FName SensorTag) const
-{
-	TArray<AActor*> SensedActors;
-
-	if (!SenseInteractionComponent)
-	{
-		return SensedActors;
-	}
-
-	// Use Harmonia Sense Interaction Component's convenient target tracking
-	TArray<FInteractableTargetInfo> TrackedTargets;
-
-	// If sensor tag specified, get only those
-	if (SensorTag != NAME_None)
-	{
-		TrackedTargets = SenseInteractionComponent->GetInteractablesBySensorTag(SensorTag);
-	}
-	else
-	{
-		// Get all tracked targets
-		TrackedTargets = SenseInteractionComponent->GetAllInteractableTargets();
-	}
-
-	// Extract actors from target info
-	for (const FInteractableTargetInfo& TargetInfo : TrackedTargets)
-	{
-		if (TargetInfo.IsValid())
-		{
-			AActor* Actor = TargetInfo.TargetActor;
-			if (Actor && !Actor->IsPendingKillPending())
-			{
-				// Filter out self
-				if (Actor != this)
-				{
-					SensedActors.AddUnique(Actor);
-				}
-			}
-		}
-	}
-
-	return SensedActors;
-}
-
-AActor* AHarmoniaMonsterBase::SelectBestTarget() const
-{
-	// First, check threat system if available
-	if (ThreatComponent)
-	{
-		AActor* HighestThreat = ThreatComponent->GetHighestThreatActor();
-		if (HighestThreat)
-		{
-			return HighestThreat;
-		}
-	}
-
-	// Use Harmonia Sense Interaction Component for target selection
-	// It automatically prioritizes by distance and manages tracked targets
-	if (!SenseInteractionComponent)
-	{
-		return nullptr;
-	}
-
-	// Get best target from sense interaction component
-	// It's already sorted by priority (distance-based by default)
-	FInteractableTargetInfo BestTargetInfo = SenseInteractionComponent->GetBestInteractionTarget();
-
-	if (!BestTargetInfo.IsValid())
-	{
-		return nullptr;
-	}
-
-	AActor* BestTarget = BestTargetInfo.TargetActor;
-
-	// Validate target
-	if (!BestTarget)
-	{
-		return nullptr;
-	}
-
-	// Check if it's a valid pawn
-	APawn* TargetPawn = Cast<APawn>(BestTarget);
-	if (!TargetPawn || !TargetPawn->GetController())
-	{
-		return nullptr;
-	}
-
-	// Faction-based targeting (check if target is another monster)
-	if (BestTarget->Implements<UHarmoniaMonsterInterface>())
-	{
-		// If target is a monster, check faction
-		if (MonsterData)
-		{
-			// Get target's faction
-			UHarmoniaMonsterData* TargetMonsterData = IHarmoniaMonsterInterface::Execute_GetMonsterData(BestTarget);
-			if (TargetMonsterData)
-			{
-				// Check faction relationship
-				const FHarmoniaFactionSettings& MyFaction = MonsterData->FactionSettings;
-				const FHarmoniaFactionSettings& TargetFaction = TargetMonsterData->FactionSettings;
-
-				// Can we attack this faction?
-				if (!MyFaction.CanAttack(TargetFaction.Faction))
-				{
-					// Not hostile, skip this target
-					return nullptr;
-				}
-			}
-			else
-			{
-				// No faction data, assume neutral (don't attack)
-				return nullptr;
-			}
-		}
-		else
-		{
-			// No faction data, assume neutral (don't attack other monsters)
-			return nullptr;
-		}
-	}
-
-	return BestTarget;
 }
 
 // ============================================================================

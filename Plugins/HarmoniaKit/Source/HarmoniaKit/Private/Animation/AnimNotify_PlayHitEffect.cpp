@@ -1,7 +1,6 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "Animation/AnimNotify_PlayHitEffect.h"
-#include "Components/HarmoniaSenseComponent.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"

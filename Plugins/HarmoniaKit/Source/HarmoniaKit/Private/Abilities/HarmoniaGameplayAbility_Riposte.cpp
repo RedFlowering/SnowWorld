@@ -2,7 +2,6 @@
 
 #include "Abilities/HarmoniaGameplayAbility_Riposte.h"
 #include "Components/HarmoniaMeleeCombatComponent.h"
-#include "Components/HarmoniaSenseComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "GameFramework/Character.h"
@@ -74,7 +73,6 @@ void UHarmoniaGameplayAbility_Riposte::ActivateAbility(
 	}
 
 	MeleeCombatComponent = GetMeleeCombatComponent();
-	AttackComponent = GetAttackComponent();
 
 	if (!MeleeCombatComponent)
 	{
@@ -249,25 +247,6 @@ UHarmoniaMeleeCombatComponent* UHarmoniaGameplayAbility_Riposte::GetMeleeCombatC
 		if (AActor* Avatar = ActorInfo->AvatarActor.Get())
 		{
 			return Avatar->FindComponentByClass<UHarmoniaMeleeCombatComponent>();
-		}
-	}
-
-	return nullptr;
-}
-
-UHarmoniaSenseComponent* UHarmoniaGameplayAbility_Riposte::GetAttackComponent() const
-{
-	if (AttackComponent)
-	{
-		return AttackComponent;
-	}
-
-	// In Lyra, OwnerActor is PlayerState but components are on the Avatar (Character/Pawn)
-	if (const FGameplayAbilityActorInfo* ActorInfo = GetCurrentActorInfo())
-	{
-		if (AActor* Avatar = ActorInfo->AvatarActor.Get())
-		{
-			return Avatar->FindComponentByClass<UHarmoniaSenseComponent>();
 		}
 	}
 

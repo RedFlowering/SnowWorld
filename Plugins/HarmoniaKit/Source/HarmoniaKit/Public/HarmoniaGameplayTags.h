@@ -531,4 +531,17 @@ namespace HarmoniaGameplayTags
 
 	// Equipment Stats
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Equipment_MaxLoad);
+
+	// ============================================================
+	// MnhTracer System Tags
+	// ============================================================
+
+	// Tracer Identifier Tags (used in FWeaponTraceConfig.TracerTag)
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Weapon_MainHand);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Weapon_OffHand);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Weapon_TwoHand);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Body_RightHand);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Body_LeftHand);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Body_RightFoot);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Body_LeftFoot);
 }

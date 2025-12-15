@@ -4,7 +4,6 @@
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "Monsters/HarmoniaMonsterInterface.h"
 #include "Components/HarmoniaThreatComponent.h"
-#include "Components/HarmoniaSenseInteractionComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "DrawDebugHelpers.h"
@@ -75,11 +74,6 @@ void UHarmoniaMonsterDebugComponent::TickComponent(float DeltaTime, ELevelTick T
 	if (bShowThreatTable)
 	{
 		DrawThreatTable(Monster, DrawLocation);
-	}
-
-	if (bShowSensedTargets)
-	{
-		DrawSensedTargets(Monster);
 	}
 
 	if (bShowPatrolInfo)
@@ -209,51 +203,6 @@ void UHarmoniaMonsterDebugComponent::DrawThreatTable(AHarmoniaMonsterBase* Monst
 			DrawDebugString(GetWorld(), CurrentDrawLocation, ThreatText, nullptr, Color, 0.0f, true, TextScale * 0.6f);
 			CurrentDrawLocation.Z += 12.0f * TextScale;
 		}
-	}
-}
-
-void UHarmoniaMonsterDebugComponent::DrawSensedTargets(AHarmoniaMonsterBase* Monster)
-{
-	if (!Monster)
-	{
-		return;
-	}
-
-	UHarmoniaSenseInteractionComponent* SenseComp = Monster->FindComponentByClass<UHarmoniaSenseInteractionComponent>();
-	if (!SenseComp)
-	{
-		return;
-	}
-
-	TArray<FInteractableTargetInfo> TrackedTargets = SenseComp->GetAllInteractableTargets();
-
-	for (const FInteractableTargetInfo& TargetInfo : TrackedTargets)
-	{
-		if (!TargetInfo.IsValid())
-		{
-			continue;
-		}
-
-		FVector StartLocation = Monster->GetActorLocation();
-		FVector EndLocation = TargetInfo.TargetActor->GetActorLocation();
-
-		// Different color based on priority
-		FColor LineColor = FColor::Green;
-		if (TargetInfo.Priority > 500.0f)
-		{
-			LineColor = FColor::Yellow;
-		}
-		if (TargetInfo.Priority > 1000.0f)
-		{
-			LineColor = FColor::Orange;
-		}
-
-		DrawDebugLine(GetWorld(), StartLocation, EndLocation, LineColor, false, 0.0f, 0, 1.0f);
-
-		// Draw sensor tag
-		FVector MidPoint = (StartLocation + EndLocation) / 2.0f;
-		FString SensorText = FString::Printf(TEXT("[%s]"), *TargetInfo.SensorTag.ToString());
-		DrawDebugString(GetWorld(), MidPoint, SensorText, nullptr, LineColor, 0.0f, false, TextScale * 0.5f);
 	}
 }
 

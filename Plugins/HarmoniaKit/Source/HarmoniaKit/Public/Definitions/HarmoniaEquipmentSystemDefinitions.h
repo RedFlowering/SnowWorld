@@ -92,12 +92,67 @@ struct FEquipmentStatModifier
 		: AttributeName("")
 		, ModifierType(EStatModifierType::Flat)
 		, Value(0.f)
-	{}
+	{
+	}
 
 	FEquipmentStatModifier(const FString& InAttributeName, EStatModifierType InModifierType, float InValue)
 		: AttributeName(InAttributeName)
 		, ModifierType(InModifierType)
 		, Value(InValue)
+	{
+	}
+};
+
+/**
+ * Configuration for MissNoHit tracer on weapons
+ * Enables per-weapon hit detection configuration in DataTable
+ */
+USTRUCT(BlueprintType)
+struct FWeaponTraceConfig
+{
+	GENERATED_BODY()
+
+	/** Enable tracer for this weapon */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trace")
+	bool bEnableTracer = false;
+
+	/** Tracer tag for identification (e.g., "Tracer.MainHand.Sword") */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trace", meta = (EditCondition = "bEnableTracer", EditConditionHides))
+	FGameplayTag TracerTag;
+
+	/** First socket for trace (weapon base/handle) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trace", meta = (EditCondition = "bEnableTracer", EditConditionHides))
+	FName Socket1Name = FName("weapon_base");
+
+	/** Second socket for trace (weapon tip) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trace", meta = (EditCondition = "bEnableTracer", EditConditionHides))
+	FName Socket2Name = FName("weapon_tip");
+
+	/** Tracer capsule radius */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trace", meta = (EditCondition = "bEnableTracer", EditConditionHides, ClampMin = "1.0"))
+	float TracerRadius = 10.0f;
+
+	/** Length offset to extend tracer beyond sockets */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trace", meta = (EditCondition = "bEnableTracer", EditConditionHides))
+	float LengthOffset = 0.0f;
+
+	/** Collision channel for trace */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trace", meta = (EditCondition = "bEnableTracer", EditConditionHides))
+	TEnumAsByte<ECollisionChannel> TraceChannel = ECC_Pawn;
+
+	/** Enable debug draw visualization */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trace|Debug", meta = (EditCondition = "bEnableTracer", EditConditionHides))
+	bool bDebugDraw = false;
+
+	FWeaponTraceConfig()
+		: bEnableTracer(false)
+		, TracerTag()
+		, Socket1Name(FName("weapon_base"))
+		, Socket2Name(FName("weapon_tip"))
+		, TracerRadius(10.0f)
+		, LengthOffset(0.0f)
+		, TraceChannel(ECC_Pawn)
+		, bDebugDraw(false)
 	{}
 };
 
@@ -194,6 +249,9 @@ struct FHarmoniaEquipmentData : public FTableRowBase
 	// Item grade/tier
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Properties")
 	EItemGrade Grade = EItemGrade::Common;
+
+	// NOTE: MissNoHit tracer configuration moved to separate DataTable
+	// Use DT_WeaponTraceConfig for per-weapon tracer settings
 };
 
 /**

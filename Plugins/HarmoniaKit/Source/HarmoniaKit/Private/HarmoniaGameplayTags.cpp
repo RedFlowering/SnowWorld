@@ -532,6 +532,19 @@ namespace HarmoniaGameplayTags
 	// Equipment Stats
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Stat_Equipment_MaxLoad, "Stat.Equipment.MaxLoad", "Maximum equipment load stat");
 
+	// ============================================================
+	// MnhTracer System Tags
+	// ============================================================
+
+	// Tracer Identifier Tags (used in FWeaponTraceConfig.TracerTag)
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Weapon_MainHand, "Tracer.Weapon.MainHand", "Main hand weapon tracer");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Weapon_OffHand, "Tracer.Weapon.OffHand", "Off-hand weapon tracer");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Weapon_TwoHand, "Tracer.Weapon.TwoHand", "Two-handed weapon tracer");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Body_RightHand, "Tracer.Body.RightHand", "Right hand body tracer for unarmed");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Body_LeftHand, "Tracer.Body.LeftHand", "Left hand body tracer for unarmed");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Body_RightFoot, "Tracer.Body.RightFoot", "Right foot body tracer for kicks");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Body_LeftFoot, "Tracer.Body.LeftFoot", "Left foot body tracer for kicks");
+
 	FGameplayTag FindTagByString(const FString& TagString, bool bMatchPartialString)
 	{
 		const UGameplayTagsManager& Manager = UGameplayTagsManager::Get();

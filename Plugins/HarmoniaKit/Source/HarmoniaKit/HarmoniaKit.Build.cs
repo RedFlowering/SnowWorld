@@ -42,6 +42,7 @@ public class HarmoniaKit : ModuleRules
                 
                 // Gameplay Systems
                 "SenseSystem",             // Sense 기반 상호작용
+                "MissNoHit",               // 근접 공격 히트 트레이스
                 "CosmeticSystem",          // 코스메틱 시스템
                 "GameplayAbilities",       // GAS 핵심
                 "GameplayTags",            // 게임플레이 태그

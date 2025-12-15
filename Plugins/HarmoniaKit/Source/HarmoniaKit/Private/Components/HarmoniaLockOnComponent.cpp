@@ -4,7 +4,6 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/PlayerController.h"
-#include "Components/HarmoniaSenseInteractionComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Engine/World.h"
@@ -217,33 +216,15 @@ TArray<AActor*> UHarmoniaLockOnComponent::FindValidTargets() const
 		return ValidTargets;
 	}
 
-	if (bUseSenseSystem)
-	{
-		// Use Harmonia Sense System for target detection
-		if (UHarmoniaSenseInteractionComponent* SenseComp = OwnerCharacter->FindComponentByClass<UHarmoniaSenseInteractionComponent>())
-		{
-			TArray<FInteractableTargetInfo> SensedTargets = SenseComp->GetAllInteractableTargets();
-			for (const FInteractableTargetInfo& TargetInfo : SensedTargets)
-			{
-				if (TargetInfo.TargetActor && IsValidTarget(TargetInfo.TargetActor))
-				{
-					ValidTargets.Add(TargetInfo.TargetActor);
-				}
-			}
-		}
-	}
-	else
-	{
-		// Fallback: Use gameplay tags
-		TArray<AActor*> AllActors;
-		UGameplayStatics::GetAllActorsOfClass(GetWorld(), AActor::StaticClass(), AllActors);
+	// Get all pawns in range
+	TArray<AActor*> AllActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APawn::StaticClass(), AllActors);
 
-		for (AActor* Actor : AllActors)
+	for (AActor* Actor : AllActors)
+	{
+		if (IsValidTarget(Actor))
 		{
-			if (IsValidTarget(Actor))
-			{
-				ValidTargets.Add(Actor);
-			}
+			ValidTargets.Add(Actor);
 		}
 	}
 
@@ -303,14 +284,6 @@ bool UHarmoniaLockOnComponent::IsValidTarget(AActor* Target) const
 		return false;
 	}
 
-	// If using Sense System, we already validated through it
-	if (bUseSenseSystem)
-	{
-		return true;
-	}
-
-	// Otherwise, check gameplay tags
-	// Note: You might want to implement IGameplayTagAssetInterface check here
 	return true;
 }
 

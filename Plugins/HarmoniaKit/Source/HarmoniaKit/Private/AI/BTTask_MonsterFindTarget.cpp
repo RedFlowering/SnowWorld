@@ -65,65 +65,20 @@ EBTNodeResult::Type UBTTask_MonsterFindTarget::ExecuteTask(UBehaviorTreeComponen
 		}
 	}
 
-	// Determine search method
+	// Determine search method - use ThreatComponent
 	AActor* BestTarget = nullptr;
 
-	if (bUseThreatSystem)
+	// Use ThreatComponent for target selection
+	UHarmoniaThreatComponent* ThreatComp = Monster->FindComponentByClass<UHarmoniaThreatComponent>();
+	if (ThreatComp)
 	{
-		// Use SelectBestTarget which checks threat system first
-		BestTarget = Monster->SelectBestTarget();
+		BestTarget = ThreatComp->GetHighestThreatActor();
 	}
-	else
+
+	// If no threat-based target, use current target from monster
+	if (!BestTarget)
 	{
-		// Use Sense System directly
-		TArray<AActor*> SensedTargets = Monster->GetSensedTargets(SensorTag);
-
-		// Filter by distance if specified
-		float MaxDistance = SearchRadius;
-		if (MaxDistance <= 0.0f)
-		{
-			// Use aggro range from monster data
-			UHarmoniaMonsterData* MonsterData = IHarmoniaMonsterInterface::Execute_GetMonsterData(Monster);
-			if (MonsterData)
-			{
-				MaxDistance = MonsterData->AggroRange;
-			}
-			else
-			{
-				MaxDistance = 2000.0f; // Default
-			}
-		}
-
-		// Find closest valid target within range
-		float ClosestDistance = MAX_FLT;
-		for (AActor* Target : SensedTargets)
-		{
-			if (!Target || Target->IsPendingKillPending())
-			{
-				continue;
-			}
-
-			// Don't target other monsters
-			if (Target->Implements<UHarmoniaMonsterInterface>())
-			{
-				continue;
-			}
-
-			// Check if it's a valid pawn
-			APawn* TargetPawn = Cast<APawn>(Target);
-			if (!TargetPawn || !TargetPawn->GetController())
-			{
-				continue;
-			}
-
-			// Check distance
-			float Distance = FVector::Dist(Monster->GetActorLocation(), Target->GetActorLocation());
-			if (Distance <= MaxDistance && Distance < ClosestDistance)
-			{
-				ClosestDistance = Distance;
-				BestTarget = Target;
-			}
-		}
+		BestTarget = IHarmoniaMonsterInterface::Execute_GetCurrentTarget(Monster);
 	}
 
 	// Set target in blackboard
@@ -150,36 +105,11 @@ FString UBTTask_MonsterFindTarget::GetStaticDescription() const
 		return Description;
 	}
 
-	if (SensorTag != NAME_None)
-	{
-		Description += FString::Printf(TEXT("\nSensor: %s"), *SensorTag.ToString());
-	}
-	else
-	{
-		Description += TEXT("\nSensor: All");
-	}
-
-	if (SearchRadius > 0.0f)
-	{
-		Description += FString::Printf(TEXT("\nRadius: %.0f"), SearchRadius);
-	}
-	else
-	{
-		Description += TEXT("\nRadius: From MonsterData");
-	}
+	Description += TEXT("\nUsing Threat System");
 
 	if (bOnlySearchIfNoTarget)
 	{
 		Description += TEXT("\nOnly if no target");
-	}
-
-	if (bUseThreatSystem)
-	{
-		Description += TEXT("\nPriority: Threat System");
-	}
-	else
-	{
-		Description += TEXT("\nPriority: Closest");
 	}
 
 	return Description;

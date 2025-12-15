@@ -58,12 +58,6 @@ public:
 	bool bShowThreatTable = true;
 
 	/**
-	 * Show all sensed targets
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug|Categories")
-	bool bShowSensedTargets = true;
-
-	/**
 	 * Show patrol path and home location
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug|Categories")
@@ -108,11 +102,6 @@ protected:
 	 * Draw threat table
 	 */
 	void DrawThreatTable(AHarmoniaMonsterBase* Monster, const FVector& DrawLocation);
-
-	/**
-	 * Draw sensed targets
-	 */
-	void DrawSensedTargets(AHarmoniaMonsterBase* Monster);
 
 	/**
 	 * Draw patrol information

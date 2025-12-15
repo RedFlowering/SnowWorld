@@ -12,11 +12,8 @@
 class UHarmoniaAttributeSet;
 class UAbilitySystemComponent;
 class UHarmoniaEquipmentComponent;
-class UHarmoniaSenseComponent;
-class UHarmoniaSweepTraceComponent;
+class UHarmoniaMnhTracerManagerComponent;
 class UDataTable;
-class USensorBase;
-struct FSensedStimulus;
 
 /** Delegate broadcast when attack is blocked. Damage is the incoming damage before reduction. */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBlockedAttackSignature, AActor*, Attacker, float, Damage);
@@ -287,13 +284,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Damage")
 	void ApplyDamageToTarget(AActor* TargetActor, const FVector& HitLocation = FVector::ZeroVector);
 
-	/**
-	 * Handle sweep trace hit (connects to UHarmoniaSweepTraceComponent::OnSweepTraceHit)
-	 * Wrapper function that calls ApplyDamageToTarget with proper parameters
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Damage")
-	void OnSweepTraceHit(AActor* HitActor, const FHitResult& HitResult, UHarmoniaSweepTraceComponent* SweepComponent);
-
 	// ============================================================================
 	// Hit Reaction (Network)
 	// ============================================================================
@@ -521,10 +511,6 @@ private:
 	/** Riposte window expired */
 	void OnRiposteWindowExpired();
 
-	/** Handle SenseSystem hit detection */
-	UFUNCTION()
-	void OnSenseHit(const USensorBase* SensorPtr, int32 Channel, const TArray<FSensedStimulus>& SensedStimuli);
-
-	/** Cached SenseComponent reference */
-	TObjectPtr<UHarmoniaSenseComponent> CachedSenseComponent;
+	/** Cached MnhTracerManager reference */
+	TObjectPtr<UHarmoniaMnhTracerManagerComponent> CachedMnhTracerManager;
 };

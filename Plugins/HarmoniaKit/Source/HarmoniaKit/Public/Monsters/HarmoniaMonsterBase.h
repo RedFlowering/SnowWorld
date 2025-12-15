@@ -15,10 +15,7 @@ class UAbilitySystemComponent;
 class UHarmoniaAttributeSet;
 class UHarmoniaMonsterData;
 class UHarmoniaLootTableData;
-class USenseReceiverComponent;
-class USenseStimulusComponent;
 class UHarmoniaThreatComponent;
-class UHarmoniaSenseInteractionComponent;
 class UHarmoniaAdvancedAIComponent;
 class UHarmoniaAILODComponent;
 struct FGameplayEffectSpec;
@@ -234,20 +231,6 @@ public:
 	virtual FHarmoniaMonsterAttackPattern SelectRandomAttack() const;
 
 	/**
-	 * Get all sensed potential targets
-	 * Uses Sense System for detection
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Monster|Sense")
-	TArray<AActor*> GetSensedTargets(FName SensorTag = NAME_None) const;
-
-	/**
-	 * Select best target from sensed actors
-	 * Uses threat system if available, otherwise distance
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Monster|Combat")
-	AActor* SelectBestTarget() const;
-
-	/**
 	 * Check if an attack is currently on cooldown
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Monster|Combat")
@@ -269,20 +252,6 @@ protected:
 	 */
 	UPROPERTY()
 	TObjectPtr<UHarmoniaAttributeSet> AttributeSet = nullptr;
-
-	/**
-	 * Harmonia Sense Interaction Component (for target detection via Sense System)
-	 * Extends SenseReceiverComponent with convenient target tracking features
-	 * Configured for combat (bInteractableOnly = false, tracks all actors)
-	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sense")
-	TObjectPtr<UHarmoniaSenseInteractionComponent> SenseInteractionComponent = nullptr;
-
-	/**
-	 * Sense Stimulus Component (for being detected by others)
-	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sense")
-	TObjectPtr<USenseStimulusComponent> SenseStimulusComponent = nullptr;
 
 	/**
 	 * Threat Component (for MMO-style aggro management)

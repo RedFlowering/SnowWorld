@@ -8,7 +8,6 @@
 #include "HarmoniaGameplayAbility_Riposte.generated.h"
 
 class UHarmoniaMeleeCombatComponent;
-class UHarmoniaSenseComponent;
 class UAnimMontage;
 
 /**
@@ -64,10 +63,6 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UHarmoniaMeleeCombatComponent> MeleeCombatComponent;
 
-	/** Cached attack component */
-	UPROPERTY()
-	TObjectPtr<UHarmoniaSenseComponent> AttackComponent;
-
 	/** Parried target (set by parry ability) */
 	UPROPERTY()
 	TWeakObjectPtr<AActor> ParriedTarget;
@@ -75,9 +70,6 @@ protected:
 private:
 	/** Get melee combat component */
 	UHarmoniaMeleeCombatComponent* GetMeleeCombatComponent() const;
-
-	/** Get attack component */
-	UHarmoniaSenseComponent* GetAttackComponent() const;
 
 	/** Called when riposte attack hits */
 	UFUNCTION()

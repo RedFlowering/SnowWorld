@@ -8,7 +8,6 @@
 #include "GameFramework/Character.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "TimerManager.h"
-#include "Components/HarmoniaSenseComponent.h"
 #include "Definitions/HarmoniaCombatSystemDefinitions.h"
 
 UHarmoniaGameplayAbility_ComboAttack::UHarmoniaGameplayAbility_ComboAttack(const FObjectInitializer& ObjectInitializer)
@@ -144,49 +143,11 @@ void UHarmoniaGameplayAbility_ComboAttack::PerformComboAttack()
 		);
 	}
 
-	// Trigger attack component if configured
-	if (bTriggerAttackComponent)
-	{
-		AActor* Owner = GetOwningActorFromActorInfo();
-		if (Owner)
-		{
-			// Find attack component by name or first available
-			UHarmoniaSenseComponent* AttackComponent = nullptr;
-			if (AttackComponentName != NAME_None)
-			{
-				TArray<UHarmoniaSenseComponent*> AttackComponents;
-				Owner->GetComponents<UHarmoniaSenseComponent>(AttackComponents);
-				for (UHarmoniaSenseComponent* Comp : AttackComponents)
-				{
-					if (Comp->GetFName() == AttackComponentName)
-					{
-						AttackComponent = Comp;
-						break;
-					}
-				}
-			}
-			else
-			{
-				AttackComponent = Owner->FindComponentByClass<UHarmoniaSenseComponent>();
-			}
-
-			// Attack data is now managed by MeleeCombatComponent
-			// SenseComponent only handles sensor setup - attack triggering done by AnimNotify
-			UE_LOG(LogTemp, Log, TEXT("ComboAttack: Triggered combo %d - %s (Damage: %.2fx)"),
-				CurrentComboIndex,
-				*ComboData.DisplayName.ToString(),
-				ComboData.DamageMultiplier);
-		}
-
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("ComboAttack: Performing combo %d - %s (Damage: %.2fx, Range: %.2fx)"),
-			CurrentComboIndex,
-			*ComboData.DisplayName.ToString(),
-			ComboData.DamageMultiplier,
-			ComboData.RangeMultiplier);
-	}
+	// Note: Attack component triggering removed - now handled by AnimNotify + MnhTracerManager
+	UE_LOG(LogTemp, Log, TEXT("ComboAttack: Performing combo %d - %s (Damage: %.2fx)"),
+		CurrentComboIndex,
+		*ComboData.DisplayName.ToString(),
+		ComboData.DamageMultiplier);
 }
 
 void UHarmoniaGameplayAbility_ComboAttack::AdvanceCombo()
