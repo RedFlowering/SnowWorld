@@ -5,6 +5,7 @@
 #include "HarmoniaLogCategories.h"
 #include "HarmoniaDataTableBFL.h"
 #include "Components/HarmoniaSenseComponent.h"
+#include "Components/HarmoniaSweepTraceComponent.h"
 #include "Components/HarmoniaEquipmentComponent.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "AbilitySystemComponent.h"
@@ -791,6 +792,65 @@ void UHarmoniaMeleeCombatComponent::ApplyDamageToTarget(AActor* TargetActor, con
 			}
 		}
 	}
+}
+
+void UHarmoniaMeleeCombatComponent::OnSweepTraceHit(AActor* HitActor, const FHitResult& HitResult, UHarmoniaSweepTraceComponent* SweepComponent)
+{
+	AActor* Owner = GetOwner();
+	if (!Owner || !Owner->HasAuthority())
+	{
+		return;
+	}
+
+	if (!HitActor || HitActor == Owner)
+	{
+		return;
+	}
+
+	// Prevent duplicate hits
+	if (HitActorsThisAttack.Contains(HitActor))
+	{
+		return;
+	}
+
+	// Check for blocking/parrying
+	if (UHarmoniaMeleeCombatComponent* TargetCombat = HitActor->FindComponentByClass<UHarmoniaMeleeCombatComponent>())
+	{
+		if (TargetCombat->IsInvulnerable())
+		{
+			return;
+		}
+
+		if (TargetCombat->IsBlocking() && TargetCombat->IsDefenseAngleValid(Owner->GetActorLocation()))
+		{
+			FHarmoniaAttackData AttackData;
+			float BlockedDamage = 0.0f;
+			if (GetCurrentComboAttackData(AttackData))
+			{
+				if (const UHarmoniaAttributeSet* AttributeSet = GetAttributeSet())
+				{
+					BlockedDamage = AttributeSet->GetAttackPower() * AttackData.DamageConfig.DamageMultiplier;
+				}
+			}
+
+			TargetCombat->OnAttackBlocked(Owner, BlockedDamage);
+			OnBlockedByDefense.Broadcast(HitActor, BlockedDamage, true);
+			HitActorsThisAttack.Add(HitActor);
+			return;
+		}
+
+		if (TargetCombat->IsParrying() && TargetCombat->IsDefenseAngleValid(Owner->GetActorLocation()))
+		{
+			TargetCombat->OnParrySuccess(Owner);
+			OnBlockedByDefense.Broadcast(HitActor, 0.0f, true);
+			HitActorsThisAttack.Add(HitActor);
+			return;
+		}
+	}
+
+	// Apply damage
+	ApplyDamageToTarget(HitActor, HitResult.ImpactPoint);
+	HitActorsThisAttack.Add(HitActor);
 }
 
 void UHarmoniaMeleeCombatComponent::OnSenseHit(const USensorBase* SensorPtr, int32 Channel, const TArray<FSensedStimulus>& SensedStimuli)

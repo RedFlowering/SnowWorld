@@ -13,6 +13,7 @@ class UHarmoniaAttributeSet;
 class UAbilitySystemComponent;
 class UHarmoniaEquipmentComponent;
 class UHarmoniaSenseComponent;
+class UHarmoniaSweepTraceComponent;
 class UDataTable;
 class USensorBase;
 struct FSensedStimulus;
@@ -285,6 +286,13 @@ public:
 	/** Apply damage to target actor */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Damage")
 	void ApplyDamageToTarget(AActor* TargetActor, const FVector& HitLocation = FVector::ZeroVector);
+
+	/**
+	 * Handle sweep trace hit (connects to UHarmoniaSweepTraceComponent::OnSweepTraceHit)
+	 * Wrapper function that calls ApplyDamageToTarget with proper parameters
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Damage")
+	void OnSweepTraceHit(AActor* HitActor, const FHitResult& HitResult, UHarmoniaSweepTraceComponent* SweepComponent);
 
 	// ============================================================================
 	// Hit Reaction (Network)
