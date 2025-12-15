@@ -106,6 +106,10 @@ protected:
 	/** Release charge and perform attack based on charge level */
 	void ReleaseChargeAttack();
 
+	/** Server RPC to synchronize charge release */
+	UFUNCTION(Server, Reliable)
+	void ServerReleaseChargeAttack();
+
 	/** Get current charge level based on charge time */
 	int32 GetCurrentChargeLevel() const;
 

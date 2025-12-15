@@ -18,6 +18,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
 #include "Camera/CameraShakeBase.h"
+#include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
 
 namespace HarmoniaCombatASC
@@ -945,4 +946,46 @@ void UHarmoniaMeleeCombatComponent::ClientReceiveHitReaction_Implementation(floa
 
 		ASC->HandleGameplayEvent(HarmoniaGameplayTags::GameplayEvent_HitReaction, &HitEventData);
 	}
+}
+
+// ============================================================================
+// Attack Animation Replication
+// ============================================================================
+
+void UHarmoniaMeleeCombatComponent::MulticastPlayAttackMontage_Implementation(UAnimMontage* Montage, FName SectionName)
+{
+	if (!Montage)
+	{
+		return;
+	}
+
+	// Skip on autonomous proxy - they already play locally via ability task
+	AActor* Owner = GetOwner();
+	if (Owner && Owner->GetLocalRole() == ROLE_AutonomousProxy)
+	{
+		return;
+	}
+
+	ACharacter* OwnerCharacter = Cast<ACharacter>(Owner);
+	if (!OwnerCharacter)
+	{
+		return;
+	}
+
+	UAnimInstance* AnimInstance = OwnerCharacter->GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->Montage_Play(Montage);
+		
+		if (SectionName != NAME_None)
+		{
+			AnimInstance->Montage_JumpToSection(SectionName, Montage);
+		}
+	}
+}
+
+void UHarmoniaMeleeCombatComponent::ServerPlayAttackMontage_Implementation(UAnimMontage* Montage, FName SectionName)
+{
+	// Server receives request from client - broadcast to all clients
+	MulticastPlayAttackMontage(Montage, SectionName);
 }

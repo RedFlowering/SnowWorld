@@ -182,7 +182,17 @@ void UHarmoniaGameplayAbility_MeleeAttack::InputReleased(
 	// For charged attacks, release triggers the attack
 	if (AttackType == EHarmoniaAttackType::Charged && bIsCharging)
 	{
-		ReleaseChargeAttack();
+		AActor* Avatar = GetAvatarActorFromActorInfo();
+		if (Avatar && !Avatar->HasAuthority())
+		{
+			// Client: Request server to execute release - server will Multicast the animation
+			ServerReleaseChargeAttack();
+		}
+		else
+		{
+			// Server/Host: Execute directly, which will Multicast to all clients
+			ReleaseChargeAttack();
+		}
 	}
 
 	Super::InputReleased(Handle, ActorInfo, ActivationInfo);
@@ -592,7 +602,23 @@ void UHarmoniaGameplayAbility_MeleeAttack::ReleaseChargeAttack()
 		// Otherwise use the combo step's section
 		FName FinalSection = (SectionToPlay != NAME_None) ? SectionToPlay : CurrentStep.MontageSectionName;
 
-		// Play the release attack montage
+		// Use MeleeCombatComponent's multicast RPC to replicate animation to all clients
+		if (MeleeCombatComponent)
+		{
+			AActor* Avatar = GetAvatarActorFromActorInfo();
+			if (Avatar && !Avatar->HasAuthority())
+			{
+				// Client: Request server to broadcast the montage
+				MeleeCombatComponent->ServerPlayAttackMontage(CurrentStep.AttackMontage, FinalSection);
+			}
+			else
+			{
+				// Server or listen server host: Broadcast directly
+				MeleeCombatComponent->MulticastPlayAttackMontage(CurrentStep.AttackMontage, FinalSection);
+			}
+		}
+
+		// Still use ability task for callbacks (montage completion, cancellation, etc.)
 		UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 			this,
 			NAME_None,
@@ -645,4 +671,13 @@ int32 UHarmoniaGameplayAbility_MeleeAttack::GetCurrentChargeLevel() const
 const FHarmoniaChargeConfig& UHarmoniaGameplayAbility_MeleeAttack::GetChargeConfig() const
 {
 	return CurrentComboSequence.ChargeConfig;
+}
+
+void UHarmoniaGameplayAbility_MeleeAttack::ServerReleaseChargeAttack_Implementation()
+{
+	// Server receives charge release from client - execute the release attack
+	if (bIsCharging)
+	{
+		ReleaseChargeAttack();
+	}
 }

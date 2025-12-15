@@ -298,6 +298,25 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientReceiveHitReaction(float Damage, const FVector& HitLocation, const FSoftClassPath& CameraShakePath, float CameraShakeScale);
 
+	// ============================================================================
+	// Attack Animation Replication
+	// ============================================================================
+
+	/**
+	 * Multicast RPC to play attack montage on all clients
+	 * @param Montage The montage to play
+	 * @param SectionName Section to start playing from
+	 */
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPlayAttackMontage(UAnimMontage* Montage, FName SectionName);
+
+	/**
+	 * Server RPC to request attack montage play (called by client)
+	 * Server will then call MulticastPlayAttackMontage
+	 */
+	UFUNCTION(Server, Reliable)
+	void ServerPlayAttackMontage(UAnimMontage* Montage, FName SectionName);
+
 protected:
 	// ============================================================================
 	// Data Tables
