@@ -2,7 +2,7 @@
 Streamline - SL
 =======================
 
-Version 2.7.30
+Version 2.9.0
 =======
 
 1 SETTING UP
@@ -133,7 +133,7 @@ Here is the typical lifecycle for SL features:
 * After device creation, any calls to SL will succeed only if the feature is FULLY functional on that device
   * This means that the set of features that return true from `slIsFeatureSupported` AFTER device creation can be smaller (but not larger) than the set that returned true from `slIsFeatureSupported` after slInit, but before device creation
   * And thus, at this point, any SL method can be used safely since all required and supported features are initialized
-  * In addition, at this point it is possible to [explicitly allocate/free resources used by feature(s)](#27-explicit-resource-allocation-and-de-allocation)
+  * In addition, at this point it is possible to [explicitly allocate/free resources used by feature(s)](#28-explicit-resource-allocation-and-de-allocation)
 
 > **IMPORTANT:**
 > `slInit` must NOT be called within DLLMain entry point in your application because that can cause a deadlock.
@@ -1541,4 +1541,3 @@ If an exception is thrown while executing SL code mini-dump will be written to `
 ------------------------------------------------
 
 For any SL related questions, please email StreamlineSupport@nvidia.com.
-

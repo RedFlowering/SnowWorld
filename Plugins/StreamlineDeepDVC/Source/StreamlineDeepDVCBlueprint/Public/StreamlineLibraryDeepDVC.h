@@ -21,7 +21,7 @@
 
 #include "StreamlineLibraryDeepDVC.generated.h"
 
-
+#define UE_API STREAMLINEDEEPDVCBLUEPRINT_API
 
 class FDelegateHandle;
 
@@ -46,19 +46,19 @@ public:
 
 	/** Checks whether DeepDVC is supported by the current GPU. Further details can be retrieved via QueryDeepDVCSupport*/
 	UFUNCTION(BlueprintPure, Category = "Streamline|DeepDVC", meta = (DisplayName = "Is NVIDIA DeepDVC Supported"))
-	static STREAMLINEDEEPDVCBLUEPRINT_API bool IsDeepDVCSupported();
+	static UE_API bool IsDeepDVCSupported();
 
 	/** Checks whether DeepDVC is supported by the current GPU	*/
 	UFUNCTION(BlueprintPure, Category = "Streamline|DeepDVC", meta = (DisplayName = "Query NVIDIA DeepDVC Support"))
-	static STREAMLINEDEEPDVCBLUEPRINT_API EStreamlineFeatureSupport QueryDeepDVCSupport();
+	static UE_API EStreamlineFeatureSupport QueryDeepDVCSupport();
 
 	/** Checks whether a DeepDVC mode is supported */
 	UFUNCTION(BlueprintPure, Category = "Streamline|DeepDVC", meta = (DisplayName = "Is DeepDVC Mode Supported"))
-	static STREAMLINEDEEPDVCBLUEPRINT_API bool IsDeepDVCModeSupported(EStreamlineDeepDVCMode DeepDVCMode);
+	static UE_API bool IsDeepDVCModeSupported(EStreamlineDeepDVCMode DeepDVCMode);
 
 	/** Retrieves all supported DeepDVC modes. Can be used to populate UI */
 	UFUNCTION(BlueprintPure, Category = "Streamline|DeepDVC", meta = (DisplayName = "Get Supported DeepDVC Modes"))
-	static STREAMLINEDEEPDVCBLUEPRINT_API TArray<EStreamlineDeepDVCMode> GetSupportedDeepDVCModes();
+	static UE_API TArray<EStreamlineDeepDVCMode> GetSupportedDeepDVCModes();
 
 	/**
 	 * Sets the console variables to enable/disable DeepDVC
@@ -66,32 +66,32 @@ public:
 	 * On = DeepDVC always enabled
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Streamline|DeepDVC", meta = (DisplayName = "Set DeepDVC Mode"))
-	static STREAMLINEDEEPDVCBLUEPRINT_API void SetDeepDVCMode(EStreamlineDeepDVCMode DeepDVCMode);
+	static UE_API void SetDeepDVCMode(EStreamlineDeepDVCMode DeepDVCMode);
 
 	/* Reads the console variables to infer the current DeepDVC mode*/
 	UFUNCTION(BlueprintPure, Category = "Streamline|DeepDVC", meta = (DisplayName = "Get DeepDVC Mode"))
-	static STREAMLINEDEEPDVCBLUEPRINT_API EStreamlineDeepDVCMode GetDeepDVCMode();
+	static UE_API EStreamlineDeepDVCMode GetDeepDVCMode();
 
 	/* Find a reasonable default DeepDVC mode based on current hardware */
 	UFUNCTION(BlueprintPure, Category = "Streamline|DeepDVC", meta = (DisplayName = "Get Default DeepDVC Mode"))
-	static STREAMLINEDEEPDVCBLUEPRINT_API EStreamlineDeepDVCMode GetDefaultDeepDVCMode();
+	static UE_API EStreamlineDeepDVCMode GetDefaultDeepDVCMode();
 
 
 	/* Set the console variable to controls how strong or subtle the DeepDVC filter effect will be on an image. A low intensity will keep the images closer to the original, while a high intensity will make the filter effect more pronounced. */
 	UFUNCTION(BlueprintCallable, Category = "Streamline|DeepDVC", meta = (DisplayName = "Set DeepDVC Intensity"))
-	static STREAMLINEDEEPDVCBLUEPRINT_API void SetDeepDVCIntensity(float Intensity);
+	static UE_API void SetDeepDVCIntensity(float Intensity);
 
 	/* Read the console variables to infer the current DeepDVC intensity ("r.Streamline.DeepDVC.Intensity) */
 	UFUNCTION(BlueprintPure, Category = "Streamline|DeepDVC", meta = (DisplayName = "Get DeepDVC Intensity"))
-	static STREAMLINEDEEPDVCBLUEPRINT_API float GetDeepDVCIntensity();
+	static UE_API float GetDeepDVCIntensity();
 
 	/* Set the console variable that enhances the colors in them image, making them more vibrant and eye-catching. This setting will only be active if r.Streamline.DeepDVC.Intensity is relatively high. Once active, colors pop up more, making the image look more lively. */
 	UFUNCTION(BlueprintCallable, Category = "Streamline|DeepDVC", meta = (DisplayName = "Set DeepDVC  Saturation Boost"))
-	static STREAMLINEDEEPDVCBLUEPRINT_API void SetDeepDVCSaturationBoost(float Intensity);
+	static UE_API void SetDeepDVCSaturationBoost(float Intensity);
 
 	/* Read the console variables to infer the current DeepDVC saturation boost ("r.Streamline.DeepDVC.SaturationBoost) */
 	UFUNCTION(BlueprintPure, Category = "Streamline|DeepDVC", meta = (DisplayName = "Get DeepDVC Saturation Boost"))
-	static STREAMLINEDEEPDVCBLUEPRINT_API float GetDeepDVCSaturationBoost();
+	static UE_API float GetDeepDVCSaturationBoost();
 
 
 
@@ -142,4 +142,4 @@ public:
 private:
 };
 
-
+#undef UE_API

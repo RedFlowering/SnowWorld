@@ -1,10 +1,11 @@
 
+
 Streamline - PCL Stats
 =======================
 
 >The focus of this guide is on using Streamline to integrate PCL (PC Latency) Stats into an application.
 
-Version 2.7.30
+Version 2.9.0
 =======
 
 The application should not explicitly check for GPU HW, vendor, and driver version.
@@ -92,10 +93,12 @@ if (SUCCEEDED(CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory)))
                 // Requested feature is not supported on the system, fallback to the default method
                 switch (result)
                 {
-                    case sl::Result::eErrorOSOutOfDate:         // inform user to update OS
-                    case sl::Result::eErrorDriverOutOfDate:     // inform user to update driver
-                    case sl::Result::eErrorNoSupportedAdapter:  // cannot use this adapter (older or non-NVDA GPU etc)
-                    // and so on ...
+                    case sl::Result::eErrorOSOutOfDate:             // inform user to update OS
+                    case sl::Result::eErrorDriverOutOfDate:         // inform user to update driver
+                    case sl::Result::eErrorNoSupportedAdapterFound: // cannot use this adapter (older or non-NVDA
+                                                                    // GPU etc)
+                        break;
+                        // and so on ...
                 };
             }
             else
@@ -188,4 +191,3 @@ PCL markers were part of SL Reflex in earlier versions of SL.  If migrating from
     - Markers are no longer in top-level `sl::` namespace, use `sl::PCLMarker::`
     - If you were using the implicit cast to `uint32_t`, it will now need to be explicit
     - `eInputSample` marker was removed, this was already deprecated and removed in the native Reflex SDK but was never propagated to SL
-

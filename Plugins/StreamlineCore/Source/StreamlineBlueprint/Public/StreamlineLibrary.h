@@ -20,6 +20,7 @@
 #endif
 #include "StreamlineLibrary.generated.h"
 
+#define UE_API STREAMLINEBLUEPRINT_API
 
 //namespace sl
 //{
@@ -120,21 +121,21 @@ public:
 
 		/** Checks whether a Streamline feature is supported by the current GPU. Further details can be retrieved via QueryStreamlineFeatureSupport*/
 	UFUNCTION(BlueprintPure, Category = "Streamline", meta = (DisplayName = "Get NVIDIA Streamline Feature information", Keywords = "Reflex, DLSS-G, Latewarp, DeepDVC"))
-	static STREAMLINEBLUEPRINT_API FStreamlineFeatureRequirements GetStreamlineFeatureInformation(EStreamlineFeature Feature);
+	static UE_API FStreamlineFeatureRequirements GetStreamlineFeatureInformation(EStreamlineFeature Feature);
 
 	UFUNCTION(BlueprintPure, Category = "Streamline", meta = (/*DisplayName = "Get Streamline Feature Requirements", */Keywords = "Reflex, DLSS-G, Latewarp, DeepDVC"))
-	static STREAMLINEBLUEPRINT_API void BreakStreamlineFeatureRequirements(EStreamlineFeatureRequirementsFlags Requirements, bool& D3D11Supported, bool& D3D12Supported, bool& VulkanSupported, bool& VSyncOffRequired, bool& HardwareSchedulingRequired);
+	static UE_API void BreakStreamlineFeatureRequirements(EStreamlineFeatureRequirementsFlags Requirements, bool& D3D11Supported, bool& D3D12Supported, bool& VulkanSupported, bool& VSyncOffRequired, bool& HardwareSchedulingRequired);
 
 	/** Checks whether a Streamline feature is supported by the current GPU. Further details can be retrieved via QueryStreamlineFeatureSupport*/
 	UFUNCTION(BlueprintPure, Category = "Streamline", meta = (DisplayName = "Is NVIDIA Streamline Feature Supported", Keywords = "Reflex, DLSS-G, Latewarp, DeepDVC" ))
-	static STREAMLINEBLUEPRINT_API bool IsStreamlineFeatureSupported(EStreamlineFeature Feature);
+	static UE_API bool IsStreamlineFeatureSupported(EStreamlineFeature Feature);
 
 	/** Checks whether Streamline feature  is supported by the current GPU	*/
 	UFUNCTION(BlueprintPure, Category = "Streamline", meta = (DisplayName = "Query NVIDIA Streamline Feature Support", Keywords = "Reflex, DLSS-G, Latewarp, DeepDVC"))
-	static STREAMLINEBLUEPRINT_API EStreamlineFeatureSupport QueryStreamlineFeatureSupport(EStreamlineFeature Feature);
+	static UE_API EStreamlineFeatureSupport QueryStreamlineFeatureSupport(EStreamlineFeature Feature);
 
 
-	static STREAMLINEBLUEPRINT_API void RegisterFeatureSupport(EStreamlineFeature Feature, EStreamlineFeatureSupport Support);
+	static UE_API void RegisterFeatureSupport(EStreamlineFeature Feature, EStreamlineFeatureSupport Support);
 
 protected:
 
@@ -224,3 +225,5 @@ public:
 
 private:
 };
+
+#undef UE_API

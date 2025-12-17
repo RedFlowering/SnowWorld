@@ -16,8 +16,10 @@
 #include "ScreenSpaceDenoise.h"
 class FDLSSUpscaler;
 
+#define UE_API DLSS_API
+
 // wrapper for the default denoiser to add TAA after some passes
-class DLSS_API FDLSSDenoiser final : public IScreenSpaceDenoiser
+class FDLSSDenoiser final : public IScreenSpaceDenoiser
 {
 
 public:
@@ -52,3 +54,5 @@ private:
 	const IScreenSpaceDenoiser* WrappedDenoiser;
 	const FDLSSUpscaler* Upscaler;
 };
+
+#undef UE_API

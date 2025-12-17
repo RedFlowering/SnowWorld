@@ -4,6 +4,7 @@
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "Engine/World.h"
+#include "EngineUtils.h" // For TActorIterator
 #include "GameFramework/Actor.h"
 #include "GameFramework/Pawn.h"
 #include "Misc/Guid.h"
@@ -24,40 +25,62 @@ void UHarmoniaBuildingInstanceManager::Initialize(FSubsystemCollectionBase& Coll
 		return;
 	}
 
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Name = FName(TEXT("BuildingISMManager"));
-	SpawnParams.ObjectFlags |= RF_Transient; // Don't save this actor
-	SpawnParams.bNoFail = true; // Ensure spawn succeeds
-	ISMManagerActor = World->SpawnActorDeferred<AActor>(AActor::StaticClass(), FTransform::Identity, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-	if (ISMManagerActor)
+	// Skip actor creation in editor worlds (only create in game worlds)
+	if (!World->IsGameWorld())
 	{
-		ISMManagerActor->FinishSpawning(FTransform::Identity);
+		UE_LOG(LogBuildingInstanceManager, Log, TEXT("Skipping BuildingISMManager creation - not a game world"));
+		return;
 	}
 
+	// Check if BuildingISMManager already exists in the world
+	for (TActorIterator<AActor> It(World); It; ++It)
+	{
+		if (It->GetFName() == FName(TEXT("BuildingISMManager")))
+		{
+			ISMManagerActor = *It;
+			UE_LOG(LogBuildingInstanceManager, Log, TEXT("Found existing BuildingISMManager - reusing"));
+			break;
+		}
+	}
+
+	// Only create a new actor if one doesn't already exist
 	if (!ISMManagerActor)
 	{
-		UE_LOG(LogBuildingInstanceManager, Error, TEXT("Failed to spawn ISMManagerActor - building system will not work"));
-		return;
-	}
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Name = FName(TEXT("BuildingISMManager"));
+		SpawnParams.NameMode = FActorSpawnParameters::ESpawnActorNameMode::Required_Fatal;
+		SpawnParams.ObjectFlags |= RF_Transient; // Don't save this actor
+		SpawnParams.bNoFail = true; // Ensure spawn succeeds
+		
+		ISMManagerActor = World->SpawnActor<AActor>(AActor::StaticClass(), FTransform::Identity, SpawnParams);
 
-	// AActor has no RootComponent by default, create one
-	USceneComponent* RootComp = NewObject<USceneComponent>(ISMManagerActor, USceneComponent::StaticClass(), TEXT("RootComponent"));
-	if (RootComp)
-	{
-		RootComp->RegisterComponent();
-		ISMManagerActor->SetRootComponent(RootComp);
-	}
-	else
-	{
-		UE_LOG(LogBuildingInstanceManager, Error, TEXT("Failed to create RootComponent for ISMManagerActor"));
-		ISMManagerActor->Destroy();
-		ISMManagerActor = nullptr;
-		return;
-	}
+		if (!ISMManagerActor)
+		{
+			UE_LOG(LogBuildingInstanceManager, Error, TEXT("Failed to spawn ISMManagerActor - building system will not work"));
+			return;
+		}
+
+		// AActor has no RootComponent by default, create one (only for newly spawned actors)
+		USceneComponent* RootComp = NewObject<USceneComponent>(ISMManagerActor, USceneComponent::StaticClass(), TEXT("RootComponent"));
+		if (RootComp)
+		{
+			RootComp->RegisterComponent();
+			ISMManagerActor->SetRootComponent(RootComp);
+		}
+		else
+		{
+			UE_LOG(LogBuildingInstanceManager, Error, TEXT("Failed to create RootComponent for ISMManagerActor"));
+			ISMManagerActor->Destroy();
+			ISMManagerActor = nullptr;
+			return;
+		}
 
 #if WITH_EDITOR
-	ISMManagerActor->SetActorLabel(TEXT("BuildingISMManager"));
+		ISMManagerActor->SetActorLabel(TEXT("BuildingISMManager"));
 #endif
+		
+		UE_LOG(LogBuildingInstanceManager, Log, TEXT("Created new BuildingISMManager actor"));
+	}
 
 	// BuildingDataTable 로드
 	if (UHarmoniaLoadManager* LoadManager = UHarmoniaLoadManager::Get())

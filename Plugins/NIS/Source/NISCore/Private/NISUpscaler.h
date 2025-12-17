@@ -32,7 +32,7 @@ public:
 };
 
 
-class NISCORE_API FNVImageUpscaler final : public ISpatialUpscaler
+class FNVImageUpscaler final : public ISpatialUpscaler
 {
 	friend class FNISModule;
 public:

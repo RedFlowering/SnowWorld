@@ -143,7 +143,11 @@ namespace
 	PFun_slEvaluateFeature* Ptr_evaluateFeature = nullptr;
 	PFun_slAllocateResources*  Ptr_allocateResources = nullptr;
 	PFun_slFreeResources* Ptr_freeResources = nullptr;
+	// we are selectively disabling those warnings since we want the ability to use the deprecated API since the new one is risky
+	SL_DISABLE_DEPRECATED_WARNINGS
 	PFun_slSetTag* Ptr_setTag = nullptr;
+	SL_RESTORE_DEPRECATED_WARNINGS
+	PFun_slSetTagForFrame* Ptr_setTagForFrame = nullptr;
 	PFun_slGetFeatureRequirements* Ptr_getFeatureRequirements = nullptr;
 	PFun_slGetFeatureVersion* Ptr_getFeatureVersion = nullptr;
 	PFun_slUpgradeInterface* Ptr_upgradeInterface = nullptr;
@@ -466,6 +470,38 @@ sl::Result SLsetTag(const sl::ViewportHandle& viewport, const sl::ResourceTag* t
 	return Ptr_setTag(viewport, tags, numTags, cmdBuffer);
 }
 
+sl::Result SLsetTagForFrame(const sl::FrameToken& frame, const sl::ViewportHandle& viewport, const sl::ResourceTag* tags, uint32_t numTags, sl::CommandBuffer* cmdBuffer)
+{
+	check(IsStreamlineSupported());
+	check(SLInterPoserDLL);
+	check(Ptr_setTagForFrame != nullptr);
+
+#if LOG_SL_FUNCTIONS
+	if (LogStreamlineFunctions())
+	{
+		if (numTags > 0)
+		{
+			const FString Tags = FString::JoinBy(MakeArrayView(tags, numTags), TEXT(", "),	[](const sl::ResourceTag Tag) 
+				{ return FString::Printf(TEXT("%s(%u) [left=%u, top=%u, width=%u, height=%u] "), ANSI_TO_TCHAR(sl::getBufferTypeAsStr(Tag.type)), Tag.type,
+					Tag.extent.left, Tag.extent.top, Tag.extent.width, Tag.extent.height
+					
+					); 
+				}
+			);
+
+			UE_LOG(LogStreamlineRHI, Log, TEXT("%s %s frame=%u tags=%s (%u), viewport=%u"), ANSI_TO_TCHAR(__FUNCTION__), *CurrentThreadName(),
+				static_cast<uint32_t>(frame), *Tags, numTags, static_cast<uint32_t>(viewport));
+
+
+			
+
+		}
+	}
+#endif
+
+	return Ptr_setTagForFrame(frame, viewport, tags, numTags, cmdBuffer);
+}
+
 sl::Result SLgetFeatureRequirements(sl::Feature feature, sl::FeatureRequirements& requirements)
 {
 	check(IsStreamlineSupported());
@@ -664,9 +700,16 @@ bool LoadStreamlineFunctionPointers(const FString& InterposerBinaryPath)
 			UE_LOG(LogStreamlineRHI, Log, TEXT("slFreeResources = %p"), Ptr_freeResources);
 			check(Ptr_freeResources);
 
+			// we are selectively disabling those warnings since we want the ability to use the deprecated API since the new one is risky
+			SL_DISABLE_DEPRECATED_WARNINGS
 			Ptr_setTag = (PFun_slSetTag*)(FWindowsPlatformProcess::GetDllExport(SLInterPoserDLL, TEXT("slSetTag")));
 			UE_LOG(LogStreamlineRHI, Log, TEXT("slSetTag = %p"), Ptr_setTag);
 			check(Ptr_setTag);
+			SL_RESTORE_DEPRECATED_WARNINGS
+			
+			Ptr_setTagForFrame = (PFun_slSetTagForFrame*)(FWindowsPlatformProcess::GetDllExport(SLInterPoserDLL, TEXT("slSetTagForFrame")));
+			UE_LOG(LogStreamlineRHI, Log, TEXT("slSetTagForFrame = %p"), Ptr_setTagForFrame);
+			check(Ptr_setTagForFrame);
 
 			Ptr_getFeatureRequirements = (PFun_slGetFeatureRequirements*)(FWindowsPlatformProcess::GetDllExport(SLInterPoserDLL, TEXT("slGetFeatureRequirements")));
 			UE_LOG(LogStreamlineRHI, Log, TEXT("slGetFeatureRequirements = %p"), Ptr_getFeatureRequirements);

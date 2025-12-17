@@ -20,6 +20,8 @@
 #include "Performance/MaxTickRateHandlerModule.h"
 #include "Performance/LatencyMarkerModule.h"
 
+#define UE_API STREAMLINECORE_API
+
 class FStreamlineRHI;
 
 class FStreamlineLatencyBase
@@ -71,8 +73,8 @@ public:
 	// Inherited via IMaxTickRateHandlerModule
 	virtual uint32 GetFlags() override;
 
-	STREAMLINECORE_API static FStreamlineMaxTickRateHandler* Get();
-	STREAMLINECORE_API static void Reset();
+	UE_API static FStreamlineMaxTickRateHandler* Get();
+	UE_API static void Reset();
 
 private:
 
@@ -153,8 +155,8 @@ public:
 	// Inherited via IWindowsMessageHandler
 	virtual bool ProcessMessage(HWND hwnd, uint32 msg, WPARAM wParam, LPARAM lParam, int32& OutResult) override;
 
-	STREAMLINECORE_API static FStreamlineLatencyMarkers* Get();
-	STREAMLINECORE_API static void Reset();
+	UE_API static FStreamlineLatencyMarkers* Get();
+	UE_API static void Reset();
 
 private:
 
@@ -168,9 +170,7 @@ STREAMLINECORE_API FStreamlineLatencyMarkers* GetStreamlineReflexLatencyMarkerMo
 void RegisterStreamlineReflexHooks();
 void UnregisterStreamlineReflexHooks();
 
-namespace Streamline
-{
-	enum class EStreamlineFeatureSupport;
-}
 extern STREAMLINECORE_API Streamline::EStreamlineFeatureSupport QueryStreamlineReflexSupport();
 extern STREAMLINECORE_API bool IsStreamlineReflexSupported();
+
+#undef UE_API

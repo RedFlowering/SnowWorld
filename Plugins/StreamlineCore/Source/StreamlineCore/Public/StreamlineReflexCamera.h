@@ -27,8 +27,8 @@ class FStreamlineCameraManager
 {
 public:
 	FStreamlineCameraManager() : PrevRenderedWorldToView(FMatrix::Identity), PrevRenderedViewToClip(FMatrix::Identity) {}
-	void SetCameraData(FSceneView& InView, uint64 FrameID);
-	void LateUpdate_GameThread(APlayerController* Player, uint64 FrameID);
+	void SetCameraData(const FSceneView& InView, uint64 FrameID);
+	void LateUpdate_GameThread(const APlayerController* Player, uint64 FrameID);
 	void PreRenderViewFamily_RenderThread(FSceneViewFamily& InViewFamily, uint64 FrameID);
 	void PreRenderView_RenderThread(FSceneView& InView, uint64 FrameID);
 	void PostRenderView_RenderThread(FSceneView& InView, uint64 FrameID);

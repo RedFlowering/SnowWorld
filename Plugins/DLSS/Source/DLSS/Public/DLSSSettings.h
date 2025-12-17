@@ -17,6 +17,8 @@
 
 #include "DLSSSettings.generated.h"
 
+#define UE_API DLSS_API
+
 UENUM()
 enum class EDLSSSettingOverride : uint8
 {
@@ -29,11 +31,11 @@ UENUM(BlueprintType)
 enum class EDLSSPreset : uint8
 {
 	Default=0 UMETA(ToolTip = "default behavior, preset specified per DLSS SDK release"),
-	A=1  UMETA(ToolTip = "Force preset A, For Perf/Balanced/Quality modes, An older variant best suited to combat ghosting for elements with missing inputs (such as motion vectors)", DisplayName = "Preset A"),
-	B=2  UMETA(ToolTip = "Force preset B, For Ultra Perf mode, Similar to Preset A but for Ultra Performance mode", DisplayName = "Preset B"),
-	C=3  UMETA(ToolTip = "Force preset C, For Perf/Balanced/Quality modes, Preset which generally favors current frame information. Generally well-suited for fast-paced game content", DisplayName = "Preset C"),
-	D=4  UMETA(ToolTip = "Force preset D, For Perf/Balanced/Quality modes, Similar to Preset E. Preset E is generally recommended over Preset D.", DisplayName = "Preset D"),
-	E=5  UMETA(ToolTip = "Force preset E, For Perf/Balanced/Quality modes, The default preset for Perf/Balanced/Quality modes. Generally recommended preset for most performance and image stability.", DisplayName = "Preset E"),
+	A=1  UMETA(Hidden, ToolTip = "Deprecated, use preset J or K"),
+	B=2  UMETA(Hidden, ToolTip = "Deprecated, use preset J or K"),
+	C=3  UMETA(Hidden, ToolTip = "Deprecated, use preset J or K"),
+	D=4  UMETA(Hidden, ToolTip = "Deprecated, use preset J or K"),
+	E=5  UMETA(Hidden, ToolTip = "Deprecated, use preset J or K"),
 	F=6  UMETA(ToolTip = "Force preset F, For Ultra Perf/DLAA modes, The default preset for Ultra Perf and DLAA modes.", DisplayName = "Preset F"),
 	G=7  UMETA(ToolTip = "Force preset G, Do not use – reverts to default behavior", Hidden),
 	H=8  UMETA(ToolTip = "Force preset H, Do not use – reverts to default behavior", Hidden),
@@ -73,20 +75,12 @@ enum class EDLSSRRPreset : uint8
 	MAX UMETA(Hidden)
 };
 
-UCLASS(Config = Engine, ProjectUserConfig)
-class DLSS_API UDLSSOverrideSettings : public UObject
+UCLASS(MinimalAPI,Config = Engine, ProjectUserConfig)
+class UDLSSOverrideSettings : public UObject
 {
 public:
 
 	GENERATED_BODY()
-	
-	/** This enables DLSS/DLAA in editor viewports. Saved to local user config only.*/
-	UPROPERTY(Config, EditAnywhere, Category = "Level Editor - Viewport (Local)", DisplayName = "Enable DLSS/DLAA to be turned on in Editor viewports")
-	EDLSSSettingOverride EnableDLSSInEditorViewportsOverride = EDLSSSettingOverride::UseProjectSettings;
-
-	/** This enables DLSS/DLAA in play in editor viewports. Saved to local user config only. */
-	UPROPERTY(Config, EditAnywhere, Category = "Level Editor - Viewport (Local)", DisplayName = "Enable DLSS/DLAA in Play In Editor viewports")
-	EDLSSSettingOverride EnableDLSSInPlayInEditorViewportsOverride = EDLSSSettingOverride::UseProjectSettings;
 
 	/** This enables warnings about plugins & tools that are incompatible with DLSS/DLAA in the editor. This setting and the project setting both must be set to get warnings */
 	UPROPERTY(Config, EditAnywhere, Category = "Editor (Local)", DisplayName = "Warn about incompatible plugins and tools")
@@ -96,10 +90,17 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Editor (Local)", DisplayName = "Show various DLSS/DLAA on screen debug messages")
 	EDLSSSettingOverride ShowDLSSSDebugOnScreenMessages = EDLSSSettingOverride::UseProjectSettings;
 
+	/** This enables DLSS/DLAA in editor viewports. Saved to local user config only.*/
+	UPROPERTY(Config, EditAnywhere, Category = "Editor (Local)", DisplayName = "Enable DLSS/DLAA to be turned on in Editor viewports")
+	EDLSSSettingOverride EnableDLSSInEditorViewportsOverride = EDLSSSettingOverride::UseProjectSettings;
+
+	/** This enables DLSS/DLAA in play in editor viewports. Saved to local user config only. */
+	UPROPERTY(Config, EditAnywhere, Category = "Editor (Local)", DisplayName = "Enable DLSS/DLAA in Play In Editor viewports")
+	EDLSSSettingOverride EnableDLSSInPlayInEditorViewportsOverride = EDLSSSettingOverride::UseProjectSettings;
 };
 
-UCLASS(Config = Engine, DefaultConfig, DisplayName="NVIDIA DLSS")
-class DLSS_API UDLSSSettings: public UObject
+UCLASS(MinimalAPI, Config = Engine, DefaultConfig, DisplayName="NVIDIA DLSS")
+class UDLSSSettings: public UObject
 {
 	GENERATED_BODY()
 
@@ -107,103 +108,121 @@ private:
 
 public:
 
+	/** Allow OTA updates of DLSS models */
+	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "Allow OTA update", meta = (ConfigRestartRequired = true))
+	bool bAllowOTAUpdate = true;
+
+	/** By default the DLSS plugin uses the UE Project ID to initialize DLSS. In some cases NVIDIA might provide a separate NVIDIA Application ID, which should be put here. Please refer to https://developer.nvidia.com/dlss for details*/
+	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "NVIDIA NGX Application ID", AdvancedDisplay, meta = (ConfigRestartRequired = true))
+	uint32 NVIDIANGXApplicationId;
+
+	/** The value that would be considered as Bias Color in the custom depth stencil buffer. Must not be set to 0**/
+	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "Bias Current Color Custom Stencil Value", meta = (UIMin = 1))
+	uint8 BiasCurrentColorStencilValue = 8;
+
 	/** Enable DLSS/DLAA for D3D12, if the driver supports it at runtime */
-	UPROPERTY(Config, EditAnywhere, Category = "Platforms", DisplayName = "Enable DLSS/DLAA for the D3D12RHI")
+	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "Enable DLSS/DLAA for the D3D12RHI", meta = (ConfigRestartRequired = true))
 		bool bEnableDLSSD3D12 = PLATFORM_WINDOWS;
 
 	/** Enable DLSS/DLAA for D3D11, if the driver supports it at runtime */
-	UPROPERTY(Config, EditAnywhere, Category = "Platforms", DisplayName = "Enable DLSS/DLAA for the D3D11RHI")
+	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "Enable DLSS/DLAA for the D3D11RHI", meta = (ConfigRestartRequired = true))
 		bool bEnableDLSSD3D11 = PLATFORM_WINDOWS;
 
 	/** Enable DLSS/DLAA for Vulkan, if the driver supports it at runtime */
-	UPROPERTY(Config, EditAnywhere, Category = "Platforms", DisplayName = "Enable DLSS/DLAA for the VulkanRHI")
+	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "Enable DLSS/DLAA for the VulkanRHI", meta = (ConfigRestartRequired = true))
 		bool bEnableDLSSVulkan = PLATFORM_WINDOWS;
-
-	/** This enables DLSS/DLAA in editor viewports. This project wide setting can be locally overridden in the NVIDIA DLSS (Local) settings.*/
-	UPROPERTY(Config, EditAnywhere, Category = "Level Editor - Viewport", DisplayName = "Enable DLSS/DLAA to be turned on in Editor viewports")
-		bool bEnableDLSSInEditorViewports = false;
-
-	/** This enables DLSS/DLAA in play in editor viewports. This project wide setting can be locally overridden in in the NVIDIA DLSS (Local) settings.*/
-	UPROPERTY(Config, EditAnywhere, Category = "Level Editor - Viewport", DisplayName = "Enable DLSS/DLAA in Play In Editor viewports")
-		bool bEnableDLSSInPlayInEditorViewports = true;
-
-	/** This enables on screen warnings and errors about DLSS/DLAA. This project wide setting can be locally overridden in the NVIDIA DLSS (Local) settings. */
-	UPROPERTY(Config, EditAnywhere, Category = "Level Editor - Viewport", DisplayName = "Show various DLSS/DLAA on screen debug messages")
-		bool bShowDLSSSDebugOnScreenMessages = true;
-
-	/** This is part of the DLSS plugin and used by most projects*/
-	UPROPERTY(VisibleAnywhere, Config, Category = "General Settings", DisplayName = "Generic DLSS Binary Path")
-		FString GenericDLSSBinaryPath;
-
-	UPROPERTY(VisibleAnywhere, Config, Category = "General Settings", DisplayName = "Exists")
-		bool bGenericDLSSBinaryExists;
-
-	/** By default the DLSS plugin uses the UE Project ID to initialize DLSS. In some cases NVIDIA might provide a separate NVIDIA Application ID, which should be put here. Please refer to https://developer.nvidia.com/dlss for details*/
-	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "NVIDIA NGX Application ID", AdvancedDisplay)
-		uint32 NVIDIANGXApplicationId;
-
-	/** In some cases NVIDIA might provide a project specific DLSS binary for your project. Please refer to https://developer.nvidia.com/dlss for details*/
-	UPROPERTY(VisibleAnywhere, Config, Category = "General Settings", DisplayName = "Custom DLSS Binary Path", AdvancedDisplay)
-		FString CustomDLSSBinaryPath;
-	UPROPERTY(VisibleAnywhere, Config, Category = "General Settings", DisplayName = "Exists", AdvancedDisplay)
-		bool bCustomDLSSBinaryExists;
-
-	/** Allow OTA updates of DLSS models */
-	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "Allow OTA update")
-		bool bAllowOTAUpdate = true;
-
-	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "Bias Current Color Custom Stencil Value",meta=(UIMin=1))
-		uint8 BiasCurrentColorStencilValue = 8;
 
 	/** This enables warnings about plugins & tools that are incompatible with DLSS/DLAA in the editor. This setting and the local setting both must be set to get warnings */
 	UPROPERTY(Config, EditAnywhere, Category = "Editor", DisplayName = "Warn about incompatible plugins and tools")
 	bool bShowDLSSIncompatiblePluginsToolsWarnings = true;
 
+	/** This enables DLSS/DLAA in editor viewports. This project wide setting can be locally overridden in the NVIDIA DLSS (Local) settings.*/
+	UPROPERTY(Config, EditAnywhere, Category = "Editor", DisplayName = "Enable DLSS/DLAA to be turned on in Editor viewports")
+		bool bEnableDLSSInEditorViewports = false;
+
+	/** This enables DLSS/DLAA in play in editor viewports. This project wide setting can be locally overridden in in the NVIDIA DLSS (Local) settings.*/
+	UPROPERTY(Config, EditAnywhere, Category = "Editor", DisplayName = "Enable DLSS/DLAA in Play In Editor viewports")
+		bool bEnableDLSSInPlayInEditorViewports = true;
+
+	/** This enables on screen warnings and errors about DLSS/DLAA. This project wide setting can be locally overridden in the NVIDIA DLSS (Local) settings. */
+	UPROPERTY(Config, EditAnywhere, Category = "Editor", DisplayName = "Show various DLSS/DLAA on screen debug messages")
+		bool bShowDLSSSDebugOnScreenMessages = true;
+
+
+	/** This is part of the DLSS plugin and used by most projects*/
+	UPROPERTY(VisibleAnywhere, Config, Category = "DLSS-SR Settings", DisplayName = "Generic DLSS-SR Binary Path")
+	FString GenericDLSSSRBinaryPath;
+
+	UPROPERTY(VisibleAnywhere, Config, Category = "DLSS-SR Settings", DisplayName = "Exists")
+	bool bGenericDLSSSRBinaryExists;
+
+	/** In some cases NVIDIA might provide a project specific DLSS binary for your project. Please refer to https://developer.nvidia.com/dlss for details*/
+	UPROPERTY(VisibleAnywhere, Config, Category = "DLSS-SR Settings", DisplayName = "Custom DLSS-SR Binary Path", AdvancedDisplay)
+	FString CustomDLSSSRBinaryPath;
+	
+	UPROPERTY(VisibleAnywhere, Config, Category = "DLSS-SR Settings", DisplayName = "Exists", AdvancedDisplay)
+	bool bCustomDLSSSRBinaryExists;
+
 	/** DLAA preset setting. Allows selecting a different DL model than the default */
-	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "DLAA Preset", AdvancedDisplay)
+	UPROPERTY(Config, EditAnywhere, Category = "DLSS-SR Settings", DisplayName = "DLAA Preset", AdvancedDisplay)
 		EDLSSPreset DLAAPreset = EDLSSPreset::Default;
 
 	/** DLSS quality mode preset setting. Allows selecting a different DL model than the default */
-	// NOT IMPLEMENTED YET UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "DLSS Ultra Quality Preset", AdvancedDisplay)
+	// NOT IMPLEMENTED YET UPROPERTY(Config, EditAnywhere, Category = "DLSS-SR Settings", DisplayName = "DLSS Ultra Quality Preset", AdvancedDisplay)
 		EDLSSPreset DLSSUltraQualityPreset = EDLSSPreset::Default;
 
 	/** DLSS quality mode preset setting. Allows selecting a different DL model than the default */
-	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "DLSS Quality Preset", AdvancedDisplay)
+	UPROPERTY(Config, EditAnywhere, Category = "DLSS-SR Settings", DisplayName = "DLSS Quality Preset", AdvancedDisplay)
 		EDLSSPreset DLSSQualityPreset = EDLSSPreset::Default;
 
 	/** DLSS balanced mode preset setting. Allows selecting a different DL model than the default */
-	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "DLSS Balanced Preset", AdvancedDisplay)
+	UPROPERTY(Config, EditAnywhere, Category = "DLSS-SR Settings", DisplayName = "DLSS Balanced Preset", AdvancedDisplay)
 		EDLSSPreset DLSSBalancedPreset = EDLSSPreset::Default;
 
 	/** DLSS performance mode preset setting. Allows selecting a different DL model than the default */
-	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "DLSS Performance Preset", AdvancedDisplay)
+	UPROPERTY(Config, EditAnywhere, Category = "DLSS-SR Settings", DisplayName = "DLSS Performance Preset", AdvancedDisplay)
 		EDLSSPreset DLSSPerformancePreset = EDLSSPreset::Default;
 
 	/** DLSS ultra performance mode preset setting. Allows selecting a different DL model than the default */
-	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "DLSS Ultra Performance Preset", AdvancedDisplay)
+	UPROPERTY(Config, EditAnywhere, Category = "DLSS-SR Settings", DisplayName = "DLSS Ultra Performance Preset", AdvancedDisplay)
 		EDLSSPreset DLSSUltraPerformancePreset = EDLSSPreset::Default;
 
-	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "DLAA-RR Preset", AdvancedDisplay)
+
+	/** This is part of the DLSS plugin and used by most projects*/
+	UPROPERTY(VisibleAnywhere, Config, Category = "DLSS-RR Settings", DisplayName = "Generic DLSS-RR Binary Path")
+	FString GenericDLSSRRBinaryPath;
+
+	UPROPERTY(VisibleAnywhere, Config, Category = "DLSS-RR Settings", DisplayName = "Exists")
+	bool bGenericDLSSRRBinaryExists;
+
+	/** In some cases NVIDIA might provide a project specific DLSS binary for your project. Please refer to https://developer.nvidia.com/dlss for details*/
+	UPROPERTY(VisibleAnywhere, Config, Category = "DLSS-RR Settings", DisplayName = "Custom DLSS-RR Binary Path", AdvancedDisplay)
+	FString CustomDLSSRRBinaryPath;
+
+	UPROPERTY(VisibleAnywhere, Config, Category = "DLSS-RR Settings", DisplayName = "Exists", AdvancedDisplay)
+	bool bCustomDLSSRRBinaryExists;
+
+	UPROPERTY(Config, EditAnywhere, Category = "DLSS-RR Settings", DisplayName = "DLAA-RR Preset", AdvancedDisplay)
 		EDLSSRRPreset DLAARRPreset = EDLSSRRPreset::Default;
 
 	/** DLSS-RR quality mode preset setting. Allows selecting a different DL model than the default */
-	// NOT IMPLEMENTED YET UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "DLSS Ultra Quality Preset", AdvancedDisplay)
+	// NOT IMPLEMENTED YET UPROPERTY(Config, EditAnywhere, Category = "DLSS-SR Settings", DisplayName = "DLSS Ultra Quality Preset", AdvancedDisplay)
 		EDLSSRRPreset DLSSRRUltraQualityPreset = EDLSSRRPreset::Default;
 
 	/** DLSS-RR quality mode preset setting. Allows selecting a different DL model than the default */
-	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "DLSS-RR Quality Preset", AdvancedDisplay)
+	UPROPERTY(Config, EditAnywhere, Category = "DLSS-RR Settings", DisplayName = "DLSS-RR Quality Preset", AdvancedDisplay)
 		EDLSSRRPreset DLSSRRQualityPreset = EDLSSRRPreset::Default;
 
 	/** DLSS-RR balanced mode preset setting. Allows selecting a different DL model than the default */
-	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "DLSS-RR Balanced Preset", AdvancedDisplay)
+	UPROPERTY(Config, EditAnywhere, Category = "DLSS-RR Settings", DisplayName = "DLSS-RR Balanced Preset", AdvancedDisplay)
 		EDLSSRRPreset DLSSRRBalancedPreset = EDLSSRRPreset::Default;
 
 	/** DLSS-RR performance mode preset setting. Allows selecting a different DL model than the default */
-	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "DLSS-RR Performance Preset", AdvancedDisplay)
+	UPROPERTY(Config, EditAnywhere, Category = "DLSS-RR Settings", DisplayName = "DLSS-RR Performance Preset", AdvancedDisplay)
 		EDLSSRRPreset DLSSRRPerformancePreset = EDLSSRRPreset::Default;
 
 	/** DLSS-RR ultra performance mode preset setting. Allows selecting a different DL model than the default */
-	UPROPERTY(Config, EditAnywhere, Category = "General Settings", DisplayName = "DLSS-RR Ultra Performance Preset", AdvancedDisplay)
+	UPROPERTY(Config, EditAnywhere, Category = "DLSS-RR Settings", DisplayName = "DLSS-RR Ultra Performance Preset", AdvancedDisplay)
 		EDLSSRRPreset DLSSRRUltraPerformancePreset = EDLSSRRPreset::Default;
 
 public:
@@ -212,3 +231,4 @@ public:
 
 };
 
+#undef UE_API

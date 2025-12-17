@@ -18,8 +18,9 @@
 #include "Runtime/Launch/Resources/Version.h"
 #include "Misc/EngineVersionComparison.h"
 #include "RHIAccess.h"
-#define UE_VERSION_AT_LEAST(MajorVersion, MinorVersion, PatchVersion) (!UE_VERSION_OLDER_THAN(MajorVersion, MinorVersion, PatchVersion))
+#include "StreamlineNGXRHI.h"
 
+#define UE_API STREAMLINERHI_API
 
 namespace sl
 {
@@ -55,23 +56,6 @@ enum class EStreamlineResource
 	// we use this to size some arrays statically somewhere, but we also don't wanto have a real new enum value so we don't have to handle switch statements ...
 	Last = ScalingOutputColor
 };
-
-
-// Commits needed in your engine tree if it's older than 5.6
-// 2be94f9e1642ca026c07cbcc980ac922afc17b00 Add RHIUpdateResourceResidency API to ID3D12DynamicRHI
-// 642d7f4108155528627f27eec161f06936d97659 Allow DX12 Resource barrier flushing trough ID3D12DynamicRHI
-// then if you backport those to your engine tree, also add this to RHIDefinitions.h (and not ID3D12DynamicRHI.h) 
-// #define ENGINE_PROVIDES_UE_5_6_ID3D12DYNAMICRHI_METHODS 1
-// this allows to make the call sites in DLSSUpscaler.cpp avoid extra code to support this
-
-#ifndef ENGINE_PROVIDES_UE_5_6_ID3D12DYNAMICRHI_METHODS
-
-#if (UE_VERSION_AT_LEAST(5,6,0))
-#define ENGINE_PROVIDES_UE_5_6_ID3D12DYNAMICRHI_METHODS 1
-#else
-#define ENGINE_PROVIDES_UE_5_6_ID3D12DYNAMICRHI_METHODS 0
-#endif
-#endif  ENGINE_PROVIDES_UE_5_6_ID3D12DYNAMICRHI_METHODS 
 
 class FRHIStreamlineResource
 {
@@ -122,7 +106,7 @@ private:
 };
 
 // TODO STREAMLINE rename variables
-struct STREAMLINERHI_API FRHIStreamlineArguments
+struct FRHIStreamlineArguments
 {
 
 #if ENGINE_MAJOR_VERSION < 5
@@ -216,30 +200,30 @@ private:
 class  FStreamlineRHIModule;
 
 
-class STREAMLINERHI_API FStreamlineRHI
+class FStreamlineRHI
 {
 
 	friend class FStreamlineRHIModule;
 public:
-	virtual ~FStreamlineRHI();
+	UE_API virtual ~FStreamlineRHI();
 
-	virtual void SetStreamlineData(FRHICommandList& CmdList, const FRHIStreamlineArguments& InArguments);
-	void StreamlineEvaluateDeepDVC(FRHICommandList& CmdList, const FRHIStreamlineResource& InputOutput, sl::FrameToken* FrameToken, uint32 ViewID);
+	UE_API virtual void SetStreamlineData(FRHICommandList& CmdList, const FRHIStreamlineArguments& InArguments);
+	UE_API void StreamlineEvaluateDeepDVC(FRHICommandList& CmdList, const FRHIStreamlineResource& InputOutput, sl::FrameToken* FrameToken, uint32 ViewID);
 	
-	void TagTextures(FRHICommandList& CmdList, uint32 InViewID, std::initializer_list< FRHIStreamlineResource> InResources)
+	void TagTextures(FRHICommandList& CmdList, uint32 InViewID, const sl::FrameToken& FrameToken, std::initializer_list< FRHIStreamlineResource> InResources)
 	{
-		TagTextures(CmdList, InViewID, MakeArrayView(InResources));
+		TagTextures(CmdList, InViewID, FrameToken, MakeArrayView(InResources));
 	}
 
-	void TagTexture(FRHICommandList& CmdList, uint32 InViewID, const FRHIStreamlineResource& InResource)
+	void TagTexture(FRHICommandList& CmdList, uint32 InViewID, const sl::FrameToken& FrameToken, const FRHIStreamlineResource& InResource)
 	{
-		TagTextures(CmdList, InViewID, MakeArrayView<const FRHIStreamlineResource>(&InResource, 1));
+		TagTextures(CmdList, InViewID, FrameToken, MakeArrayView<const FRHIStreamlineResource>(&InResource, 1));
 	}
 
 	// Implemented by API specific  subclasses
 	//	
 public: 
-	virtual void TagTextures(FRHICommandList& CmdList, uint32 InViewID, const TArrayView<const FRHIStreamlineResource> InResources) = 0;
+	virtual void TagTextures(FRHICommandList& CmdList, uint32 InViewID, const sl::FrameToken& FrameToken, const TArrayView<const FRHIStreamlineResource> InResources) = 0;
 	virtual const sl::AdapterInfo* GetAdapterInfo() = 0;
 	virtual void APIErrorHandler(const sl::APIError& LastError) = 0;
 
@@ -249,7 +233,7 @@ protected:
 	virtual void PostStreamlineFeatureEvaluation(FRHICommandList& CmdList, FRHITexture* Texture) = 0;
 
 
-	TTuple<bool, FString> IsSwapChainProviderRequired(const sl::AdapterInfo& AdapterInfo) const;
+	UE_API TTuple<bool, FString> IsSwapChainProviderRequired(const sl::AdapterInfo& AdapterInfo) const;
 public:
 	virtual bool IsDLSSGSupportedByRHI() const
 	{
@@ -271,32 +255,32 @@ public:
 		return false;
 	}
 
-	bool IsStreamlineAvailable() const;
+	UE_API bool IsStreamlineAvailable() const;
 
 	static bool IsIncompatibleAPICaptureToolActive()
 	{
 		return bIsIncompatibleAPICaptureToolActive;
 	}
 
-	sl::FrameToken* GetFrameToken(uint64 FrameCounter);
-	bool IsSwapchainHookingAllowed() const;
+	UE_API sl::FrameToken* GetFrameToken(uint64 FrameCounter);
+	UE_API bool IsSwapchainHookingAllowed() const;
 	bool IsSwapchainProviderInstalled() const;
-	void ReleaseStreamlineResourcesForAllFeatures(uint32 ViewID);
+	UE_API void ReleaseStreamlineResourcesForAllFeatures(uint32 ViewID);
 
 	// that needs to call some virtual methods that we can't call in the ctor. Just C++ things
 	void PostPlatformRHICreateInit();
 
-	void OnSwapchainDestroyed(void* InNativeSwapchain) const;
-	void OnSwapchainCreated(void* InNativeSwapchain) const;
+	UE_API void OnSwapchainDestroyed(void* InNativeSwapchain) const;
+	UE_API void OnSwapchainCreated(void* InNativeSwapchain) const;
 
 #if !ENGINE_PROVIDES_UE_5_6_ID3D12DYNAMICRHI_METHODS
-	virtual bool NeedExtraPassesForDebugLayerCompatibility();
+	UE_API virtual bool NeedExtraPassesForDebugLayerCompatibility();
 #endif
 
 protected:
 
 	
-	FStreamlineRHI(const FStreamlineRHICreateArguments& Arguments);
+	UE_API FStreamlineRHI(const FStreamlineRHICreateArguments& Arguments);
 
 #if WITH_EDITOR
 
@@ -315,7 +299,7 @@ protected:
 	void ValidateNumSwapchainProxies(const char* CallSite) const;
 #if PLATFORM_WINDOWS
 	// whether an HRESULT is a DXGI_STATUS_*
-	bool IsDXGIStatus(const HRESULT HR);
+	UE_API bool IsDXGIStatus(const HRESULT HR);
 #endif
 
 	
@@ -345,8 +329,8 @@ public:
 class FStreamlineRHIModule final : public IModuleInterface
 {
 public:
-	STREAMLINERHI_API void InitializeStreamline();
-	STREAMLINERHI_API void ShutdownStreamline();
+	UE_API void InitializeStreamline();
+	UE_API void ShutdownStreamline();
 
 	/** IModuleInterface implementation */ 
 	virtual void StartupModule();
@@ -376,3 +360,6 @@ STREAMLINERHI_API void LogStreamlineFeatureRequirements(sl::Feature Feature, con
 STREAMLINERHI_API FString CurrentThreadName();
 
 
+STREAMLINERHI_API bool ShouldUseSlSetTag();
+
+#undef UE_API

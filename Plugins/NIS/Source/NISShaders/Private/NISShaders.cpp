@@ -327,7 +327,11 @@ struct FNISCoefficients : public FRenderResource
 				.SetNumMips(1)
 				.SetNumSamples(1)
 				.SetFlags(TexCreate_None)
+#if UE_VERSION_OLDER_THAN(5,7,0)
+				.SetBulkData(&BulkData);
+#else
 				.SetInitActionBulkData(&BulkData);
+#endif
 			ScalerRHI = RHICreateTexture(ScalerDesc);
 #else
 			FRHIResourceCreateInfo CreateInfo(TEXT("FNISCoefficients::Scaler"));
@@ -348,7 +352,11 @@ struct FNISCoefficients : public FRenderResource
 				.SetNumMips(1)
 				.SetNumSamples(1)
 				.SetFlags(TexCreate_None)
+#if UE_VERSION_OLDER_THAN(5,7,0)
+				.SetBulkData(&BulkData);
+#else
 				.SetInitActionBulkData(&BulkData);
+#endif
 			UsmRHI = RHICreateTexture(UsmDesc);
 #else
 			FRHIResourceCreateInfo CreateInfo(TEXT("FNISCoefficients::Usm"));
@@ -370,7 +378,11 @@ struct FNISCoefficients : public FRenderResource
 				.SetNumMips(1)
 				.SetNumSamples(1)
 				.SetFlags(TexCreate_None)
+#if UE_VERSION_OLDER_THAN(5,7,0)
+				.SetBulkData(&BulkData);
+#else
 				.SetInitActionBulkData(&BulkData);
+#endif
 			ScalerHalfPrecisionRHI = RHICreateTexture(ScalerHalfDesc);
 #else
 			FRHIResourceCreateInfo CreateInfo(TEXT("FNISCoefficients::ScalerHalfPrecision"));
@@ -391,7 +403,11 @@ struct FNISCoefficients : public FRenderResource
 				.SetNumMips(1)
 				.SetNumSamples(1)
 				.SetFlags(TexCreate_None)
+#if UE_VERSION_OLDER_THAN(5,7,0)
+				.SetBulkData(&BulkData);
+#else
 				.SetInitActionBulkData(&BulkData);
+#endif
 			UsmHalfPrecisionRHI = RHICreateTexture(UsmHalfDesc);
 #else
 			FRHIResourceCreateInfo CreateInfo(TEXT("FNISCoefficients::UsmHalfPrecision"));

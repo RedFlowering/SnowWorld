@@ -201,6 +201,7 @@ void FNGXVulkanRHI::ExecuteDLSS(FRHICommandList& CmdList, const FRHIDLSSArgument
 		
 		ApplyCommonNGXParameterSettings(NewNGXParameterHandle, InArguments);
 
+		static_assert (int(ENGXDLSSDenoiserMode::MaxValue) == 1, "dear DLSS plugin NVIDIA developer, please update this code to handle the new ENGXDLSSDenoiserMode enum values");
 		if (InArguments.DenoiserMode == ENGXDLSSDenoiserMode::DLSSRR)
 		{
 			// DLSS-SR feature creation
@@ -378,6 +379,24 @@ void FNGXVulkanRHI::ExecuteDLSS(FRHICommandList& CmdList, const FRHIDLSSArgument
 		}
 #endif
 
+#if SUPPORT_GUIDE_SSS_DOF
+		if (InArguments.InputSSS)
+		{
+			NVSDK_NGX_Resource_VK InScreenSpaceSubsurfaceScatteringGuideTexture = NGXVulkanResourceFromRHITexture(InArguments.InputSSS);
+			DlssRREvalParams.pInScreenSpaceSubsurfaceScatteringGuide = &InScreenSpaceSubsurfaceScatteringGuideTexture;
+			DlssRREvalParams.InScreenSpaceSubsurfaceScatteringGuideSubrectBase.X = 0;
+			DlssRREvalParams.InScreenSpaceSubsurfaceScatteringGuideSubrectBase.Y = 0;
+		}
+
+		if (InArguments.InputDOF)
+		{
+			NVSDK_NGX_Resource_VK InDepthOfFieldGuide = NGXVulkanResourceFromRHITexture(InArguments.InputDOF);
+			DlssRREvalParams.pInDepthOfFieldGuide = &InDepthOfFieldGuide;
+			DlssRREvalParams.InDepthOfFieldGuideSubrectBase.X = 0;
+			DlssRREvalParams.InDepthOfFieldGuideSubrectBase.Y = 0;
+		}
+#endif
+
 		NVSDK_NGX_Result ResultEvaluate = NGX_VULKAN_EVALUATE_DLSSD_EXT(
 			VulkanCommandBuffer,
 			InDLSSState->DLSSFeature->Feature,
@@ -432,7 +451,6 @@ void FNGXVulkanRHI::ExecuteDLSS(FRHICommandList& CmdList, const FRHIDLSSArgument
 		DlssEvalParams.pInExposureTexture = InArguments.bUseAutoExposure ? nullptr : &InExposureTexture;
 		DlssEvalParams.InPreExposure = InArguments.PreExposure;
 
-		DlssEvalParams.Feature.InSharpness = InArguments.Sharpness;
 		DlssEvalParams.InJitterOffsetX = InArguments.JitterOffset.X;
 		DlssEvalParams.InJitterOffsetY = InArguments.JitterOffset.Y;
 

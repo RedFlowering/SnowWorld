@@ -19,35 +19,42 @@
 #include "nvsdk_ngx_params.h"
 #include "nvsdk_ngx_helpers_dlssd.h"
 #include "SceneTexturesConfig.h"
+#include "StreamlineNGXRHI.h"
 
-#include "Misc/EngineVersionComparison.h"
-#define UE_VERSION_AT_LEAST(MajorVersion, MinorVersion, PatchVersion) (!UE_VERSION_OLDER_THAN(MajorVersion, MinorVersion, PatchVersion))
-
+#define UE_API NGXRHI_API
 
 // That is set to 1 in NVRTX branches
 #ifndef SUPPORT_GUIDE_GBUFFER
 #define SUPPORT_GUIDE_GBUFFER 0
 #endif
 
-
-// Commits needed in your engine tree if it's older than 5.6
-// 2be94f9e1642ca026c07cbcc980ac922afc17b00 Add RHIUpdateResourceResidency API to ID3D12DynamicRHI
-// 642d7f4108155528627f27eec161f06936d97659 Allow DX12 Resource barrier flushing trough ID3D12DynamicRHI
-// then if you backport those to your engine tree, also add this to RHIDefinitions.h (and not ID3D12DynamicRHI.h) 
-// #define ENGINE_PROVIDES_UE_5_6_ID3D12DYNAMICRHI_METHODS 1
-// this allows to make the call sites in DLSSUpscaler.cpp avoid extra code to support this
-
-#ifndef ENGINE_PROVIDES_UE_5_6_ID3D12DYNAMICRHI_METHODS
-
-#if (UE_VERSION_AT_LEAST(5,6,0))
-#define ENGINE_PROVIDES_UE_5_6_ID3D12DYNAMICRHI_METHODS 1
-#else
-#define ENGINE_PROVIDES_UE_5_6_ID3D12DYNAMICRHI_METHODS 0
+// That is set to 1 in NVRTX branches
+#ifndef SUPPORT_GUIDE_SSS_DOF
+#define SUPPORT_GUIDE_SSS_DOF 0
 #endif
-#endif  ENGINE_PROVIDES_UE_5_6_ID3D12DYNAMICRHI_METHODS 
+
 
 #define NVSDK_NGX_VERSION_API_MACRO_BASE_LINE (0x0000013)
 #define NVSDK_NGX_VERSION_API_MACRO_WITH_LOGGING (0x0000014)
+
+#if defined(__clang__)
+#define DLSS_DISABLE_DEPRECATED_WARNINGS \
+        _Pragma("clang diagnostic push") \
+        _Pragma("clang diagnostic ignored \"-Wdeprecated-declarations\"")
+#define DLSS_RESTORE_DEPRECATED_WARNINGS \
+        _Pragma("clang diagnostic pop")
+
+#elif defined(_MSC_VER)
+#define DLSS_DISABLE_DEPRECATED_WARNINGS \
+        __pragma(warning(push)) \
+        __pragma(warning(disable: 4996))
+#define DLSS_RESTORE_DEPRECATED_WARNINGS \
+        __pragma(warning(pop))
+
+#else
+#define DLSS_DISABLE_DEPRECATED_WARNINGS
+#define DLSS_RESTORE_DEPRECATED_WARNINGS
+#endif
 
 struct FDLSSState;
 
@@ -67,7 +74,6 @@ struct FDLSSFeatureDesc
 			|| DLSSRRPreset != Other.DLSSRRPreset
 			|| PerfQuality != Other.PerfQuality
 			|| bHighResolutionMotionVectors != Other.bHighResolutionMotionVectors
-			|| bNonZeroSharpness != Other.bNonZeroSharpness
 			|| bUseAutoExposure != Other.bUseAutoExposure
 			|| bEnableAlphaUpscaling != Other.bEnableAlphaUpscaling
 			|| bReleaseMemoryOnDelete != Other.bReleaseMemoryOnDelete
@@ -87,13 +93,13 @@ struct FDLSSFeatureDesc
 	int32 DLSSRRPreset = -1;
 	int32 PerfQuality = -1;
 	bool bHighResolutionMotionVectors = false;
-	bool bNonZeroSharpness = false;
 	bool bUseAutoExposure = false;
 	bool bEnableAlphaUpscaling = false;
 	bool bReleaseMemoryOnDelete = false;
 	uint32 GPUNode = 0;
 	uint32 GPUVisibility = 0;
 	ENGXDLSSDenoiserMode DenoiserMode = ENGXDLSSDenoiserMode::Off;
+
 	FString GetDebugDescription() const
 	{
 		auto NGXDLSSPresetString = [] (int NGXPreset)
@@ -101,11 +107,6 @@ struct FDLSSFeatureDesc
 			switch (NGXPreset)
 			{
 				case NVSDK_NGX_DLSS_Hint_Render_Preset_Default:return TEXT("Default");
-				case NVSDK_NGX_DLSS_Hint_Render_Preset_A:return TEXT("Preset A");
-				case NVSDK_NGX_DLSS_Hint_Render_Preset_B:return TEXT("Preset B");
-				case NVSDK_NGX_DLSS_Hint_Render_Preset_C:return TEXT("Preset C");
-				case NVSDK_NGX_DLSS_Hint_Render_Preset_D:return TEXT("Preset D");
-				case NVSDK_NGX_DLSS_Hint_Render_Preset_E:return TEXT("Preset E");
 				case NVSDK_NGX_DLSS_Hint_Render_Preset_F:return TEXT("Preset F");
 				case NVSDK_NGX_DLSS_Hint_Render_Preset_G:return TEXT("Preset G");
 				case NVSDK_NGX_DLSS_Hint_Render_Preset_H_Reserved:return TEXT("Preset H");
@@ -126,9 +127,6 @@ struct FDLSSFeatureDesc
 				{
 					default: return TEXT("Invalid NVSDK_NGX_RayReconstruction_Hint_Render_Preset");
 					case NVSDK_NGX_RayReconstruction_Hint_Render_Preset_Default:return TEXT("Default");
-					case NVSDK_NGX_RayReconstruction_Hint_Render_Preset_A:return TEXT("Preset A");
-					case NVSDK_NGX_RayReconstruction_Hint_Render_Preset_B:return TEXT("Preset B");
-					case NVSDK_NGX_RayReconstruction_Hint_Render_Preset_C:return TEXT("Preset C");
 					case NVSDK_NGX_RayReconstruction_Hint_Render_Preset_D:return TEXT("Preset D");
 					case NVSDK_NGX_RayReconstruction_Hint_Render_Preset_E:return TEXT("Preset E");
 					case NVSDK_NGX_RayReconstruction_Hint_Render_Preset_F:return TEXT("Preset F");
@@ -158,6 +156,7 @@ struct FDLSSFeatureDesc
 		};
 		auto NGXDenoiserModeString = [](ENGXDLSSDenoiserMode NGXDenoiserMode)
 		{
+			static_assert (int(ENGXDLSSDenoiserMode::MaxValue) == 1, "dear DLSS plugin NVIDIA developer, please update this code to handle the new ENGXDLSSDenoiserMode enum values");
 			switch (NGXDenoiserMode)
 			{
 			case ENGXDLSSDenoiserMode::Off: return TEXT("Off");
@@ -166,7 +165,7 @@ struct FDLSSFeatureDesc
 			}
 		};
 
-		return FString::Printf(TEXT("SrcRect=[%dx%d->%dx%d], DestRect=[%dx%d->%dx%d], ScaleX=%f, ScaleY=%f, NGXDLSSPreset=%s(%d), NGXDLSSRRPreset=%s(%d), NGXPerfQuality=%s(%d), bHighResolutionMotionVectors=%d, bNonZeroSharpness=%d, bUseAutoExposure=%d, bEnableAlphaUpscaling=%d, bReleaseMemoryOnDelete=%d, GPUNode=%u, GPUVisibility=0x%x, DenoiseMode=%s"),
+		return FString::Printf(TEXT("SrcRect=[%dx%d->%dx%d], DestRect=[%dx%d->%dx%d], ScaleX=%f, ScaleY=%f, NGXDLSSPreset=%s(%d), NGXDLSSRRPreset=%s(%d), NGXPerfQuality=%s(%d), bHighResolutionMotionVectors=%d, bUseAutoExposure=%d, bEnableAlphaUpscaling=%d, bReleaseMemoryOnDelete=%d, GPUNode=%u, GPUVisibility=0x%x, DenoiseMode=%s"),
 			SrcRect.Min.X, SrcRect.Min.Y, SrcRect.Max.X, SrcRect.Max.Y,
 			DestRect.Min.X, DestRect.Min.Y, DestRect.Max.X, DestRect.Max.Y,
 			float(SrcRect.Width()) / float(DestRect.Width()),
@@ -175,7 +174,6 @@ struct FDLSSFeatureDesc
 			NGXDLSSRRPresetString(DLSSRRPreset), DLSSRRPreset,
 			NGXPerfQualityString(PerfQuality), PerfQuality,
 			bHighResolutionMotionVectors,
-			bNonZeroSharpness,
 			bUseAutoExposure,
 			bEnableAlphaUpscaling,
 			bReleaseMemoryOnDelete,
@@ -186,7 +184,8 @@ struct FDLSSFeatureDesc
 	}
 };
 
-struct NGXRHI_API FRHIDLSSArguments
+
+struct FRHIDLSSArguments
 {
 	FRHITexture* InputColor = nullptr;
 	FRHITexture* InputDepth = nullptr;
@@ -204,7 +203,15 @@ struct NGXRHI_API FRHIDLSSArguments
 	FRHITexture* InputReflectionHitDistance = nullptr;
 #endif
 
+#if SUPPORT_GUIDE_SSS_DOF
+	FRHITexture* InputSSS = nullptr;
+	FRHITexture* InputDOF = nullptr;
+#endif
+
+
 	FRHITexture* OutputColor = nullptr;
+
+
 #if !ENGINE_PROVIDES_UE_5_6_ID3D12DYNAMICRHI_METHODS
 	FRHITexture* DebugLayerCompatibilityHelperSource = nullptr;
 	FRHITexture* DebugLayerCompatibilityHelperDest = nullptr;
@@ -224,7 +231,6 @@ struct NGXRHI_API FRHIDLSSArguments
 #endif
 	bool bHighResolutionMotionVectors = false;
 
-	float Sharpness = 0.0f;
 	bool bReset = false;
 
 	int32 DLSSPreset = NVSDK_NGX_DLSS_Hint_Render_Preset::NVSDK_NGX_DLSS_Hint_Render_Preset_Default;
@@ -245,21 +251,21 @@ struct NGXRHI_API FRHIDLSSArguments
 
 	ENGXDLSSDenoiserMode DenoiserMode = ENGXDLSSDenoiserMode::Off;
 
-	void Validate() const;
+	UE_API void Validate() const;
 	
 	inline FDLSSFeatureDesc GetFeatureDesc() const
 	{
 		return FDLSSFeatureDesc 
 		{ 
 			SrcRect, DestRect, DLSSPreset,DLSSRRPreset, PerfQuality,
-			bHighResolutionMotionVectors, Sharpness != 0.0f, bUseAutoExposure, bEnableAlphaUpscaling,
+			bHighResolutionMotionVectors, bUseAutoExposure, bEnableAlphaUpscaling,
 			bReleaseMemoryOnDelete, GPUNode, GPUVisibility, DenoiserMode
 		};
 	}
 
-	uint32 GetNGXCommonDLSSFeatureFlags() const;
-	NVSDK_NGX_DLSS_Create_Params  GetNGXDLSSCreateParams() const;
-	NVSDK_NGX_DLSSD_Create_Params GetNGXDLSSRRCreateParams() const;
+	UE_API uint32 GetNGXCommonDLSSFeatureFlags() const;
+	UE_API NVSDK_NGX_DLSS_Create_Params  GetNGXDLSSCreateParams() const;
+	UE_API NVSDK_NGX_DLSSD_Create_Params GetNGXDLSSRRCreateParams() const;
 };
 
 struct FNGXDriverRequirements
@@ -270,10 +276,10 @@ struct FNGXDriverRequirements
 };
 
 // the API specic RHI extensions derive from this to handle the lifetime
-class NGXRHI_API NGXDLSSFeature
+class NGXDLSSFeature
 {
 public:
-	virtual ~NGXDLSSFeature() = 0;
+	UE_API virtual ~NGXDLSSFeature() = 0;
 
 	FDLSSFeatureDesc Desc;
 	NVSDK_NGX_Handle* Feature = nullptr;
@@ -304,11 +310,11 @@ public:
 	}
 };
 
-struct NGXRHI_API FDLSSState
+struct FDLSSState
 {
 	// this is used by the RHIs to see whether they need to recreate the NGX feature
 
-	bool RequiresFeatureRecreation(const FRHIDLSSArguments& InArguments);
+	UE_API bool RequiresFeatureRecreation(const FRHIDLSSArguments& InArguments);
 	
 	bool HasValidFeature() const
 	{
@@ -376,7 +382,6 @@ struct FDLSSOptimalSettings
 
 	FIntPoint RenderSizeMin;
 	FIntPoint RenderSizeMax;
-	float Sharpness;
 
 	bool bIsSupported;
 	float OptimalResolutionFraction;
@@ -390,9 +395,9 @@ struct FDLSSOptimalSettings
 	}
 };
 
-class NGXRHI_API NGXRHI
+class NGXRHI
 {
-	struct NGXRHI_API FDLSSQueryFeature
+	struct FDLSSQueryFeature
 	{
 		struct FDLSSResolutionParameters
 		{
@@ -408,8 +413,8 @@ class NGXRHI_API NGXRHI
 			{}
 		};
 
-		void QueryDLSSSupport();
-		FDLSSOptimalSettings GetDLSSOptimalSettings(const FDLSSResolutionParameters& InResolution) const;
+		UE_API void QueryDLSSSupport();
+		UE_API FDLSSOptimalSettings GetDLSSOptimalSettings(const FDLSSResolutionParameters& InResolution) const;
 
 		// the lifetime of this is managed directly by the encompassing derived RHI
 		NVSDK_NGX_Parameter* CapabilityParameters = nullptr;
@@ -428,14 +433,14 @@ class NGXRHI_API NGXRHI
 	
 public:
 #if !ENGINE_PROVIDES_UE_5_6_ID3D12DYNAMICRHI_METHODS
-	virtual bool NeedExtraPassesForDebugLayerCompatibility();
+	UE_API virtual bool NeedExtraPassesForDebugLayerCompatibility();
 #endif
 
-	virtual ~NGXRHI();
+	UE_API virtual ~NGXRHI();
 
-	virtual void ExecuteDLSS(FRHICommandList& CmdList, const FRHIDLSSArguments& InArguments, FDLSSStateRef InDLSSState) = 0;
+	UE_API virtual void ExecuteDLSS(FRHICommandList& CmdList, const FRHIDLSSArguments& InArguments, FDLSSStateRef InDLSSState) = 0;
 
-	virtual bool IsRRSupportedByRHI() const = 0;
+	UE_API virtual bool IsRRSupportedByRHI() const = 0;
 
 	bool IsDLSSAvailable() const
 	{
@@ -482,10 +487,13 @@ public:
 		return GetDLSSOptimalSettings(QualityLevel).OptimalResolutionFraction;
 	}
 
-	TPair<FString, bool> GetDLSSGenericBinaryInfo() const;
-	TPair<FString, bool> GetDLSSCustomBinaryInfo() const;
+	UE_API TPair<FString, bool> GetDLSSSRGenericBinaryInfo() const;
+	UE_API TPair<FString, bool> GetDLSSSRCustomBinaryInfo() const;
 
-	void TickPoolElements();
+	UE_API TPair<FString, bool> GetDLSSRRGenericBinaryInfo() const;
+	UE_API TPair<FString, bool> GetDLSSRRCustomBinaryInfo() const;
+
+	UE_API void TickPoolElements();
 
 	static bool NGXInitialized()
 	{
@@ -500,21 +508,21 @@ public:
 
 protected:
 
-	NGXRHI(const FNGXRHICreateArguments& Arguments);
+	UE_API NGXRHI(const FNGXRHICreateArguments& Arguments);
 
 	const NVSDK_NGX_FeatureCommonInfo* CommonFeatureInfo() const
 	{
 		return &FeatureInfo;
 	}
 
-	void RegisterFeature(TSharedPtr<NGXDLSSFeature> InFeature);
-	TSharedPtr<NGXDLSSFeature> FindFreeFeature(const FRHIDLSSArguments& InArguments);
+	UE_API void RegisterFeature(TSharedPtr<NGXDLSSFeature> InFeature);
+	UE_API TSharedPtr<NGXDLSSFeature> FindFreeFeature(const FRHIDLSSArguments& InArguments);
 
-	void ReleaseAllocatedFeatures();
-	void ApplyCommonNGXParameterSettings(NVSDK_NGX_Parameter* Parameter, const FRHIDLSSArguments& InArguments);
-	static FString GetNGXLogDirectory();
+	UE_API void ReleaseAllocatedFeatures();
+	UE_API void ApplyCommonNGXParameterSettings(NVSDK_NGX_Parameter* Parameter, const FRHIDLSSArguments& InArguments);
+	UE_API static FString GetNGXLogDirectory();
 
-	bool IsSafeToShutdownNGX() const;
+	UE_API bool IsSafeToShutdownNGX() const;
 
 	FDynamicRHI* DynamicRHI = nullptr;
 	
@@ -522,13 +530,17 @@ protected:
 	
 	uint32 FrameCounter = 1;
 
-	static bool bNGXInitialized;
-	static bool bIsIncompatibleAPICaptureToolActive;
+	UE_API static bool bNGXInitialized;
+	UE_API static bool bIsIncompatibleAPICaptureToolActive;
 private:
 	TArray< TSharedPtr<NGXDLSSFeature>> AllocatedDLSSFeatures;
 
-	TTuple<FString, bool> DLSSGenericBinaryInfo;
-	TTuple<FString, bool> DLSSCustomBinaryInfo;
+	TTuple<FString, bool> DLSSSRGenericBinaryInfo;
+	TTuple<FString, bool> DLSSSRCustomBinaryInfo;
+
+
+	TTuple<FString, bool> DLSSRRGenericBinaryInfo;
+	TTuple<FString, bool> DLSSRRCustomBinaryInfo;
 	
 	TArray<FString> NGXDLLSearchPaths;
 	TArray<const wchar_t*> NGXDLLSearchPathRawStrings;
@@ -552,3 +564,5 @@ public:
 	virtual void StartupModule();
 	virtual void ShutdownModule();
 };
+
+#undef UE_API

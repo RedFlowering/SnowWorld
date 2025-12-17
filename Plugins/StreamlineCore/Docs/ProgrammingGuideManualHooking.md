@@ -2,7 +2,7 @@
 Streamline - Manual Hooking
 =======================
 
-Version 2.7.30
+Version 2.9.0
 =======
 
 The automated global hooking is a great way to quickly enable SL features in any application. However, this can lead to unnecessary overhead caused by the entire API redirection through SL proxies and problems with tools and 3rd party libraries which do not expect to receive SL proxies as inputs.
@@ -146,7 +146,7 @@ else
     //
     // This part is identical for D3D11 and D3D12    
     IDXGISwapChain* nativeSwapchain{};
-    if(SL_FAILED(result, slGetNativeInterface(proxySwapChain, &nativeSwapchain))
+    if(SL_FAILED(result, slGetNativeInterface(proxySwapChain, &nativeSwapchain)))
     {
         // Handle error, check logs
     }
@@ -452,13 +452,13 @@ else
 }
 ```
 
-Now that you have the information about the additional extensions, features and queues required by SL feature(s) you can proceed to create Vulkan instance and device. For more details please check out the [implementation on GitHub](https://github.com/NVIDIAGameWorks/Streamline/blob/main/source/core/sl.interposer/vulkan/wrapper.cpp#L234).
+Now that you have the information about the additional extensions, features and queues required by SL feature(s) you can proceed to create Vulkan instance and device. For more details please check out the [implementation](../source/core/sl.interposer/vulkan/wrapper.cpp).
 
 Note that Vulkan supports optical flow feature extension from Nvidia natively, as required by DLSS-G, starting with VK_API_VERSION_1_1 (recommended version is VK_API_VERSION_1_3) and minimum Nvidia driver version 527.64 on Windows and 525.72 on Linux. Vulkan SDK version 1.3.231.0 supports validation layer for this extension.
 Native optical flow feature in Vulkan requires its own optical flow queue whose family is exclusive to graphics, compute and copy queue families and whose info is required to be passed during Vulkan device creation and has certain requirements for its use in DLSS-G:
 1. Native optical flow queue family cannot be the same as that of any of the other queues of its client.
 2. Its queue should be the very first one of the very first native optical flow-capable family resulting in the required queue index is 0.
-For more details, please check out the [helper getOpticalFlowQueueInfo on GitHub](https://github.com/NVIDIAGameWorks/Streamline/blob/main/source/platforms/sl.chi/vulkan.cpp) to retrieve the same as well as the implementation link referred above.
+For more details, please check out the [helper getOpticalFlowQueueInfo](../source/platforms/sl.chi/vulkan.cpp) to retrieve the same as well as the implementation link referred above.
 In the absence of this setup in manual hooking mode, DLSS-G runs optical flow in an interop mode.
 
 ##### 5.2.2 PROVIDING INSTANCE, DEVICE AND OTHER INFORMATION TO SL
@@ -593,4 +593,3 @@ void restorePipeline(VkCommandBuffer cmdBuffer)
 
 > **IMPORTANT:**
 > Failure to restore command list(buffer) state correctly will cause your application to crash or misbehave in some other form.
-

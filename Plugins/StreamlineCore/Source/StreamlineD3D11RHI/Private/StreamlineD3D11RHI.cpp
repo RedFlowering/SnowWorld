@@ -183,7 +183,7 @@ public:
 		UE_LOG(LogStreamlineD3D11RHI, Log, TEXT("%s Leave"), ANSI_TO_TCHAR(__FUNCTION__));
 	}
 
-	virtual void TagTextures(FRHICommandList& CmdList, uint32 InViewID, const TArrayView<const FRHIStreamlineResource> InResources) final
+	virtual void TagTextures(FRHICommandList& CmdList, uint32 InViewID, const sl::FrameToken& FrameToken, const TArrayView<const FRHIStreamlineResource> InResources) final
 	{
 
 #if ENGINE_PROVIDES_ID3D11DYNAMICRHI
@@ -214,8 +214,15 @@ public:
 			Tag.lifecycle = sl::ResourceLifecycle::eOnlyValidNow;
 			Tag.extent = ToSL(Resource.ViewRect);
 
-			SLsetTag(sl::ViewportHandle(InViewID), &Tag, 1, NativeCmdBuffer);
-			
+			// when removing this deprecated path, we only need to keep the else block
+			if (ShouldUseSlSetTag())
+			{
+				SLsetTag(sl::ViewportHandle(InViewID), &Tag, 1, NativeCmdBuffer);
+			}
+			else
+			{
+				SLsetTagForFrame(FrameToken, sl::ViewportHandle(InViewID), &Tag, 1, NativeCmdBuffer);
+			}
 		}
 	}
 	virtual void* GetCommandBuffer(FRHICommandList& CmdList, FRHITexture* Texture) override final
@@ -322,7 +329,8 @@ void FStreamlineD3D11RHIModule::StartupModule()
 	}
 
 	UE_LOG(LogStreamlineD3D11RHI, Log, TEXT("%s Enter"), ANSI_TO_TCHAR(__FUNCTION__));
-	if(FApp::CanEverRender())
+	const auto [bIsSupported, NotSupportedReason] = IsEngineExecutionModeSupported();
+	if (bIsSupported)
 	{
 		if ((GDynamicRHI != nullptr) && (RHIGetInterfaceType() == ERHIInterfaceType::D3D11))
 		{
@@ -344,7 +352,7 @@ void FStreamlineD3D11RHIModule::StartupModule()
 	}
 	else
 	{
-		UE_LOG(LogStreamlineD3D11RHI, Log, TEXT("This UE instance does not render, skipping initalizing of Streamline and registering of custom DXGI and D3D11 functions"));
+		UE_LOG(LogStreamlineD3D11RHI, Log, TEXT("Skipping Streamline initialization for this UE instance due to: '%s'"), NotSupportedReason);
 	}
 	UE_LOG(LogStreamlineD3D11RHI, Log, TEXT("%s Leave"), ANSI_TO_TCHAR(__FUNCTION__));
 }

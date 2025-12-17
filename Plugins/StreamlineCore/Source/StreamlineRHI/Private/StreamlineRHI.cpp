@@ -30,6 +30,10 @@
 #include "Misc/Paths.h"
 #include "Modules/ModuleManager.h"
 
+
+#include "Internationalization/Regex.h"
+#include "Templates/Function.h"
+
 #include "sl_deepdvc.h"
 #include "sl_dlss_g.h"
 #include "sl.h"
@@ -51,42 +55,161 @@ static TAutoConsoleVariable<bool> CVarStreamlineFilterRedundantSetOptionsCalls(
 	TEXT(" 1: only call sl{Feature}SetOptions when the UE plugin side changed(default)"),
 	ECVF_RenderThreadSafe);
 
+#ifndef STREAMLINE_PLATFORM_DIR
+#error "You are not supposed to get to this point, check your build configuration."
+#endif
+
+static const FString PlatformDir = STREAMLINE_PLATFORM_DIR;
+
+// Epic requested a CVar to control whether the plugin will perform initialization or not.
+// This allows the plugin to be included in a project and active but allows for it to not do anything
+// at runtime.
+static TAutoConsoleVariable<bool> CVarStreamlineInitializePlugin(
+	TEXT("r.Streamline.InitializePlugin"),
+	true,
+	TEXT("Enable/disable initializing the Streamline plugin (default = true)"),
+	ECVF_ReadOnly);
 
 DEFINE_LOG_CATEGORY(LogStreamlineRHI);
 DEFINE_LOG_CATEGORY_STATIC(LogStreamlineAPI, Log, All);
 
 #define LOCTEXT_NAMESPACE "StreamlineRHI"
 
+/*UE log verbosity can be adjusted in non-shipping builds in various ways as described in 
+https://dev.epicgames.com/community/snippets/3GoB/unreal-engine-how-to-set-log-verbosity-via-command-line-with-logcmds?locale=en-en
+
+using -LogCmds:
+-LogCmds="LogStreamlineAPI VeryVerbose, LogStreamlineRHI Verbose" 
+with CVar syntax:
+-ini:Engine:[Core.Log]:LogStreamlineAPI=VeryVerbose
+Using a config file:
+e.g. in BaseEngine/DefaultEngine.ini
+
+[Core.Log] 
+; This can be used to change the default log level for engine logs to help with debugging
+LogStreamlineAPI=VeryVerbose
+LogStreamlineRHI=Verbose
+
+*/
+
 static void StreamlineLogSink(sl::LogType InSLVerbosity, const char* InSLMessage)
 {
+#if !NO_LOGGING
 	FString Message(FString(UTF8_TO_TCHAR(InSLMessage)).TrimEnd());
 
 	static_assert(uint32_t(sl::LogType::eCount)  == 3U, "sl::LogType enum value mismatch. Dear NVIDIA Streamline plugin developer, please update this code!" ) ;
+	static_assert(uint32_t(ELogVerbosity::Type::NumVerbosity) == 8U, "(ELogVerbosity::Type enum value mismatch. Dear NVIDIA Streamline plugin developer, please update this code!");
 
-	if (Message.Contains(TEXT("[operator ()] 'kFeatureDLSS_G' is missing")))
-	{
-		// nuisance message that appears periodically when the FG feature isn't loaded
-		return;
-	}
-	// TODO REMOVE
-	if (Message.Contains(TEXT("[streamline][error]commoninterface.h")) && Message.Contains(TEXT("same frame is NOT allowed!")))
-	{
-		InSLVerbosity = sl::LogType::eWarn;
-	}
+	ELogVerbosity::Type UEVerbosity;
 
 	switch (InSLVerbosity)
 	{
-		default:
-		case sl::LogType::eInfo:
-			UE_LOG(LogStreamlineAPI, Log, TEXT("[Info]: %s"), *Message);
+	default:
+	case sl::LogType::eInfo:
+		UEVerbosity = ELogVerbosity::Log;
+		break;
+	case sl::LogType::eWarn:
+		UEVerbosity = ELogVerbosity::Warning;
+		break;
+	case sl::LogType::eError:
+		UEVerbosity = ELogVerbosity::Error;
+		break;
+	}
+
+	// the SL log messages have their SL SDK file & function name embedded but we are not matching those to insulate us from any shuffling around on the SDK side
+	// e.g. for [15-20-52][streamline][warn][tid:26560][0s:582ms:945us]commonEntry.cpp:814[getNGXFeatureRequirements] ngxResult not implemented
+	// we only filter for "ngxResult not implemented"
+
+	auto MatchesAnyFilter = [](const FString& Message, const TArray<const TCHAR*>& Filters) -> bool
+	{
+		for (const TCHAR* Filter : Filters)
+		{
+			if (FRegexMatcher(FRegexPattern(Filter), Message).FindNext())
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+
+	// SL thinks those are "warnings" but we think they are "info"/Log
+	const TArray<const TCHAR*> LogFilters = 
+	{
+		// SL reports this as sl::LogType::eWarn but we are downgrading here to log so automation testing doesn't fail
+		// That is expected to only happen once during startup
+		TEXT("Repeated slDLSSGSetOptions() call for the frame (\\d+). A redundant call or a race condition with Present()"),
+	};
+
+	// Those
+	const TArray<const TCHAR*> VerboseFilters = 
+	{
+		TEXT("ngxResult not implemented")
+		, TEXT("Keyboard manager disabled in production")
+		, TEXT("Frame rate over (\\d+), reseting frame timer") // no need to brag
+		, TEXT("Couldn't lock the mutex on sync present - will skip the present.")
+		, TEXT("FC feedback: (\\d+)")
+		, TEXT(" Achieved (.*) FC feedback state")
+		, TEXT("Invalid no warp resource extent, IF optionally specified by the client!Either extent not provided or one of the extent dimensions(0 x 0) is incorrectly zero.Resetting extent to full no warp resource size(0 x 0)")
+	};
+
+	const TArray<const TCHAR*> VeryVerboseFilters = 
+	{
+		// This is just spam
+		TEXT("error: failed to load NGXCore")
+		 
+		// We are not using DLSS-SR/RR in Streamline so we have no need for those
+		, TEXT("DLSSD feature is not supported.Please check if you have a valid nvngx_dlssd.dll or your driver is supporting DLSSD.")
+		, TEXT("Ignoring plugin 'sl.dlss_d' since it is was not requested by the host")
+		, TEXT("Feature 'kFeatureDLSS' is not sharing required data")
+
+		// With SL 2.8, SL 2.9 and DLSS-FG off we get this EVERY frame when we are not using the legacy slSetTag plugin setting.
+		, TEXT("SL resource tags for frame (\\d+) not set yet!")
+	};
+
+	if (MatchesAnyFilter(Message, LogFilters))
+	{
+		UEVerbosity = ELogVerbosity::Log;
+	}
+	else if (MatchesAnyFilter(Message, VerboseFilters))
+	{
+		UEVerbosity = ELogVerbosity::Verbose;
+	}
+	else if (MatchesAnyFilter(Message, VeryVerboseFilters))
+	{
+		UEVerbosity = ELogVerbosity::VeryVerbose;
+	}
+
+	//Switch it up since UE_LOG needs the verbosity as a compile time constant
+	switch (UEVerbosity)
+	{
+		case ELogVerbosity::Fatal:
+			UE_LOG(LogStreamlineAPI, Fatal, TEXT("%s"), *Message);
 			break;
-		case sl::LogType::eWarn:
-			UE_LOG(LogStreamlineAPI, Warning, TEXT("[Warn]: %s"), *Message);
+
+		case ELogVerbosity::Error:
+			UE_LOG(LogStreamlineAPI, Error, TEXT("%s"), *Message);
 			break;
-		case sl::LogType::eError:
-			UE_LOG(LogStreamlineAPI, Error, TEXT("[Error]: %s"),*Message);
+		case ELogVerbosity::Warning:
+			UE_LOG(LogStreamlineAPI, Warning, TEXT("%s"), *Message);
+			break;
+
+		case ELogVerbosity::Display:
+			UE_LOG(LogStreamlineAPI, Display, TEXT("%s"), *Message);
+			break;
+
+		default: /* fall through*/
+		case ELogVerbosity::Log:
+			UE_LOG(LogStreamlineAPI, Log, TEXT("%s"), *Message);
+			break;
+		
+		case ELogVerbosity::Verbose:
+			UE_LOG(LogStreamlineAPI, Verbose, TEXT("%s"), *Message);
+			break;
+		case ELogVerbosity::VeryVerbose:
+			UE_LOG(LogStreamlineAPI, VeryVerbose, TEXT("%s"), *Message);
 			break;
 	}
+#endif
 }
 
 static bool bIsStreamlineInitialized = false;
@@ -299,24 +422,25 @@ void FStreamlineRHI::PostPlatformRHICreateInit()
 
 	UE_LOG(LogStreamlineRHI, Log, TEXT("%s Leave"), ANSI_TO_TCHAR(__FUNCTION__));
 }
+
 void FStreamlineRHI::OnSwapchainCreated(void* InNativeSwapchain) const
 {
 
-	UE_LOG(LogStreamlineRHI, Log, TEXT("%s Enter %s NumActiveSwapchainProxies=%u"), ANSI_TO_TCHAR(__FUNCTION__), *CurrentThreadName(), NumActiveSwapchainProxies);
+	UE_LOG(LogStreamlineRHI, Verbose, TEXT("%s Enter %s NumActiveSwapchainProxies=%u"), ANSI_TO_TCHAR(__FUNCTION__), *CurrentThreadName(), NumActiveSwapchainProxies);
 	ValidateNumSwapchainProxies(__FUNCTION__);
 	const bool bIsSwapchainProxy = IsStreamlineSwapchainProxy(InNativeSwapchain);
 	if (bIsSwapchainProxy)
 	{
 		++NumActiveSwapchainProxies;
 	}
-	UE_LOG(LogStreamlineRHI, Log, TEXT("NativeSwapChain=%p IsSwapChainProxy=%u , NumActiveSwapchainProxies=%d"), InNativeSwapchain, bIsSwapchainProxy, NumActiveSwapchainProxies);
+	UE_LOG(LogStreamlineRHI, Verbose, TEXT("NativeSwapChain=%p IsSwapChainProxy=%u , NumActiveSwapchainProxies=%d"), InNativeSwapchain, bIsSwapchainProxy, NumActiveSwapchainProxies);
 	ValidateNumSwapchainProxies(__FUNCTION__);
-	UE_LOG(LogStreamlineRHI, Log, TEXT("%s Leave %u"), ANSI_TO_TCHAR(__FUNCTION__), NumActiveSwapchainProxies);
+	UE_LOG(LogStreamlineRHI, Verbose, TEXT("%s Leave %u"), ANSI_TO_TCHAR(__FUNCTION__), NumActiveSwapchainProxies);
 }
 
 void FStreamlineRHI::OnSwapchainDestroyed(void* InNativeSwapchain) const
 {
-	UE_LOG(LogStreamlineRHI, Log, TEXT("%s Enter %s NumActiveSwapchainProxies=%u"), ANSI_TO_TCHAR(__FUNCTION__), *CurrentThreadName(), NumActiveSwapchainProxies);
+	UE_LOG(LogStreamlineRHI, Verbose, TEXT("%s Enter %s NumActiveSwapchainProxies=%u"), ANSI_TO_TCHAR(__FUNCTION__), *CurrentThreadName(), NumActiveSwapchainProxies);
 	ValidateNumSwapchainProxies(__FUNCTION__);
 	const bool bIsSwapchainProxy = IsStreamlineSwapchainProxy(InNativeSwapchain);
 	
@@ -325,9 +449,9 @@ void FStreamlineRHI::OnSwapchainDestroyed(void* InNativeSwapchain) const
 		--NumActiveSwapchainProxies;
 	}
 
-	UE_LOG(LogStreamlineRHI, Log, TEXT("NativeSwapchain=%p IsSwapChainProxy=%u, NumActiveSwapchainProxies=%d "), InNativeSwapchain, bIsSwapchainProxy, NumActiveSwapchainProxies);
+	UE_LOG(LogStreamlineRHI, Verbose, TEXT("NativeSwapchain=%p IsSwapChainProxy=%u, NumActiveSwapchainProxies=%d "), InNativeSwapchain, bIsSwapchainProxy, NumActiveSwapchainProxies);
 	ValidateNumSwapchainProxies(__FUNCTION__);
-	UE_LOG(LogStreamlineRHI, Log, TEXT("%s Leave %u"), ANSI_TO_TCHAR(__FUNCTION__), NumActiveSwapchainProxies);
+	UE_LOG(LogStreamlineRHI, Verbose, TEXT("%s Leave %u"), ANSI_TO_TCHAR(__FUNCTION__), NumActiveSwapchainProxies);
 }
 
 #if !ENGINE_PROVIDES_UE_5_6_ID3D12DYNAMICRHI_METHODS
@@ -393,7 +517,7 @@ sl::FrameToken* FStreamlineRHI::GetFrameToken(uint64 FrameCounter)
 void FStreamlineRHI::StreamlineEvaluateDeepDVC(FRHICommandList& CmdList, const FRHIStreamlineResource& InputOutput, sl::FrameToken* FrameToken, uint32 ViewID)
 {
 	check(InputOutput.StreamlineTag == EStreamlineResource::ScalingOutputColor);
-	TagTexture(CmdList, ViewID, InputOutput);
+	TagTexture(CmdList, ViewID, *FrameToken, InputOutput);
 	sl::Feature SLFeature = sl::kFeatureDeepDVC;
 
 
@@ -552,7 +676,7 @@ STREAMLINERHI_API void PlatformCreateStreamlineRHI()
 			{
 				// Get the base directory of this plugin
 				const FString PluginBaseDir = IPluginManager::Get().FindPlugin(TEXT("StreamlineCore"))->GetBaseDir();
-				const FString SLBinariesDir = FPaths::Combine(*PluginBaseDir, TEXT("Binaries/ThirdParty/Win64/"));
+				const FString SLBinariesDir = FPaths::Combine(*PluginBaseDir, TEXT("Binaries/ThirdParty/"), PlatformDir, TEXT("/"));
 				UE_LOG(LogStreamlineRHI, Log, TEXT("PluginBaseDir %s"), *PluginBaseDir);
 				UE_LOG(LogStreamlineRHI, Log, TEXT("SLBinariesDir %s"), *SLBinariesDir);
 
@@ -602,43 +726,108 @@ STREAMLINERHI_API EStreamlineSupport GetPlatformStreamlineSupport()
 	return GStreamlineSupport;
 }
 
-static bool ShouldLoadDebugOverlay()
+namespace
 {
-#if UE_BUILD_SHIPPING
-	return false;
-#else
 	const TCHAR* StreamlineIniSection = TEXT("/Script/StreamlineRHI.StreamlineSettings");
 	const TCHAR* StreamlineOverrideIniSection = TEXT("/Script/StreamlineRHI.StreamlineOverrideSettings");
-	bool bLoadDebugOverlay = false;
-	check(GConfig != nullptr);
-	GConfig->GetBool(StreamlineIniSection, TEXT("bLoadDebugOverlay"), bLoadDebugOverlay, GEngineIni);
-	FString LoadDebugOverlayOverrideString{};
-	bool bOverrideFound = GConfig->GetString(StreamlineOverrideIniSection, TEXT("LoadDebugOverlayOverride"), LoadDebugOverlayOverrideString, GEngineIni);
-	if (bOverrideFound)
+
+	bool LoadConfigSettingWithOverrides(bool bDefaultValue, const TCHAR* SettingName, const TCHAR* OverrideName, const TCHAR* CommandLineWithoutDashSLPrefix)
 	{
-		if (LoadDebugOverlayOverrideString == TEXT("Enabled"))
+		bool bResult = bDefaultValue;
+		bool bSettingBool = false;
+		check(GConfig != nullptr);
+		bool bHasConfig = GConfig->GetBool(StreamlineIniSection, SettingName, bSettingBool, GEngineIni);
+
+		if (bHasConfig)
 		{
-			bLoadDebugOverlay = true;
+			bResult = bSettingBool;
 		}
-		else if (LoadDebugOverlayOverrideString == TEXT("Disabled"))
+
+		// we treat EStreamlineSettingOverride::UseProjectSettings  as project setting, either the C++ default or whatever is in the config file
+
+		FString SettingBoolOverrideString{};
+		bool bHasOverrideConfig = GConfig->GetString(StreamlineOverrideIniSection, OverrideName, SettingBoolOverrideString, GEngineIni);
+		if (bHasOverrideConfig)
 		{
-			bLoadDebugOverlay = false;
+			if (SettingBoolOverrideString == TEXT("Enabled"))
+			{
+				bResult = true;
+			}
+			else if (SettingBoolOverrideString == TEXT("Disabled"))
+			{
+				bResult = false;
+			}
+			else if(SettingBoolOverrideString == TEXT("UseProjectSettings"))
+			{
+				bHasOverrideConfig = false;
+			}
 		}
+		else
+		{
+			// this assumes that UStreamlineOverrideSettings::* are  all set to EStreamlineSettingOverride::UseProjectSettings in C++
+		}
+
+		TArray<FString> FeatureEnableDisableCommandlines;
+
+		// That's skipping the leading '-' intentionally
+		const FString AllowCMD = FString::Printf(TEXT("sl%s"), CommandLineWithoutDashSLPrefix);
+		const FString DisallowCMD = FString::Printf(TEXT("slno%s"), CommandLineWithoutDashSLPrefix);
+
+		bool bHasAllowCommand = false;
+		bool bHasDisallowCommand = false;
+		if (FParse::Param(FCommandLine::Get(), *AllowCMD))
+		{
+			bResult = true;
+			bHasAllowCommand = true;
+		}
+		else if (FParse::Param(FCommandLine::Get(), *DisallowCMD))
+		{
+			bResult = false;
+			bHasDisallowCommand = true;
+		}
+
+		if (bHasAllowCommand || bHasDisallowCommand)
+		{
+			UE_LOG(LogStreamlineRHI, Log, TEXT("Setting %-25s to %u due to -%s command line option"), SettingName, bResult,  bHasAllowCommand ? *AllowCMD : *DisallowCMD);
+		}
+		else if (bHasOverrideConfig)
+		{
+			UE_LOG(LogStreamlineRHI, Log, TEXT("Setting %-25s to %u due to %s in the local project user config file. See command line -sl{no}%s."), SettingName, bResult, StreamlineOverrideIniSection, CommandLineWithoutDashSLPrefix);
+		}
+		else if (bHasConfig)
+		{
+			UE_LOG(LogStreamlineRHI, Log, TEXT("Setting %-25s to %u due to %s in the project config file. See -sl{no}%s command line or project user settings"), SettingName, bResult, StreamlineIniSection, CommandLineWithoutDashSLPrefix);
+		}
+		else
+		{
+			UE_LOG(LogStreamlineRHI, Log, TEXT("Setting %-25s to %u default. See -sl{no}%s command line or project and project user settings"), SettingName, bResult, CommandLineWithoutDashSLPrefix);
+		}
+
+		return bResult;
 	}
 
-	if (FParse::Param(FCommandLine::Get(), TEXT("sldebugoverlay")))
+	bool ShouldLoadDebugOverlay()
 	{
-		UE_LOG(LogStreamlineRHI, Log, TEXT("Loading Streamline debug overlay (sl.imgui) due to -sldebugoverlay command line, which has priority over the config file setting of %u. This overrides the SL binaries to use SL development binaries."), bLoadDebugOverlay);
-		bLoadDebugOverlay = true;
-	}
-	else if (FParse::Param(FCommandLine::Get(), TEXT("slnodebugoverlay")))
-	{
-		UE_LOG(LogStreamlineRHI, Log, TEXT("Not loading Streamline debug overlay (sl.imgui) due to -slnodebugoverlay command line, which has priority over the config file setting of %u"), bLoadDebugOverlay);
-		bLoadDebugOverlay = false;
-	}
-
-	return bLoadDebugOverlay;
+#if UE_BUILD_SHIPPING
+		return false;
+	
 #endif
+		return LoadConfigSettingWithOverrides(UStreamlineSettings::CppDefaults()->bLoadDebugOverlay, TEXT("bLoadDebugOverlay"), TEXT("LoadDebugOverlayOverride"), TEXT("debugoverlay"));
+	}
+
+	bool ShouldOta()
+	{
+		// intentionally available in shipping builds
+		return LoadConfigSettingWithOverrides(UStreamlineSettings::CppDefaults()->bAllowOTAUpdate, TEXT("bAllowOTAUpdate"), TEXT("AllowOTAUpdateOverride"), TEXT("ota"));
+	}
+}
+
+bool ShouldUseSlSetTag()
+{
+	// intentionally available in shipping builds
+	// caching the result here since we call ShouldUseSetTag both at slInit time but also then every frame
+	static bool bUseSlSetTag = LoadConfigSettingWithOverrides(UStreamlineSettings::CppDefaults()->bUseSlSetTag, TEXT("bUseSlSetTag"), TEXT("UseSlSetTagOverride"), TEXT("settag"));
+	return bUseSlSetTag;
 }
 
 static void RemoveDuplicateSlashesFromPath(FString& Path)
@@ -692,10 +881,10 @@ void FStreamlineRHIModule::InitializeStreamline()
 
 			// TODO STREAMLINE have this respect r.NGX.BinarySearchOrder
 			// this is a stripped down variant from the logic  NGXRHI::NGXRHI
-			const FString ProjectNGXBinariesDir = FPaths::Combine(FPaths::ProjectDir(), TEXT("Binaries/ThirdParty/NVIDIA/NGX/Win64/"));
-			const FString LaunchNGXBinariesDir = FPaths::Combine(FPaths::LaunchDir(), TEXT("Binaries/ThirdParty/NVIDIA/NGX/Win64/"));
+			const FString ProjectNGXBinariesDir = FPaths::Combine(FPaths::ProjectDir(), TEXT("Binaries/ThirdParty/NVIDIA/NGX/"), PlatformDir);
+			const FString LaunchNGXBinariesDir = FPaths::Combine(FPaths::LaunchDir(), TEXT("Binaries/ThirdParty/NVIDIA/NGX/"), PlatformDir);
 			const FString DLSSPluginBaseDir = DLSSPlugin->GetBaseDir();
-			const FString PluginNGXProductionBinariesDir = FPaths::Combine(*DLSSPluginBaseDir, TEXT("Binaries/ThirdParty/Win64/"));
+			const FString PluginNGXProductionBinariesDir = FPaths::Combine(*DLSSPluginBaseDir, TEXT("Binaries/ThirdParty/"), PlatformDir);
 			StreamlineDLLSearchPaths.Append({ ProjectNGXBinariesDir, LaunchNGXBinariesDir, PluginNGXProductionBinariesDir });
 		}
 		else
@@ -722,15 +911,15 @@ void FStreamlineRHIModule::InitializeStreamline()
 		UE_LOG(LogStreamlineRHI, Log, TEXT("NVIDIA Streamline interposer plugin %s %s in search path %s"), STREAMLINE_INTERPOSER_BINARY_NAME, bHasStreamlineInterposerBinary ? TEXT("found") : TEXT("not found"), *StreamlineDLLSearchPaths[i]);
 
 		// copied binary name here from the DLSS-SR plugin to avoid creating a dependency on that plugin
-#ifndef NGX_DLSS_BINARY_NAME
-#define NGX_DLSS_BINARY_NAME (TEXT("nvngx_dlss.dll"))
+#ifndef NGX_DLSS_SR_BINARY_NAME
+#define NGX_DLSS_SR_BINARY_NAME (TEXT("nvngx_dlss.dll"))
 #endif
 
-#ifdef NGX_DLSS_BINARY_NAME
+#ifdef NGX_DLSS_SR_BINARY_NAME
 		if (bIsDLSSPluginEnabled)
 		{
-			const bool bHasDLSSBinary = IPlatformFile::GetPlatformPhysical().FileExists(*FPaths::Combine(StreamlineDLLSearchPaths[i], NGX_DLSS_BINARY_NAME));
-			UE_LOG(LogStreamlineRHI, Log, TEXT("NVIDIA NGX DLSS binary %s %s in search path %s"), NGX_DLSS_BINARY_NAME, bHasDLSSBinary ? TEXT("found") : TEXT("not found"), *StreamlineDLLSearchPaths[i]);
+			const bool bHasDLSSBinary = IPlatformFile::GetPlatformPhysical().FileExists(*FPaths::Combine(StreamlineDLLSearchPaths[i], NGX_DLSS_SR_BINARY_NAME));
+			UE_LOG(LogStreamlineRHI, Log, TEXT("NVIDIA NGX DLSS binary %s %s in search path %s"), NGX_DLSS_SR_BINARY_NAME, bHasDLSSBinary ? TEXT("found") : TEXT("not found"), *StreamlineDLLSearchPaths[i]);
 		}
 #endif
 	}
@@ -784,9 +973,11 @@ void FStreamlineRHIModule::InitializeStreamline()
 	Preferences.pathToLogsAndData = nullptr;
 	Preferences.allocateCallback = nullptr;
 	Preferences.releaseCallback = nullptr;
-
+#if !NO_LOGGING
 	Preferences.logMessageCallback = StreamlineLogSink;
-
+#else
+	Preferences.logMessageCallback = nullptr;
+#endif
 	Preferences.flags = sl::PreferenceFlags::eDisableCLStateTracking | sl::PreferenceFlags::eUseManualHooking;
 
 	Preferences.engine = sl::EngineType::eUnreal;
@@ -927,7 +1118,6 @@ void FStreamlineRHIModule::InitializeStreamline()
 	Preferences.featuresToLoad = Features.GetData();
 	Preferences.numFeaturesToLoad = Features.Num();
 
-	const TCHAR* StreamlineIniSection = TEXT("/Script/StreamlineRHI.StreamlineSettings");
 	bool bEnableStreamlineD3D11 = true;
 	bool bEnableStreamlineD3D12 = true;
 	GConfig->GetBool(StreamlineIniSection, TEXT("bEnableStreamlineD3D11"), bEnableStreamlineD3D11, GEngineIni);
@@ -948,21 +1138,24 @@ void FStreamlineRHIModule::InitializeStreamline()
 		return;
 	}
 
-	bool bAllowOTAUpdate = true;
-	GConfig->GetBool(StreamlineIniSection, TEXT("bAllowOTAUpdate"), bAllowOTAUpdate, GEngineIni);
-	if (bAllowOTAUpdate)
+	if (ShouldOta())
 	{
 		Preferences.flags |= (sl::PreferenceFlags::eAllowOTA | sl::PreferenceFlags::eLoadDownloadedPlugins);
+	}
+
+	if (!ShouldUseSlSetTag())
+	{
+		Preferences.flags |= sl::PreferenceFlags::eUseFrameBasedResourceTagging;
 	}
 
 	UE_LOG(LogStreamlineRHI, Log, TEXT("Initializing Streamline"));
 	UE_LOG(LogStreamlineRHI, Log, TEXT("sl::Preferences::logLevel    = %u. Can be overridden via -slloglevel={0,1,2} command line switches"), Preferences.logLevel);
 	UE_LOG(LogStreamlineRHI, Log, TEXT("sl::Preferences::showConsole = %u. Can be overridden via -sllogconsole={0,1} command line switches"), Preferences.showConsole);
+	UE_LOG(LogStreamlineRHI, Log, TEXT("sl::Preferences::flags       = 0x%x %s"), Preferences.flags, *getPreferenceFlagsAsStr(Preferences.flags));
 	UE_LOG(LogStreamlineRHI, Log, TEXT("sl::Preferences::featuresToLoad = {%s}. Feature loading can be overridden on the command line and console variables:"),
 		*FString::JoinBy(Features, TEXT(", "), [](const sl::Feature& Feature) { return FString::Printf(TEXT("%s (%u)"), ANSI_TO_TCHAR(sl::getFeatureAsStr(Feature)), Feature); }));
 	UE_LOG(LogStreamlineRHI, Log, TEXT("command line %s -sl{no}debugoverlay (non-shipping)"), *FString::Join(FeatureEnableDisableCommandlines, TEXT(", ")));
 	UE_LOG(LogStreamlineRHI, Log, TEXT("console/config %s"), *FString::Join(FeatureEnableDisableConsoleVariables, TEXT(", ")));
-
 
 	FStreamlineRHI::FeaturesRequestedAtSLInitTime = Features;
 
@@ -981,7 +1174,7 @@ void FStreamlineRHIModule::InitializeStreamline()
 
 STREAMLINERHI_API bool IsStreamlineSupported()
 {
-	return bIsStreamlineInitialized && AreStreamlineFunctionsLoaded();
+	return IsEngineExecutionModeSupported().Get<0>() && bIsStreamlineInitialized && AreStreamlineFunctionsLoaded();
 }
 
 STREAMLINERHI_API bool StreamlineFilterRedundantSetOptionsCalls()
@@ -1059,7 +1252,7 @@ void FStreamlineRHIModule::StartupModule()
 		}
 #endif
 		const FString StreamlinePluginBaseDir = IPluginManager::Get().FindPlugin(TEXT("StreamlineCore"))->GetBaseDir();
-		StreamlineBinaryDirectory = FPaths::Combine(*StreamlinePluginBaseDir, TEXT("Binaries/ThirdParty/Win64"),*(StreamlineBinaryFlavor ));
+		StreamlineBinaryDirectory = FPaths::Combine(*StreamlinePluginBaseDir, TEXT("Binaries/ThirdParty/"), PlatformDir, *(StreamlineBinaryFlavor));
 		UE_LOG(LogStreamlineRHI, Log, TEXT("Using Streamline %s binaries from %s. Can be overridden via -slbinaries={production,development,debug} command line switches for non-shipping builds")
 			, StreamlineBinaryFlavor.IsEmpty() ? TEXT("production") : *StreamlineBinaryFlavor
 			, *StreamlineBinaryDirectory

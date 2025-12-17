@@ -1,11 +1,12 @@
 
+
 Streamline - Reflex
 =======================
 
 >The focus of this guide is on using Streamline to integrate Reflex into an application.  For more information about Reflex itself, please visit the [NVIDIA Developer Reflex Page][2].
 >For information on user interface considerations when using this plugin, please see the ["RTX UI Developer Guidelines.pdf"][1] document included with this SDK.
 
-Version 2.7.30
+Version 2.9.0
 =======
 
 Here is an overview list of sub-features in the Reflex plugin:
@@ -31,19 +32,22 @@ Call `slInit` as early as possible (before any dxgi/d3d11/d3d12 APIs are invoked
 sl::Preferences pref{};
 pref.showConsole = true; // for debugging, set to false in production
 pref.logLevel = sl::LogLevel::eDefault;
-pref.pathsToPlugins = {}; // change this if Streamline plugins are not located next to the executable
-pref.numPathsToPlugins = 0; // change this if Streamline plugins are not located next to the executable
+pref.pathsToPlugins = {};    // change this if Streamline plugins are not located next to the executable
+pref.numPathsToPlugins = 0;  // change this if Streamline plugins are not located next to the executable
 pref.pathToLogsAndData = {}; // change this to enable logging to a file
-pref.logMessageCallback = myLogMessageCallback; // highly recommended to track warning/error messages in your callback
-pref.applicationId = myId; // Provided by NVDA, required if using NGX components (DLSS 2/3)
-pref.engine = myEngine; // If using UE or Unity
+pref.logMessageCallback =
+    myLogMessageCallback;             // highly recommended to track warning/error messages in your callback
+pref.applicationId = myId;            // Provided by NVDA, required if using NGX components (DLSS 2/3)
+pref.engine = myEngine;               // If using UE or Unity
 pref.engineVersion = myEngineVersion; // Optional version
-pref.projectId = myProjectId; // Optional project id
-if(SL_FAILED(res, slInit(pref)))
+pref.projectId = myProjectId;         // Optional project id
+if (SL_FAILED(res, slInit(pref)))
 {
-	// Handle error, check the logs
-	if(res == sl::Result::eErrorDriverOutOfDate) { /* inform user */}
-	// and so on ...
+    // Handle error, check the logs
+    if (res == sl::Result::eErrorDriverOutOfDate)
+    { /* inform user */
+    }
+    // and so on ...
 }
 ```
 
@@ -92,10 +96,12 @@ if (SUCCEEDED(CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory)))
                 // Requested feature is not supported on the system, fallback to the default method
                 switch (result)
                 {
-                    case sl::Result::eErrorOSOutOfDate:         // inform user to update OS
-                    case sl::Result::eErrorDriverOutOfDate:     // inform user to update driver
-                    case sl::Result::eErrorNoSupportedAdapter:  // cannot use this adapter (older or non-NVDA GPU etc)
-                    // and so on ...
+                    case sl::Result::eErrorOSOutOfDate:             // inform user to update OS
+                    case sl::Result::eErrorDriverOutOfDate:         // inform user to update driver
+                    case sl::Result::eErrorNoSupportedAdapterFound: // cannot use this adapter (older or non-NVDA
+                                                                    // GPU etc)
+                        break;
+                        // and so on ...
                 };
             }
             else

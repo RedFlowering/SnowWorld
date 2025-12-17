@@ -26,7 +26,11 @@ public class Streamline : ModuleRules
 		return Target.Platform.IsInGroup(UnrealPlatformGroup.Windows);
 	}
 
-	public Streamline (ReadOnlyTargetRules Target) : base(Target)
+	protected virtual string GetPlatformDir(ReadOnlyTargetRules Target)
+	{
+		return Target.Platform.ToString();
+	}
+	public Streamline(ReadOnlyTargetRules Target) : base(Target)
 	{
 		Type = ModuleType.External;
 
@@ -36,7 +40,9 @@ public class Streamline : ModuleRules
 			string StreamlineIncludePath = StreamlinePath + "include/";
 			PublicIncludePaths.Add(StreamlineIncludePath);
 
-			string SLProductionBinariesPath = PluginDirectory + @"\Binaries\ThirdParty\Win64\";
+			string PlatformDir = GetPlatformDir(Target);
+
+			string SLProductionBinariesPath = PluginDirectory + @"\Binaries\ThirdParty\" + PlatformDir + @"\";
 			string SLDevelopmentBinariesPath = SLProductionBinariesPath + @"Development\";
 			string SLDebugBinariesPath = SLProductionBinariesPath + @"Debug\";
 
@@ -57,10 +63,11 @@ public class Streamline : ModuleRules
 			 };
 
 			List<string> StreamlinePdbs = new List<string>(StreamlineDlls);
-			StreamlinePdbs.ForEach(DLLFile =>  Path.ChangeExtension(DLLFile, ".pdb"));
+			StreamlinePdbs.ForEach(DLLFile => Path.ChangeExtension(DLLFile, ".pdb"));
 
 			PublicDefinitions.Add("STREAMLINE_INTERPOSER_BINARY_NAME=TEXT(\"" + StreamlineDlls[0] + "\")");
 			PublicDefinitions.Add("SL_BUILD_DEEPDVC=1");
+			PublicDefinitions.Add("STREAMLINE_PLATFORM_DIR=TEXT(\"" + PlatformDir + "\")");
 
 			// 			bool bWithLatewarp = File.Exists(StreamlineIncludePath+"/sl_latewarp.h") && 
 			// 								 File.Exists(SLProductionBinariesPath+ "/sl.latewarp.dll") &&
@@ -70,7 +77,7 @@ public class Streamline : ModuleRules
 
 			if (bWithLatewarp)
 			{
-				
+
 				StreamlineDlls.AddRange(new string[]
 				{
 					"sl.latewarp.dll",
@@ -134,6 +141,10 @@ public class Streamline : ModuleRules
 
 				foreach (string StreamlineOverlayBinary in StreamlineOverlayBinaries)
 				{
+					if (!File.Exists(SLDevelopmentBinariesPath + StreamlineOverlayBinary))
+					{
+						continue;
+					}
 					StagedFileType FileType = StreamlineOverlayBinary.EndsWith("pdb") ? StagedFileType.DebugNonUFS : StagedFileType.NonUFS;
 					if (bHasDevelopmentBinaries)
 					{
@@ -148,4 +159,3 @@ public class Streamline : ModuleRules
 		}
 	}
 }
-

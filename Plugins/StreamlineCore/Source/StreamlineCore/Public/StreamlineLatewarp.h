@@ -18,11 +18,6 @@ class FStreamlineRHI;
 
 bool IsLatewarpActive();
 
-namespace Streamline
-{
-	enum class EStreamlineFeatureSupport;
-}
-
 class FRHICommandListImmediate;
 struct FRHIStreamlineArguments;
 class FSceneViewFamily;

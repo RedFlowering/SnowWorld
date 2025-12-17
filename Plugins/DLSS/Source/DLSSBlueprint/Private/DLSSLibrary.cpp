@@ -39,17 +39,6 @@
 #define LOCTEXT_NAMESPACE "FDLSSBlueprintModule"
 DEFINE_LOG_CATEGORY_STATIC(LogDLSSBlueprint, Log, All);
 
-static TAutoConsoleVariable<int32> CVarNGXDLSSPreferNISSharpen(
-	TEXT("r.NGX.DLSS.PreferNISSharpen"),
-	2,
-	TEXT("Prefer sharpening with an extra NIS plugin sharpening pass instead of DLSS sharpening if the NIS plugin is also enabled for the project. (default: 1)\n")
-	TEXT("Requires the NIS plugin to be enabled\n")
-	TEXT("   0: Softening/sharpening with the DLSS pass.\n")
-	TEXT("   1: Sharpen with the NIS plugin. Softening is not supported. Requires the NIS plugin to be enabled.\n")
-	TEXT("   2: Sharpen with the NIS plugin. Softening (i.e. negative sharpness) with the DLSS plugin. Requires the NIS plugin to be enabled.\n")
-	TEXT("Note: This cvar is only evaluated when using the deprecated `SetDLSSSharpness` Blueprint function, from either C++ or a Blueprint event graph!")
-	TEXT("Note: DLSS sharpening is deprecated, future plugin versions will remove DLSS sharpening. Use the NIS plugin for sharpening instead\n"),
-	ECVF_RenderThreadSafe);
 
 static const FName SetDLSSModeInvalidEnumValueError= FName("SetDLSSModeInvalidEnumValueError");
 static const FName IsDLSSModeSupportedInvalidEnumValueError = FName("IsDLSSModeSupportedInvalidEnumValueError");
@@ -64,6 +53,7 @@ int32 UDLSSLibrary::MinDLSSRRDriverVersionMinor = 0; // placeholder
 int32 UDLSSLibrary::PreviousShadowDenoiser = 1;
 int32 UDLSSLibrary::PreviousLumenSSR = 1;
 int32 UDLSSLibrary::PreviousLumenTemporal = 1;
+int32 UDLSSLibrary::PreviousLumenBilateralFilter = 1;
 bool UDLSSLibrary::bDenoisingRequested = false;
 
 FDLSSUpscaler* UDLSSLibrary::DLSSUpscaler = nullptr;
@@ -192,7 +182,8 @@ bool UDLSSLibrary::IsDLSSModeSupported(UDLSSMode DLSSMode)
 		else if (DLSSMode == UDLSSMode::Auto)
 		{
 			// support for auto quality mode was dropped with UE 5.1 (except as a way to ask for optimal screen percentage for a given resolution)
-			return false;
+			// so the app has to do more BP work. Returning auto mode here makes the BP client's work easier 🤞
+			return true;
 		}
 		else
 		{
@@ -222,6 +213,7 @@ void UDLSSLibrary::GetDLSSModeInformation(UDLSSMode DLSSMode, FVector2D ScreenRe
 	bIsFixedScreenPercentage = false;
 	MinScreenPercentage = 100.0f * ISceneViewFamilyScreenPercentage::kMinTAAUpsampleResolutionFraction;
 	MaxScreenPercentage = 100.0f * ISceneViewFamilyScreenPercentage::kMaxTAAUpsampleResolutionFraction;
+	// DEPRECATED
 	OptimalSharpness = 0.0f;
 #if WITH_DLSS
 	if (!TryInitDLSSLibrary())
@@ -260,8 +252,9 @@ void UDLSSLibrary::GetDLSSModeInformation(UDLSSMode DLSSMode, FVector2D ScreenRe
 		OptimalScreenPercentage = 100.0f * DLSSUpscaler->GetOptimalResolutionFractionForQuality(EDLSSMode);
 		MinScreenPercentage = 100.0f * DLSSUpscaler->GetMinResolutionFractionForQuality(EDLSSMode);
 		MaxScreenPercentage = 100.0f * DLSSUpscaler->GetMaxResolutionFractionForQuality(EDLSSMode);
-
-		OptimalSharpness = DLSSUpscaler->GetOptimalSharpnessForQuality(EDLSSMode);
+		
+		// it's deprecated so we just return 0.35 which is what that function returned in the past
+		OptimalSharpness = 0.35f;
 	}
 #endif
 }
@@ -405,7 +398,7 @@ UDLSSSupport UDLSSLibrary::QueryDLSSRRSupport()
 
 	if(!IsRayTracingEnabled())
 	{
-		UE_LOG(LogDLSSBlueprint, Warning, TEXT("RR is not supported because no need to reconstract rays if there are no rays to reconstruct ¯\'_(ツ)_/¯"));
+		UE_LOG(LogDLSSBlueprint, Warning, TEXT("RR is not supported because no need to reconstruct rays if there are no rays to reconstruct ¯\'_(ツ)_/¯"));
 		return UDLSSSupport::NotSupported;
 	}
 
@@ -519,12 +512,16 @@ void UDLSSLibrary::EnableDLSSRR(bool bEnabled)
 		IConsoleManager::Get().FindConsoleVariable(TEXT("r.Lumen.Reflections.Temporal"))->Set(0);
 		static const auto CVarTemporalAAUpscaler = IConsoleManager::Get().FindConsoleVariable(TEXT("r.TemporalAA.Upscaler"));
 		CVarTemporalAAUpscaler->Set(1, ECVF_SetByCommandline);
-		int LumenBilateralFilter = IConsoleManager::Get().FindConsoleVariable(TEXT("r.Lumen.Reflections.BilateralFilter"))->GetInt();
-		if (LumenBilateralFilter != 0)
+		PreviousLumenBilateralFilter = IConsoleManager::Get().FindConsoleVariable(TEXT("r.Lumen.Reflections.BilateralFilter"))->GetInt();
+#if !UE_VERSION_OLDER_THAN(5,4,0)
+		IConsoleManager::Get().FindConsoleVariable(TEXT("r.Lumen.Reflections.BilateralFilter"))->SetWithCurrentPriority(0);
+#else
+		if (PreviousLumenBilateralFilter != 0)
 		{
 			// engine bug in 5.2 and 5.3 prevents us from changing the value of this cvar from Blueprints
 			UE_LOG(LogDLSSBlueprint, Warning, TEXT("r.Lumen.Reflections.BilateralFilter should be disabled when DLSS Ray Reconstruction is enabled"));
 		}
+#endif
 	}
 	else if (!bEnabled)
 	{
@@ -532,6 +529,9 @@ void UDLSSLibrary::EnableDLSSRR(bool bEnabled)
 		IConsoleManager::Get().FindConsoleVariable(TEXT("r.Shadow.Denoiser"))->Set(PreviousShadowDenoiser);
 		IConsoleManager::Get().FindConsoleVariable(TEXT("r.Lumen.Reflections.ScreenSpaceReconstruction"))->Set(PreviousLumenSSR);
 		IConsoleManager::Get().FindConsoleVariable(TEXT("r.Lumen.Reflections.Temporal"))->Set(PreviousLumenTemporal);
+#if !UE_VERSION_OLDER_THAN(5,4,0)
+		IConsoleManager::Get().FindConsoleVariable(TEXT("r.Lumen.Reflections.BilateralFilter"))->SetWithCurrentPriority(PreviousLumenBilateralFilter);
+#endif
 	}
 #endif
 }
@@ -730,96 +730,6 @@ UDLSSMode UDLSSLibrary::GetDLSSMode()
 #ifndef ENGINE_CAN_SUPPORT_NIS_PLUGIN
 #define ENGINE_CAN_SUPPORT_NIS_PLUGIN 1
 #endif
-
-// deprecated
-void UDLSSLibrary::SetDLSSSharpness(float Sharpness)
-{
-#if WITH_DLSS
-
-	if (!TryInitDLSSLibrary())
-	{
-		UE_LOG(LogDLSSBlueprint, Error, TEXT("SetDLSSSharpness should not be called before PostEngineInit"));
-		return;
-	}
-	static const auto CVarNGXDLSSharpness = IConsoleManager::Get().FindConsoleVariable(TEXT("r.NGX.DLSS.Sharpness"));
-	if (CVarNGXDLSSharpness)
-	{
-#if ENGINE_CAN_SUPPORT_NIS_PLUGIN
-		static const auto CVarNISSharpness = IConsoleManager::Get().FindConsoleVariable(TEXT("r.NIS.Sharpness"));
-		static const auto CVarNISEnable = IConsoleManager::Get().FindConsoleVariable(TEXT("r.NIS.Enable"));
-		const bool bHasNISPlugin = CVarNISSharpness != nullptr && CVarNISEnable != nullptr;
-		const bool bIsNISEnabled = bHasNISPlugin && CVarNISEnable->GetBool();
-
-		if (bHasNISPlugin && bIsNISEnabled)
-		{
-			const int32 PreferNISSharpen = CVarNGXDLSSPreferNISSharpen.GetValueOnAnyThread();
-			const bool bUseNISSharpen = PreferNISSharpen == 1 || (PreferNISSharpen == 2 && Sharpness > 0);
-			if (bUseNISSharpen)
-			{
-				Sharpness = FMath::Clamp(Sharpness, 0.0f, 1.0f);
-			}
-			// Quantize here so we can have sharpness snap to 0, which downstream is used to turn off the NGX sharpening flag
-			// CVarNGXDLSSharpness->Set(Sharpness, ECVF_SetByCommandline)  internally uses	Set(*FString::Printf(TEXT("%g"), InValue), SetBy);
-			CVarNGXDLSSharpness->Set(*FString::Printf(TEXT("%2.2f"), bUseNISSharpen ? 0.0f : Sharpness), ECVF_SetByCommandline);
-			CVarNISSharpness->Set(   *FString::Printf(TEXT("%2.2f"), bUseNISSharpen ? Sharpness : 0.0f), ECVF_SetByCommandline);
-		}
-		else
-#endif	// ENGINE_CAN_SUPPORT_NIS_PLUGIN
-		{
-			// Quantize here so we can have sharpness snap to 0, which downstream is used to turn off the NGX sharpening flag
-			// CVarNGXDLSSharpness->Set(Sharpness, ECVF_SetByCommandline)  internally uses	Set(*FString::Printf(TEXT("%g"), InValue), SetBy);
-			CVarNGXDLSSharpness->Set(*FString::Printf(TEXT("%2.2f"), Sharpness), ECVF_SetByCommandline);
-		}
-	}
-#endif
-}
-
-// deprecated
-float UDLSSLibrary::GetDLSSSharpness()
-{
-#if WITH_DLSS
-	if (!TryInitDLSSLibrary())
-	{
-		UE_LOG(LogDLSSBlueprint, Error, TEXT("GetDLSSSharpness should not be called before PostEngineInit"));
-		return 0.0f;
-	}
-
-	static const auto CVarNGXDLSSharpness = IConsoleManager::Get().FindConsoleVariable(TEXT("r.NGX.DLSS.Sharpness"));
-	
-	if (CVarNGXDLSSharpness)
-	{
-#if ENGINE_CAN_SUPPORT_NIS_PLUGIN
-		static const auto CVarNISSharpness = IConsoleManager::Get().FindConsoleVariable(TEXT("r.NIS.Sharpness"));
-		static const auto CVarNISEnable = IConsoleManager::Get().FindConsoleVariable(TEXT("r.NIS.Enable"));
-		const bool bHasNISPlugin = CVarNISSharpness != nullptr && CVarNISEnable != nullptr;
-		const bool bIsNISEnabled = bHasNISPlugin && CVarNISEnable->GetBool();
-		const int32 PreferNISSharpen = CVarNGXDLSSPreferNISSharpen.GetValueOnAnyThread();
-		if (bHasNISPlugin && bIsNISEnabled && (PreferNISSharpen == 1))
-		{
-			return CVarNISSharpness->GetFloat();
-		}
-		else if (bHasNISPlugin && bIsNISEnabled && (PreferNISSharpen == 2))
-		{
-			const float DLSSSharpness = CVarNGXDLSSharpness->GetFloat();
-			if (DLSSSharpness < 0)
-			{
-				return DLSSSharpness;
-			}
-			else
-			{
-				return CVarNISSharpness->GetFloat();
-			}
-		}
-		else
-#endif
-		{
-			return CVarNGXDLSSharpness->GetFloat();
-		}
-	}
-#endif
-
-	return 0.0f;
-}
 
 UDLSSMode UDLSSLibrary::GetDefaultDLSSMode()
 {

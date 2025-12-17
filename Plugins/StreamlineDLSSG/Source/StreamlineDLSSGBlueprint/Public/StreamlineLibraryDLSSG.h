@@ -21,6 +21,7 @@
 
 #include "StreamlineLibraryDLSSG.generated.h"
 
+#define UE_API STREAMLINEDLSSGBLUEPRINT_API
 
 
 class FDelegateHandle;
@@ -50,19 +51,19 @@ public:
 
 	/** Checks whether DLSS-FG is supported by the current GPU. Further details can be retrieved via QueryDLSSGSupport*/
 	UFUNCTION(BlueprintPure, Category = "Streamline|DLSS-FG", meta = (DisplayName = "Is NVIDIA DLSS-FG Supported"))
-	static STREAMLINEDLSSGBLUEPRINT_API bool IsDLSSGSupported();
+	static UE_API bool IsDLSSGSupported();
 
 	/** Checks whether DLSS-FG is supported by the current GPU	*/
 	UFUNCTION(BlueprintPure, Category = "Streamline|DLSS-FG", meta = (DisplayName = "Query NVIDIA DLSS-FG Support"))
-	static STREAMLINEDLSSGBLUEPRINT_API EStreamlineFeatureSupport QueryDLSSGSupport();
+	static UE_API EStreamlineFeatureSupport QueryDLSSGSupport();
 
 	/** Checks whether a DLSS-FG mode is supported */
 	UFUNCTION(BlueprintPure, Category = "Streamline|DLSS-FG", meta = (DisplayName = "Is DLSS-FG Mode Supported"))
-	static STREAMLINEDLSSGBLUEPRINT_API bool IsDLSSGModeSupported(EStreamlineDLSSGMode DLSSGMode);
+	static UE_API bool IsDLSSGModeSupported(EStreamlineDLSSGMode DLSSGMode);
 
 	/** Retrieves all supported DLSS-FG modes. Can be used to populate UI */
 	UFUNCTION(BlueprintPure, Category = "Streamline|DLSS-FG", meta = (DisplayName = "Get Supported DLSS-FG Modes"))
-	static STREAMLINEDLSSGBLUEPRINT_API TArray<EStreamlineDLSSGMode> GetSupportedDLSSGModes();
+	static UE_API TArray<EStreamlineDLSSGMode> GetSupportedDLSSGModes();
 
 	/**
 	 * Sets the console variables to enable/disable DLSS-FG as well as how many frames are generated. The latter depends on the hardware
@@ -73,19 +74,19 @@ public:
 	 * On4x = DLSS-FG always enabled, generate 3 frames for each rendered frame
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Streamline|DLSS-FG", meta = (DisplayName = "Set DLSS-FG Mode"))
-	static STREAMLINEDLSSGBLUEPRINT_API void SetDLSSGMode(EStreamlineDLSSGMode DLSSGMode);
+	static UE_API void SetDLSSGMode(EStreamlineDLSSGMode DLSSGMode);
 
 	/* Reads the console variables to infer the current DLSS-FG mode*/
 	UFUNCTION(BlueprintPure, Category = "Streamline|DLSS-FG", meta = (DisplayName = "Get DLSS-FG Mode"))
-	static STREAMLINEDLSSGBLUEPRINT_API EStreamlineDLSSGMode GetDLSSGMode();
+	static UE_API EStreamlineDLSSGMode GetDLSSGMode();
 
 	/* Find a reasonable default DLSS-FG mode based on current hardware */
 	UFUNCTION(BlueprintPure, Category = "Streamline|DLSS-FG", meta = (DisplayName = "Get Default DLSS-FG Mode"))
-	static STREAMLINEDLSSGBLUEPRINT_API EStreamlineDLSSGMode GetDefaultDLSSGMode();
+	static UE_API EStreamlineDLSSGMode GetDefaultDLSSGMode();
 
 	/* Returns the actual framerate and number of frames presented, whether DLSS-FG is active or not */
 	UFUNCTION(BlueprintPure, Category = "Streamline|DLSS-FG", meta = (DisplayName = "Get DLSS-FG  frame rate and presented frames"))
-	static STREAMLINEDLSSGBLUEPRINT_API void GetDLSSGFrameTiming(float& FrameRateInHertz, int32& FramesPresented);
+	static UE_API void GetDLSSGFrameTiming(float& FrameRateInHertz, int32& FramesPresented);
 
 	static void Startup();
 	static void Shutdown();
@@ -130,3 +131,5 @@ public:
 
 private:
 };
+
+#undef UE_API

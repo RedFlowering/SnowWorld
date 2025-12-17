@@ -32,13 +32,19 @@ void FDLSSEditorModule::StartupModule()
 	UE_LOG(LogDLSSEditor, Log, TEXT("%s Enter"), ANSI_TO_TCHAR(__FUNCTION__));
 	
 	check(GIsEditor);
+
+	bool bIsDLSS_SR_Available = false;
+	bool bIsDLSS_RR_Available = false;
 	
 	// verify that the other DLSS modules are correctly hooked up
 	{
 		IDLSSModuleInterface* DLSSModule = &FModuleManager::LoadModuleChecked<IDLSSModuleInterface>(TEXT("DLSS"));
-		UE_LOG(LogDLSSEditor, Log, TEXT("DLSS module %p, QueryDLSSSupport = %u DLSSUpscaler = %p"), DLSSModule, static_cast<int>(DLSSModule->QueryDLSSSRSupport()), DLSSModule->GetDLSSUpscaler());
-		
-		bIsDLSSAvailable = DLSSModule->QueryDLSSSRSupport() == EDLSSSupport::Supported;
+
+		bIsDLSS_SR_Available = DLSSModule->QueryDLSSSRSupport() == EDLSSSupport::Supported;
+		bIsDLSS_RR_Available = DLSSModule->QueryDLSSRRSupport() == EDLSSSupport::Supported;
+
+		UE_LOG(LogDLSSEditor, Log, TEXT("DLSS module=%p, DLSS supported DLSS-SR=%u, DLSS-RR=%u DLSSUpscaler = %p"), DLSSModule, 
+			bIsDLSS_SR_Available, bIsDLSS_RR_Available, DLSSModule->GetDLSSUpscaler());
 	}
 
 	// register settings
@@ -48,15 +54,25 @@ void FDLSSEditorModule::StartupModule()
 		{
 			{
 				auto Settings = GetMutableDefault<UDLSSSettings>();
-				if(bIsDLSSAvailable)
+				if(bIsDLSS_SR_Available)
 				{
 					IDLSSModuleInterface* DLSSModule = &FModuleManager::LoadModuleChecked<IDLSSModuleInterface>(TEXT("DLSS"));
 					const NGXRHI* NGXRHIExtensions = DLSSModule->GetDLSSUpscaler()->GetNGXRHI();
-					Settings->GenericDLSSBinaryPath = NGXRHIExtensions->GetDLSSGenericBinaryInfo().Get<0>();
-					Settings->bGenericDLSSBinaryExists = NGXRHIExtensions->GetDLSSGenericBinaryInfo().Get<1>();
+					Settings->GenericDLSSSRBinaryPath = NGXRHIExtensions->GetDLSSSRGenericBinaryInfo().Get<0>();
+					Settings->bGenericDLSSSRBinaryExists = NGXRHIExtensions->GetDLSSSRGenericBinaryInfo().Get<1>();
 
-					Settings->CustomDLSSBinaryPath = NGXRHIExtensions->GetDLSSCustomBinaryInfo().Get<0>();
-					Settings->bCustomDLSSBinaryExists = NGXRHIExtensions->GetDLSSCustomBinaryInfo().Get<1>();
+					Settings->CustomDLSSSRBinaryPath = NGXRHIExtensions->GetDLSSSRCustomBinaryInfo().Get<0>();
+					Settings->bCustomDLSSSRBinaryExists = NGXRHIExtensions->GetDLSSSRCustomBinaryInfo().Get<1>();
+
+
+					Settings->GenericDLSSRRBinaryPath = NGXRHIExtensions->GetDLSSRRGenericBinaryInfo().Get<0>();
+					Settings->bGenericDLSSRRBinaryExists = NGXRHIExtensions->GetDLSSRRGenericBinaryInfo().Get<1>();
+
+					Settings->CustomDLSSRRBinaryPath = NGXRHIExtensions->GetDLSSRRCustomBinaryInfo().Get<0>();
+					Settings->bCustomDLSSRRBinaryExists = NGXRHIExtensions->GetDLSSRRCustomBinaryInfo().Get<1>();
+
+
+
 				}
 
 				ISettingsSectionPtr SettingsSection = SettingsModule->RegisterSettings("Project", "Plugins", "DLSS",

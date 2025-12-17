@@ -35,22 +35,22 @@ typedef enum NVSDK_NGX_DLSS_Depth_Type
 
 typedef enum NVSDK_NGX_RayReconstruction_Hint_Render_Preset
 {
-    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_Default,     // default behavior, may or may not change after OTA
-    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_A,
-    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_B,
-    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_C,
-    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_D,
-    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_E,           // do not use, reverts to default behavior
-    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_F,           // do not use, reverts to default behavior
-    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_G,           // do not use, reverts to default behavior
-    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_H,           // do not use, reverts to default behavior
-    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_I,           // do not use, reverts to default behavior
-    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_J,           // do not use, reverts to default behavior
-    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_K,           // do not use, reverts to default behavior
-    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_L,           // do not use, reverts to default behavior
-    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_M,           // do not use, reverts to default behavior
-    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_N,           // do not use, reverts to default behavior
-    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_O,           // do not use, reverts to default behavior
+    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_Default = 0,             // default behavior, may or may not change after OTA
+                                                                            // NVSDK_NGX_RayReconstruction_Hint_Render_Preset_A removed, use preset D or E
+                                                                            // NVSDK_NGX_RayReconstruction_Hint_Render_Preset_B removed, use preset D or E
+                                                                            // NVSDK_NGX_RayReconstruction_Hint_Render_Preset_C removed, use preset D or E
+    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_D = 4,                   // Default model (transformer)
+    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_E = 5,                   // Latest transformer model (must use if DoF guide is needed)
+    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_F = 6,                   // Do not use, reverts to default behavior
+    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_G = 7,                   // Do not use, reverts to default behavior
+    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_H = 8,                   // Do not use, reverts to default behavior
+    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_I = 9,                   // Do not use, reverts to default behavior
+    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_J = 10,                  // Do not use, reverts to default behavior
+    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_K = 11,                  // Do not use, reverts to default behavior
+    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_L = 12,                  // Do not use, reverts to default behavior
+    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_M = 13,                  // Do not use, reverts to default behavior
+    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_N = 14,                  // Do not use, reverts to default behavior
+    NVSDK_NGX_RayReconstruction_Hint_Render_Preset_O = 15,                  // Do not use, reverts to default behavior
 } NVSDK_NGX_RayReconstruction_Hint_Render_Preset;
 
 #define NVSDK_NGX_Parameter_DLSS_Denoise_Mode "DLSS.Denoise.Mode"

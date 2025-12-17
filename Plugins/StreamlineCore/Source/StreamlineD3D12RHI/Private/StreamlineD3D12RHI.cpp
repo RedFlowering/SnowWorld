@@ -39,21 +39,6 @@ struct FShaderCodePackedResourceCounts;
 #include "D3D12Util.h"
 #endif
 
-#if ENGINE_ID3D12DYNAMICRHI_NEEDS_CMDLIST
-	#define RHICMDLIST_ARG_PASSTHROUGH CmdList,
-#else
-	#define RHICMDLIST_ARG_PASSTHROUGH 
-#endif
-
-#if UE_VERSION_AT_LEAST(5,6,0)
-#define RHI_SCOPED_DRAW_EVENT(RHICmdList, Name) SCOPED_DRAW_EVENT(RHICmdList, Name)
-#elif UE_VERSION_AT_LEAST(5,5,0)
-#define RHI_SCOPED_DRAW_EVENT(RHICmdList, Name) SCOPED_DRAW_EVENT(RHICmdList.GetContext(), Name)
-#else
-#define RHI_SCOPED_DRAW_EVENT(RHICmdList, Name) SCOPED_RHI_DRAW_EVENT(RHICmdList.GetComputeContext(), Name)
-#endif 
-
-
 #include "Misc/Paths.h"
 #include "Modules/ModuleManager.h"
 #include "Windows/IDXGISwapchainProvider.h"
@@ -61,6 +46,7 @@ struct FShaderCodePackedResourceCounts;
 #include "StreamlineAPI.h"
 #include "StreamlineConversions.h"
 #include "StreamlineRHI.h"
+#include "StreamlineNGXRHI.h"
 #include "sl.h"
 #include "sl_dlss_g.h"
 
@@ -349,7 +335,7 @@ public:
 	};
 
 
-	virtual void TagTextures(FRHICommandList& CmdList, uint32 InViewID, const TArrayView<const FRHIStreamlineResource> InResources) final
+	virtual void TagTextures(FRHICommandList& CmdList, uint32 InViewID, const sl::FrameToken& FrameToken, const TArrayView<const FRHIStreamlineResource> InResources) final
 	{
 		RHI_SCOPED_DRAW_EVENT(CmdList, StreamlineTagTextures);
 
@@ -471,10 +457,20 @@ public:
 #endif
 		}
 
+	
 		{
 			RHI_SCOPED_DRAW_EVENT(CmdList, slSetTag);
 			// note that NativeCmdList might be null if we only have resources to "Streamline nulltag"
-			SLsetTag(sl::ViewportHandle(InViewID), SLTags.GetData(), SLTags.Num(), GetNativeCommandList(CmdList, InResources));
+			
+			// when removing this deprecated path, we only need to keep the else block
+			if (ShouldUseSlSetTag())
+			{
+				SLsetTag(sl::ViewportHandle(InViewID), SLTags.GetData(), SLTags.Num(), GetNativeCommandList(CmdList, InResources));
+			}
+			else
+			{
+				SLsetTagForFrame(FrameToken, sl::ViewportHandle(InViewID), SLTags.GetData(), SLTags.Num(), GetNativeCommandList(CmdList, InResources));
+			}
 		}
 	}
 
@@ -608,7 +604,8 @@ void FStreamlineD3D12RHIModule::StartupModule()
 	}
 
 	UE_LOG(LogStreamlineD3D12RHI, Log, TEXT("%s Enter"), ANSI_TO_TCHAR(__FUNCTION__));
-	if(FApp::CanEverRender())
+	const auto [bIsSupported, NotSupportedReason] = IsEngineExecutionModeSupported();
+	if(bIsSupported)
 	{
 		if ((GDynamicRHI != nullptr) && (RHIGetInterfaceType() == ERHIInterfaceType::D3D12))
 		{
@@ -630,7 +627,7 @@ void FStreamlineD3D12RHIModule::StartupModule()
 	}
 	else
 	{
-		UE_LOG(LogStreamlineD3D12RHI, Log, TEXT("This UE instance does not render, skipping initalizing of Streamline and registering of custom DXGI and D3D12 functions"));
+		UE_LOG(LogStreamlineD3D12RHI, Log, TEXT("Skipping Streamline initialization for this UE instance due to: '%s'"), NotSupportedReason);
 	}
 	UE_LOG(LogStreamlineD3D12RHI, Log, TEXT("%s Leave"), ANSI_TO_TCHAR(__FUNCTION__));
 }

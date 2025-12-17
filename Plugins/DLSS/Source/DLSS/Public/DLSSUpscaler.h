@@ -14,6 +14,8 @@
 #include "CoreMinimal.h"
 #include "CustomResourcePool.h"
 
+#define UE_API DLSS_API
+
 struct FDLSSOptimalSettings;
 class FSceneViewFamily;
 class NGXRHI;
@@ -31,7 +33,7 @@ enum class EDLSSQualityMode
 	NumValues = 6
 };
 
-class DLSS_API FDLSSUpscaler final : public ICustomResourcePool
+class FDLSSUpscaler final : public ICustomResourcePool
 {
 
 	friend class FDLSSModule;
@@ -40,11 +42,11 @@ public:
 
 	void SetupViewFamily(FSceneViewFamily& ViewFamily);
 
-	float GetOptimalResolutionFractionForQuality(EDLSSQualityMode Quality) const;
-	float GetOptimalSharpnessForQuality(EDLSSQualityMode Quality) const;
-	float GetMinResolutionFractionForQuality(EDLSSQualityMode Quality) const;
-	float GetMaxResolutionFractionForQuality(EDLSSQualityMode Quality) const;
-	bool IsFixedResolutionFraction(EDLSSQualityMode Quality) const;
+	UE_API float GetOptimalResolutionFractionForQuality(EDLSSQualityMode Quality) const;
+
+	UE_API float GetMinResolutionFractionForQuality(EDLSSQualityMode Quality) const;
+	UE_API float GetMaxResolutionFractionForQuality(EDLSSQualityMode Quality) const;
+	UE_API bool IsFixedResolutionFraction(EDLSSQualityMode Quality) const;
 
 	const NGXRHI* GetNGXRHI() const
 	{
@@ -54,7 +56,7 @@ public:
 	// Inherited via ICustomResourcePool
 	virtual void Tick(FRHICommandListImmediate& RHICmdList) override;
 
-	bool IsQualityModeSupported(EDLSSQualityMode InQualityMode) const;
+	UE_API bool IsQualityModeSupported(EDLSSQualityMode InQualityMode) const;
 	uint32 GetNumRuntimeQualityModes() const
 	{
 		return NumRuntimeQualityModes;
@@ -63,7 +65,7 @@ public:
 	bool IsDLSSActive() const;
 
 	// Give the suggested EDLSSQualityMode if one is appropriate for the given pixel count, or nothing if DLSS should be disabled
-	TOptional<EDLSSQualityMode> GetAutoQualityModeFromPixels(int PixelCount) const;
+	UE_API TOptional<EDLSSQualityMode> GetAutoQualityModeFromPixels(int PixelCount) const;
 
 	static void ReleaseStaticResources();
 
@@ -84,9 +86,9 @@ private:
 	bool EnableDLSSInPlayInEditorViewports() const;
 
 	// The FDLSSUpscaler(NGXRHI*) will update those once
-	static NGXRHI* NGXRHIExtensions;
-	static float MinDynamicResolutionFraction;
-	static float MaxDynamicResolutionFraction;
+	UE_API static NGXRHI* NGXRHIExtensions;
+	UE_API static float MinDynamicResolutionFraction;
+	UE_API static float MaxDynamicResolutionFraction;
 
 	static uint32 NumRuntimeQualityModes;
 	static TArray<FDLSSOptimalSettings> ResolutionSettings;
@@ -96,3 +98,4 @@ private:
 	friend class FDLSSSceneViewFamilyUpscaler;
 };
 
+#undef UE_API

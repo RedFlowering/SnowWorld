@@ -35,6 +35,8 @@ static TAutoConsoleVariable<bool> CVarNGXDLSSDisableSubsurfaceCheckerboard(
 class FDiffuseSpecularAlbedoDim : SHADER_PERMUTATION_BOOL("DIFFUSE_SPECULAR_ALBEDO");
 class FForceDisableSubsurfaceCheckerboardDim : SHADER_PERMUTATION_BOOL("FORCE_DISABLE_SUBSURFACE_CHECKERBOARD");
 class FOutputSpecularHitTDim : SHADER_PERMUTATION_BOOL("SPECULAR_HITT");
+class FOutputSSSTDim : SHADER_PERMUTATION_BOOL("SSS");
+class FOutputDOFTDim : SHADER_PERMUTATION_BOOL("DOF");
 class FPassthroughDim : SHADER_PERMUTATION_BOOL("PASSTHROUGH_FEATURE_BUFFERS");
 class FGBufferResolvePS : public FGlobalShader
 {
@@ -58,6 +60,20 @@ public:
 #endif
 		}
 
+		if (PermutationVector.Get<FOutputSSSTDim>() == true)
+		{
+#if !SUPPORT_GUIDE_SSS_DOF
+			return false;
+#endif
+		}
+
+		if (PermutationVector.Get<FOutputDOFTDim>() == true)
+		{
+#if !SUPPORT_GUIDE_SSS_DOF
+			return false;
+#endif
+		}
+
 		// Only cook for the platforms/RHIs where DLSS is supported, which is DX11,DX12 and Vulkan [on Win64]
 		return 	IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5) &&
 				IsPCPlatform(Parameters.Platform) && (
@@ -65,7 +81,8 @@ public:
 					IsD3DPlatform(Parameters.Platform));
 	}
 
-	using FPermutationDomain = TShaderPermutationDomain<FDiffuseSpecularAlbedoDim, FForceDisableSubsurfaceCheckerboardDim, FOutputSpecularHitTDim, FPassthroughDim>;
+	using FPermutationDomain = TShaderPermutationDomain<FDiffuseSpecularAlbedoDim, FForceDisableSubsurfaceCheckerboardDim
+		, FPassthroughDim, FOutputSpecularHitTDim, FOutputSSSTDim, FOutputDOFTDim>;
 
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
 		SHADER_PARAMETER_STRUCT_INCLUDE(FSceneTextureShaderParameters, SceneTextures)
@@ -80,7 +97,11 @@ public:
 		SHADER_PARAMETER_RDG_TEXTURE(Texture2D<float4>, PassthroughSpecular)
 		SHADER_PARAMETER_RDG_TEXTURE(Texture2D<float4>, PassthroughNormalRoughness)
 		SHADER_PARAMETER_RDG_TEXTURE(Texture2D<float>, PassthroughDepth)
+
 		SHADER_PARAMETER_RDG_TEXTURE(Texture2D<float>, ReflectionHitDistance)
+
+		SHADER_PARAMETER_RDG_TEXTURE(Texture2D<float>, SubsurfaceScatteringGuide)
+		SHADER_PARAMETER_RDG_TEXTURE(Texture2D<float>, DepthOfFieldGuide)
 
 		RENDER_TARGET_BINDING_SLOTS()
 	END_SHADER_PARAMETER_STRUCT()
@@ -104,6 +125,8 @@ FGBufferResolveOutputs AddGBufferResolvePass(FRDGBuilder& GraphBuilder,
 	// whether the engine has produced a set of precomposited reflection data
 	bool bPrecomposite = false;
 	bool bApplyHitT = false;
+	bool bApplySSS = false;
+	bool bApplyDOF = false;
 
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3
 	FSceneTextureShaderParameters SceneTextures = CreateSceneTextureShaderParameters(GraphBuilder, View, ESceneTextureSetupMode::All
@@ -126,8 +149,8 @@ FGBufferResolveOutputs AddGBufferResolvePass(FRDGBuilder& GraphBuilder,
 			FClearValueBinding::None,
 			TexCreate_RenderTargetable | TexCreate_ShaderResource
 		));
-		Outputs.DiffuseAlbedo = GraphBuilder.CreateTexture(AlbedoDesc, TEXT("DLSSDiffuseAlbedo"));
-		Outputs.SpecularAlbedo = GraphBuilder.CreateTexture(AlbedoDesc, TEXT("DLSSSpecularAlbedo"));
+		Outputs.DiffuseAlbedo = GraphBuilder.CreateTexture(AlbedoDesc, TEXT("DLSS.DiffuseAlbedo"));
+		Outputs.SpecularAlbedo = GraphBuilder.CreateTexture(AlbedoDesc, TEXT("DLSS.SpecularAlbedo"));
 
 		PassParameters->RenderTargets[0] = FRenderTargetBinding(Outputs.DiffuseAlbedo, ERenderTargetLoadAction::ENoAction);
 		PassParameters->RenderTargets[1] = FRenderTargetBinding(Outputs.SpecularAlbedo, ERenderTargetLoadAction::ENoAction);
@@ -138,7 +161,7 @@ FGBufferResolveOutputs AddGBufferResolvePass(FRDGBuilder& GraphBuilder,
 			FClearValueBinding::None,
 			TexCreate_RenderTargetable | TexCreate_ShaderResource
 		));
-		Outputs.Normals = GraphBuilder.CreateTexture(NormalDesc, TEXT("DLSSNormal"));
+		Outputs.Normals = GraphBuilder.CreateTexture(NormalDesc, TEXT("DLSS.Normal"));
 
 		PassParameters->RenderTargets[2] = FRenderTargetBinding(Outputs.Normals, ERenderTargetLoadAction::ENoAction);
 
@@ -149,7 +172,7 @@ FGBufferResolveOutputs AddGBufferResolvePass(FRDGBuilder& GraphBuilder,
 			FClearValueBinding::None,
 			TexCreate_RenderTargetable | TexCreate_ShaderResource
 		));
-		Outputs.Roughness = GraphBuilder.CreateTexture(RoughnessDesc, TEXT("DLSSRoughness"));
+		Outputs.Roughness = GraphBuilder.CreateTexture(RoughnessDesc, TEXT("DLSS.Roughness"));
 
 		PassParameters->RenderTargets[3] = FRenderTargetBinding(Outputs.Roughness, ERenderTargetLoadAction::ENoAction);
 
@@ -160,7 +183,7 @@ FGBufferResolveOutputs AddGBufferResolvePass(FRDGBuilder& GraphBuilder,
 			FClearValueBinding::None,
 			TexCreate_RenderTargetable | TexCreate_ShaderResource
 		));
-		Outputs.LinearDepth = GraphBuilder.CreateTexture(DepthDesc, TEXT("DLSSDepth"));
+		Outputs.LinearDepth = GraphBuilder.CreateTexture(DepthDesc, TEXT("DLSS.Depth"));
 
 		PassParameters->RenderTargets[4] = FRenderTargetBinding(Outputs.LinearDepth, ERenderTargetLoadAction::ENoAction);
 
@@ -174,7 +197,7 @@ FGBufferResolveOutputs AddGBufferResolvePass(FRDGBuilder& GraphBuilder,
 				FClearValueBinding::None,
 				TexCreate_RenderTargetable | TexCreate_ShaderResource
 			));
-			Outputs.ReflectionHitDistance = GraphBuilder.CreateTexture(ReflectionHitDistanceTDesc, TEXT("DLSSSpecularHitT"));
+			Outputs.ReflectionHitDistance = GraphBuilder.CreateTexture(ReflectionHitDistanceTDesc, TEXT("DLSS.SpecularHitT"));
 
 			PassParameters->RenderTargets[5] = FRenderTargetBinding(Outputs.ReflectionHitDistance, ERenderTargetLoadAction::ENoAction);
 
@@ -182,6 +205,7 @@ FGBufferResolveOutputs AddGBufferResolvePass(FRDGBuilder& GraphBuilder,
 
 			bApplyHitT = true;
 		}
+
 
 		// procomposited guide buffers from the engine
 		bPrecomposite =
@@ -195,11 +219,49 @@ FGBufferResolveOutputs AddGBufferResolvePass(FRDGBuilder& GraphBuilder,
 		PassParameters->PassthroughNormalRoughness = PassInputs.GuideBuffers.NormalRoughnessGuideBuffer.Texture;
 		PassParameters->PassthroughDepth = PassInputs.GuideBuffers.DepthGuideBuffer.Texture;
 #endif
+
+#if SUPPORT_GUIDE_SSS_DOF
+		if (/*bComputeDiffuseSpecularAlbedo &&*/ PassInputs.GuideBuffers.SSSGuideBuffer.IsValid())
+		{
+			FRDGTextureDesc SubsurfaceScatteringGuideDesc(FRDGTextureDesc::Create2D(
+				OutputExtent,
+				PF_R16F,
+				FClearValueBinding::None,
+				TexCreate_RenderTargetable | TexCreate_ShaderResource
+			));
+			Outputs.SubsurfaceScatteringGuide = GraphBuilder.CreateTexture(SubsurfaceScatteringGuideDesc, TEXT("DLSS.SubsurfaceScatteringGuide"));
+
+			PassParameters->RenderTargets[6] = FRenderTargetBinding(Outputs.SubsurfaceScatteringGuide, ERenderTargetLoadAction::ENoAction);
+
+			PassParameters->SubsurfaceScatteringGuide = PassInputs.GuideBuffers.SSSGuideBuffer.Texture;
+
+			bApplySSS = true;
+		}
+
+		if (/*bComputeDiffuseSpecularAlbedo && */PassInputs.GuideBuffers.DOFGuideBuffer.IsValid())
+		{
+			FRDGTextureDesc DepthOfFieldGuideDesc(FRDGTextureDesc::Create2D(
+				OutputExtent,
+				PF_R16F,
+				FClearValueBinding::None,
+				TexCreate_RenderTargetable | TexCreate_ShaderResource
+			));
+			Outputs.DepthOfFieldGuide = GraphBuilder.CreateTexture(DepthOfFieldGuideDesc, TEXT("DLSS.DepthOfFieldGuide"));
+
+			PassParameters->RenderTargets[7] = FRenderTargetBinding(Outputs.DepthOfFieldGuide, ERenderTargetLoadAction::ENoAction);
+
+			PassParameters->DepthOfFieldGuide = PassInputs.GuideBuffers.DOFGuideBuffer.Texture;
+
+			bApplyDOF = true;
+		}
+#endif
 	}
 
 	FGBufferResolvePS::FPermutationDomain PermutationVector;
 	PermutationVector.Set<FDiffuseSpecularAlbedoDim>(bComputeDiffuseSpecularAlbedo);
 	PermutationVector.Set<FOutputSpecularHitTDim>(bApplyHitT);
+	PermutationVector.Set<FOutputSSSTDim>(bApplySSS);
+	PermutationVector.Set<FOutputDOFTDim>(bApplyDOF);
 	PermutationVector.Set<FForceDisableSubsurfaceCheckerboardDim>(CVarNGXDLSSDisableSubsurfaceCheckerboard.GetValueOnRenderThread());
 	PermutationVector.Set<FPassthroughDim>(bPrecomposite);
 
@@ -213,8 +275,11 @@ FGBufferResolveOutputs AddGBufferResolvePass(FRDGBuilder& GraphBuilder,
 
 	AddDrawScreenPass(
 		GraphBuilder,
-		RDG_EVENT_NAME("GBufferResolve%s",
-			bComputeDiffuseSpecularAlbedo ? TEXT(" DiffuseSpecularAlbedo") : TEXT("")
+		RDG_EVENT_NAME("GBufferResolve%s%s%s%s"
+			, bComputeDiffuseSpecularAlbedo ? TEXT(" DiffuseSpecularAlbedo") : TEXT("")
+			, bApplyHitT ? TEXT(" ReflectionDistance") : TEXT("")
+			, bApplySSS  ? TEXT(" SSS") : TEXT("")
+			, bApplyDOF  ? TEXT(" DOF") : TEXT("")
 		),
 		View,
 		OutputViewport,

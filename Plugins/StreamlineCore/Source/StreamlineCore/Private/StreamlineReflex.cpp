@@ -115,8 +115,25 @@ bool FStreamlineLatencyBase::IsStreamlineReflexSupported()
 	{
 		const sl::AdapterInfo* AdapterInfo = FStreamlineCoreModule::GetStreamlineRHI()->GetAdapterInfo();
 		sl::Result Result = SLisFeatureSupported(sl::kFeatureReflex, *AdapterInfo);
-		bStreamlineReflexSupported = Result == sl::Result::eOk;
 		LogStreamlineFeatureSupport(sl::kFeatureReflex, *AdapterInfo);
+
+		// if the SL Reflex plugin is supported we also need to check whether slReflexGetState::lowLatencyAvailable is supported for Reflex to be supported
+		if (sl::Result::eOk == Result)
+		{
+			sl::ReflexState ReflexState{};
+			sl::Result ResultReflexGetState = CALL_SL_FEATURE_FN(sl::kFeatureReflex, slReflexGetState, ReflexState);
+
+			checkf(ResultReflexGetState == sl::Result::eOk, TEXT("slReflexGetState failed (%s)"), ANSI_TO_TCHAR(sl::getResultAsStr(Result)));
+			if (ResultReflexGetState == sl::Result::eOk)
+			{
+				UE_LOG(LogStreamline, Log, TEXT("%s sl::ReflexState::lowLatencyAvailable=%u"), ANSI_TO_TCHAR(__FUNCTION__), ReflexState.lowLatencyAvailable);
+				bStreamlineReflexSupported = ReflexState.lowLatencyAvailable;
+			}
+			else
+			{
+				UE_LOG(LogStreamline, Log, TEXT("%s slReflexGetState failed (%s)"), ANSI_TO_TCHAR(__FUNCTION__), ANSI_TO_TCHAR(sl::getResultAsStr(Result)));
+			}
+		}
 		
 		bStreamlineReflexSupportedInitialized = true;
 	}
@@ -150,9 +167,9 @@ bool FStreamlineLatencyBase::IsStreamlinePCLSupported()
 	{
 		const sl::AdapterInfo* AdapterInfo = FStreamlineCoreModule::GetStreamlineRHI()->GetAdapterInfo();
 		sl::Result Result = SLisFeatureSupported(sl::kFeaturePCL, *AdapterInfo);
-		bStreamlinePCLSupported = (Result == sl::Result::eOk);
 		LogStreamlineFeatureSupport(sl::kFeaturePCL, *AdapterInfo);
 
+		bStreamlinePCLSupported = (Result == sl::Result::eOk);
 		bStreamlinePCLSupportedInitialized = true;
 	}
 
@@ -163,20 +180,12 @@ void FStreamlineMaxTickRateHandler::Initialize()
 {
 	if (IsStreamlineReflexSupported())
 	{
-		sl::ReflexState ReflexState{};
-		sl::Result Result = CALL_SL_FEATURE_FN(sl::kFeatureReflex, slReflexGetState, ReflexState);
-		checkf(Result == sl::Result::eOk, TEXT("slReflexGetState failed (%s)"), ANSI_TO_TCHAR(sl::getResultAsStr(Result)));
-
-		UE_LOG(LogStreamline, Log, TEXT("%s sl::ReflexState::lowLatencyAvailable=%u"), ANSI_TO_TCHAR(__FUNCTION__), ReflexState.lowLatencyAvailable);
-		UE_LOG(LogStreamline, Log, TEXT("%s sl::ReflexState::latencyReportAvailable=%u"), ANSI_TO_TCHAR(__FUNCTION__), ReflexState.latencyReportAvailable);
-
-		if (!ReflexState.lowLatencyAvailable)
-		{
-			CVarStreamlineReflexEnable->Set(false, ECVF_SetByCommandline);
-		}
-
 		const sl::ReflexOptions MakeSureStreamlineReflexCallsNVSTATS_INITAtLeastOnce;
 		CALL_SL_FEATURE_FN(sl::kFeatureReflex, slReflexSetOptions, MakeSureStreamlineReflexCallsNVSTATS_INITAtLeastOnce);
+	}
+	else
+	{
+		CVarStreamlineReflexEnable->Set(false, ECVF_SetByCommandline);
 	}
 }
 
@@ -346,7 +355,8 @@ static void UpdateReflexOptionsIfChanged(const sl::ReflexOptions& ReflexOptions)
 bool FStreamlineMaxTickRateHandler::HandleMaxTickRate(float DesiredMaxTickRate)
 {
 	bool bFrameRateHandled = false;
-	if (GetEnabled())
+	// we are always calling through slReflexSleep even then the reflex mode is "off"
+	if (IsStreamlineReflexSupported())
 	{
 		SCOPE_CYCLE_COUNTER(STAT_GameTickReflexWaitTime);
 		const double CurrentRealTime = FPlatformTime::Seconds();
@@ -396,18 +406,15 @@ bool FStreamlineMaxTickRateHandler::HandleMaxTickRate(float DesiredMaxTickRate)
 		UpdateReflexOptionsIfChanged(ReflexOptions);
 
 		TRACE_CPUPROFILER_EVENT_SCOPE(ReflexSleep);
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 7
 		UE::Stats::FThreadIdleStats::FScopeIdle Scope;
-
+#else
+		FThreadIdleStats::FScopeIdle Scope;
+#endif
 		sl::FrameToken* FrameToken = FStreamlineCoreModule::GetStreamlineRHI()->GetFrameToken(GFrameCounter);
 		sl::Result Result = CALL_SL_FEATURE_FN(sl::kFeatureReflex, slReflexSleep, *FrameToken);
 		checkf(Result == sl::Result::eOk, TEXT("slReflexSleep failed (%s)"), ANSI_TO_TCHAR(sl::getResultAsStr(Result)));
 		LastRealTimeAfterSleep = FPlatformTime::Seconds();
-	}
-	else
-	{
-		sl::ReflexOptions ReflexOptions{};
-		ReflexOptions.mode = sl::ReflexMode::eOff;
-		UpdateReflexOptionsIfChanged(ReflexOptions);
 	}
 
 	return bFrameRateHandled;

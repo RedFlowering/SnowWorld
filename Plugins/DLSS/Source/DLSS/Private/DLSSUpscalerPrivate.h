@@ -18,6 +18,8 @@
 
 #include "DLSSUpscaler.h"
 #include "NGXRHI.h"
+#include "StreamlineNGXRHI.h"
+#include "StreamlineNGXRenderer.h"
 
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3
 #include "TemporalUpscaler.h"
@@ -27,6 +29,8 @@ using ITemporalUpscaler = UE::Renderer::Private::ITemporalUpscaler;
 #endif
 
 DECLARE_LOG_CATEGORY_EXTERN(LogDLSS, Verbose, All);
+
+DECLARE_GPU_STAT_NAMED_EXTERN(DLSS, TEXT("DLSS"));
 
 class FDLSSUpscaler;
 struct FTemporalAAHistory;
@@ -51,6 +55,8 @@ struct FDLSSPassParameters
 	FRDGTexture* Normal = nullptr;
 	FRDGTexture* Roughness = nullptr;
 	FRDGTexture* ReflectionHitDistance = nullptr;
+	FRDGTexture* SSSGuide = nullptr;
+	FRDGTexture* DOFGuide = nullptr;
 
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3
 	FRDGTexture* EyeAdaptation = nullptr;
@@ -87,7 +93,7 @@ struct FDLSSOutputs
 	FRDGTexture* SceneColor = nullptr;
 };
 
-class DLSS_API FDLSSUpscalerViewExtension final : public FSceneViewExtensionBase
+class FDLSSUpscalerViewExtension final : public FSceneViewExtensionBase
 {
 public:
 	FDLSSUpscalerViewExtension(const FAutoRegister& AutoRegister) : FSceneViewExtensionBase(AutoRegister)
@@ -101,7 +107,7 @@ public:
 	virtual bool IsActiveThisFrame_Internal(const FSceneViewExtensionContext& Context) const override;
 };
 
-class DLSS_API FDLSSSceneViewFamilyUpscaler final : public ITemporalUpscaler
+class FDLSSSceneViewFamilyUpscaler final : public ITemporalUpscaler
 {
 public:
 	FDLSSSceneViewFamilyUpscaler(const FDLSSUpscaler* InUpscaler, EDLSSQualityMode InDLSSQualityMode)
@@ -156,7 +162,7 @@ END_SHADER_PARAMETER_STRUCT()
 
 inline void AddDebugLayerCompatibilitySetupPasses(FRDGBuilder& GraphBuilder, FDebugLayerCompatibilityShaderParameters* PassParameters)
 {
-	RDG_EVENT_SCOPE(GraphBuilder, "UE5.5AndOlderDebugLayerCompatibilitySetup");
+	NV_RDG_EVENT_SCOPE(GraphBuilder,DLSS, "UE5.5AndOlderDebugLayerCompatibilitySetup");
 	FRDGTextureDesc Desc = FRDGTextureDesc::Create2D(FIntPoint(1, 1), PF_FloatRGBA, FClearValueBinding::Black, TexCreate_RenderTargetable);
 	PassParameters->DebugLayerCompatibilityHelperSource = GraphBuilder.CreateTexture(Desc, TEXT("UE5.5AndOlderDebugLayerCompatibilityHelperSource"));
 	PassParameters->DebugLayerCompatibilityHelperDest = GraphBuilder.CreateTexture(Desc, TEXT("UE5.5AndOlderDebugLayerCompatibilityHelperDest"));

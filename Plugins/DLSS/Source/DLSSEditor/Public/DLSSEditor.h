@@ -22,9 +22,6 @@ public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() final;
 	virtual void ShutdownModule() final;
-
-private:
-	bool bIsDLSSAvailable = false;
 };
 
 

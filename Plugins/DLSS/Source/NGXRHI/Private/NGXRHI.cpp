@@ -19,6 +19,12 @@
 #include "nvsdk_ngx_params.h"
 #include "nvsdk_ngx_helpers.h"
 
+#ifndef NGX_PLATFORM_DIR
+#error "You are not supposed to get to this point, check your build configuration."
+#endif
+
+static const FString PlatformDir = NGX_PLATFORM_DIR;
+
 // NGX software stack
 DEFINE_LOG_CATEGORY_STATIC(LogDLSSNGX, Log, All);
 // The UE module
@@ -76,14 +82,21 @@ void FRHIDLSSArguments::Validate() const
 	ValidateExtents(DestRect, OutputColor);
 
 
+	// Typically buffers that are directly produced by the engine and they contain the actual data in the ViewRect shaped smaller part of the buffer
 	const FIntRect LowResWithOffset = SrcRect;
+
+	// Typically buffers that are produced by a plugin shader pass (such as VelocityCombine or GBufferResolve) that don't have any subrects
 	const FIntRect LowResTopLeft = FIntRect(0, 0, SrcRect.Width(), SrcRect.Height());
 
 	check(InputColor);
 	ValidateExtents(LowResWithOffset, InputColor);
 
+	
+	// With DLSS-SR we use SceneDepthZ
+	// With DLSS-RR we use linear depth that comes out of the GBufferResolvePass which writes it to 0,0 in the top left corner
 	check(InputDepth);
-	ValidateExtents(LowResWithOffset, InputDepth);
+	static_assert (int(ENGXDLSSDenoiserMode::MaxValue) == 1, "dear DLSS plugin NVIDIA developer, please update this code to handle the new ENGXDLSSDenoiserMode enum values");
+	ValidateExtents(DenoiserMode == ENGXDLSSDenoiserMode::DLSSRR ? LowResTopLeft : LowResWithOffset, InputDepth);
 
 	// those have offset 0,0
 	check(InputMotionVectors);
@@ -120,33 +133,39 @@ NGXDLSSFeature::~NGXDLSSFeature()
 
 void NVSDK_CONV NGXLogSink(const char* InNGXMessage, NVSDK_NGX_Logging_Level InLoggingLevel, NVSDK_NGX_Feature InSourceComponent)
 {
+#if !NO_LOGGING
 	FString Message(FString(UTF8_TO_TCHAR(InNGXMessage)).TrimEnd());
-	const TCHAR* NGXComponent = TEXT("Unknown");
+	FString NGXComponent = FString::Printf(TEXT("Unknown(%d)"),InSourceComponent) ;
 	
 	switch (InSourceComponent)
 	{
-		case NVSDK_NGX_Feature_SuperSampling: NGXComponent = TEXT("DLSS");	break;
-		case NVSDK_NGX_Feature_Reserved_SDK : NGXComponent = TEXT("SDK");	break;
-		case NVSDK_NGX_Feature_Reserved_Core: NGXComponent = TEXT("Core");	break;
+		case NVSDK_NGX_Feature_SuperSampling    : NGXComponent = TEXT("DLSS-SR"); break;
+		case NVSDK_NGX_Feature_RayReconstruction: NGXComponent = TEXT("DLSS-RR"); break;
+		case NVSDK_NGX_Feature_FrameGeneration:   NGXComponent = TEXT("DLSS-FG"); break;
+		case NVSDK_NGX_Feature_DeepDVC:           NGXComponent = TEXT("DeepDVC"); break;
+		case NVSDK_NGX_Feature_Reserved_SDK     : NGXComponent = TEXT("SDK"); break;
+		case NVSDK_NGX_Feature_Reserved_Core    : NGXComponent = TEXT("Core"); break;
 	}
 
+	const bool bIsOurNGXBinary = Message.Contains(TEXT("nvngx_dlss.dll")) || Message.Contains(TEXT("nvngx_dlssd.dll"));
 	const bool bIsVerboseStartupMessage =
-		(Message.Contains(TEXT(" doesn't exist in any of the search paths")) && !Message.Contains(TEXT("nvngx_dlss.dll"))) || // we want to know if the DLSS binary is missing
-		Message.Contains(TEXT("warning: UWP compliant mode enabled"));
-
+		// we want to know if the DLSS SR/RR binaries are missing
+		(Message.Contains(TEXT("doesn't exist in any of the search paths")) && !bIsOurNGXBinary)
+		|| Message.Contains(TEXT("warning: UWP compliant mode enabled"))
+		|| Message.Contains(TEXT("error: failed to load NGXCore"))
+		;
 	
-
 	if ((CVarNGXRenameLogSeverities.GetValueOnAnyThread() == 2) || ((CVarNGXRenameLogSeverities.GetValueOnAnyThread() == 1) && bIsVerboseStartupMessage))
 	{
 		Message = Message.Replace(TEXT("error:"), TEXT("e_rror:"));
 		Message = Message.Replace(TEXT("Warning:"), TEXT("w_arning:"));
-		UE_LOG(LogDLSSNGX, Verbose, TEXT("[%s]: %s"), NGXComponent, *Message);
+		UE_LOG(LogDLSSNGX, Verbose, TEXT("[%s]: %s"), *NGXComponent, *Message);
 	}
 	else
 	{
-		UE_LOG(LogDLSSNGX, Log, TEXT("[%s]: %s"), NGXComponent, *Message);
+		UE_LOG(LogDLSSNGX, Log, TEXT("[%s]: %s"), *NGXComponent, *Message);
 	}
-
+#endif
 }
 
 
@@ -173,13 +192,13 @@ static void RemoveDuplicateSlashesFromPath(FString& Path)
 NGXRHI::NGXRHI(const FNGXRHICreateArguments& Arguments)
 	: DynamicRHI(Arguments.DynamicRHI)
 {
-	FString PluginNGXProductionBinariesDir  = FPaths::Combine(Arguments.PluginBaseDir, TEXT("Binaries/ThirdParty/Win64/"));
-	FString PluginNGXDevelopmentBinariesDir = FPaths::Combine(Arguments.PluginBaseDir, TEXT("Binaries/ThirdParty/Win64/Development/"));
+	FString PluginNGXProductionBinariesDir = FPaths::Combine(Arguments.PluginBaseDir, TEXT("Binaries/ThirdParty"), PlatformDir);
+	FString PluginNGXDevelopmentBinariesDir = FPaths::Combine(Arguments.PluginBaseDir, TEXT("Binaries/ThirdParty"), PlatformDir, TEXT("/Development/"));
 	FString PluginNGXBinariesDir = PluginNGXProductionBinariesDir;
 
 	// These paths can be different depending on the project type (source, no source) and how the project is packaged, thus we have both
-	FString ProjectNGXBinariesDir = FPaths::Combine(FPaths::ProjectDir(), TEXT("Binaries/ThirdParty/NVIDIA/NGX/Win64/"));
-	FString LaunchNGXBinariesDir  = FPaths::Combine(FPaths::LaunchDir(), TEXT("Binaries/ThirdParty/NVIDIA/NGX/Win64/"));
+	FString ProjectNGXBinariesDir = FPaths::Combine(FPaths::ProjectDir(), TEXT("Binaries/ThirdParty/NVIDIA/NGX"), PlatformDir);
+	FString LaunchNGXBinariesDir = FPaths::Combine(FPaths::LaunchDir(), TEXT("Binaries/ThirdParty/NVIDIA/NGX"), PlatformDir);
 
 	switch (Arguments.NGXBinariesSearchOrder)
 	{
@@ -219,16 +238,28 @@ NGXRHI::NGXRHI(const FNGXRHICreateArguments& Arguments)
 
 		// After this we should not touch NGXDLLSearchPaths since that provides the backing store for NGXDLLSearchPathRawStrings	
 		NGXDLLSearchPathRawStrings.Add(*NGXDLLSearchPaths[i]);
-		const bool bHasDLSSBinary = IPlatformFile::GetPlatformPhysical().FileExists(*FPaths::Combine(NGXDLLSearchPaths[i], NGX_DLSS_BINARY_NAME));
-		UE_LOG(LogDLSSNGXRHI, Log, TEXT("NVIDIA NGX DLSS binary %s %s in search path %s"), NGX_DLSS_BINARY_NAME, bHasDLSSBinary ? TEXT("found") : TEXT("not found"), *NGXDLLSearchPaths[i]);
+		const bool bHasDLSSSRBinary = IPlatformFile::GetPlatformPhysical().FileExists(*FPaths::Combine(NGXDLLSearchPaths[i], NGX_DLSS_SR_BINARY_NAME));
+		UE_LOG(LogDLSSNGXRHI, Log, TEXT("NVIDIA NGX DLSS-SR binary %s %s in search path %s"), NGX_DLSS_SR_BINARY_NAME, bHasDLSSSRBinary ? TEXT("found") : TEXT("not found"), *NGXDLLSearchPaths[i]);
+
+		const bool bHasDLSSRRBinary = IPlatformFile::GetPlatformPhysical().FileExists(*FPaths::Combine(NGXDLLSearchPaths[i], NGX_DLSS_RR_BINARY_NAME));
+		UE_LOG(LogDLSSNGXRHI, Log, TEXT("NVIDIA NGX DLSS-RR binary %s %s in search path %s"), NGX_DLSS_RR_BINARY_NAME, bHasDLSSRRBinary ? TEXT("found") : TEXT("not found"), *NGXDLLSearchPaths[i]);
+
 	}
 
 	// we do this separately here so we can show relative paths in the UI later
-	DLSSGenericBinaryInfo.Get<0>() = FPaths::Combine(PluginNGXBinariesDir, NGX_DLSS_BINARY_NAME);
-	DLSSGenericBinaryInfo.Get<1>() = IPlatformFile::GetPlatformPhysical().FileExists(*DLSSGenericBinaryInfo.Get<0>());
+	DLSSSRGenericBinaryInfo.Get<0>() = FPaths::Combine(PluginNGXBinariesDir, NGX_DLSS_SR_BINARY_NAME);
+	DLSSSRGenericBinaryInfo.Get<1>() = IPlatformFile::GetPlatformPhysical().FileExists(*DLSSSRGenericBinaryInfo.Get<0>());
 
-	DLSSCustomBinaryInfo.Get<0>() = FPaths::Combine(ProjectNGXBinariesDir, NGX_DLSS_BINARY_NAME);
-	DLSSCustomBinaryInfo.Get<1>() = IPlatformFile::GetPlatformPhysical().FileExists(*DLSSCustomBinaryInfo.Get<0>());
+	DLSSSRCustomBinaryInfo.Get<0>() = FPaths::Combine(ProjectNGXBinariesDir, NGX_DLSS_SR_BINARY_NAME);
+	DLSSSRCustomBinaryInfo.Get<1>() = IPlatformFile::GetPlatformPhysical().FileExists(*DLSSSRCustomBinaryInfo.Get<0>());
+
+	DLSSRRGenericBinaryInfo.Get<0>() = FPaths::Combine(PluginNGXBinariesDir, NGX_DLSS_RR_BINARY_NAME);
+	DLSSRRGenericBinaryInfo.Get<1>() = IPlatformFile::GetPlatformPhysical().FileExists(*DLSSRRGenericBinaryInfo.Get<0>());
+
+	DLSSRRCustomBinaryInfo.Get<0>() = FPaths::Combine(ProjectNGXBinariesDir, NGX_DLSS_RR_BINARY_NAME);
+	DLSSRRCustomBinaryInfo.Get<1>() = IPlatformFile::GetPlatformPhysical().FileExists(*DLSSRRCustomBinaryInfo.Get<0>());
+
+
 
 	FeatureInfo.PathListInfo.Path = const_cast<wchar_t**>(NGXDLLSearchPathRawStrings.GetData());
 	FeatureInfo.PathListInfo.Length = NGXDLLSearchPathRawStrings.Num();
@@ -283,14 +314,24 @@ NGXRHI::NGXRHI(const FNGXRHICreateArguments& Arguments)
 	}
 }
 
-TTuple<FString, bool> NGXRHI::GetDLSSGenericBinaryInfo() const
+TTuple<FString, bool> NGXRHI::GetDLSSSRGenericBinaryInfo() const
 {
-	return DLSSGenericBinaryInfo;
+	return DLSSSRGenericBinaryInfo;
 }
 
-TTuple<FString, bool> NGXRHI::GetDLSSCustomBinaryInfo() const
+TTuple<FString, bool> NGXRHI::GetDLSSSRCustomBinaryInfo() const
 {
-	return DLSSCustomBinaryInfo;
+	return DLSSSRCustomBinaryInfo;
+}
+
+TTuple<FString, bool> NGXRHI::GetDLSSRRGenericBinaryInfo() const
+{
+	return DLSSRRGenericBinaryInfo;
+}
+
+TTuple<FString, bool> NGXRHI::GetDLSSRRCustomBinaryInfo() const
+{
+	return DLSSRRCustomBinaryInfo;
 }
 
 #if !ENGINE_PROVIDES_UE_5_6_ID3D12DYNAMICRHI_METHODS
@@ -451,6 +492,8 @@ FDLSSOptimalSettings NGXRHI::FDLSSQueryFeature::GetDLSSOptimalSettings(const FDL
 
 	FDLSSOptimalSettings OptimalSettings;
 
+	float SharpnessIsDeprecatedButWeStillNeedAFunctionArgument;
+
 	const NVSDK_NGX_Result ResultGetOptimalSettings = NGX_DLSS_GET_OPTIMAL_SETTINGS(
 		CapabilityParameters,
 		InResolution.Width,
@@ -462,7 +505,7 @@ FDLSSOptimalSettings NGXRHI::FDLSSQueryFeature::GetDLSSOptimalSettings(const FDL
 		reinterpret_cast<unsigned int*>(&OptimalSettings.RenderSizeMax.Y),
 		reinterpret_cast<unsigned int*>(&OptimalSettings.RenderSizeMin.X),
 		reinterpret_cast<unsigned int*>(&OptimalSettings.RenderSizeMin.Y),
-		&OptimalSettings.Sharpness
+		&SharpnessIsDeprecatedButWeStillNeedAFunctionArgument
 		);
 	UE_LOG(LogDLSSNGXRHI, Log, TEXT("NGX_DLSS_GET_OPTIMAL_SETTINGS -> (%u %s)"), ResultGetOptimalSettings, GetNGXResultAsString(ResultGetOptimalSettings));
 	checkf(NVSDK_NGX_SUCCEED(ResultGetOptimalSettings), TEXT("failed to query supported DLSS modes"));
@@ -515,10 +558,13 @@ uint32 FRHIDLSSArguments::GetNGXCommonDLSSFeatureFlags() const
 	check(!IsRunningRHIInSeparateThread() || IsInRHIThread());
 	uint32 DLSSFeatureFlags = NVSDK_NGX_DLSS_Feature_Flags_None;
 	DLSSFeatureFlags |= NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
+
+	static_assert (int(ENGXDLSSDenoiserMode::MaxValue) == 1, "dear DLSS plugin NVIDIA developer, please update this code to handle the new ENGXDLSSDenoiserMode enum values");
+	// DLSS-SR uses hardware depth
+	// DLSS-RR uses linear depth
 	if (DenoiserMode == ENGXDLSSDenoiserMode::Off)
 		DLSSFeatureFlags |= bool(ERHIZBuffer::IsInverted) ? NVSDK_NGX_DLSS_Feature_Flags_DepthInverted : 0;
 	DLSSFeatureFlags |= !bHighResolutionMotionVectors ? NVSDK_NGX_DLSS_Feature_Flags_MVLowRes : 0;
-	DLSSFeatureFlags |= Sharpness != 0.0f ? NVSDK_NGX_DLSS_Feature_Flags_DoSharpening : 0;
 	DLSSFeatureFlags |= bUseAutoExposure ? NVSDK_NGX_DLSS_Feature_Flags_AutoExposure : 0;
 	DLSSFeatureFlags |= bEnableAlphaUpscaling ? NVSDK_NGX_DLSS_Feature_Flags_AlphaUpscaling : 0;
 	return DLSSFeatureFlags;
@@ -631,6 +677,7 @@ void NGXRHI::ApplyCommonNGXParameterSettings(NVSDK_NGX_Parameter* InOutParameter
 	NVSDK_NGX_Parameter_SetUI(InOutParameter, NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, static_cast<uint32>(InArguments.DLSSPreset));
 	NVSDK_NGX_Parameter_SetUI(InOutParameter, NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, static_cast<uint32>(InArguments.DLSSPreset));
 
+	static_assert (int(ENGXDLSSDenoiserMode::MaxValue) == 1, "dear DLSS plugin NVIDIA developer, please update this code to handle the new ENGXDLSSDenoiserMode enum values");
 	if (NGXQueryFeature.bIsDlssRRAvailable && InArguments.DenoiserMode == ENGXDLSSDenoiserMode::DLSSRR)
 	{
 		NVSDK_NGX_Parameter_SetUI(InOutParameter, NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_DLAA, static_cast<uint32>(InArguments.DLSSRRPreset));

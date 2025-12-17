@@ -30,9 +30,27 @@
 #include "SceneView.h"
 #include "Misc/MessageDialog.h"
 
+#include "DLSSUpscalerModularFeature.h"
+
 
 #define LOCTEXT_NAMESPACE "FDLSSModule"
 DEFINE_LOG_CATEGORY(LogDLSS);
+
+//Add deprecated RR presets here
+static const TArray<EDLSSRRPreset> DeprecatedRRPresets = {
+	EDLSSRRPreset::A,
+	EDLSSRRPreset::B,
+	EDLSSRRPreset::C 
+};
+
+//Add deprecated SR presets here
+static const TArray<EDLSSPreset> DeprecatedSRPresets = {
+	EDLSSPreset::A,
+	EDLSSPreset::B,
+	EDLSSPreset::C,
+	EDLSSPreset::D,
+	EDLSSPreset::E
+};
 
 static TAutoConsoleVariable<int32> CVarNGXBinarySearchOrder(
 	TEXT("r.NGX.BinarySearchOrder"),
@@ -184,6 +202,11 @@ void FDLSSModule::StartupModule()
 	else if (!bLoadLibraries)
 	{
 		UE_LOG(LogDLSS, Log, TEXT("NVIDIA NGX library loading has been disabled with r.NGX.Enable=0"));
+		NGXSupport = ENGXSupport::NotSupported;
+	}
+	else if (!IsEngineExecutionModeSupported().Get<0>())
+	{
+		UE_LOG(LogDLSS, Log, TEXT("NVIDIA NGX library loading has been disabled due to '%s'. Note: 'Remote' Movie Render Scene are rendered as a regular -game instances and are not impacted by this."), IsEngineExecutionModeSupported().Get<1>());
 		NGXSupport = ENGXSupport::NotSupported;
 	}
 	else
@@ -388,7 +411,7 @@ void FDLSSModule::StartupModule()
 		}
 	}
 
-	UE_LOG(LogDLSS, Log, TEXT("NVIDIA NGX DLSS supported SR=%u RR=%u"), QueryDLSSSRSupport() == EDLSSSupport::Supported, QueryDLSSRRSupport() == EDLSSSupport::Supported);
+	UE_LOG(LogDLSS, Log, TEXT("NVIDIA NGX DLSS supported DLSS-SR=%u DLSS-RR=%u"), QueryDLSSSRSupport() == EDLSSSupport::Supported, QueryDLSSRRSupport() == EDLSSSupport::Supported);
 	
 
 	// and the other related interfaces
@@ -425,12 +448,25 @@ void FDLSSModule::StartupModule()
 		NGXAutomationViewExtension = FSceneViewExtensions::NewExtension<FNGXAutomationViewExtension>();
 	}
 
+#if ENGINE_SUPPORTS_UPSCALER_MODULAR_FEATURE
+	if (DLSSSRSupport == EDLSSSupport::Supported)
+	{
+		// Register modular features
+		FDLSSTemporalUpscalerModularFeature::RegisterModularFeature();
+	}
+#endif
+
 	UE_LOG(LogDLSS, Log, TEXT("%s Leave"), ANSI_TO_TCHAR(__FUNCTION__));
 }
 
 void FDLSSModule::ShutdownModule()
 {
 	UE_LOG(LogDLSS, Log, TEXT("%s Enter"), ANSI_TO_TCHAR(__FUNCTION__));
+
+#if ENGINE_SUPPORTS_UPSCALER_MODULAR_FEATURE
+	// Unregister modular features
+	FDLSSTemporalUpscalerModularFeature::UnregisterModularFeature();
+#endif
 
 	// reset DLSS image quality and performance automation hooks
 	{
@@ -509,6 +545,11 @@ FDLSSUpscaler* FDLSSModule::GetDLSSUpscaler() const
 	return DLSSUpscaler.Get();
 }
 
+IScreenSpaceDenoiser* FDLSSModule::GetDLSSDenoiser() const
+{
+	return DLSSDenoiser.Get();
+}
+
 TSharedPtr< ISceneViewExtension, ESPMode::ThreadSafe> FDLSSModule::GetDLSSUpscalerViewExtension() const
 {
 	return StaticCastSharedPtr<ISceneViewExtension>(DLSSUpscalerViewExtension);
@@ -524,17 +565,7 @@ bool FDLSSModule::GetIsRRSupportedByRHI() const
 
 //Deprecated presets
 
-//Add deprecated RR presets here
-static const TArray<EDLSSRRPreset> DeprecatedRRPresets = {
-	EDLSSRRPreset::A,
-	EDLSSRRPreset::B,
-	EDLSSRRPreset::C 
-};
 
-//Add deprecated SR presets here
-static const TArray<EDLSSPreset> DeprecatedSRPresets = {
-
-};
 
 static bool CheckIfPresetNeedsUpdate(EDLSSRRPreset DLSSRRPreset)
 {

@@ -26,6 +26,10 @@ using ITemporalUpscaler = UE::Renderer::Private::ITemporalUpscaler;
 #define SUPPORT_GUIDE_GBUFFER 0
 #endif
 
+#ifndef SUPPORT_GUIDE_SSS_DOF
+#define SUPPORT_GUIDE_SSS_DOF 0
+#endif
+
 struct FGBufferResolveOutputs
 {
 	FRDGTextureRef DiffuseAlbedo = nullptr;
@@ -39,6 +43,13 @@ struct FGBufferResolveOutputs
 #if SUPPORT_GUIDE_GBUFFER
 	FRDGTextureRef ReflectionHitDistance = nullptr;
 #endif
+
+#if SUPPORT_GUIDE_SSS_DOF
+	FRDGTextureRef SubsurfaceScatteringGuide = nullptr;
+	FRDGTextureRef DepthOfFieldGuide = nullptr;
+#endif
+
+
 };
 
 extern DLSSUTILITY_API FGBufferResolveOutputs AddGBufferResolvePass(

@@ -134,9 +134,8 @@ static constexpr bool bLogStreamlineLogTrackedViews = false;
 #endif
 
 
-DECLARE_GPU_STAT(Streamline);
+DEFINE_GPU_STAT(Streamline);
 DECLARE_GPU_STAT(StreamlineDeepDVC);
-
 
 FDelegateHandle FStreamlineViewExtension::OnPreResizeWindowBackBufferHandle;
 FDelegateHandle FStreamlineViewExtension::OnSlateWindowDestroyedHandle;
@@ -615,6 +614,7 @@ void AddStreamlineUIHintTagPass(
 				}
 
 				const uint32 ViewID = HasViewIdOverride ? 0 : View.ViewKey;
+				const uint64 LocalGFrameCounter = GFrameCounterRenderThread;
 
 #if !ENGINE_PROVIDES_UE_5_6_ID3D12DYNAMICRHI_METHODS
 				if (RHIExtensions->NeedExtraPassesForDebugLayerCompatibility())
@@ -623,10 +623,10 @@ void AddStreamlineUIHintTagPass(
 				}
 #endif
 				RHICmdList.EnqueueLambda(
-				[RHIExtensions, TexturesToTagOrUntag, ViewID](FRHICommandListImmediate& Cmd) mutable
+					[RHIExtensions, TexturesToTagOrUntag, ViewID, LocalGFrameCounter](FRHICommandListImmediate& Cmd) mutable
 				{
-
-					RHIExtensions->TagTextures(Cmd, ViewID, TexturesToTagOrUntag);
+						sl::FrameToken* FrameToken = FStreamlineCoreModule::GetStreamlineRHI()->GetFrameToken(LocalGFrameCounter);
+						RHIExtensions->TagTextures(Cmd, ViewID, *FrameToken, TexturesToTagOrUntag);
 				});
 			}
 	});
@@ -757,14 +757,12 @@ FScreenPassTexture FStreamlineViewExtension::PostProcessPassAtEnd_RenderThread(F
 	const FIntRect ViewRect = ViewInfo.ViewRect;
 	const FIntRect SecondaryViewRect = FIntRect(FIntPoint::ZeroValue, ViewInfo.GetSecondaryViewRectSize());
 
-	RDG_GPU_STAT_SCOPE(GraphBuilder, Streamline);
-
-	RDG_EVENT_SCOPE(GraphBuilder, "Streamline ViewID=%u %dx%d [%d,%d -> %d,%d]",
-		// TODO STREAMLINE register the StreamLineRHI work with FGPUProfiler so the streamline tag call shows up with profilegpu
+	NV_RDG_EVENT_SCOPE(GraphBuilder, Streamline, "Streamline ViewID=%u %dx%d [%d,%d -> %d,%d]",
 		ViewID, ViewRect.Width(), ViewRect.Height(),
 		ViewRect.Min.X, ViewRect.Min.Y,
-		ViewRect.Max.X, ViewRect.Max.Y
-	);
+		ViewRect.Max.X, ViewRect.Max.Y);
+	RDG_GPU_STAT_SCOPE(GraphBuilder, Streamline);
+
 	if (ShouldTagStreamlineBuffers())
 	{
 		const uint64 FrameNumber = GFrameNumberRenderThread;
@@ -846,7 +844,7 @@ FScreenPassTexture FStreamlineViewExtension::PostProcessPassAtEnd_RenderThread(F
 		const bool bTagCustomDepth = CVarStreamlineTagCustomDepth.GetValueOnRenderThread();
 		if (bTagCustomDepth)
 		{
-			RDG_EVENT_SCOPE(GraphBuilder, "Streamline CustomDepth %dx%d [%d,%d -> %d,%d]",
+			NV_RDG_EVENT_SCOPE(GraphBuilder,Streamline, "Streamline CustomDepth %dx%d [%d,%d -> %d,%d]",
 				ViewRect.Width(), ViewRect.Height(),
 				ViewRect.Min.X, ViewRect.Min.Y,
 				ViewRect.Max.X, ViewRect.Max.Y
@@ -1016,10 +1014,13 @@ FScreenPassTexture FStreamlineViewExtension::PostProcessPassAtEnd_RenderThread(F
 #endif
 			// then tagging the resources
 			const uint32 ViewId = StreamlineArguments.ViewId;
+			const uint64 LocalGFrameCounter = GFrameCounterRenderThread;
+
 			RHICmdList.EnqueueLambda(
-			[LocalStreamlineRHIExtensions, ViewId, TexturesToTagOrUntag](FRHICommandListImmediate& Cmd) mutable
+			[LocalStreamlineRHIExtensions, ViewId, TexturesToTagOrUntag, LocalGFrameCounter](FRHICommandListImmediate& Cmd) mutable
 			{
-				LocalStreamlineRHIExtensions->TagTextures(Cmd, ViewId, TexturesToTagOrUntag);
+				sl::FrameToken* FrameToken = FStreamlineCoreModule::GetStreamlineRHI()->GetFrameToken(LocalGFrameCounter);
+				LocalStreamlineRHIExtensions->TagTextures(Cmd, ViewId, *FrameToken, TexturesToTagOrUntag);
 			});
 		});
 
@@ -1040,14 +1041,12 @@ FScreenPassTexture FStreamlineViewExtension::PostProcessPassAtEnd_RenderThread(F
 	// DeepDVC render pass
 	if(IsDeepDVCActive())
 	{
-		RDG_GPU_STAT_SCOPE(GraphBuilder, StreamlineDeepDVC);
-		RDG_EVENT_SCOPE(GraphBuilder, "Streamline DeepDVC %dx%d [%d,%d -> %d,%d]",
-			// TODO STREAMLINE register the StreamLineRHI work with FGPUProfiler so this get registered as work
+		NV_RDG_EVENT_SCOPE(GraphBuilder, StreamlineDeepDVC, "Streamline DeepDVC %dx%d [%d,%d -> %d,%d]",
 			SceneColor.ViewRect.Width(), SceneColor.ViewRect.Height(),
 			SceneColor.ViewRect.Min.X, SceneColor.ViewRect.Min.Y,
 			SceneColor.ViewRect.Max.X, SceneColor.ViewRect.Max.Y
 		);
-
+		RDG_GPU_STAT_SCOPE(GraphBuilder, StreamlineDeepDVC);
 		// we wont need to run this always since (unlike FG) we skip the whole evaluate pass
 
 		AddStreamlineDeepDVCStateRenderPass(GraphBuilder, ViewID, SecondaryViewRect);

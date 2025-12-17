@@ -33,6 +33,7 @@ public class StreamlineRHI : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
+				"StreamlineNGXCommon",
 			}
 			);
 			

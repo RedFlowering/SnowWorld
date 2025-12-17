@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
-	"Version": 10,
-	"VersionName": "8.1.0",
+	"Version": 13,
+	"VersionName": "8.4.0",
 	"FriendlyName": "NVIDIA Image Scaling (NIS)",
 	"Description": "NVIDIA Image Scaling boosts frame rates using GPU scaling and sharpening.",
 	"Category": "Rendering",

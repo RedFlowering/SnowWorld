@@ -246,10 +246,11 @@ void AddStreamlineDeepDVCEvaluateRenderPass(FStreamlineRHI* StreamlineRHIExtensi
 				DebugLayerCompatibilityRHISetup(PassParameters->DebugLayerCompatibility, { DeeDVCResource });
 			}
 #endif
+			const uint64 LocalGFrameCounter = GFrameCounterRenderThread;
 			RHICmdList.EnqueueLambda(
-				[StreamlineRHIExtensions, DeeDVCResource, ViewID, SecondaryViewRect](FRHICommandListImmediate& Cmd) mutable
+				[StreamlineRHIExtensions, DeeDVCResource, ViewID, SecondaryViewRect, LocalGFrameCounter](FRHICommandListImmediate& Cmd) mutable
 				{
-					sl::FrameToken* FrameToken = FStreamlineCoreModule::GetStreamlineRHI()->GetFrameToken(GFrameCounter);
+					sl::FrameToken* FrameToken = FStreamlineCoreModule::GetStreamlineRHI()->GetFrameToken(LocalGFrameCounter);
 					StreamlineRHIExtensions->StreamlineEvaluateDeepDVC(Cmd, DeeDVCResource, FrameToken, ViewID);
 				});
 		});

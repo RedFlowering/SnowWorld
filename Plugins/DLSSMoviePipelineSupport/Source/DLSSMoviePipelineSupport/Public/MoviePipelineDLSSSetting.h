@@ -27,8 +27,8 @@ enum class EMoviePipelineDLSSQuality : uint8
 	EMoviePipelineDLSSQuality_UltraPerformance		UMETA(DisplayName = "Ultra Performance"),
 };
 
-UCLASS(BlueprintType)
-class DLSSMOVIEPIPELINESUPPORT_API UMoviePipelineDLSSSetting : public UMoviePipelineViewFamilySetting
+UCLASS(MinimalAPI, BlueprintType)
+class UMoviePipelineDLSSSetting : public UMoviePipelineViewFamilySetting
 {
 	GENERATED_BODY()
 public:

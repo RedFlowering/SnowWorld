@@ -22,6 +22,7 @@
 
 #include "StreamlineLibraryReflex.generated.h"
 
+#define UE_API STREAMLINEREFLEXBLUEPRINT_API
 
 #ifdef __INTELLISENSE__
 #define WITH_STREAMLINE 1
@@ -59,34 +60,34 @@ public:
 
 
 	UFUNCTION(BlueprintPure, Category = "Streamline|Reflex", meta = (DisplayName = "Is NVIDIA Reflex Supported"))
-	static STREAMLINEREFLEXBLUEPRINT_API bool IsReflexSupported();
+	static UE_API bool IsReflexSupported();
 
 	UFUNCTION(BlueprintPure, Category = "Streamline|Reflex", meta = (DisplayName = "Query NVIDIA Reflex Support"))
-	static STREAMLINEREFLEXBLUEPRINT_API EStreamlineFeatureSupport QueryReflexSupport();
+	static UE_API EStreamlineFeatureSupport QueryReflexSupport();
 
 
 	UFUNCTION(BlueprintCallable, Category = "Streamline|Reflex", meta = (DisplayName = "Set Reflex mode"))
-	static STREAMLINEREFLEXBLUEPRINT_API void SetReflexMode(const EStreamlineReflexMode Mode);
+	static UE_API void SetReflexMode(const EStreamlineReflexMode Mode);
 	
 	UFUNCTION(BlueprintPure, Category = "Streamline|Reflex", meta = (DisplayName = "Get Reflex mode"))
-	static STREAMLINEREFLEXBLUEPRINT_API EStreamlineReflexMode GetReflexMode();
+	static UE_API EStreamlineReflexMode GetReflexMode();
 
 	/** Checks whether a Reflex mode is supported */
 	UFUNCTION(BlueprintPure, Category = "Streamline|Reflex", meta = (DisplayName = "Is Reflex Mode Supported"))
-	static STREAMLINEREFLEXBLUEPRINT_API bool IsReflexModeSupported(EStreamlineReflexMode ReflexMode);
+	static UE_API bool IsReflexModeSupported(EStreamlineReflexMode ReflexMode);
 	/** Retrieves all supported Reflex modes. Can be used to populate UI */
 	UFUNCTION(BlueprintPure, Category = "Streamline|Reflex", meta = (DisplayName = "Get Supported Reflex Modes"))
-	static STREAMLINEREFLEXBLUEPRINT_API TArray<EStreamlineReflexMode> GetSupportedReflexModes();
+	static UE_API TArray<EStreamlineReflexMode> GetSupportedReflexModes();
 
 	UFUNCTION(BlueprintPure, Category = "Streamline|Reflex", meta = (DisplayName = "Get default Reflex mode"))
-	static STREAMLINEREFLEXBLUEPRINT_API EStreamlineReflexMode GetDefaultReflexMode();
+	static UE_API EStreamlineReflexMode GetDefaultReflexMode();
 
 	UFUNCTION(BlueprintPure, Category = "Streamline|Reflex", meta = (DisplayName = "Get Reflex Game To Render Latency (ms)"))
-	static STREAMLINEREFLEXBLUEPRINT_API float GetGameToRenderLatencyInMs();
+	static UE_API float GetGameToRenderLatencyInMs();
 	UFUNCTION(BlueprintPure, Category = "Streamline|Reflex", meta = (DisplayName = "Get Reflex Game Latency (ms)"))
-	static STREAMLINEREFLEXBLUEPRINT_API float GetGameLatencyInMs();
+	static UE_API float GetGameLatencyInMs();
 	UFUNCTION(BlueprintPure, Category = "Streamline|Reflex", meta = (DisplayName = "Get Reflex Render Latency (ms)"))
-	static STREAMLINEREFLEXBLUEPRINT_API float GetRenderLatencyInMs();
+	static UE_API float GetRenderLatencyInMs();
 
 
 	static void Startup();
@@ -103,3 +104,5 @@ public:
 
 private:
 };
+
+#undef UE_API

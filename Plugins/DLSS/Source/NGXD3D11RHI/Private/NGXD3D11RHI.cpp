@@ -251,7 +251,8 @@ void FNGXD3D11RHI::ExecuteDLSS(FRHICommandList& CmdList, const FRHIDLSSArguments
 		checkf(NVSDK_NGX_SUCCEED(Result), TEXT("NVSDK_NGX_D3D11_AllocateParameters failed! (%u %s)"), Result, GetNGXResultAsString(Result));
 
 		ApplyCommonNGXParameterSettings(NewNGXParameterHandle, InArguments);
-
+		
+		static_assert (int(ENGXDLSSDenoiserMode::MaxValue) == 1, "dear DLSS plugin NVIDIA developer, please update this code to handle the new ENGXDLSSDenoiserMode enum values");
 		if (InArguments.DenoiserMode == ENGXDLSSDenoiserMode::DLSSRR)
 		{
 			// DLSS-RR feature creation
@@ -340,6 +341,24 @@ void FNGXD3D11RHI::ExecuteDLSS(FRHICommandList& CmdList, const FRHIDLSSArguments
 		}
 #endif
 
+#if SUPPORT_GUIDE_SSS_DOF
+		if (InArguments.InputSSS)
+		{
+			DlssRREvalParams.pInScreenSpaceSubsurfaceScatteringGuide = D3D11RHI->RHIGetResource(InArguments.InputSSS);
+			DlssRREvalParams.InScreenSpaceSubsurfaceScatteringGuideSubrectBase.X = 0;
+			DlssRREvalParams.InScreenSpaceSubsurfaceScatteringGuideSubrectBase.Y = 0;
+		}
+
+		if (InArguments.InputDOF)
+		{
+			DlssRREvalParams.pInDepthOfFieldGuide = D3D11RHI->RHIGetResource(InArguments.InputDOF);
+			DlssRREvalParams.InDepthOfFieldGuideSubrectBase.X = 0;
+			DlssRREvalParams.InDepthOfFieldGuideSubrectBase.Y = 0;
+		}
+#endif
+
+
+
 		NVSDK_NGX_Result ResultEvaluate = NGX_D3D11_EVALUATE_DLSSD_EXT(
 			Direct3DDeviceIMContext,
 			InDLSSState->DLSSFeature->Feature,
@@ -354,7 +373,6 @@ void FNGXD3D11RHI::ExecuteDLSS(FRHICommandList& CmdList, const FRHIDLSSArguments
 
 		DlssEvalParams.Feature.pInOutput = D3D11RHI->RHIGetResource(InArguments.OutputColor);
 		DlssEvalParams.Feature.pInColor = D3D11RHI->RHIGetResource(InArguments.InputColor);
-		DlssEvalParams.Feature.InSharpness = InArguments.Sharpness;
 
 		NVSDK_NGX_Result ResultEvaluate = NGX_D3D11_EVALUATE_DLSS_EXT(
 			Direct3DDeviceIMContext,

@@ -38,6 +38,12 @@ public class DLSSBlueprint : ModuleRules
 		bool bPlatformSupportsDLSS = IsSupportedPlatform(Target);
 	
 		PublicDefinitions.Add("WITH_DLSS=" + (bPlatformSupportsDLSS ? '1' : '0'));
+#if UE_5_6_OR_LATER
+		PrivateDefinitions.Add("ENGINE_SUPPORTS_UPSCALER_MODULAR_FEATURE=1");
+		PrivateDependencyModuleNames.Add("VirtualProduction");
+#else
+		PrivateDefinitions.Add("ENGINE_SUPPORTS_UPSCALER_MODULAR_FEATURE=0");
+#endif
 
 		if (bPlatformSupportsDLSS)
 		{ 

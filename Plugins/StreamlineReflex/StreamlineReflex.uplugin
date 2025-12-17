@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
-	"Version": 121,
-	"VersionName": "8.1.0-SL2.7.30",
+	"Version": 126,
+	"VersionName": "8.4.0-SL2.9.0",
 	"FriendlyName": "NVIDIA Reflex Low Latency",
 	"Description": "NVIDIA Reflex Low Latency reduces PC latency and increases responsiveness.",
 	"Category": "Rendering",

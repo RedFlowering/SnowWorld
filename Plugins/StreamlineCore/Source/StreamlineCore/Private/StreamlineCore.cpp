@@ -37,18 +37,6 @@
 #define LOCTEXT_NAMESPACE "FStreamlineModule"
 DEFINE_LOG_CATEGORY(LogStreamline);
 
-
-// Epic requested a CVar to control whether the plugin will perform initialization or not.
-// This allows the plugin to be included in a project and active but allows for it to not do anything
-// at runtime.
-static TAutoConsoleVariable<bool> CVarStreamlineInitializePlugin(
-	TEXT("r.Streamline.InitializePlugin"),
-	true,
-	TEXT("Enable/disable initializing the Streamline plugin (default = true)"),
-	ECVF_ReadOnly);
-
-
-
 Streamline::EStreamlineFeatureSupport TranslateStreamlineResult(sl::Result Result)
 {
 	switch (Result)
@@ -70,7 +58,8 @@ Streamline::EStreamlineFeatureSupport TranslateStreamlineResult(sl::Result Resul
  
 void FStreamlineCoreModule::StartupModule()
 {
-	if (!CVarStreamlineInitializePlugin.GetValueOnAnyThread())
+	auto CVarInitializePlugin = IConsoleManager::Get().FindConsoleVariable(TEXT("r.Streamline.InitializePlugin"));
+	if (CVarInitializePlugin && !CVarInitializePlugin->GetBool())
 	{
 		UE_LOG(LogStreamline, Log, TEXT("Initialization of StreamlineCore is disabled."));
 		return;
@@ -139,7 +128,8 @@ void FStreamlineCoreModule::StartupModule()
 
 void FStreamlineCoreModule::ShutdownModule()
 {
-	if (!CVarStreamlineInitializePlugin.GetValueOnAnyThread())
+	auto CVarInitializePlugin = IConsoleManager::Get().FindConsoleVariable(TEXT("r.Streamline.InitializePlugin"));
+	if (CVarInitializePlugin && !CVarInitializePlugin->GetBool())
 	{
 		return;
 	}

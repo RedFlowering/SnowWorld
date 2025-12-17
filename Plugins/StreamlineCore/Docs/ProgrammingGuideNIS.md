@@ -1,11 +1,12 @@
 
+
 Streamline - NIS
 =======================
 
 >The focus of this guide is on using Streamline to integrate the NVIDIA Image Scaling (NIS) SDK into an application.  For more information about NIS itself, please visit the [NVIDIA Image Scaling SDK Github Page](https://github.com/NVIDIAGameWorks/NVIDIAImageScaling)  
 >For information on user interface considerations when using the NIS plugin, please see the ["RTX UI Developer Guidelines.pdf"](<RTX UI Developer Guidelines.pdf>) document included with this SDK.
 
-Version 2.7.30
+Version 2.9.0
 =======
 
 ### Introduction
@@ -14,7 +15,7 @@ The NVIDIA Image Scaling SDK (NIS) provides a single spatial scaling and sharpen
 
 The directional scaling and sharpening algorithm are combined together in NVScaler while NVSharpen only implements the adaptive-directional-sharpening algorithm. Both algorithms are provided as compute shaders and developers are free to integrate them in their applications. Note that if you integrate NVScaler, you should NOT also integrate NVSharpen, as NVScaler already includes a sharpening pass.
 
-For more information on the NVIDIA Image scaling SDK visit https://github.com/NVIDIAGameWorks/NVIDIAImageScaling
+For more information on the NVIDIA Image scaling SDK visit [NVIDIA Image Scaling SDK](https://github.com/NVIDIAGameWorks/NVIDIAImageScaling)
 
 ### 1.0 INITIALIZE AND SHUTDOWN
 
@@ -89,10 +90,12 @@ if (SUCCEEDED(CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory)))
                 // Requested feature is not supported on the system, fallback to the default method
                 switch (result)
                 {
-                    case sl::Result::eErrorOSOutOfDate:         // inform user to update OS
-                    case sl::Result::eErrorDriverOutOfDate:     // inform user to update driver
-                    case sl::Result::eErrorNoSupportedAdapter:  // cannot use this adapter (older or non-NVDA GPU etc)
-                    // and so on ...
+                    case sl::Result::eErrorOSOutOfDate:             // inform user to update OS
+                    case sl::Result::eErrorDriverOutOfDate:         // inform user to update driver
+                    case sl::Result::eErrorNoSupportedAdapterFound: // cannot use this adapter (older or non-NVDA
+                                                                    // GPU etc)
+                        break;
+                        // and so on ...
                 };
             }
             else
@@ -139,6 +142,9 @@ slSetTagForFrame(*currentFrame, viewport, inputs, _countof(inputs), cmdList);
 ```
 > **IMPORTANT**
 > When using Vulkan additional information about the resource must be provided (width, height, format, image view etc). See `sl::Resource` for details.
+
+> **IMPORTANT**
+> If previously tagged resources are destroyed (whether they are volatile or not), `slFreeResources` must be called unless NIS is no longer used.
 
 ### 4.0 PROVIDE NIS OPTIONS
 
@@ -194,5 +200,4 @@ else
 
 > **IMPORTANT:**
 > Plase note that **host is responsible for restoring the command buffer(list) state** after calling `slEvaluateFeature`. For more details on which states are affected please see [restore pipeline section](./ProgrammingGuideManualHooking.md#70-restoring-command-listbuffer-state)
-
 

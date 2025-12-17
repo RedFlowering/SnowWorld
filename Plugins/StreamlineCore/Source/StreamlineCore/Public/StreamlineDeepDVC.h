@@ -17,10 +17,6 @@ class FStreamlineRHI;
 
 bool IsDeepDVCActive();
 
-namespace Streamline
-{
-	enum class EStreamlineFeatureSupport;
-}
 extern STREAMLINECORE_API Streamline::EStreamlineFeatureSupport QueryStreamlineDeepDVCSupport();
 extern STREAMLINECORE_API bool IsStreamlineDeepDVCSupported();
 

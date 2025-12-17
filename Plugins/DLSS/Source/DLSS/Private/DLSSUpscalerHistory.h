@@ -23,10 +23,12 @@
 #include "DLSSUpscalerPrivate.h"
 #include "NGXRHI.h"
 
+#define UE_API DLSS_API
+
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3
-class DLSS_API FDLSSUpscalerHistory final : public ITemporalUpscaler::IHistory, public FRefCountBase
+class FDLSSUpscalerHistory final : public ITemporalUpscaler::IHistory, public FRefCountBase
 #else
-class DLSS_API FDLSSUpscalerHistory final : public ICustomTemporalAAHistory, public FRefCountBase
+class FDLSSUpscalerHistory final : public ICustomTemporalAAHistory, public FRefCountBase
 #endif
 {
 public:
@@ -66,3 +68,5 @@ private:
 	~FDLSSUpscalerHistory();
 
 };
+
+#undef UE_API

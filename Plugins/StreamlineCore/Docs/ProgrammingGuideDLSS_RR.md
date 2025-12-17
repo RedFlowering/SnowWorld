@@ -1,11 +1,12 @@
 
+
 Streamline - DLSS-RR
 =======================
 
 >The focus of this guide is on using Streamline to integrate DLSS Ray Reconstruction (DLSS-RR) into an application.  For more information about DLSS-RR itself, please visit the [NVIDIA Developer DLSS Page](https://developer.nvidia.com/rtx/dlss)
 >For information on user interface considerations when using the DLSS-RR plugin, please see the ["RTX UI Developer Guidelines.pdf"](<RTX UI Developer Guidelines.pdf>) document included in the DLSS SDK.
 
-Version 2.7.30
+Version 2.9.0
 =======
 
 ### 1.0 INITIALIZE AND SHUTDOWN
@@ -81,10 +82,12 @@ if (SUCCEEDED(CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory)))
                 // Requested feature is not supported on the system, fallback to the default method
                 switch (result)
                 {
-                    case sl::Result::eErrorOSOutOfDate:         // inform user to update OS
-                    case sl::Result::eErrorDriverOutOfDate:     // inform user to update driver
-                    case sl::Result::eErrorNoSupportedAdapter:  // cannot use this adapter (older or non-NVDA GPU etc)
-                    // and so on ...
+                    case sl::Result::eErrorOSOutOfDate:             // inform user to update OS
+                    case sl::Result::eErrorDriverOutOfDate:         // inform user to update driver
+                    case sl::Result::eErrorNoSupportedAdapterFound: // cannot use this adapter (older or non-NVDA
+                                                                    // GPU etc)
+                        break;
+                        // and so on ...
                 };
             }
             else
@@ -109,22 +112,22 @@ Next, we need to find out the rendering resolution and the optimal sharpness lev
 
 // Using helpers from sl_dlss_d.h
 
-sl::DLSSOptimalSettings dlssSettings;
+sl::DLSSDOptimalSettings dlssdSettings;
 sl::DLSSOptions dlssdOptions;
 // These are populated based on user selection in the UI
 dlssdOptions.mode = myUI->getDLSSMode(); // e.g. sl::eDLSSModeBalanced;
 dlssdOptions.outputWidth = myUI->getOutputWidth();    // e.g 1920;
 dlssdOptions.outputHeight = myUI->getOutputHeight(); // e.g. 1080;
 // Now let's check what should our rendering resolution be
-if(SL_FAILED(result, slDLSSGetOptimalSettings(dlssOptions, dlssSettings))
+if(SL_FAILED(result, slDLSSDGetOptimalSettings(dlssdOptions, dlssdSettings))
 {
     // Handle error here
 }
 // Setup rendering based on the provided values in the sl::DLSSSettings structure
-myViewport->setSize(dlssSettings.renderWidth, dlssSettings.renderHeight);
+myViewport->setSize(dlssdSettings.renderWidth, dlssdSettings.renderHeight);
 ```
 
-Note that the structure `sl::DLSSOptimalSettings` will upon return from `slDLSSGetOptimalSettings` contain information pertinent to DLSS dynamic resolution min and max source image sizes (if dynamic resolution is supported).
+Note that the structure `sl::DLSSDOptimalSettings` will upon return from `slDLSSDGetOptimalSettings` contain information pertinent to DLSS dynamic resolution min and max source image sizes (if dynamic resolution is supported).
 
 ### 4.0 TAG ALL REQUIRED RESOURCES
 #### 4.1 Buffers to tag
@@ -228,7 +231,19 @@ Or 2 separate 3-channel inputs - One representing color (RcGcBc), other represen
 
 `kBufferTypeTransparencyLayer, kBufferTypeTransparencyLayerOpacity `
 
-##### 4.1.11 Screen Space Sub Surface Scattering Guide
+##### 4.1.11 Color Before Transparency Guide
+
+Optional only - Snapshot of noisy color buffer before any transparencies are rendered on top. The main purpose of this guide is to help with ghosting or disappearing particles. If this is not a problem in your application, this buffer is probably not needed. 
+
+It is important to use the same image format as for the noisy color input since small precision differences between the buffers may cause DLSS-RR to interpret the pixel as having transparencies, which can lead to artifacts under difficult lighting conditions.
+
+In certain cases, rendering some transparent objects into the guide may improve image quality. If this guide is needed in the first place, the recommendation is to start with just opaque pixels, and if there are image quality problems, try adding the problematic transparent objects to the guide.
+
+*SL Buffer Type* 
+
+`kBufferTypeColorBeforeTransparency `
+
+##### 4.1.12 Screen Space Sub Surface Scattering Guide
 
 Optional only - Input buffer for specifying Sub Surface Scattering (SSS) guide.
 
@@ -247,7 +262,7 @@ Pixels without SSS material must have 0 in the guide.
 
 `kBufferTypeScreenSpaceSubsurfaceScatteringGuide`
 
-##### 4.1.12 Depth of Field Guide
+##### 4.1.13 Depth of Field Guide
 
 Optional only - Input buffer for specifying Depth of Field (DOF) guide.
 
@@ -264,7 +279,7 @@ Alternatively, depth of field can be applied after DLSS-RR, in which case this b
 
 `kBufferTypeDepthOfFieldGuide`
 
-##### 4.1.13 Output
+##### 4.1.14 Output
 
 Destination for the Denoised full resolution frame. Any standard 3 or 4-channel format provided at output resolution. 
 
@@ -357,11 +372,11 @@ sl::DLSSDOptions dlssdOptions = {};
 // and established while evaluating DLSS RR Image Quality for your Application.
 // It will be set to DLSSDPreset::eDefault if unspecified.
 // Please Refer to section 3.12 of the DLSS RR Programming Guide for details.
-dlssdConstants.dlaaPreset = sl::DLSSDPreset::ePresetB;
-dlssdConstants.qualityPreset = sl::DLSSDPreset::ePresetB;
-dlssdConstants.balancedPreset = sl::DLSSDPreset::ePresetB;
-dlssdConstants.performancePreset = sl::DLSSDPreset::ePresetB;
-dlssdConstants.ultraPerformancePreset = sl::DLSSDPreset::ePresetB;
+dlssdConstants.dlaaPreset = sl::DLSSDPreset::ePresetD;
+dlssdConstants.qualityPreset = sl::DLSSDPreset::ePresetD;
+dlssdConstants.balancedPreset = sl::DLSSDPreset::ePresetD;
+dlssdConstants.performancePreset = sl::DLSSDPreset::ePresetD;
+dlssdConstants.ultraPerformancePreset = sl::DLSSDPreset::ePresetD;
 // These are populated based on user selection in the UI
 dlssdConstants.mode = myUI->DLSS_Mode; // DLSS-RR uses the same Perf Quality Mode set for DLSS. e.g. sl::eDLSSModeBalanced;
 dlssdConstants.outputWidth = myUI->getOutputWidth();    // e.g 1920;
@@ -375,6 +390,9 @@ if(SL_FAILED(result, slDLSSDSetOptions(viewport, dlssOptions)))
     // Handle error here, check the logs
 }
 ```
+
+> **NOTE:**
+> `sl::DLSSDPreset::ePresetA` to `sl::DLSSDPreset::ePresetC` are deprecated and should not be used. They will no longer be available in subsequent SDKs.
 
 > **NOTE:**
 > To turn off DLSS-RR set `sl::DLSSDOptions.mode` to `sl::DLSSDMode::eOff`, note that this does NOT release any resources, for that please use `slFreeResources`
@@ -412,14 +430,14 @@ if(SL_FAILED(result, slSetConstants(consts, *frameToken, myViewport))) // consta
     // Handle error, check logs
 }
 ```
-For more details please see [common constants](ProgrammingGuide.md#2101-common-constants)
+For more details please see [common constants](ProgrammingGuide.md#2111-common-constants)
 
-### 7.0 ADD DLSSD TO THE RENDERING PIPELINE
+### 7.0 ADD DLSS-RR TO THE RENDERING PIPELINE
 
 On your rendering thread, call `slEvaluateFeature` at the appropriate location where up-scaling is happening. Please note that when using `slSetTag`, `slSetConstants` and `slDLSSSetOptions` the `frameToken` and `myViewport` used in `slEvaluateFeature` **must match across all API calls**.
 
 ```cpp
-// Make sure DLSSD is available and user selected this option in the UI
+// Make sure DLSS-RR is available and user selected this option in the UI
 if(useDLSSD) 
 {
     // NOTE: We can provide all inputs here or separately using slSetTag, slSetConstants or slDLSSSetOptions
@@ -526,10 +544,12 @@ dlssState.estimatedVRAMUsageInBytes
 
 ### 10.0 TROUBLESHOOTING
 
-If the DLSSD output does not look right please check the following:
+If the DLSS-RR output does not look right please check the following:
 
 * If your motion vectors are in pixel space then scaling factors `sl::Constants::mvecScale` should be {1 / render width, 1 / render height}
 * If your motion vectors are in normalized -1,1 space then scaling factors `sl::Constants::mvecScale` should be {1, 1}
 * Make sure that jitter offset values are in pixel space
 * `NVSDK_NGX_Parameter_FreeMemOnRelease` is replaced with `slFreeResources`
 * `NVSDK_NGX_DLSS_Feature_Flags_MVLowRes` is handled automatically based on tagged motion vector buffer's size and extent.
+
+Please further refer to chapter 8.1 (Troubleshooting via Debug overlays) of the DLSS-RR Integration Guide.  

@@ -1,11 +1,12 @@
 
+
 Streamline - DLSS
 =======================
 
 >The focus of this guide is on using Streamline to integrate DLSS into an application.  For more information about DLSS itself, please visit the [NVIDIA Developer DLSS Page](https://developer.nvidia.com/rtx/dlss)
 >For information on user interface considerations when using the DLSS plugin, please see the ["RTX UI Developer Guidelines.pdf"](<RTX UI Developer Guidelines.pdf>) document included with this SDK.
 
-Version 2.7.30
+Version 2.9.0
 =======
 
 ### 1.0 INITIALIZE AND SHUTDOWN
@@ -81,10 +82,12 @@ if (SUCCEEDED(CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory)))
                 // Requested feature is not supported on the system, fallback to the default method
                 switch (result)
                 {
-                    case sl::Result::eErrorOSOutOfDate:         // inform user to update OS
-                    case sl::Result::eErrorDriverOutOfDate:     // inform user to update driver
-                    case sl::Result::eErrorNoSupportedAdapter:  // cannot use this adapter (older or non-NVDA GPU etc)
-                    // and so on ...
+                    case sl::Result::eErrorOSOutOfDate:             // inform user to update OS
+                    case sl::Result::eErrorDriverOutOfDate:         // inform user to update driver
+                    case sl::Result::eErrorNoSupportedAdapterFound: // cannot use this adapter (older or non-NVDA
+                                                                    // GPU etc)
+                        break;
+                        // and so on ...
                 };
             }
             else
@@ -184,6 +187,9 @@ if(SL_FAILED(result, slDLSSSetOptions(viewport, dlssOptions)))
 ```
 
 > **NOTE:**
+> `sl::DLSSPreset::ePresetA` to `sl::DLSSPreset::ePresetE` are deprecated and should not be used. They will no longer be available in subsequent SDKs. `sl::DLSSPreset::ePresetG` to `sl::DLSSPreset::ePresetI` are reserved and should also not be used.
+
+> **NOTE:**
 > To turn off DLSS set `sl::DLSSOptions.mode` to `sl::DLSSMode::eOff`, note that this does NOT release any resources, for that please use `slFreeResources`
 
 > **NOTE:**
@@ -212,7 +218,7 @@ if(SL_FAILED(result, slSetConstants(consts, *frameToken, myViewport))) // consta
     // Handle error, check logs
 }
 ```
-For more details please see [common constants](ProgrammingGuide.md#2101-common-constants)
+For more details please see [common constants](ProgrammingGuide.md#2111-common-constants)
 
 ### 7.0 ADD DLSS TO THE RENDERING PIPELINE
 
@@ -333,4 +339,3 @@ If the DLSS output does not look right please check the following:
 * Make sure that jitter offset values are in pixel space
 * `NVSDK_NGX_Parameter_FreeMemOnRelease` is replaced with `slFreeResources`
 * `NVSDK_NGX_DLSS_Feature_Flags_MVLowRes` is handled automatically based on tagged motion vector buffer's size and extent.
-

@@ -51,11 +51,5 @@ public class StreamlineD3D12RHI : ModuleRules
 		);
 
 		AddEngineThirdPartyPrivateStaticDependencies(Target, "DX12");
-
-#if UE_5_5_OR_LATER
-		PrivateDefinitions.Add("ENGINE_ID3D12DYNAMICRHI_NEEDS_CMDLIST=1");
-#else
-		PrivateDefinitions.Add("ENGINE_ID3D12DYNAMICRHI_NEEDS_CMDLIST=0");
-#endif
 	}
 }

@@ -18,26 +18,12 @@
 #include "ID3D12DynamicRHI.h"
 #include "GenericPlatform/GenericPlatformFile.h"
 #include "Misc/EngineVersionComparison.h"
+#include "StreamlineNGXRHI.h"
 
 
 DEFINE_LOG_CATEGORY_STATIC(LogDLSSNGXD3D12RHI, Log, All);
 
 #define LOCTEXT_NAMESPACE "FNGXD3D12RHIModule"
-
-#if ENGINE_ID3D12DYNAMICRHI_NEEDS_CMDLIST
-#define RHICMDLIST_ARG_PASSTHROUGH CmdList,
-#else
-#define RHICMDLIST_ARG_PASSTHROUGH 
-#endif
-
-#if UE_VERSION_AT_LEAST(5,6,0)
-#define RHI_SCOPED_DRAW_EVENT(RHICmdList, Name) SCOPED_DRAW_EVENT(RHICmdList, Name)
-#elif UE_VERSION_AT_LEAST(5,5,0)
-#define RHI_SCOPED_DRAW_EVENT(RHICmdList, Name)  SCOPED_DRAW_EVENT(RHICmdList.GetContext(), Name)
-#else
-#define RHI_SCOPED_DRAW_EVENT(RHICmdList, Name) SCOPED_RHI_DRAW_EVENT(RHICmdList.GetComputeContext(), Name)
-#endif 
-
 
 
 class FD3D12NGXDLSSFeature final : public NGXDLSSFeature
@@ -336,6 +322,7 @@ void FNGXD3D12RHI::ExecuteDLSS(FRHICommandList& CmdList, const FRHIDLSSArguments
 		const uint32 CreationNodeMask = 1 << InArguments.GPUNode;
 		const uint32 VisibilityNodeMask = InArguments.GPUVisibility;
 
+		static_assert (int(ENGXDLSSDenoiserMode::MaxValue) == 1, "dear DLSS plugin NVIDIA developer, please update this code to handle the new ENGXDLSSDenoiserMode enum values");
 		if (InArguments.DenoiserMode == ENGXDLSSDenoiserMode::DLSSRR)
 		{
 			// DLSS-RR feature creation
@@ -432,8 +419,6 @@ void FNGXD3D12RHI::ExecuteDLSS(FRHICommandList& CmdList, const FRHIDLSSArguments
 		DlssEvalParams.Feature.pInOutput = GetResidentD3D12Resource(D3D12RHI, CmdList, InArguments.OutputColor, false);
 		DlssEvalParams.Feature.pInColor = GetResidentD3D12Resource(D3D12RHI, CmdList, InArguments.InputColor, true);
 
-		DlssEvalParams.Feature.InSharpness = InArguments.Sharpness;
-
 		FlushResourceBarriers(CmdList);
 
 		NVSDK_NGX_Result ResultEvaluate = NGX_D3D12_EVALUATE_DLSS_EXT(
@@ -479,6 +464,22 @@ void FNGXD3D12RHI::ExecuteDLSS(FRHICommandList& CmdList, const FRHIDLSSArguments
 			// Yes, the interface takes a non-const ptr as an argument
 			DlssRREvalParams.pInWorldToViewMatrix = const_cast<float*>(InArguments.ViewMatrix);
 			DlssRREvalParams.pInViewToClipMatrix = const_cast<float*>(InArguments.ProjectionMatrix);
+		}
+#endif
+
+#if SUPPORT_GUIDE_SSS_DOF
+		if (InArguments.InputSSS)
+		{
+			DlssRREvalParams.pInScreenSpaceSubsurfaceScatteringGuide = GetResidentD3D12Resource(D3D12RHI, CmdList, InArguments.InputSSS, true);
+			DlssRREvalParams.InScreenSpaceSubsurfaceScatteringGuideSubrectBase.X = 0;
+			DlssRREvalParams.InScreenSpaceSubsurfaceScatteringGuideSubrectBase.Y = 0;
+		}
+
+		if (InArguments.InputDOF)
+		{
+			DlssRREvalParams.pInDepthOfFieldGuide = GetResidentD3D12Resource(D3D12RHI, CmdList, InArguments.InputDOF, true);
+			DlssRREvalParams.InDepthOfFieldGuideSubrectBase.X = 0;
+			DlssRREvalParams.InDepthOfFieldGuideSubrectBase.Y = 0;
 		}
 #endif
 		

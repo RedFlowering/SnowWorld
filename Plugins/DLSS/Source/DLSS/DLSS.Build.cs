@@ -57,12 +57,10 @@ public class DLSS : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
-			
-		
+
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
@@ -81,6 +79,13 @@ public class DLSS : ModuleRules
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
+
+#if UE_5_6_OR_LATER
+		PrivateDefinitions.Add("ENGINE_SUPPORTS_UPSCALER_MODULAR_FEATURE=1");
+		PublicDependencyModuleNames.Add("VirtualProduction");
+#else
+		PrivateDefinitions.Add("ENGINE_SUPPORTS_UPSCALER_MODULAR_FEATURE=0");
+#endif
 
 		DynamicallyLoadedModuleNames.AddRange(SupportedDynamicallyLoadedNGXRHIModules(Target));
 	}

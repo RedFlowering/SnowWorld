@@ -18,10 +18,6 @@ void UnregisterStreamlineDLSSGHooks();
 
 bool IsDLSSGActive();
 
-namespace Streamline
-{
-	enum class EStreamlineFeatureSupport;
-}
 extern STREAMLINECORE_API Streamline::EStreamlineFeatureSupport QueryStreamlineDLSSGSupport();
 extern STREAMLINECORE_API bool IsStreamlineDLSSGSupported();
 

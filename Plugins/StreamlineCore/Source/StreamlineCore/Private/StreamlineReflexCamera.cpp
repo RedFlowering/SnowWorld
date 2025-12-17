@@ -186,7 +186,14 @@ void DumpActor(const TCHAR* Stage, const AActor* Actor)
 						*LocalToWorld.ToString(), *LateUpdateMatrix.ToString()
 					);
 				
-					if (!SceneProxy->IsDrawnInGame())
+					if (!SceneProxy->IsDrawnInGame()
+#if RHI_RAYTRACING
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 7
+#else
+					    || !SceneInfo->bDrawInGame
+#endif
+#endif
+						)
 
 					{
 						bIsPrimitiveComponent = false;
@@ -244,7 +251,7 @@ void DumpActor(const TCHAR* Stage, const AActor* Actor)
 }
 #endif 
 
-void FStreamlineCameraManager::LateUpdate_GameThread(APlayerController* Player, uint64 FrameID)
+void FStreamlineCameraManager::LateUpdate_GameThread(const APlayerController* Player, uint64 FrameID)
 {
 	check(IsInGameThread());
 
@@ -477,7 +484,7 @@ void FStreamlineCameraManager::PostRenderView_RenderThread(FSceneView& InView, u
 }
 
 
-void FStreamlineCameraManager::SetCameraData(FSceneView& InView, uint64 FrameID)
+void FStreamlineCameraManager::SetCameraData(const FSceneView& InView, uint64 FrameID)
 {
 	check(IsInGameThread());
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)

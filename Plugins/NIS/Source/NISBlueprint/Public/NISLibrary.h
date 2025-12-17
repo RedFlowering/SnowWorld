@@ -19,6 +19,8 @@
 
 #include "NISLibrary.generated.h"
 
+#define UE_API NISBLUEPRINT_API
+
 class FNISUpscaler;
 class FDelegateHandle;
 
@@ -51,39 +53,39 @@ public:
 
 	/** Checks whether NIS is supported by the current GPU. Further details can be retrieved via QueryNISSupport*/
 	UFUNCTION(BlueprintPure, Category = "NIS", meta = (DisplayName = "Is NVIDIA NIS Supported"))
-	static NISBLUEPRINT_API bool IsNISSupported();
+	static UE_API bool IsNISSupported();
 
 	/** Checks whether a NIS mode is supported */
 	UFUNCTION(BlueprintPure, Category = "NIS", meta = (DisplayName = "Is NIS Mode Supported"))
-	static NISBLUEPRINT_API bool IsNISModeSupported(UNISMode NISMode);
+	static UE_API bool IsNISModeSupported(UNISMode NISMode);
 
 	/** Retrieves all supported NIS modes. Can be used to populate UI */
 	UFUNCTION(BlueprintPure, Category = "NIS", meta = (DisplayName = "Get Supported NIS Modes"))
-	static NISBLUEPRINT_API TArray<UNISMode> GetSupportedNISModes();
+	static UE_API TArray<UNISMode> GetSupportedNISModes();
 
 	/** Returns the recommended screen percentage for a given NIS mode. Returns CustomScreenPercentage if NISMode is UNISMode::Custom */
 	UFUNCTION(BlueprintPure, Category = "NIS", meta = (DisplayName = "Get NIS Recommended Screen Percentage"))
-	static NISBLUEPRINT_API float GetNISRecommendedScreenPercentage(UNISMode NISMode);
+	static UE_API float GetNISRecommendedScreenPercentage(UNISMode NISMode);
 
 	/** The global screen percentage range that NIS supports. */
 	UFUNCTION(BlueprintPure, Category = "NIS", meta = (DisplayName = "Get NIS Screen Percentage Range"))
-	static NISBLUEPRINT_API void GetNISScreenPercentageRange(float& MinScreenPercentage, float& MaxScreenPercentage);
+	static UE_API void GetNISScreenPercentageRange(float& MinScreenPercentage, float& MaxScreenPercentage);
 
 	/** Sets the console variables to enable/disable NIS (r.NIS.Enable, r.NIS.Upscaling, r.ScreenPercentage, r.TemporalAA.Upsampling, r.TemporalAA.Upscaler)*/
 	UFUNCTION(BlueprintCallable, Category = "NIS", meta = (DisplayName = "Set NIS Mode"))
-	static NISBLUEPRINT_API void SetNISMode(UNISMode NISMode);
+	static UE_API void SetNISMode(UNISMode NISMode);
 
 	/** Set the screen percentage used for Custom mode (100% by default) */
 	UFUNCTION(BlueprintCallable, Category = "NIS", meta = (DisplayName = "Set NIS Custom Screen Percentage"))
-	static NISBLUEPRINT_API void SetNISCustomScreenPercentage(float CustomScreenPercentage = 100.0f);
+	static UE_API void SetNISCustomScreenPercentage(float CustomScreenPercentage = 100.0f);
 
 	/* Sets the console variables to enable additional NIS sharpening. Set to 0 to disable (r.NGX.NIS.Sharpness) */
 	UFUNCTION(BlueprintCallable, Category = "NIS", meta = (DisplayName = "Set NIS Sharpness"))
-	static NISBLUEPRINT_API void SetNISSharpness(float Sharpness);
+	static UE_API void SetNISSharpness(float Sharpness);
 	
 	///* Find a reasonable default NIS mode based on current hardware */
 	UFUNCTION(BlueprintPure, Category = "NIS", meta = (DisplayName = "Get Default NIS Mode"))
-	static NISBLUEPRINT_API UNISMode GetDefaultNISMode();
+	static UE_API UNISMode GetDefaultNISMode();
 
 
 private:
@@ -103,3 +105,5 @@ public:
 
 private:
 };
+
+#undef UE_API

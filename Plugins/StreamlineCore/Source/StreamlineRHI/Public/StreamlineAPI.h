@@ -30,6 +30,7 @@ extern STREAMLINERHI_API sl::Result SLevaluateFeature(sl::Feature feature, const
 extern STREAMLINERHI_API sl::Result SLAllocateResources(sl::CommandBuffer* cmdBuffer, sl::Feature feature, const sl::ViewportHandle& viewport);
 extern STREAMLINERHI_API sl::Result SLFreeResources(sl::Feature feature, const sl::ViewportHandle& viewport);
 extern STREAMLINERHI_API sl::Result SLsetTag(const sl::ViewportHandle& viewport, const sl::ResourceTag* tags, uint32_t numTags, sl::CommandBuffer* cmdBuffer);
+extern STREAMLINERHI_API sl::Result SLsetTagForFrame(const sl::FrameToken& frame, const sl::ViewportHandle& viewport, const sl::ResourceTag* tags, uint32_t numTags, sl::CommandBuffer* cmdBuffer);
 extern STREAMLINERHI_API sl::Result SLgetFeatureRequirements(sl::Feature feature, sl::FeatureRequirements& requirements);
 extern STREAMLINERHI_API sl::Result SLgetFeatureVersion(sl::Feature feature, sl::FeatureVersion& version);
 extern STREAMLINERHI_API sl::Result SLUpgradeInterface(void** baseInterface);
@@ -86,19 +87,6 @@ struct StringifySLArgument
 		ArgStrings.Add(FString::Printf(TEXT("viewport=%u"), In.operator unsigned int()));
 	}
 
-	// sl_helpers.h, where are thou?
-	inline const char* getDLSSGModeAsStr(sl::DLSSGMode mode)
-	{
-		static_assert (uint32(sl::DLSSGMode::eCount) == 3U,"sl::DLSSGMode got a new enum value and needs to be addressed here");
-		switch (mode)
-		{
-			SL_CASE_STR(sl::DLSSGMode::eOff);
-			SL_CASE_STR(sl::DLSSGMode::eOn);
-			SL_CASE_STR(sl::DLSSGMode::eAuto);
-			SL_CASE_STR(sl::DLSSGMode::eCount);
-		};
-		return "Unknown";
-	}
 
 
 	inline const char* getDLSSGFlagsSingleBitFlagsAsStr(sl::DLSSGFlags f)
@@ -162,7 +150,41 @@ struct StringifySLArgument
 };
 
 
+inline const char* getPreferenceFlagsSingleBitFlagsAsStr(sl::PreferenceFlags f)
+{
+	using namespace sl;
+	switch (f)
+	{
+		SL_CASE_STR(PreferenceFlags::eDisableCLStateTracking);
+		SL_CASE_STR(PreferenceFlags::eDisableDebugText);
+		SL_CASE_STR(PreferenceFlags::eUseManualHooking);
+		SL_CASE_STR(PreferenceFlags::eAllowOTA);
+		SL_CASE_STR(PreferenceFlags::eBypassOSVersionCheck);
+		SL_CASE_STR(PreferenceFlags::eUseDXGIFactoryProxy);
+		SL_CASE_STR(PreferenceFlags::eLoadDownloadedPlugins);
+		SL_CASE_STR(PreferenceFlags::eUseFrameBasedResourceTagging);
+	}
+	return "Unknown";
+}
 
+inline FString getPreferenceFlagsAsStr(sl::PreferenceFlags f)
+{
+	FString Result;
+
+	for (uint64 SingleBit = uint64(sl::PreferenceFlags::eUseFrameBasedResourceTagging); SingleBit != 0; SingleBit >>= 1)
+	{
+		sl::PreferenceFlags Flag = sl::PreferenceFlags(SingleBit);
+
+		if (Flag == SLBitwiseAnd(f, Flag))
+		{
+			Result.Append(getPreferenceFlagsSingleBitFlagsAsStr(Flag));
+			Result.AppendChar(TCHAR('|'));
+		}
+	}
+
+	Result.RemoveFromEnd(TEXT("|"));
+	return Result;
+}
 
 // Convenience function template and macro for using SLgetFeatureFunction
 //
