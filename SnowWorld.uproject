@@ -366,6 +366,10 @@
 		{
 			"Name": "LandscapePatch",
 			"Enabled": true
+		},
+		{
+			"Name": "ImpostorBaker",
+			"Enabled": true
 		}
 	],
 	"EpicSampleNameHash": "451731683"
