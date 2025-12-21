@@ -1126,3 +1126,105 @@ bool UHarmoniaSaveGameSubsystem::VerifyChecksum(const TArray<uint8>& Data, uint3
 
 	return bValid;
 }
+
+// ===== Boss State Management =====
+
+FHarmoniaSavedBossState UHarmoniaSaveGameSubsystem::GetBossState(FName BossID) const
+{
+	if (!CurrentSaveGame)
+	{
+		return FHarmoniaSavedBossState();
+	}
+
+	for (const FHarmoniaSavedBossState& State : CurrentSaveGame->WorldData.BossStates)
+	{
+		if (State.BossID == BossID)
+		{
+			return State;
+		}
+	}
+
+	return FHarmoniaSavedBossState();
+}
+
+void UHarmoniaSaveGameSubsystem::MarkBossIntroViewed(FName BossID)
+{
+	if (FHarmoniaSavedBossState* State = FindOrCreateBossState(BossID))
+	{
+		State->bHasViewedIntro = true;
+		UE_LOG(LogTemp, Log, TEXT("MarkBossIntroViewed: Boss %s intro marked as viewed"), *BossID.ToString());
+	}
+}
+
+void UHarmoniaSaveGameSubsystem::MarkBossDefeated(FName BossID)
+{
+	if (FHarmoniaSavedBossState* State = FindOrCreateBossState(BossID))
+	{
+		State->bHasBeenDefeated = true;
+		State->DefeatTime = FDateTime::Now();
+		State->DefeatCount++;
+		UE_LOG(LogTemp, Log, TEXT("MarkBossDefeated: Boss %s defeated (count: %d)"), 
+			*BossID.ToString(), State->DefeatCount);
+	}
+}
+
+bool UHarmoniaSaveGameSubsystem::ShouldBossRespawn(FName BossID, EBossRespawnPolicy RespawnPolicy, float RespawnTimeSeconds) const
+{
+	FHarmoniaSavedBossState State = GetBossState(BossID);
+
+	// 아직 처치하지 않았으면 항상 스폰
+	if (!State.bHasBeenDefeated)
+	{
+		return true;
+	}
+
+	switch (RespawnPolicy)
+	{
+	case EBossRespawnPolicy::Never:
+		return false;
+
+	case EBossRespawnPolicy::AfterTime:
+		{
+			FTimespan TimeSinceDefeat = FDateTime::Now() - State.DefeatTime;
+			return TimeSinceDefeat.GetTotalSeconds() >= RespawnTimeSeconds;
+		}
+
+	case EBossRespawnPolicy::OnAreaReload:
+	case EBossRespawnPolicy::Always:
+		return true;
+
+	default:
+		return false;
+	}
+}
+
+FHarmoniaSavedBossState* UHarmoniaSaveGameSubsystem::FindOrCreateBossState(FName BossID)
+{
+	if (!CurrentSaveGame)
+	{
+		CurrentSaveGame = Cast<UHarmoniaSaveGame>(
+			UGameplayStatics::CreateSaveGameObject(UHarmoniaSaveGame::StaticClass()));
+	}
+
+	if (!CurrentSaveGame)
+	{
+		return nullptr;
+	}
+
+	// 기존 상태 찾기
+	for (FHarmoniaSavedBossState& State : CurrentSaveGame->WorldData.BossStates)
+	{
+		if (State.BossID == BossID)
+		{
+			return &State;
+		}
+	}
+
+	// 새 상태 생성
+	FHarmoniaSavedBossState NewState;
+	NewState.BossID = BossID;
+	CurrentSaveGame->WorldData.BossStates.Add(NewState);
+	
+	return &CurrentSaveGame->WorldData.BossStates.Last();
+}
+

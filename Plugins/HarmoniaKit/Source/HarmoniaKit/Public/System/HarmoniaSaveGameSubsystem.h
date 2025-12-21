@@ -111,6 +111,40 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Harmonia|SaveGame")
 	FOnHarmoniaLoadGameComplete OnLoadGameComplete;
 
+	// ===== Boss State Management =====
+
+	/**
+	 * 보스 진행 상태 조회
+	 * @param BossID 보스 고유 식별자
+	 * @return 보스 진행 상태 (없으면 기본값)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame|Boss")
+	FHarmoniaSavedBossState GetBossState(FName BossID) const;
+
+	/**
+	 * 보스 인트로 시퀀스 시청 완료 표시
+	 * @param BossID 보스 고유 식별자
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame|Boss")
+	void MarkBossIntroViewed(FName BossID);
+
+	/**
+	 * 보스 처치 완료 표시
+	 * @param BossID 보스 고유 식별자
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame|Boss")
+	void MarkBossDefeated(FName BossID);
+
+	/**
+	 * 보스 리스폰 여부 확인
+	 * @param BossID 보스 고유 식별자
+	 * @param RespawnPolicy 리스폰 정책
+	 * @param RespawnTimeSeconds AfterTime 정책일 때 리스폰 대기 시간
+	 * @return 리스폰 가능 여부
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|SaveGame|Boss")
+	bool ShouldBossRespawn(FName BossID, EBossRespawnPolicy RespawnPolicy, float RespawnTimeSeconds) const;
+
 protected:
 	/** 플레이어 데이터를 SaveGame에 저장 */
 	void SavePlayerData(APlayerController* PlayerController, UHarmoniaSaveGame* SaveGameObject);
@@ -163,6 +197,9 @@ protected:
 
 	/** Verify save data integrity using CRC32 checksum */
 	bool VerifyChecksum(const TArray<uint8>& Data, uint32 ExpectedChecksum) const;
+
+	/** 보스 상태 찾기 또는 생성 (내부용) */
+	FHarmoniaSavedBossState* FindOrCreateBossState(FName BossID);
 
 private:
 	/** 현재 로드된 SaveGame */

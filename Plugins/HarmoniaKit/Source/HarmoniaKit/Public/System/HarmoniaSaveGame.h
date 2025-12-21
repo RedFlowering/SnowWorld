@@ -212,6 +212,63 @@ struct FHarmoniaSavedResourceNodeState
 };
 
 /**
+ * @enum EBossRespawnPolicy
+ * @brief 보스 클리어 후 리스폰 정책
+ */
+UENUM(BlueprintType)
+enum class EBossRespawnPolicy : uint8
+{
+	/** 클리어 후 리스폰 안함 */
+	Never UMETA(DisplayName = "Never Respawn"),
+	
+	/** 일정 시간 후 리스폰 */
+	AfterTime UMETA(DisplayName = "Respawn After Time"),
+	
+	/** 영역 재진입 시 리스폰 */
+	OnAreaReload UMETA(DisplayName = "Respawn On Area Reload"),
+	
+	/** 항상 리스폰 (테스트용) */
+	Always UMETA(DisplayName = "Always Respawn")
+};
+
+/**
+ * @struct FHarmoniaSavedBossState
+ * @brief 보스 진행 상태 세이브 데이터
+ */
+USTRUCT(BlueprintType)
+struct FHarmoniaSavedBossState
+{
+	GENERATED_BODY()
+
+	/** 보스 고유 식별자 */
+	UPROPERTY(SaveGame)
+	FName BossID;
+
+	/** 인트로 시퀀스 시청 완료 여부 */
+	UPROPERTY(SaveGame)
+	bool bHasViewedIntro = false;
+
+	/** 보스 처치 완료 여부 */
+	UPROPERTY(SaveGame)
+	bool bHasBeenDefeated = false;
+
+	/** 마지막 처치 시각 (리스폰 시간 계산용) */
+	UPROPERTY(SaveGame)
+	FDateTime DefeatTime;
+
+	/** 총 처치 횟수 */
+	UPROPERTY(SaveGame)
+	int32 DefeatCount = 0;
+
+	FHarmoniaSavedBossState()
+		: bHasViewedIntro(false)
+		, bHasBeenDefeated(false)
+		, DefeatCount(0)
+	{
+	}
+};
+
+/**
  * @struct FHarmoniaSavedPOIState
  * @brief POI (Point of Interest) progress state save data
  */
@@ -387,6 +444,12 @@ struct FHarmoniaWorldSaveData
 	/** Checkpoint data list */
 	UPROPERTY(SaveGame)
 	TArray<FHarmoniaCheckpointData> CheckpointStates;
+
+	// ===== Boss System =====
+
+	/** 보스 진행 상태 목록 */
+	UPROPERTY(SaveGame)
+	TArray<FHarmoniaSavedBossState> BossStates;
 };
 
 /**
