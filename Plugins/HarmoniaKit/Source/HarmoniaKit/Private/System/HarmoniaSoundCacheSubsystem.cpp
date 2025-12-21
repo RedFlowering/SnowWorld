@@ -9,7 +9,7 @@
 #include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "HarmoniaLoadManager.h"
-#include "Engine/Engine.h"
+#include "Containers/Ticker.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogHarmoniaSoundCache, Log, All);
 
@@ -29,13 +29,13 @@ void UHarmoniaSoundCacheSubsystem::Initialize(FSubsystemCollectionBase& Collecti
 		}
 	}
 
-	// Register tick for debug display and looping sound management
+	// Register tick for looping sound management
+	static FTSTicker::FDelegateHandle TickHandle;
 	TickHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this](float DeltaTime) -> bool
 	{
 		CleanupFinishedSounds();
-		DisplayActiveSoundsDebug();
-		return true; // Keep ticking
-	}), 0.1f); // Update every 0.1 seconds
+		return true;
+	}), 0.1f);
 
 	UE_LOG(LogHarmoniaSoundCache, Log, TEXT("Sound Cache initialized with %d sounds"), SoundCache.Num());
 }
@@ -43,13 +43,6 @@ void UHarmoniaSoundCacheSubsystem::Initialize(FSubsystemCollectionBase& Collecti
 void UHarmoniaSoundCacheSubsystem::Deinitialize()
 {
 	UE_LOG(LogHarmoniaSoundCache, Log, TEXT("Deinitializing Harmonia Sound Cache Subsystem"));
-
-	// Unregister tick
-	if (TickHandle.IsValid())
-	{
-		FTSTicker::GetCoreTicker().RemoveTicker(TickHandle);
-		TickHandle.Reset();
-	}
 
 	ClearCache();
 
@@ -604,14 +597,6 @@ UAudioComponent* UHarmoniaSoundCacheSubsystem::PlayManagedSound(UObject* WorldCo
 		}
 		
 		ActiveSounds.Add(FActiveSound(SoundTag, AudioComp, SoundData->bShouldLoop, SoundData->FadeInDuration, SoundData->FadeOutDuration, VolumeMultiplier));
-		UE_LOG(LogHarmoniaSoundCache, Log, TEXT("Playing managed sound: %s (Priority: %d, Loop: %s, FadeIn: %.1fs, Active: %d)"), 
-			*SoundTag.ToString(), SoundData->Priority, SoundData->bShouldLoop ? TEXT("Yes") : TEXT("No"), SoundData->FadeInDuration, ActiveSounds.Num());
-		
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, 
-				FString::Printf(TEXT("▶ Sound: %s (Loop: %s, FadeIn: %.1fs)"), *SoundTag.ToString(), SoundData->bShouldLoop ? TEXT("Yes") : TEXT("No"), SoundData->FadeInDuration));
-		}
 	}
 
 	return AudioComp;
@@ -629,7 +614,6 @@ void UHarmoniaSoundCacheSubsystem::StopManagedSound(FGameplayTag SoundTag, float
 			if (ActualFadeOut > 0.0f)
 			{
 				ActiveSounds[i].AudioComponent->FadeOut(ActualFadeOut, 0.0f);
-				UE_LOG(LogHarmoniaSoundCache, Log, TEXT("Fading out sound: %s (%.1fs)"), *SoundTag.ToString(), ActualFadeOut);
 			}
 			else
 			{
@@ -688,15 +672,6 @@ void UHarmoniaSoundCacheSubsystem::CleanupFinishedSounds()
 				else
 				{
 					ActiveSound.AudioComponent->Play();
-				}
-				
-				UE_LOG(LogHarmoniaSoundCache, Log, TEXT("Restarting looping sound: %s (FadeIn: %.1fs)"), 
-					*ActiveSound.SoundTag.ToString(), ActiveSound.FadeInDuration);
-				
-				if (GEngine)
-				{
-					GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Cyan, 
-						FString::Printf(TEXT("🔄 Loop: %s"), *ActiveSound.SoundTag.ToString()));
 				}
 			}
 			else
@@ -786,48 +761,4 @@ void UHarmoniaSoundCacheSubsystem::ResumePausedSounds()
 		ActiveCount++;
 		UE_LOG(LogHarmoniaSoundCache, Log, TEXT("Resumed sound: %s"), *ActiveSounds[HighestPausedIndex].SoundTag.ToString());
 	}
-}
-
-void UHarmoniaSoundCacheSubsystem::DisplayActiveSoundsDebug()
-{
-	if (!bShowActiveSoundsDebug || !GEngine)
-	{
-		return;
-	}
-
-	// Build the debug string
-	FString DebugText = TEXT("=== Active Sounds ===\n");
-	
-	if (ActiveSounds.Num() == 0)
-	{
-		DebugText += TEXT("(No sounds playing)");
-	}
-	else
-	{
-		for (int32 i = 0; i < ActiveSounds.Num(); ++i)
-		{
-			const FActiveSound& Sound = ActiveSounds[i];
-			FString Status;
-			
-			if (Sound.bPaused)
-			{
-				Status = TEXT("[PAUSED]");
-			}
-			else if (Sound.bLooping)
-			{
-				Status = TEXT("[LOOP]");
-			}
-			else
-			{
-				Status = TEXT("[PLAY]");
-			}
-			
-			DebugText += FString::Printf(TEXT("%s %s\n"), *Status, *Sound.SoundTag.ToString());
-		}
-	}
-	
-	DebugText += FString::Printf(TEXT("--- Total: %d/%d ---"), ActiveSounds.Num(), MaxConcurrentSounds);
-	
-	// Use a fixed key (100) so the message updates in place instead of stacking
-	GEngine->AddOnScreenDebugMessage(100, 0.15f, FColor::Yellow, DebugText);
 }

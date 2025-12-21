@@ -6,7 +6,6 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "GameplayTagContainer.h"
 #include "Components/AudioComponent.h"
-#include "Containers/Ticker.h"
 #include "Definitions/HarmoniaSoundDataDefinitions.h"
 #include "HarmoniaSoundCacheSubsystem.generated.h"
 
@@ -198,18 +197,6 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Sounds")
 	int32 MaxConcurrentSounds = 8;
 
-	/**
-	 * Show active sounds debug display on viewport
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Sounds|Debug")
-	bool bShowActiveSoundsDebug = false;
-
-	/**
-	 * Toggle active sounds debug display
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Harmonia|Sounds|Debug")
-	void ToggleActiveSoundsDebug() { bShowActiveSoundsDebug = !bShowActiveSoundsDebug; }
-
 	// ============================================================================
 	// Cache Management
 	// ============================================================================
@@ -311,15 +298,5 @@ private:
 
 	/** Resume paused sounds if there's room */
 	void ResumePausedSounds();
-
-	// ============================================================================
-	// Debug Display
-	// ============================================================================
-
-	/** Display active sounds on viewport */
-	void DisplayActiveSoundsDebug();
-
-	/** Tick function handle */
-	FTSTicker::FDelegateHandle TickHandle;
 };
 
