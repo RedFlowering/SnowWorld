@@ -5,8 +5,36 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "GameplayTagContainer.h"
+#include "Components/AudioComponent.h"
+#include "Containers/Ticker.h"
 #include "Definitions/HarmoniaSoundDataDefinitions.h"
 #include "HarmoniaSoundCacheSubsystem.generated.h"
+
+/**
+ * Active Sound - Tracks currently playing sounds for priority management
+ */
+struct FActiveSound
+{
+	FGameplayTag SoundTag;
+	TWeakObjectPtr<UAudioComponent> AudioComponent;
+	bool bPaused = false;
+	bool bLooping = false;
+	float FadeInDuration = 0.0f;
+	float FadeOutDuration = 0.0f;
+	float VolumeMultiplier = 1.0f;
+	
+	FActiveSound() = default;
+	FActiveSound(FGameplayTag InTag, UAudioComponent* InComp, bool bInLooping, float InFadeIn, float InFadeOut, float InVolume)
+		: SoundTag(InTag)
+		, AudioComponent(InComp)
+		, bPaused(false)
+		, bLooping(bInLooping)
+		, FadeInDuration(InFadeIn)
+		, FadeOutDuration(InFadeOut)
+		, VolumeMultiplier(InVolume)
+	{
+	}
+};
 
 /**
  * Harmonia Sound Cache Subsystem
@@ -15,19 +43,13 @@
  * Features:
  * - Fast tag-based sound lookup
  * - Centralized sound management
- * - Support for SoundCue, SoundWave, SoundBase
- * - Play sounds by tag with optional overrides
- * - Concurrency management
- * - Spatial sound support
+ * - Priority-based concurrent sound management
+ * - Automatic pause/resume for priority conflicts
  *
  * Usage:
  * 1. Create DataTable(s) with FHarmoniaSoundData
  * 2. Set DataTablePaths in Project Settings or Config
  * 3. Query and play sounds by tag
- *
- * Example:
- * auto* SoundCache = GetGameInstance()->GetSubsystem<UHarmoniaSoundCacheSubsystem>();
- * SoundCache->PlaySoundByTag(GetWorld(), FGameplayTag::RequestGameplayTag("Sound.SFX.Hit.Metal"), GetActorLocation());
  */
 UCLASS(Config=Game)
 class HARMONIAKIT_API UHarmoniaSoundCacheSubsystem : public UGameInstanceSubsystem
@@ -74,12 +96,6 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Sounds")
 	TArray<FHarmoniaSoundData> GetSoundsByTag(FGameplayTag ParentTag, bool bExactMatch = false) const;
-
-	/**
-	 * Get sounds by gameplay tags
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Harmonia|Sounds")
-	TArray<FHarmoniaSoundData> GetSoundsByGameplayTags(FGameplayTagContainer GameplayTags, bool bMatchAll = false) const;
 
 	// ============================================================================
 	// Sound Playback (2D)
@@ -142,24 +158,57 @@ public:
 	);
 
 	// ============================================================================
-	// Sound Control
+	// Priority-Based Sound Management
 	// ============================================================================
 
 	/**
-	 * Stop all sounds with a specific tag
-	 * @param SoundTag - Tag identifying the sounds to stop
-	 * @param FadeOutDuration - Time to fade out (0 = immediate stop)
+	 * Play a managed sound with priority support
+	 * Automatically handles concurrent sound limits and pause/resume
+	 * @param WorldContext - World context object
+	 * @param SoundTag - Tag identifying the sound
+	 * @param VolumeMultiplier - Volume multiplier (default 1.0)
+	 * @return Audio component for the playing sound, or nullptr if failed
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Harmonia|Sounds")
-	void StopSoundsByTag(FGameplayTag SoundTag, float FadeOutDuration = 0.0f);
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Sounds", meta = (WorldContext = "WorldContext"))
+	UAudioComponent* PlayManagedSound(UObject* WorldContext, FGameplayTag SoundTag, float VolumeMultiplier = 1.0f);
 
 	/**
-	 * Stop all sounds matching a parent tag
-	 * @param ParentTag - Parent tag (e.g., "Sound.SFX.Weapon")
-	 * @param FadeOutDuration - Time to fade out
+	 * Stop a managed sound by tag
+	 * @param SoundTag - Tag identifying the sound to stop
+	 * @param FadeOutDuration - Fade out duration (0 = immediate)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Sounds")
-	void StopSoundsByParentTag(FGameplayTag ParentTag, float FadeOutDuration = 0.0f);
+	void StopManagedSound(FGameplayTag SoundTag, float FadeOutDuration = 0.0f);
+
+	/**
+	 * Stop all managed sounds
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Sounds")
+	void StopAllManagedSounds(float FadeOutDuration = 0.0f);
+
+	/**
+	 * Get number of currently active managed sounds
+	 */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|Sounds")
+	int32 GetActiveSoundCount() const { return ActiveSounds.Num(); }
+
+	/**
+	 * Maximum concurrent managed sounds (configurable)
+	 */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Sounds")
+	int32 MaxConcurrentSounds = 8;
+
+	/**
+	 * Show active sounds debug display on viewport
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Harmonia|Sounds|Debug")
+	bool bShowActiveSoundsDebug = false;
+
+	/**
+	 * Toggle active sounds debug display
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Sounds|Debug")
+	void ToggleActiveSoundsDebug() { bShowActiveSoundsDebug = !bShowActiveSoundsDebug; }
 
 	// ============================================================================
 	// Cache Management
@@ -233,26 +282,6 @@ private:
 	 */
 	USoundBase* GetSoundBaseFromData(const FHarmoniaSoundData* SoundData);
 
-	/**
-	 * Apply randomization to volume and pitch
-	 */
-	void ApplyRandomization(const FHarmoniaSoundData* SoundData, float& OutVolume, float& OutPitch) const;
-
-	/**
-	 * Check concurrency limits
-	 */
-	bool CheckConcurrency(FGameplayTag SoundTag, const FHarmoniaSoundData* SoundData);
-
-	/**
-	 * Register playing sound for concurrency tracking
-	 */
-	void RegisterPlayingSound(FGameplayTag SoundTag, UAudioComponent* AudioComponent);
-
-	/**
-	 * Clean up finished audio components
-	 */
-	void CleanupFinishedSounds();
-
 	/** Cache of all loaded sounds, indexed by tag */
 	UPROPERTY(Transient)
 	TMap<FGameplayTag, FHarmoniaSoundData> SoundCache;
@@ -264,9 +293,33 @@ private:
 	/** Set of tags that failed to load */
 	TSet<FGameplayTag> FailedLoadTags;
 
-	/** Currently playing sounds for concurrency management (not exposed to Blueprint) */
-	TMap<FGameplayTag, TArray<TWeakObjectPtr<UAudioComponent>>> PlayingSounds;
+	/** Currently active managed sounds */
+	TArray<FActiveSound> ActiveSounds;
 
-	/** Last play time for each sound tag (for MinTimeBetweenPlays) */
-	TMap<FGameplayTag, double> LastPlayTimes;
+	// ============================================================================
+	// Priority Management Helpers
+	// ============================================================================
+
+	/** Clean up finished sounds from ActiveSounds */
+	void CleanupFinishedSounds();
+
+	/** Find lowest priority active sound */
+	int32 FindLowestPrioritySound() const;
+
+	/** Pause lowest priority sound to make room for new one */
+	void PauseLowestPrioritySound();
+
+	/** Resume paused sounds if there's room */
+	void ResumePausedSounds();
+
+	// ============================================================================
+	// Debug Display
+	// ============================================================================
+
+	/** Display active sounds on viewport */
+	void DisplayActiveSoundsDebug();
+
+	/** Tick function handle */
+	FTSTicker::FDelegateHandle TickHandle;
 };
+

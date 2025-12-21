@@ -8,6 +8,8 @@
 #include "Sound/SoundWave.h"
 #include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "HarmoniaLoadManager.h"
+#include "Engine/Engine.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogHarmoniaSoundCache, Log, All);
 
@@ -27,6 +29,14 @@ void UHarmoniaSoundCacheSubsystem::Initialize(FSubsystemCollectionBase& Collecti
 		}
 	}
 
+	// Register tick for debug display and looping sound management
+	TickHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this](float DeltaTime) -> bool
+	{
+		CleanupFinishedSounds();
+		DisplayActiveSoundsDebug();
+		return true; // Keep ticking
+	}), 0.1f); // Update every 0.1 seconds
+
 	UE_LOG(LogHarmoniaSoundCache, Log, TEXT("Sound Cache initialized with %d sounds"), SoundCache.Num());
 }
 
@@ -34,16 +44,11 @@ void UHarmoniaSoundCacheSubsystem::Deinitialize()
 {
 	UE_LOG(LogHarmoniaSoundCache, Log, TEXT("Deinitializing Harmonia Sound Cache Subsystem"));
 
-	// Stop all playing sounds
-	for (auto& Pair : PlayingSounds)
+	// Unregister tick
+	if (TickHandle.IsValid())
 	{
-		for (TWeakObjectPtr<UAudioComponent>& AudioCompPtr : Pair.Value)
-		{
-			if (UAudioComponent* AudioComp = AudioCompPtr.Get())
-			{
-				AudioComp->Stop();
-			}
-		}
+		FTSTicker::GetCoreTicker().RemoveTicker(TickHandle);
+		TickHandle.Reset();
 	}
 
 	ClearCache();
@@ -134,31 +139,7 @@ TArray<FHarmoniaSoundData> UHarmoniaSoundCacheSubsystem::GetSoundsByTag(FGamepla
 	return MatchingSounds;
 }
 
-TArray<FHarmoniaSoundData> UHarmoniaSoundCacheSubsystem::GetSoundsByGameplayTags(FGameplayTagContainer GameplayTags, bool bMatchAll) const
-{
-	TArray<FHarmoniaSoundData> MatchingSounds;
 
-	if (GameplayTags.IsEmpty())
-	{
-		return MatchingSounds;
-	}
-
-	for (const auto& Pair : SoundCache)
-	{
-		const FHarmoniaSoundData& SoundData = Pair.Value;
-
-		bool bMatches = bMatchAll ?
-			SoundData.GameplayTags.HasAll(GameplayTags) :
-			SoundData.GameplayTags.HasAny(GameplayTags);
-
-		if (bMatches)
-		{
-			MatchingSounds.Add(SoundData);
-		}
-	}
-
-	return MatchingSounds;
-}
 
 UAudioComponent* UHarmoniaSoundCacheSubsystem::PlaySound2DByTag(
 	UObject* WorldContext,
@@ -182,33 +163,22 @@ UAudioComponent* UHarmoniaSoundCacheSubsystem::PlaySound2DByTag(
 		}
 	}
 
-	// Check concurrency
-	if (!CheckConcurrency(SoundTag, SoundData))
-	{
-		return nullptr;
-	}
-
 	USoundBase* Sound = GetSoundBaseFromData(SoundData);
 	if (!Sound)
 	{
 		return nullptr;
 	}
 
-	// Calculate final volume and pitch
-	float FinalVolume = Context.bOverrideVolume ? Context.VolumeOverride : SoundData->VolumeMultiplier;
-	float FinalPitch = Context.bOverridePitch ? Context.PitchOverride : SoundData->PitchMultiplier;
-	ApplyRandomization(SoundData, FinalVolume, FinalPitch);
-
-	// Play 2D sound
+	// Play 2D sound with context overrides
 	UAudioComponent* AudioComp = UGameplayStatics::CreateSound2D(
 		WorldContext,
 		Sound,
-		FinalVolume,
-		FinalPitch,
-		SoundData->StartTime,
+		Context.VolumeMultiplier,
+		Context.PitchMultiplier,
+		0.0f, // StartTime
 		nullptr, // Concurrency settings
 		false, // Don't persist across level transitions
-		SoundData->bAutoDestroy
+		true // AutoDestroy
 	);
 
 	if (AudioComp)
@@ -216,14 +186,12 @@ UAudioComponent* UHarmoniaSoundCacheSubsystem::PlaySound2DByTag(
 		// Apply fade in if requested
 		if (Context.FadeInDuration > 0.0f)
 		{
-			AudioComp->FadeIn(Context.FadeInDuration, FinalVolume);
+			AudioComp->FadeIn(Context.FadeInDuration, Context.VolumeMultiplier);
 		}
 		else
 		{
 			AudioComp->Play();
 		}
-
-		RegisterPlayingSound(SoundTag, AudioComp);
 
 		UE_LOG(LogHarmoniaSoundCache, Verbose, TEXT("Playing 2D sound: %s"), *SoundTag.ToString());
 	}
@@ -255,42 +223,24 @@ UAudioComponent* UHarmoniaSoundCacheSubsystem::PlaySoundAtLocationByTag(
 		}
 	}
 
-	// Check concurrency
-	if (!CheckConcurrency(SoundTag, SoundData))
-	{
-		return nullptr;
-	}
-
 	USoundBase* Sound = GetSoundBaseFromData(SoundData);
 	if (!Sound)
 	{
 		return nullptr;
 	}
 
-	// Calculate final volume and pitch
-	float FinalVolume = Context.bOverrideVolume ? Context.VolumeOverride : SoundData->VolumeMultiplier;
-	float FinalPitch = Context.bOverridePitch ? Context.PitchOverride : SoundData->PitchMultiplier;
-	ApplyRandomization(SoundData, FinalVolume, FinalPitch);
-
-	// Load attenuation settings if available
-	USoundAttenuation* Attenuation = nullptr;
-	if (!SoundData->AttenuationSettings.IsNull())
-	{
-		Attenuation = SoundData->AttenuationSettings.LoadSynchronous();
-	}
-
-	// Play at location
+	// Play at location (attenuation is configured in SoundCue)
 	UAudioComponent* AudioComp = UGameplayStatics::SpawnSoundAtLocation(
 		WorldContext,
 		Sound,
 		Location,
 		Rotation,
-		FinalVolume,
-		FinalPitch,
-		SoundData->StartTime,
-		Attenuation,
+		Context.VolumeMultiplier,
+		Context.PitchMultiplier,
+		0.0f, // StartTime
+		nullptr, // Attenuation (use SoundCue settings)
 		nullptr, // Concurrency settings
-		SoundData->bAutoDestroy
+		true // AutoDestroy
 	);
 
 	if (AudioComp)
@@ -298,10 +248,8 @@ UAudioComponent* UHarmoniaSoundCacheSubsystem::PlaySoundAtLocationByTag(
 		// Apply fade in if requested
 		if (Context.FadeInDuration > 0.0f)
 		{
-			AudioComp->FadeIn(Context.FadeInDuration, FinalVolume);
+			AudioComp->FadeIn(Context.FadeInDuration, Context.VolumeMultiplier);
 		}
-
-		RegisterPlayingSound(SoundTag, AudioComp);
 
 		UE_LOG(LogHarmoniaSoundCache, Verbose, TEXT("Playing sound at location: %s"), *SoundTag.ToString());
 	}
@@ -334,31 +282,13 @@ UAudioComponent* UHarmoniaSoundCacheSubsystem::PlaySoundAttachedByTag(
 		}
 	}
 
-	// Check concurrency
-	if (!CheckConcurrency(SoundTag, SoundData))
-	{
-		return nullptr;
-	}
-
 	USoundBase* Sound = GetSoundBaseFromData(SoundData);
 	if (!Sound)
 	{
 		return nullptr;
 	}
 
-	// Calculate final volume and pitch
-	float FinalVolume = Context.bOverrideVolume ? Context.VolumeOverride : SoundData->VolumeMultiplier;
-	float FinalPitch = Context.bOverridePitch ? Context.PitchOverride : SoundData->PitchMultiplier;
-	ApplyRandomization(SoundData, FinalVolume, FinalPitch);
-
-	// Load attenuation settings if available
-	USoundAttenuation* Attenuation = nullptr;
-	if (!SoundData->AttenuationSettings.IsNull())
-	{
-		Attenuation = SoundData->AttenuationSettings.LoadSynchronous();
-	}
-
-	// Play attached
+	// Play attached (attenuation is configured in SoundCue)
 	UAudioComponent* AudioComp = UGameplayStatics::SpawnSoundAttached(
 		Sound,
 		AttachComponent,
@@ -367,12 +297,12 @@ UAudioComponent* UHarmoniaSoundCacheSubsystem::PlaySoundAttachedByTag(
 		Rotation,
 		EAttachLocation::KeepRelativeOffset,
 		false, // Don't stop when attached to destroyed
-		FinalVolume,
-		FinalPitch,
-		SoundData->StartTime,
-		Attenuation,
+		Context.VolumeMultiplier,
+		Context.PitchMultiplier,
+		0.0f, // StartTime
+		nullptr, // Attenuation (use SoundCue settings)
 		nullptr, // Concurrency settings
-		SoundData->bAutoDestroy
+		true // AutoDestroy
 	);
 
 	if (AudioComp)
@@ -380,10 +310,8 @@ UAudioComponent* UHarmoniaSoundCacheSubsystem::PlaySoundAttachedByTag(
 		// Apply fade in if requested
 		if (Context.FadeInDuration > 0.0f)
 		{
-			AudioComp->FadeIn(Context.FadeInDuration, FinalVolume);
+			AudioComp->FadeIn(Context.FadeInDuration, Context.VolumeMultiplier);
 		}
-
-		RegisterPlayingSound(SoundTag, AudioComp);
 
 		UE_LOG(LogHarmoniaSoundCache, Verbose, TEXT("Playing sound attached: %s"), *SoundTag.ToString());
 	}
@@ -391,49 +319,7 @@ UAudioComponent* UHarmoniaSoundCacheSubsystem::PlaySoundAttachedByTag(
 	return AudioComp;
 }
 
-void UHarmoniaSoundCacheSubsystem::StopSoundsByTag(FGameplayTag SoundTag, float FadeOutDuration)
-{
-	if (!PlayingSounds.Contains(SoundTag))
-	{
-		return;
-	}
 
-	TArray<TWeakObjectPtr<UAudioComponent>>& AudioComps = PlayingSounds[SoundTag];
-	for (TWeakObjectPtr<UAudioComponent>& AudioCompPtr : AudioComps)
-	{
-		if (UAudioComponent* AudioComp = AudioCompPtr.Get())
-		{
-			if (FadeOutDuration > 0.0f)
-			{
-				AudioComp->FadeOut(FadeOutDuration, 0.0f);
-			}
-			else
-			{
-				AudioComp->Stop();
-			}
-		}
-	}
-
-	AudioComps.Empty();
-}
-
-void UHarmoniaSoundCacheSubsystem::StopSoundsByParentTag(FGameplayTag ParentTag, float FadeOutDuration)
-{
-	TArray<FGameplayTag> TagsToStop;
-
-	for (const auto& Pair : PlayingSounds)
-	{
-		if (Pair.Key.MatchesTag(ParentTag))
-		{
-			TagsToStop.Add(Pair.Key);
-		}
-	}
-
-	for (const FGameplayTag& Tag : TagsToStop)
-	{
-		StopSoundsByTag(Tag, FadeOutDuration);
-	}
-}
 
 void UHarmoniaSoundCacheSubsystem::ReloadSoundCache()
 {
@@ -450,8 +336,6 @@ void UHarmoniaSoundCacheSubsystem::ClearCache()
 	SoundCache.Empty();
 	LoadedDataTables.Empty();
 	FailedLoadTags.Empty();
-	PlayingSounds.Empty();
-	LastPlayTimes.Empty();
 }
 
 void UHarmoniaSoundCacheSubsystem::PreloadSoundAssets(bool bAsync)
@@ -467,16 +351,6 @@ void UHarmoniaSoundCacheSubsystem::PreloadSoundAssets(bool bAsync)
 		if (!SoundData.SoundCue.IsNull())
 		{
 			AssetsToLoad.Add(SoundData.SoundCue.ToSoftObjectPath());
-		}
-
-		if (!SoundData.SoundWave.IsNull())
-		{
-			AssetsToLoad.Add(SoundData.SoundWave.ToSoftObjectPath());
-		}
-
-		if (!SoundData.SoundBase.IsNull())
-		{
-			AssetsToLoad.Add(SoundData.SoundBase.ToSoftObjectPath());
 		}
 	}
 
@@ -502,14 +376,30 @@ void UHarmoniaSoundCacheSubsystem::PreloadSoundAssets(bool bAsync)
 
 void UHarmoniaSoundCacheSubsystem::LoadAndCacheSounds()
 {
-	if (SoundDataTablePaths.Num() == 0)
-	{
-		UE_LOG(LogHarmoniaSoundCache, Warning, TEXT("No sound DataTable paths configured"));
-		return;
-	}
-
 	int32 TotalSoundsLoaded = 0;
 
+	// 1. HarmoniaLoadManager에서 Sound 테이블 로드 시도
+	if (UHarmoniaLoadManager* LoadManager = UHarmoniaLoadManager::Get())
+	{
+		UDataTable* SoundDataTable = LoadManager->GetDataTableByKey(TEXT("Sound"));
+		if (SoundDataTable)
+		{
+			if (SoundDataTable->GetRowStruct() == FHarmoniaSoundData::StaticStruct())
+			{
+				int32 SoundsLoaded = LoadSoundsFromDataTable(SoundDataTable);
+				TotalSoundsLoaded += SoundsLoaded;
+				LoadedDataTables.Add(SoundDataTable);
+				UE_LOG(LogHarmoniaSoundCache, Log, TEXT("Loaded %d sounds from LoadManager DataTable: %s"),
+					SoundsLoaded, *SoundDataTable->GetName());
+			}
+			else
+			{
+				UE_LOG(LogHarmoniaSoundCache, Warning, TEXT("Sound DataTable from LoadManager has wrong row structure"));
+			}
+		}
+	}
+
+	// 2. Config 경로에서 추가 테이블 로드 (폴백/추가 테이블용)
 	for (const FSoftObjectPath& TablePath : SoundDataTablePaths)
 	{
 		if (TablePath.IsNull())
@@ -530,6 +420,12 @@ void UHarmoniaSoundCacheSubsystem::LoadAndCacheSounds()
 			continue;
 		}
 
+		// 이미 LoadManager에서 로드했으면 스킵
+		if (LoadedDataTables.Contains(DataTable))
+		{
+			continue;
+		}
+
 		int32 SoundsLoaded = LoadSoundsFromDataTable(DataTable);
 		TotalSoundsLoaded += SoundsLoaded;
 
@@ -539,7 +435,14 @@ void UHarmoniaSoundCacheSubsystem::LoadAndCacheSounds()
 			SoundsLoaded, *DataTable->GetName());
 	}
 
-	UE_LOG(LogHarmoniaSoundCache, Log, TEXT("Total sounds loaded: %d"), TotalSoundsLoaded);
+	if (TotalSoundsLoaded == 0)
+	{
+		UE_LOG(LogHarmoniaSoundCache, Warning, TEXT("No sounds loaded. Check HarmoniaLoadManager registry or SoundDataTablePaths config."));
+	}
+	else
+	{
+		UE_LOG(LogHarmoniaSoundCache, Log, TEXT("Total sounds loaded: %d"), TotalSoundsLoaded);
+	}
 }
 
 int32 UHarmoniaSoundCacheSubsystem::LoadSoundsFromDataTable(UDataTable* DataTable)
@@ -602,137 +505,329 @@ bool UHarmoniaSoundCacheSubsystem::LoadSoundFromDataTables(FGameplayTag SoundTag
 
 USoundBase* UHarmoniaSoundCacheSubsystem::GetSoundBaseFromData(const FHarmoniaSoundData* SoundData)
 {
-	if (!SoundData)
+	if (!SoundData || SoundData->SoundCue.IsNull())
 	{
 		return nullptr;
 	}
 
-	// Priority: SoundCue > SoundBase > SoundWave
-	if (!SoundData->SoundCue.IsNull())
-	{
-		return SoundData->SoundCue.LoadSynchronous();
-	}
-
-	if (!SoundData->SoundBase.IsNull())
-	{
-		return SoundData->SoundBase.LoadSynchronous();
-	}
-
-	if (!SoundData->SoundWave.IsNull())
-	{
-		return SoundData->SoundWave.LoadSynchronous();
-	}
-
-	return nullptr;
+	return SoundData->SoundCue.LoadSynchronous();
 }
 
-void UHarmoniaSoundCacheSubsystem::ApplyRandomization(const FHarmoniaSoundData* SoundData, float& OutVolume, float& OutPitch) const
+// ============================================================================
+// Priority-Based Sound Management Implementation
+// ============================================================================
+
+UAudioComponent* UHarmoniaSoundCacheSubsystem::PlayManagedSound(UObject* WorldContext, FGameplayTag SoundTag, float VolumeMultiplier)
 {
+	if (!SoundTag.IsValid())
+	{
+		UE_LOG(LogHarmoniaSoundCache, Warning, TEXT("PlayManagedSound called with invalid tag"));
+		return nullptr;
+	}
+
+	// Get sound data from cache
+	const FHarmoniaSoundData* SoundData = GetSoundData(SoundTag);
 	if (!SoundData)
 	{
-		return;
+		UE_LOG(LogHarmoniaSoundCache, Warning, TEXT("Sound not found in cache: %s"), *SoundTag.ToString());
+		return nullptr;
 	}
 
-	// Apply volume randomization
-	if (SoundData->VolumeRange.X != SoundData->VolumeRange.Y)
-	{
-		float RandomVolume = FMath::RandRange(SoundData->VolumeRange.X, SoundData->VolumeRange.Y);
-		OutVolume *= RandomVolume;
-	}
-
-	// Apply pitch randomization
-	if (SoundData->PitchRange.X != SoundData->PitchRange.Y)
-	{
-		float RandomPitch = FMath::RandRange(SoundData->PitchRange.X, SoundData->PitchRange.Y);
-		OutPitch *= RandomPitch;
-	}
-}
-
-bool UHarmoniaSoundCacheSubsystem::CheckConcurrency(FGameplayTag SoundTag, const FHarmoniaSoundData* SoundData)
-{
-	if (!SoundData)
-	{
-		return false;
-	}
-
-	// Clean up finished sounds first
+	// Clean up finished sounds
 	CleanupFinishedSounds();
 
-	// Check minimum time between plays
-	if (SoundData->MinTimeBetweenPlays > 0.0f)
+	// Check if we need to pause lower priority sounds
+	int32 ActiveCount = 0;
+	for (const FActiveSound& Sound : ActiveSounds)
 	{
-		if (double* LastPlayTime = LastPlayTimes.Find(SoundTag))
+		if (!Sound.bPaused && Sound.AudioComponent.IsValid())
 		{
-			double CurrentTime = FPlatformTime::Seconds();
-			if (CurrentTime - *LastPlayTime < SoundData->MinTimeBetweenPlays)
-			{
-				UE_LOG(LogHarmoniaSoundCache, Verbose, TEXT("Sound %s played too recently, skipping"), *SoundTag.ToString());
-				return false;
-			}
+			ActiveCount++;
 		}
 	}
 
-	// Check max concurrent instances
-	if (PlayingSounds.Contains(SoundTag))
+	if (ActiveCount >= MaxConcurrentSounds)
 	{
-		TArray<TWeakObjectPtr<UAudioComponent>>& AudioComps = PlayingSounds[SoundTag];
-		int32 ActiveCount = 0;
-
-		for (const TWeakObjectPtr<UAudioComponent>& AudioCompPtr : AudioComps)
+		// Find if new sound has higher priority than any playing sound
+		int32 LowestPriorityIndex = FindLowestPrioritySound();
+		if (LowestPriorityIndex >= 0)
 		{
-			if (AudioCompPtr.IsValid() && AudioCompPtr->IsPlaying())
+			const FHarmoniaSoundData* LowestData = GetSoundData(ActiveSounds[LowestPriorityIndex].SoundTag);
+			if (LowestData && LowestData->Priority < SoundData->Priority)
 			{
-				ActiveCount++;
-			}
-		}
-
-		if (ActiveCount >= SoundData->MaxConcurrentInstances)
-		{
-			if (SoundData->bStopOldestInstance && AudioComps.Num() > 0)
-			{
-				// Stop oldest instance
-				if (UAudioComponent* OldestComp = AudioComps[0].Get())
-				{
-					OldestComp->Stop();
-				}
-				AudioComps.RemoveAt(0);
+				PauseLowestPrioritySound();
 			}
 			else
 			{
-				UE_LOG(LogHarmoniaSoundCache, Verbose, TEXT("Max concurrent instances reached for: %s"), *SoundTag.ToString());
-				return false;
+				UE_LOG(LogHarmoniaSoundCache, Verbose, TEXT("Cannot play %s: max concurrent sounds reached and priority not high enough"), *SoundTag.ToString());
+				return nullptr;
 			}
 		}
 	}
 
-	// Update last play time
-	LastPlayTimes.Add(SoundTag, FPlatformTime::Seconds());
+	// Load and play the sound
+	USoundBase* Sound = GetSoundBaseFromData(SoundData);
+	if (!Sound)
+	{
+		UE_LOG(LogHarmoniaSoundCache, Warning, TEXT("Failed to load sound: %s"), *SoundTag.ToString());
+		return nullptr;
+	}
 
-	return true;
+	UAudioComponent* AudioComp = UGameplayStatics::CreateSound2D(
+		WorldContext,
+		Sound,
+		VolumeMultiplier,
+		1.0f,
+		0.0f,
+		nullptr,
+		false,
+		false
+	);
+
+	if (AudioComp)
+	{
+		// Apply loop setting from data table
+		if (SoundData->bShouldLoop)
+		{
+			AudioComp->bIsUISound = false;
+			AudioComp->bAutoDestroy = false;
+		}
+		
+		// Apply fade in or direct play
+		if (SoundData->FadeInDuration > 0.0f)
+		{
+			AudioComp->FadeIn(SoundData->FadeInDuration, VolumeMultiplier);
+		}
+		else
+		{
+			AudioComp->Play();
+		}
+		
+		ActiveSounds.Add(FActiveSound(SoundTag, AudioComp, SoundData->bShouldLoop, SoundData->FadeInDuration, SoundData->FadeOutDuration, VolumeMultiplier));
+		UE_LOG(LogHarmoniaSoundCache, Log, TEXT("Playing managed sound: %s (Priority: %d, Loop: %s, FadeIn: %.1fs, Active: %d)"), 
+			*SoundTag.ToString(), SoundData->Priority, SoundData->bShouldLoop ? TEXT("Yes") : TEXT("No"), SoundData->FadeInDuration, ActiveSounds.Num());
+		
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, 
+				FString::Printf(TEXT("▶ Sound: %s (Loop: %s, FadeIn: %.1fs)"), *SoundTag.ToString(), SoundData->bShouldLoop ? TEXT("Yes") : TEXT("No"), SoundData->FadeInDuration));
+		}
+	}
+
+	return AudioComp;
 }
 
-void UHarmoniaSoundCacheSubsystem::RegisterPlayingSound(FGameplayTag SoundTag, UAudioComponent* AudioComponent)
+void UHarmoniaSoundCacheSubsystem::StopManagedSound(FGameplayTag SoundTag, float FadeOutDuration)
 {
-	if (!AudioComponent)
+	for (int32 i = ActiveSounds.Num() - 1; i >= 0; --i)
 	{
-		return;
+		if (ActiveSounds[i].SoundTag == SoundTag && ActiveSounds[i].AudioComponent.IsValid())
+		{
+			// Use parameter if provided, otherwise use stored fade out duration
+			float ActualFadeOut = (FadeOutDuration > 0.0f) ? FadeOutDuration : ActiveSounds[i].FadeOutDuration;
+			
+			if (ActualFadeOut > 0.0f)
+			{
+				ActiveSounds[i].AudioComponent->FadeOut(ActualFadeOut, 0.0f);
+				UE_LOG(LogHarmoniaSoundCache, Log, TEXT("Fading out sound: %s (%.1fs)"), *SoundTag.ToString(), ActualFadeOut);
+			}
+			else
+			{
+				ActiveSounds[i].AudioComponent->Stop();
+			}
+			ActiveSounds.RemoveAt(i);
+		}
 	}
 
-	if (!PlayingSounds.Contains(SoundTag))
-	{
-		PlayingSounds.Add(SoundTag, TArray<TWeakObjectPtr<UAudioComponent>>());
-	}
+	// Try to resume paused sounds
+	ResumePausedSounds();
+}
 
-	PlayingSounds[SoundTag].Add(AudioComponent);
+void UHarmoniaSoundCacheSubsystem::StopAllManagedSounds(float FadeOutDuration)
+{
+	for (FActiveSound& Sound : ActiveSounds)
+	{
+		if (Sound.AudioComponent.IsValid())
+		{
+			if (FadeOutDuration > 0.0f)
+			{
+				Sound.AudioComponent->FadeOut(FadeOutDuration, 0.0f);
+			}
+			else
+			{
+				Sound.AudioComponent->Stop();
+			}
+		}
+	}
+	ActiveSounds.Empty();
 }
 
 void UHarmoniaSoundCacheSubsystem::CleanupFinishedSounds()
 {
-	for (auto& Pair : PlayingSounds)
+	for (int32 i = ActiveSounds.Num() - 1; i >= 0; --i)
 	{
-		Pair.Value.RemoveAll([](const TWeakObjectPtr<UAudioComponent>& AudioCompPtr)
+		FActiveSound& ActiveSound = ActiveSounds[i];
+		
+		if (!ActiveSound.AudioComponent.IsValid())
 		{
-			return !AudioCompPtr.IsValid() || !AudioCompPtr->IsPlaying();
-		});
+			ActiveSounds.RemoveAt(i);
+			continue;
+		}
+		
+		// Check if sound finished playing
+		if (!ActiveSound.bPaused && !ActiveSound.AudioComponent->IsPlaying())
+		{
+			// If looping, restart the sound (Random nodes will pick new sound)
+			if (ActiveSound.bLooping)
+			{
+				// Apply fade in for loop restart if configured
+				if (ActiveSound.FadeInDuration > 0.0f)
+				{
+					ActiveSound.AudioComponent->FadeIn(ActiveSound.FadeInDuration, ActiveSound.VolumeMultiplier);
+				}
+				else
+				{
+					ActiveSound.AudioComponent->Play();
+				}
+				
+				UE_LOG(LogHarmoniaSoundCache, Log, TEXT("Restarting looping sound: %s (FadeIn: %.1fs)"), 
+					*ActiveSound.SoundTag.ToString(), ActiveSound.FadeInDuration);
+				
+				if (GEngine)
+				{
+					GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Cyan, 
+						FString::Printf(TEXT("🔄 Loop: %s"), *ActiveSound.SoundTag.ToString()));
+				}
+			}
+			else
+			{
+				// Non-looping sound finished, remove it
+				ActiveSounds.RemoveAt(i);
+			}
+		}
 	}
+}
+
+int32 UHarmoniaSoundCacheSubsystem::FindLowestPrioritySound() const
+{
+	int32 LowestIndex = -1;
+	int32 LowestPriority = INT32_MAX;
+
+	for (int32 i = 0; i < ActiveSounds.Num(); ++i)
+	{
+		if (ActiveSounds[i].bPaused || !ActiveSounds[i].AudioComponent.IsValid())
+		{
+			continue;
+		}
+
+		const FHarmoniaSoundData* SoundData = GetSoundData(ActiveSounds[i].SoundTag);
+		if (SoundData && SoundData->Priority < LowestPriority)
+		{
+			LowestPriority = SoundData->Priority;
+			LowestIndex = i;
+		}
+	}
+
+	return LowestIndex;
+}
+
+void UHarmoniaSoundCacheSubsystem::PauseLowestPrioritySound()
+{
+	int32 LowestIndex = FindLowestPrioritySound();
+	if (LowestIndex >= 0 && ActiveSounds[LowestIndex].AudioComponent.IsValid())
+	{
+		ActiveSounds[LowestIndex].AudioComponent->SetPaused(true);
+		ActiveSounds[LowestIndex].bPaused = true;
+		UE_LOG(LogHarmoniaSoundCache, Log, TEXT("Paused sound: %s"), *ActiveSounds[LowestIndex].SoundTag.ToString());
+	}
+}
+
+void UHarmoniaSoundCacheSubsystem::ResumePausedSounds()
+{
+	CleanupFinishedSounds();
+
+	int32 ActiveCount = 0;
+	for (const FActiveSound& Sound : ActiveSounds)
+	{
+		if (!Sound.bPaused && Sound.AudioComponent.IsValid())
+		{
+			ActiveCount++;
+		}
+	}
+
+	// Resume highest priority paused sounds first
+	while (ActiveCount < MaxConcurrentSounds)
+	{
+		int32 HighestPausedIndex = -1;
+		int32 HighestPriority = -1;
+
+		for (int32 i = 0; i < ActiveSounds.Num(); ++i)
+		{
+			if (!ActiveSounds[i].bPaused || !ActiveSounds[i].AudioComponent.IsValid())
+			{
+				continue;
+			}
+
+			const FHarmoniaSoundData* SoundData = GetSoundData(ActiveSounds[i].SoundTag);
+			if (SoundData && SoundData->Priority > HighestPriority)
+			{
+				HighestPriority = SoundData->Priority;
+				HighestPausedIndex = i;
+			}
+		}
+
+		if (HighestPausedIndex < 0)
+		{
+			break;
+		}
+
+		ActiveSounds[HighestPausedIndex].AudioComponent->SetPaused(false);
+		ActiveSounds[HighestPausedIndex].bPaused = false;
+		ActiveCount++;
+		UE_LOG(LogHarmoniaSoundCache, Log, TEXT("Resumed sound: %s"), *ActiveSounds[HighestPausedIndex].SoundTag.ToString());
+	}
+}
+
+void UHarmoniaSoundCacheSubsystem::DisplayActiveSoundsDebug()
+{
+	if (!bShowActiveSoundsDebug || !GEngine)
+	{
+		return;
+	}
+
+	// Build the debug string
+	FString DebugText = TEXT("=== Active Sounds ===\n");
+	
+	if (ActiveSounds.Num() == 0)
+	{
+		DebugText += TEXT("(No sounds playing)");
+	}
+	else
+	{
+		for (int32 i = 0; i < ActiveSounds.Num(); ++i)
+		{
+			const FActiveSound& Sound = ActiveSounds[i];
+			FString Status;
+			
+			if (Sound.bPaused)
+			{
+				Status = TEXT("[PAUSED]");
+			}
+			else if (Sound.bLooping)
+			{
+				Status = TEXT("[LOOP]");
+			}
+			else
+			{
+				Status = TEXT("[PLAY]");
+			}
+			
+			DebugText += FString::Printf(TEXT("%s %s\n"), *Status, *Sound.SoundTag.ToString());
+		}
+	}
+	
+	DebugText += FString::Printf(TEXT("--- Total: %d/%d ---"), ActiveSounds.Num(), MaxConcurrentSounds);
+	
+	// Use a fixed key (100) so the message updates in place instead of stacking
+	GEngine->AddOnScreenDebugMessage(100, 0.15f, FColor::Yellow, DebugText);
 }
