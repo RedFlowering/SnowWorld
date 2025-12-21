@@ -65,6 +65,9 @@ public class HarmoniaKit : ModuleRules
                 "RenderCore",              // Fog of War 렌더링
                 "Niagara",                 // VFX 시스템
                 
+                // Movement System
+                "MotionWarping",           // 이동 공격용 모션 워핑
+                
                 // Cinematic
                 "LevelSequence",           // 컷심
                 "MovieScene"               // 컷심

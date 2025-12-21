@@ -120,9 +120,96 @@ void UHarmoniaCharacterMovementComponent::PhysCustom(const float DeltaTime, int3
 
 	switch (static_cast<EHarmoniaCustomMovementMode>(CustomMovementMode))
 	{
+	case EHarmoniaCustomMovementMode::MOVE_Leaping:
+		PhysLeaping(DeltaTime);
+		break;
 	case EHarmoniaCustomMovementMode::MOVE_None:
 	default:
 		Super::PhysCustom(DeltaTime, IterationsCount);
 		break;
 	}
+}
+
+void UHarmoniaCharacterMovementComponent::StartLeaping(FVector TargetLocation, float Angle, float Duration)
+{
+	if (!CharacterOwner || Duration <= 0.0f)
+	{
+		return;
+	}
+
+	LeapStartLocation = CharacterOwner->GetActorLocation();
+	LeapTargetLocation = TargetLocation;
+	LeapDuration = Duration;
+	LeapElapsedTime = 0.0f;
+
+	// Calculate arc height based on angle and distance
+	float Distance = FVector::Dist2D(LeapStartLocation, LeapTargetLocation);
+	float RadAngle = FMath::DegreesToRadians(Angle);
+	LeapArcHeight = (Distance * 0.5f) * FMath::Tan(RadAngle);
+	LeapArcHeight = FMath::Max(LeapArcHeight, 100.0f); // Minimum arc height
+
+	SetMovementMode(MOVE_Custom, static_cast<uint8>(EHarmoniaCustomMovementMode::MOVE_Leaping));
+
+	UE_LOG(LogTemp, Log, TEXT("StartLeaping: Target=%s, Duration=%.2f, ArcHeight=%.2f"), 
+		*LeapTargetLocation.ToString(), LeapDuration, LeapArcHeight);
+}
+
+void UHarmoniaCharacterMovementComponent::StopLeaping()
+{
+	if (IsLeaping())
+	{
+		LeapElapsedTime = 0.0f;
+		LeapDuration = 0.0f;
+		LeapArcHeight = 0.0f;
+		
+		UE_LOG(LogTemp, Log, TEXT("StopLeaping"));
+	}
+}
+
+bool UHarmoniaCharacterMovementComponent::IsLeaping() const
+{
+	return MovementMode == MOVE_Custom && 
+		   CustomMovementMode == static_cast<uint8>(EHarmoniaCustomMovementMode::MOVE_Leaping);
+}
+
+void UHarmoniaCharacterMovementComponent::PhysLeaping(float DeltaTime)
+{
+	if (!CharacterOwner || !UpdatedComponent)
+	{
+		StopLeaping();
+		SetMovementMode(MOVE_Falling);
+		return;
+	}
+
+	LeapElapsedTime += DeltaTime;
+
+	// Timeout check - use leap duration
+	if (LeapElapsedTime >= LeapDuration)
+	{
+		StopLeaping();
+		SetMovementMode(MOVE_Falling);
+		return;
+	}
+
+	float Alpha = FMath::Clamp(LeapElapsedTime / LeapDuration, 0.0f, 1.0f);
+
+	// Calculate desired position on parabolic arc
+	FVector DesiredLocation = FMath::Lerp(LeapStartLocation, LeapTargetLocation, Alpha);
+	DesiredLocation.Z += LeapArcHeight * FMath::Sin(Alpha * PI);
+
+	// Calculate movement delta
+	FVector Delta = DesiredLocation - UpdatedComponent->GetComponentLocation();
+
+	// SafeMove with sliding (obstacle deflection)
+	FHitResult Hit;
+	SafeMoveUpdatedComponent(Delta, UpdatedComponent->GetComponentQuat(), true, Hit);
+
+	// If hit, slide along surface (continue trying, don't stop)
+	if (Hit.bBlockingHit)
+	{
+		SlideAlongSurface(Delta, 1.0f - Hit.Time, Hit.Normal, Hit, true);
+	}
+
+	// Update velocity for animation
+	Velocity = Delta / DeltaTime;
 }

@@ -24,6 +24,7 @@ UENUM()
 enum class EHarmoniaCustomMovementMode : uint8
 {
 	MOVE_None				UMETA(DisplayName = "None"),
+	MOVE_Leaping			UMETA(DisplayName = "Leaping"),	// 도약 중 (포물선 이동)
 };
 
 UCLASS(Config = Game)
@@ -62,10 +63,37 @@ protected:
 
 	virtual void PhysCustom(float DeltaTime, int32 IterationsCount) override;
 
+	// ============================================================================
+	// Leaping Movement
+	// ============================================================================
+
+public:
+	/** Start leaping towards target location */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Movement|Leap")
+	void StartLeaping(FVector TargetLocation, float Angle, float Duration);
+
+	/** Stop leaping and transition to falling */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Movement|Leap")
+	void StopLeaping();
+
+	/** Check if currently leaping */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|Movement|Leap")
+	bool IsLeaping() const;
+
+protected:
+	/** Physics update for leaping movement */
+	virtual void PhysLeaping(float DeltaTime);
+
 protected:
 	UPROPERTY()
 	TObjectPtr<AHarmoniaCharacter> OwnerCharacter = nullptr;
 	EHarmoniaMovementMode HarmoniaMovementMode = EHarmoniaMovementMode::MOVE_Walking;
-
 	EHarmoniaCustomMovementMode HarmoniaCustomMovementMode = EHarmoniaCustomMovementMode::MOVE_None;
+
+	// Leap state
+	FVector LeapStartLocation;
+	FVector LeapTargetLocation;
+	float LeapArcHeight = 0.0f;
+	float LeapDuration = 0.0f;
+	float LeapElapsedTime = 0.0f;
 };

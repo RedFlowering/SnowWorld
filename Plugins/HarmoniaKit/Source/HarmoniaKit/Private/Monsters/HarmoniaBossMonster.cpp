@@ -9,14 +9,16 @@
 #include "AIController.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
+#include "MotionWarpingComponent.h"
+#include "AbilitySystem/Abilities/LyraGameplayAbility.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
 
 AHarmoniaBossMonster::AHarmoniaBossMonster(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	// Bosses typically have larger aggro range
-	// This can be overridden in MonsterData
+	// Motion Warping for leap attacks
+	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
 }
 
 void AHarmoniaBossMonster::BeginPlay()

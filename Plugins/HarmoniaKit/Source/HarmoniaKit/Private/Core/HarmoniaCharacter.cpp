@@ -8,6 +8,7 @@
 #include "Settings/AlsCharacterSettings.h"
 #include "Utility/AlsConstants.h"
 #include "Components/CapsuleComponent.h"
+#include "MotionWarpingComponent.h"
 #include "Net/UnrealNetwork.h"
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Character_Status_Aiming, "Status.Aiming");
@@ -20,6 +21,7 @@ AHarmoniaCharacter::AHarmoniaCharacter(const FObjectInitializer& ObjectInitializ
 	HarmoniaCharacterMovement = Cast<UHarmoniaCharacterMovementComponent>(GetCharacterMovement());
 	LockOnComponent = CreateDefaultSubobject<UHarmoniaLockOnTargetingComponent>(TEXT("LockOnComponent"));
 	HarmoniaHealthComponent = Cast<UHarmoniaHealthComponent>(GetHealthComponent());
+	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
 }
 
 void AHarmoniaCharacter::PostInitializeComponents()

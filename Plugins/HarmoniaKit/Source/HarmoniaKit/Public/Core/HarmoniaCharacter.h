@@ -16,6 +16,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHarmoniaMantlingEnded);
 class UHarmoniaCharacterMovementComponent;
 class UHarmoniaLockOnTargetingComponent;
 class UHarmoniaHealthComponent;
+class UMotionWarpingComponent;
 
 USTRUCT()
 struct FHandIK
@@ -120,12 +121,18 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Harmonia Character|Health")
 	TObjectPtr<UHarmoniaHealthComponent> HarmoniaHealthComponent = nullptr;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Harmonia Character|Movement")
+	TObjectPtr<UMotionWarpingComponent> MotionWarpingComponent = nullptr;
+
 public:
 	UFUNCTION(BlueprintPure, Category = "Harmonia Character|Combat")
 	UHarmoniaLockOnTargetingComponent* GetLockOnComponent() const { return LockOnComponent; }
 
 	UFUNCTION(BlueprintPure, Category = "Harmonia Character|Health")
 	UHarmoniaHealthComponent* GetHarmoniaHealthComponent() const { return HarmoniaHealthComponent; }
+
+	UFUNCTION(BlueprintPure, Category = "Harmonia Character|Movement")
+	UMotionWarpingComponent* GetMotionWarpingComponent() const { return MotionWarpingComponent; }
 
 	// ============================================================
 	// Mantling

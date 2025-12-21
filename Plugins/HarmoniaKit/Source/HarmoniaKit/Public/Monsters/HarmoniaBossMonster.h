@@ -9,6 +9,8 @@
 #include "GameplayAbilitySpec.h"
 #include "HarmoniaBossMonster.generated.h"
 
+class UMotionWarpingComponent;
+
 /**
  * Boss Phase Change Delegate
  */
@@ -263,6 +265,12 @@ protected:
 	 */
 	UPROPERTY(Transient)
 	TObjectPtr<UAudioComponent> BossMusicComponent = nullptr;
+
+	/**
+	 * Motion Warping component for leap attacks
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Movement")
+	TObjectPtr<UMotionWarpingComponent> MotionWarpingComponent = nullptr;
 
 	/**
 	 * Timer handle for phase transition
