@@ -30,8 +30,7 @@ void UHarmoniaSoundCacheSubsystem::Initialize(FSubsystemCollectionBase& Collecti
 	}
 
 	// Register tick for looping sound management
-	static FTSTicker::FDelegateHandle TickHandle;
-	TickHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this](float DeltaTime) -> bool
+	CleanupTickerHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this](float DeltaTime) -> bool
 	{
 		CleanupFinishedSounds();
 		return true;
@@ -43,6 +42,16 @@ void UHarmoniaSoundCacheSubsystem::Initialize(FSubsystemCollectionBase& Collecti
 void UHarmoniaSoundCacheSubsystem::Deinitialize()
 {
 	UE_LOG(LogHarmoniaSoundCache, Log, TEXT("Deinitializing Harmonia Sound Cache Subsystem"));
+
+	// Remove ticker BEFORE clearing cache to prevent callback during/after destruction
+	if (CleanupTickerHandle.IsValid())
+	{
+		FTSTicker::GetCoreTicker().RemoveTicker(CleanupTickerHandle);
+		CleanupTickerHandle.Reset();
+	}
+
+	// Stop all managed sounds
+	StopAllManagedSounds(0.0f);
 
 	ClearCache();
 

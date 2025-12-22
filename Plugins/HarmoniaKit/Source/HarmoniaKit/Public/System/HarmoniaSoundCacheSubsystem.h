@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Containers/Ticker.h"
 #include "GameplayTagContainer.h"
 #include "Components/AudioComponent.h"
 #include "Definitions/HarmoniaSoundDataDefinitions.h"
@@ -279,6 +280,9 @@ private:
 
 	/** Set of tags that failed to load */
 	TSet<FGameplayTag> FailedLoadTags;
+
+	/** Ticker handle for cleanup - must be removed on deinitialize */
+	FTSTicker::FDelegateHandle CleanupTickerHandle;
 
 	/** Currently active managed sounds */
 	TArray<FActiveSound> ActiveSounds;
