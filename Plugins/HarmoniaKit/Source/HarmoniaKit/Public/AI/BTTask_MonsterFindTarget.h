@@ -1,9 +1,9 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BehaviorTree/BTTaskNode.h"
+#include "BehaviorTree/Tasks/BTTask_BlueprintBase.h"
 #include "BTTask_MonsterFindTarget.generated.h"
 
 /**
@@ -13,7 +13,7 @@
  * Uses Threat System for prioritization
  */
 UCLASS(Blueprintable, meta = (DisplayName = "Monster Find Target"))
-class HARMONIAKIT_API UBTTask_MonsterFindTarget : public UBTTaskNode
+class HARMONIAKIT_API UBTTask_MonsterFindTarget : public UBTTask_BlueprintBase
 {
 	GENERATED_BODY()
 
@@ -44,3 +44,5 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Search")
 	bool bOnlySearchIfNoTarget = true;
 };
+
+

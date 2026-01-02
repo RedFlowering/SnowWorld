@@ -1,9 +1,9 @@
-﻿// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BehaviorTree/BTTaskNode.h"
+#include "BehaviorTree/Tasks/BTTask_BlueprintBase.h"
 #include "BTTask_FleeFromTarget.generated.h"
 
 /**
@@ -11,7 +11,7 @@
  * Uses TerritoryDisputeComponent to calculate flee location
  */
 UCLASS(Blueprintable, meta = (DisplayName = "Flee From Target"))
-class HARMONIAKIT_API UBTTask_FleeFromTarget : public UBTTaskNode
+class HARMONIAKIT_API UBTTask_FleeFromTarget : public UBTTask_BlueprintBase
 {
 	GENERATED_BODY()
 
@@ -34,3 +34,5 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Flee")
 	bool bUseTerritoryDisputeComponent = true;
 };
+
+

@@ -1,9 +1,9 @@
-﻿// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BehaviorTree/BTDecorator.h"
+#include "BehaviorTree/Decorators/BTDecorator_BlueprintBase.h"
 #include "Components/HarmoniaTerritoryDisputeComponent.h"
 #include "BTDecorator_EvaluateCombatAdvantage.generated.h"
 
@@ -12,7 +12,7 @@
  * Uses TerritoryDisputeComponent to determine if monster should engage, flee, or pursue
  */
 UCLASS(Blueprintable, meta = (DisplayName = "Evaluate Combat Advantage"))
-class HARMONIAKIT_API UBTDecorator_EvaluateCombatAdvantage : public UBTDecorator
+class HARMONIAKIT_API UBTDecorator_EvaluateCombatAdvantage : public UBTDecorator_BlueprintBase
 {
 	GENERATED_BODY()
 
@@ -39,3 +39,5 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	bool bInvertResult = false;
 };
+
+

@@ -1,9 +1,9 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BehaviorTree/BTTaskNode.h"
+#include "BehaviorTree/Tasks/BTTask_BlueprintBase.h"
 #include "Definitions/HarmoniaMonsterSystemDefinitions.h"
 #include "BTTask_FindTacticalPosition.generated.h"
 
@@ -19,7 +19,7 @@
  * - Completes when monster reaches tactical position
  */
 UCLASS(Blueprintable, meta = (DisplayName = "Find Tactical Position"))
-class HARMONIAKIT_API UBTTask_FindTacticalPosition : public UBTTaskNode
+class HARMONIAKIT_API UBTTask_FindTacticalPosition : public UBTTask_BlueprintBase
 {
 	GENERATED_BODY()
 
@@ -63,3 +63,5 @@ private:
 	 */
 	float ExecutionTime = 0.0f;
 };
+
+

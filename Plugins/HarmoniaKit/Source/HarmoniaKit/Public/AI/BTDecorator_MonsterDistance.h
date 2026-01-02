@@ -1,9 +1,9 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BehaviorTree/BTDecorator.h"
+#include "BehaviorTree/Decorators/BTDecorator_BlueprintBase.h"
 #include "BTDecorator_MonsterDistance.generated.h"
 
 /**
@@ -26,7 +26,7 @@ enum class EMonsterDistanceComparison : uint8
  * Useful for attack range checks, retreat conditions, etc.
  */
 UCLASS(Blueprintable, meta = (DisplayName = "Monster Distance"))
-class HARMONIAKIT_API UBTDecorator_MonsterDistance : public UBTDecorator
+class HARMONIAKIT_API UBTDecorator_MonsterDistance : public UBTDecorator_BlueprintBase
 {
 	GENERATED_BODY()
 
@@ -70,3 +70,5 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Condition")
 	bool b2DDistance = true;
 };
+
+

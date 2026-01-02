@@ -1,9 +1,9 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BehaviorTree/BTService.h"
+#include "BehaviorTree/Services/BTService_BlueprintBase.h"
 #include "BTService_OptimizedMonsterUpdate.generated.h"
 
 /**
@@ -70,7 +70,7 @@ struct FBTCachedQueryResult
  * - Only activates when needed
  */
 UCLASS(Blueprintable, meta = (DisplayName = "Optimized Monster Update"))
-class HARMONIAKIT_API UBTService_OptimizedMonsterUpdate : public UBTService
+class HARMONIAKIT_API UBTService_OptimizedMonsterUpdate : public UBTService_BlueprintBase
 {
 	GENERATED_BODY()
 
@@ -160,3 +160,5 @@ protected:
 	 */
 	bool IsInCombat(AActor* Owner) const;
 };
+
+

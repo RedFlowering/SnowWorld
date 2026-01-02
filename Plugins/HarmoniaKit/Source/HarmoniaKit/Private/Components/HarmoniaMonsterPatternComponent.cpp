@@ -146,7 +146,7 @@ const FMonsterPhasePatterns* UHarmoniaMonsterPatternComponent::GetCurrentPhasePa
 	{
 		CurrentPhase = BossMonster->GetCurrentPhase();
 	}
-	return PhasePatterns.Find(CurrentPhase);
+	if (Phases.IsValidIndex(CurrentPhaseIndex)) { return &Phases[CurrentPhaseIndex]; } return nullptr;
 }
 
 bool UHarmoniaMonsterPatternComponent::IsPatternOnCooldown(FName PatternName) const
@@ -649,5 +649,129 @@ void UHarmoniaMonsterPatternComponent::RemovePatternEffects()
 	}
 }
 
+
+
+
+
+// ============================================================================
+// Phase Management
+// ============================================================================
+
+void UHarmoniaMonsterPatternComponent::UpdatePhase(float HealthPercent)
+{
+    if (Phases.Num() == 0)
+    {
+        return;
+    }
+
+    // Find the appropriate phase based on health percentage
+    int32 NewPhaseIndex = 0;
+    for (int32 i = 0; i < Phases.Num(); i++)
+    {
+        if (HealthPercent <= Phases[i].HealthThreshold)
+        {
+            NewPhaseIndex = i;
+        }
+    }
+
+    // Check if phase changed
+    if (NewPhaseIndex != CurrentPhaseIndex)
+    {
+        int32 OldPhase = CurrentPhaseIndex;
+        CurrentPhaseIndex = NewPhaseIndex;
+
+        // Apply phase enter effects
+        ApplyPhaseEnterEffects(Phases[CurrentPhaseIndex]);
+
+        // Broadcast phase change
+        OnPhaseChanged.Broadcast(OldPhase, CurrentPhaseIndex);
+    }
+}
+
+const FMonsterPhasePatterns& UHarmoniaMonsterPatternComponent::GetCurrentPhaseData() const
+{
+    static FMonsterPhasePatterns EmptyPhase;
+    if (Phases.IsValidIndex(CurrentPhaseIndex))
+    {
+        return Phases[CurrentPhaseIndex];
+    }
+    return EmptyPhase;
+}
+
+void UHarmoniaMonsterPatternComponent::ApplyPhaseEnterEffects(const FMonsterPhasePatterns& Phase)
+{
+    if (!MonsterOwner)
+    {
+        return;
+    }
+
+    UAbilitySystemComponent* ASC = MonsterOwner->GetAbilitySystemComponent();
+    if (!ASC)
+    {
+        return;
+    }
+
+    // Play phase enter montage
+    if (Phase.PhaseEnterMontage)
+    {
+        if (USkeletalMeshComponent* Mesh = MonsterOwner->GetMesh())
+        {
+            if (UAnimInstance* AnimInstance = Mesh->GetAnimInstance())
+            {
+                AnimInstance->Montage_Play(Phase.PhaseEnterMontage);
+            }
+        }
+    }
+
+    // Grant abilities
+    for (const TSubclassOf<UGameplayAbility>& AbilityClass : Phase.AbilitiesToGrant)
+    {
+        if (AbilityClass)
+        {
+            FGameplayAbilitySpec AbilitySpec(AbilityClass, 1, INDEX_NONE, MonsterOwner);
+            ASC->GiveAbility(AbilitySpec);
+        }
+    }
+
+    // Remove abilities
+    for (const TSubclassOf<UGameplayAbility>& AbilityClass : Phase.AbilitiesToRemove)
+    {
+        if (AbilityClass)
+        {
+            FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromClass(AbilityClass);
+            if (Spec)
+            {
+                ASC->ClearAbility(Spec->Handle);
+            }
+        }
+    }
+
+    // Apply phase effects
+    for (const TSubclassOf<UGameplayEffect>& EffectClass : Phase.PhaseEffects)
+    {
+        if (EffectClass)
+        {
+            FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+            Context.AddSourceObject(MonsterOwner);
+            FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(EffectClass, 1, Context);
+            if (SpecHandle.IsValid())
+            {
+                ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+            }
+        }
+    }
+
+    // Apply tags
+    if (Phase.TagsToApply.Num() > 0)
+    {
+        ASC->AddLooseGameplayTags(Phase.TagsToApply);
+    }
+
+    // Remove tags
+    if (Phase.TagsToRemove.Num() > 0)
+    {
+        ASC->RemoveLooseGameplayTags(Phase.TagsToRemove);
+    }
+}
 
 

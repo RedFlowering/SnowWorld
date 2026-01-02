@@ -1,9 +1,9 @@
-﻿// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BehaviorTree/BTService.h"
+#include "BehaviorTree/Services/BTService_BlueprintBase.h"
 #include "BTService_SyncAIComponentToBlackboard.generated.h"
 
 class UHarmoniaBaseAIComponent;
@@ -13,7 +13,7 @@ class UHarmoniaBaseAIComponent;
  * This allows BT to react to AI component state changes
  */
 UCLASS(Blueprintable, meta = (DisplayName = "Sync AI Component To Blackboard"))
-class HARMONIAKIT_API UBTService_SyncAIComponentToBlackboard : public UBTService
+class HARMONIAKIT_API UBTService_SyncAIComponentToBlackboard : public UBTService_BlueprintBase
 {
 	GENERATED_BODY()
 
@@ -40,3 +40,5 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
 	FBlackboardKeySelector HasValidTargetKey;
 };
+
+

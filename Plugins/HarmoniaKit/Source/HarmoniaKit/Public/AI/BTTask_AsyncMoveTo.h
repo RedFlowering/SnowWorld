@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
@@ -77,3 +77,5 @@ private:
 	 */
 	bool ShouldUpdatePath(float TimeSinceLastUpdate) const;
 };
+
+

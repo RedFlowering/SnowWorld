@@ -1,9 +1,9 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BehaviorTree/BTTaskNode.h"
+#include "BehaviorTree/Tasks/BTTask_BlueprintBase.h"
 #include "BTTask_MonsterPatrol.generated.h"
 
 /**
@@ -12,7 +12,7 @@
  * Moves monster to a random patrol point within patrol radius
  */
 UCLASS(Blueprintable, meta = (DisplayName = "Monster Patrol"))
-class HARMONIAKIT_API UBTTask_MonsterPatrol : public UBTTaskNode
+class HARMONIAKIT_API UBTTask_MonsterPatrol : public UBTTask_BlueprintBase
 {
 	GENERATED_BODY()
 
@@ -72,3 +72,5 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Patrol", meta = (EditCondition = "bWaitAtPatrolPoint"))
 	float MaxWaitTime = 5.0f;
 };
+
+

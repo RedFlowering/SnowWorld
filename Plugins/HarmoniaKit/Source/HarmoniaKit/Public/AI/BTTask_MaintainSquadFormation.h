@@ -1,9 +1,9 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BehaviorTree/BTTaskNode.h"
+#include "BehaviorTree/Tasks/BTTask_BlueprintBase.h"
 #include "BTTask_MaintainSquadFormation.generated.h"
 
 /**
@@ -18,7 +18,7 @@
  * - Completes when monster reaches formation position (or has no squad)
  */
 UCLASS(Blueprintable, meta = (DisplayName = "Maintain Squad Formation"))
-class HARMONIAKIT_API UBTTask_MaintainSquadFormation : public UBTTaskNode
+class HARMONIAKIT_API UBTTask_MaintainSquadFormation : public UBTTask_BlueprintBase
 {
 	GENERATED_BODY()
 
@@ -56,3 +56,5 @@ private:
 	 */
 	float ExecutionTime = 0.0f;
 };
+
+

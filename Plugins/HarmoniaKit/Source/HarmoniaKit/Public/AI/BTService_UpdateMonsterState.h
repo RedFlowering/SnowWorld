@@ -1,9 +1,9 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BehaviorTree/BTService.h"
+#include "BehaviorTree/Services/BTService_BlueprintBase.h"
 #include "BTService_UpdateMonsterState.generated.h"
 
 /**
@@ -15,7 +15,7 @@
  * - Updates monster state based on situation
  */
 UCLASS(Blueprintable, meta = (DisplayName = "Update Monster State"))
-class HARMONIAKIT_API UBTService_UpdateMonsterState : public UBTService
+class HARMONIAKIT_API UBTService_UpdateMonsterState : public UBTService_BlueprintBase
 {
 	GENERATED_BODY()
 
@@ -58,3 +58,5 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Service")
 	bool bClearInvalidTargets = true;
 };
+
+

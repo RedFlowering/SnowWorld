@@ -1,9 +1,9 @@
-﻿// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BehaviorTree/BTTaskNode.h"
+#include "BehaviorTree/Tasks/BTTask_BlueprintBase.h"
 #include "BTTask_SetAIComponentEnabled.generated.h"
 
 class UHarmoniaBaseAIComponent;
@@ -13,7 +13,7 @@ class UHarmoniaBaseAIComponent;
  * This allows BT to control when specific AI components are active
  */
 UCLASS(Blueprintable, meta = (DisplayName = "Set AI Component Enabled"))
-class HARMONIAKIT_API UBTTask_SetAIComponentEnabled : public UBTTaskNode
+class HARMONIAKIT_API UBTTask_SetAIComponentEnabled : public UBTTask_BlueprintBase
 {
 	GENERATED_BODY()
 
@@ -32,3 +32,5 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "AI Component")
 	bool bEnable = true;
 };
+
+

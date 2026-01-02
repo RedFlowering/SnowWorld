@@ -1,9 +1,9 @@
-﻿// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BehaviorTree/BTTaskNode.h"
+#include "BehaviorTree/Tasks/BTTask_BlueprintBase.h"
 #include "BTTask_PursueTarget.generated.h"
 
 /**
@@ -11,7 +11,7 @@
  * More aggressive than standard MoveTo - ignores acceptance radius until very close
  */
 UCLASS(Blueprintable, meta = (DisplayName = "Pursue Target"))
-class HARMONIAKIT_API UBTTask_PursueTarget : public UBTTaskNode
+class HARMONIAKIT_API UBTTask_PursueTarget : public UBTTask_BlueprintBase
 {
 	GENERATED_BODY()
 
@@ -38,3 +38,5 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Pursuit")
 	float AcceptanceRadius = 100.0f;
 };
+
+

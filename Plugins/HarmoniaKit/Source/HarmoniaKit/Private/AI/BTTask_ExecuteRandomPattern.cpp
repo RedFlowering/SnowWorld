@@ -11,9 +11,6 @@ UBTTask_ExecuteRandomPattern::UBTTask_ExecuteRandomPattern()
 	bNotifyTick = true;
 	bNotifyTaskFinished = true;
 	bCreateNodeInstance = true;
-
-	// Initialize blackboard key selector
-	TargetKey.AddObjectFilter(this, GET_MEMBER_NAME_CHECKED(UBTTask_ExecuteRandomPattern, TargetKey), AActor::StaticClass());
 }
 
 EBTNodeResult::Type UBTTask_ExecuteRandomPattern::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)

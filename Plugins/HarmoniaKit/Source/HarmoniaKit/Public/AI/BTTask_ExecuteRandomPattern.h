@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BehaviorTree/BTTaskNode.h"
+#include "BehaviorTree/Tasks/BTTask_BlueprintBase.h"
 #include "BTTask_ExecuteRandomPattern.generated.h"
 
 class UHarmoniaMonsterPatternComponent;
@@ -19,7 +19,7 @@ class UHarmoniaMonsterPatternComponent;
  * - Pattern selection uses weight system defined in pattern data
  */
 UCLASS(Blueprintable, meta = (DisplayName = "Execute Random Pattern"))
-class HARMONIAKIT_API UBTTask_ExecuteRandomPattern : public UBTTaskNode
+class HARMONIAKIT_API UBTTask_ExecuteRandomPattern : public UBTTask_BlueprintBase
 {
 	GENERATED_BODY()
 
@@ -52,12 +52,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Pattern", meta = (EditCondition = "bWaitForCompletion", ClampMin = "1.0", ClampMax = "60.0"))
 	float MaxWaitTime = 10.0f;
 
-	/**
-	 * Blackboard key for target actor (optional)
-	 */
-	UPROPERTY(EditAnywhere, Category = "Blackboard")
-	FBlackboardKeySelector TargetKey;
-
 private:
 	/** Cached pattern component */
 	UPROPERTY()
@@ -72,3 +66,5 @@ private:
 	/** Get or cache the pattern component */
 	UHarmoniaMonsterPatternComponent* GetPatternComponent(AActor* Owner);
 };
+
+

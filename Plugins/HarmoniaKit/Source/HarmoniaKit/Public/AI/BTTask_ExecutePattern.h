@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BehaviorTree/BTTaskNode.h"
+#include "BehaviorTree/Tasks/BTTask_BlueprintBase.h"
 #include "BTTask_ExecutePattern.generated.h"
 
 class UHarmoniaMonsterPatternComponent;
@@ -19,7 +19,7 @@ class UHarmoniaMonsterPatternComponent;
  * - Task will execute the pattern and optionally wait for completion
  */
 UCLASS(Blueprintable, meta = (DisplayName = "Execute Pattern"))
-class HARMONIAKIT_API UBTTask_ExecutePattern : public UBTTaskNode
+class HARMONIAKIT_API UBTTask_ExecutePattern : public UBTTask_BlueprintBase
 {
 	GENERATED_BODY()
 
@@ -58,12 +58,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Pattern", meta = (EditCondition = "bWaitForCompletion", ClampMin = "1.0", ClampMax = "60.0"))
 	float MaxWaitTime = 10.0f;
 
-	/**
-	 * Blackboard key for target actor (optional, some patterns may use it)
-	 */
-	UPROPERTY(EditAnywhere, Category = "Blackboard")
-	FBlackboardKeySelector TargetKey;
-
 private:
 	/** Cached pattern component */
 	UPROPERTY()
@@ -75,3 +69,5 @@ private:
 	/** Get or cache the pattern component */
 	UHarmoniaMonsterPatternComponent* GetPatternComponent(AActor* Owner);
 };
+
+

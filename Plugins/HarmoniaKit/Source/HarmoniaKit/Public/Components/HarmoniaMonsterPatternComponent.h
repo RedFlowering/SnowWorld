@@ -1,4 +1,4 @@
-﻿// Copyright 2024 Snow Game Studio.
+// Copyright 2024 Snow Game Studio.
 
 #pragma once
 
@@ -31,20 +31,17 @@ enum class EMonsterPatternExecutionMode : uint8
 };
 
 /**
- * FBossAttackPattern
+ * FMonsterAttackPattern
  *
- * 보스 공격 패턴 구성. 단순화된 구조로 패턴 시작 시 몽타주와 효과를 적용합니다.
- * 
- * 사용 예:
- * - 일반 공격: PatternAbilities에 공격 어빌리티 설정
- * - 페이즈 진입 공격: StartMontage에 전환 몽타주 설정 + AbilitiesToGrant
+ * Attack pattern configuration. Each pattern can contain multiple abilities
+ * with various execution modes and conditions.
  */
 USTRUCT(BlueprintType)
 struct FMonsterAttackPattern
 {
 	GENERATED_BODY()
 
-	// ===== 기본 정보 =====
+	// ===== Basic Info =====
 
 	/** Pattern name identifier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Info")
@@ -54,7 +51,7 @@ struct FMonsterAttackPattern
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Info")
 	FText PatternDescription;
 
-	// ===== 어빌리티 실행 =====
+	// ===== Ability Execution =====
 
 	/** Abilities to execute in this pattern */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Execution")
@@ -76,7 +73,7 @@ struct FMonsterAttackPattern
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Execution", meta = (ClampMin = "0.0", ClampMax = "10.0"))
 	float RepeatDelay = 1.0f;
 
-	// ===== 조건 =====
+	// ===== Conditions =====
 
 	/** Gameplay tags required to execute this pattern */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Conditions")
@@ -98,50 +95,89 @@ struct FMonsterAttackPattern
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Conditions")
 	bool bCanBeInterrupted = false;
 
-	// ===== 패턴 시작 시 효과 =====
+	// ===== Pattern Start Effects =====
 
-	/** 패턴 시작 시 재생할 몽타주 (트랜지션, 시작 연출 등) */
+	/** Montage to play when pattern starts (transition, intro) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Start")
 	TObjectPtr<UAnimMontage> StartMontage = nullptr;
 
-	/** 패턴 시작 시 부여할 어빌리티 */
+	/** Abilities to grant when pattern starts */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Start")
 	TArray<TSubclassOf<UGameplayAbility>> AbilitiesToGrant;
 
-	/** 패턴 시작 시 제거할 어빌리티 */
+	/** Abilities to remove when pattern starts */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Start")
 	TArray<TSubclassOf<UGameplayAbility>> AbilitiesToRemove;
 
-	/** 패턴 시작 시 적용할 GameplayEffect */
+	/** Effects to apply when pattern starts */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Start")
 	TArray<TSubclassOf<UGameplayEffect>> PatternEffects;
 
-	/** 패턴 시작 시 적용할 태그 */
+	/** Tags to apply when pattern starts */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Start")
 	FGameplayTagContainer TagsToApply;
 
-	/** 패턴 시작 시 제거할 태그 */
+	/** Tags to remove when pattern starts */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Start")
 	FGameplayTagContainer TagsToRemove;
 };
 
 /**
- * FBossPhasePatterns
+ * FMonsterPhasePatterns
  *
- * 특정 페이즈에서 사용 가능한 패턴들의 그룹
+ * Phase configuration containing HP threshold, enter effects, and attack patterns.
  */
 USTRUCT(BlueprintType)
 struct FMonsterPhasePatterns
 {
 	GENERATED_BODY()
 
-	/** 이 페이즈에서 사용 가능한 공격 패턴들 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase")
+	// ===== Phase Info =====
+
+	/** Phase name (for debugging/UI) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase|Info")
+	FName PhaseName;
+
+	/** HP threshold: phase activates when HP <= this percent (1.0 = 100%, 0.7 = 70%, 0.3 = 30%) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase|Info", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float HealthThreshold = 1.0f;
+
+	// ===== Phase Enter Effects (executes once on phase entry) =====
+
+	/** Montage to play when entering this phase */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase|Enter")
+	TObjectPtr<UAnimMontage> PhaseEnterMontage = nullptr;
+
+	/** Abilities to grant on phase entry */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase|Enter")
+	TArray<TSubclassOf<UGameplayAbility>> AbilitiesToGrant;
+
+	/** Abilities to remove on phase entry */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase|Enter")
+	TArray<TSubclassOf<UGameplayAbility>> AbilitiesToRemove;
+
+	/** Effects to apply on phase entry */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase|Enter")
+	TArray<TSubclassOf<UGameplayEffect>> PhaseEffects;
+
+	/** Tags to apply on phase entry */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase|Enter")
+	FGameplayTagContainer TagsToApply;
+
+	/** Tags to remove on phase entry */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase|Enter")
+	FGameplayTagContainer TagsToRemove;
+
+	// ===== Attack Patterns =====
+
+	/** Attack patterns available in this phase */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase|Patterns")
 	TArray<FMonsterAttackPattern> AttackPatterns;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPatternExecutionStart, FName, PatternName);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPatternExecutionEnd, FName, PatternName);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPhaseChanged, int32, OldPhase, int32, NewPhase);
 
 /**
  * UHarmoniaMonsterPatternComponent
@@ -165,46 +201,62 @@ public:
 	//~=============================================================================
 
 	/** Execute a specific attack pattern by name */
-	UFUNCTION(BlueprintCallable, Category = "Boss|Pattern")
+	UFUNCTION(BlueprintCallable, Category = "Monster|Pattern")
 	bool ExecutePattern(FName PatternName);
 
 	/** Execute a random attack pattern from available patterns */
-	UFUNCTION(BlueprintCallable, Category = "Boss|Pattern")
+	UFUNCTION(BlueprintCallable, Category = "Monster|Pattern")
 	bool ExecuteRandomPattern();
 
 	/** Stop current pattern execution */
-	UFUNCTION(BlueprintCallable, Category = "Boss|Pattern")
+	UFUNCTION(BlueprintCallable, Category = "Monster|Pattern")
 	void StopCurrentPattern();
 
 	/** Check if pattern is available for execution */
-	UFUNCTION(BlueprintPure, Category = "Boss|Pattern")
+	UFUNCTION(BlueprintPure, Category = "Monster|Pattern")
 	bool IsPatternAvailable(FName PatternName) const;
 
 	/** Get all available patterns for current phase */
-	UFUNCTION(BlueprintPure, Category = "Boss|Pattern")
+	UFUNCTION(BlueprintPure, Category = "Monster|Pattern")
 	TArray<FName> GetAvailablePatterns() const;
+
+	//~=============================================================================
+	// Phase Management
+	//~=============================================================================
+
+	/** Update phase based on current health percentage */
+	UFUNCTION(BlueprintCallable, Category = "Monster|Phase")
+	void UpdatePhase(float HealthPercent);
+
+	/** Get current phase index */
+	UFUNCTION(BlueprintPure, Category = "Monster|Phase")
+	int32 GetCurrentPhase() const { return CurrentPhaseIndex; }
+
+	/** Get current phase data */
+	UFUNCTION(BlueprintPure, Category = "Monster|Phase")
+	const FMonsterPhasePatterns& GetCurrentPhaseData() const;
 
 	//~=============================================================================
 	// Pattern State
 	//~=============================================================================
 
 	/** Check if currently executing a pattern */
-	UFUNCTION(BlueprintPure, Category = "Boss|Pattern")
+	UFUNCTION(BlueprintPure, Category = "Monster|Pattern")
 	bool IsExecutingPattern() const { return bIsExecutingPattern; }
 
 	/** Get current executing pattern name */
-	UFUNCTION(BlueprintPure, Category = "Boss|Pattern")
+	UFUNCTION(BlueprintPure, Category = "Monster|Pattern")
 	FName GetCurrentPatternName() const { return CurrentPatternName; }
 
 	/** Get pattern configuration by name */
 	const FMonsterAttackPattern* GetPatternConfig(FName PatternName) const;
 
 	/** Check if pattern is on cooldown */
-	UFUNCTION(BlueprintPure, Category = "Boss|Pattern")
+	UFUNCTION(BlueprintPure, Category = "Monster|Pattern")
 	bool IsPatternOnCooldown(FName PatternName) const;
 
 	/** Get remaining cooldown time for pattern */
-	UFUNCTION(BlueprintPure, Category = "Boss|Pattern")
+	UFUNCTION(BlueprintPure, Category = "Monster|Pattern")
 	float GetPatternCooldownRemaining(FName PatternName) const;
 
 protected:
@@ -240,11 +292,14 @@ protected:
 	void UpdateCooldowns(float DeltaTime);
 
 	//~=============================================================================
-	// Pattern Effects (효과 적용)
+	// Effects Application
 	//~=============================================================================
 
 	/** Apply pattern effects (abilities, GE, tags) */
 	void ApplyPatternEffects(const FMonsterAttackPattern& Pattern);
+
+	/** Apply phase enter effects (montage, abilities, GE, tags) */
+	void ApplyPhaseEnterEffects(const FMonsterPhasePatterns& Phase);
 
 	/** Remove pattern effects */
 	void RemovePatternEffects();
@@ -267,24 +322,32 @@ protected:
 
 public:
 	/** Broadcast when pattern execution starts */
-	UPROPERTY(BlueprintAssignable, Category = "Boss|Pattern")
+	UPROPERTY(BlueprintAssignable, Category = "Monster|Pattern")
 	FOnPatternExecutionStart OnPatternExecutionStart;
 
 	/** Broadcast when pattern execution ends */
-	UPROPERTY(BlueprintAssignable, Category = "Boss|Pattern")
+	UPROPERTY(BlueprintAssignable, Category = "Monster|Pattern")
 	FOnPatternExecutionEnd OnPatternExecutionEnd;
 
+	/** Broadcast when phase changes */
+	UPROPERTY(BlueprintAssignable, Category = "Monster|Phase")
+	FOnPhaseChanged OnPhaseChanged;
+
 protected:
-	/** 페이즈별 공격 패턴 (페이즈 인덱스 → 해당 페이즈의 패턴들) */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Pattern")
-	TMap<int32, FMonsterPhasePatterns> PhasePatterns;
+	/** Phase configurations (use descending HealthThreshold order) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Monster|Phase")
+	TArray<FMonsterPhasePatterns> Phases;
+
+	/** Current phase index */
+	UPROPERTY(BlueprintReadOnly, Category = "Monster|Phase")
+	int32 CurrentPhaseIndex = 0;
 
 	/** Currently executing pattern name */
-	UPROPERTY(BlueprintReadOnly, Category = "Boss|Pattern")
+	UPROPERTY(BlueprintReadOnly, Category = "Monster|Pattern")
 	FName CurrentPatternName = NAME_None;
 
 	/** Whether currently executing a pattern */
-	UPROPERTY(BlueprintReadOnly, Category = "Boss|Pattern")
+	UPROPERTY(BlueprintReadOnly, Category = "Monster|Pattern")
 	bool bIsExecutingPattern = false;
 
 	/** Current ability index in sequence */
