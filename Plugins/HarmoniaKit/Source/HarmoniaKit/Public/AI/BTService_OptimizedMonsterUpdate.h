@@ -69,7 +69,7 @@ struct FBTCachedQueryResult
  * - Caches blackboard reads/writes
  * - Only activates when needed
  */
-UCLASS()
+UCLASS(Blueprintable, meta = (DisplayName = "Optimized Monster Update"))
 class HARMONIAKIT_API UBTService_OptimizedMonsterUpdate : public UBTService
 {
 	GENERATED_BODY()

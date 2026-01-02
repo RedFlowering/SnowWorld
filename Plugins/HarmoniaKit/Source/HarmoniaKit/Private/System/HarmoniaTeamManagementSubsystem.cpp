@@ -1,6 +1,7 @@
 ﻿// Copyright 2025 Snow Game Studio.
 
 #include "System/HarmoniaTeamManagementSubsystem.h"
+#include "Data/HarmoniaTeamSetupData.h"
 #include "Definitions/HarmoniaTeamSystemDefinitions.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
@@ -30,9 +31,24 @@ void UHarmoniaTeamManagementSubsystem::Deinitialize()
 
 void UHarmoniaTeamManagementSubsystem::InitializeDefaultTeams()
 {
+	// Try to load from DefaultTeamSetup data asset
+	if (DefaultTeamSetup.IsValid() || !DefaultTeamSetup.IsNull())
+	{
+		UHarmoniaTeamSetupData* SetupData = DefaultTeamSetup.LoadSynchronous();
+		if (SetupData)
+		{
+			LoadTeamSetup(SetupData, true);
+			UE_LOG(LogTemp, Log, TEXT("HarmoniaTeamManagementSubsystem: Loaded teams from DefaultTeamSetup"));
+			return;
+		}
+	}
+
+	// Fallback: Hardcoded default teams (will be removed once Data Asset is created)
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaTeamManagementSubsystem: Using fallback hardcoded teams"));
+
 	// Create default Player team
 	FHarmoniaTeamIdentification PlayerTeam;
-	PlayerTeam.TeamNumericID = GenerateUniqueTeamID();
+	PlayerTeam.TeamID = FGameplayTag::RequestGameplayTag(FName("Team.Player"));
 	PlayerTeam.TeamName = FText::FromString(TEXT("Players"));
 	PlayerTeam.TeamColor = FLinearColor::Blue;
 	PlayerTeam.DefaultAttitude = EHarmoniaTeamAttitude::Defensive;
@@ -40,22 +56,43 @@ void UHarmoniaTeamManagementSubsystem::InitializeDefaultTeams()
 
 	// Create default Neutral team
 	FHarmoniaTeamIdentification NeutralTeam;
-	NeutralTeam.TeamNumericID = GenerateUniqueTeamID();
+	NeutralTeam.TeamID = FGameplayTag::RequestGameplayTag(FName("Team.Neutral"));
 	NeutralTeam.TeamName = FText::FromString(TEXT("Neutral"));
 	NeutralTeam.TeamColor = FLinearColor::Gray;
 	NeutralTeam.DefaultAttitude = EHarmoniaTeamAttitude::Neutral;
 	RegisterTeam(NeutralTeam);
 
-	// Create default Enemy team
-	FHarmoniaTeamIdentification EnemyTeam;
-	EnemyTeam.TeamNumericID = GenerateUniqueTeamID();
-	EnemyTeam.TeamName = FText::FromString(TEXT("Enemies"));
-	EnemyTeam.TeamColor = FLinearColor::Red;
-	EnemyTeam.DefaultAttitude = EHarmoniaTeamAttitude::Hostile;
-	RegisterTeam(EnemyTeam);
+	// Create Tiger monster team (호랑이)
+	FHarmoniaTeamIdentification TigerTeam;
+	TigerTeam.TeamID = FGameplayTag::RequestGameplayTag(FName("Team.Monster.Tiger"));
+	TigerTeam.TeamName = FText::FromString(TEXT("Tigers"));
+	TigerTeam.TeamColor = FLinearColor(1.0f, 0.5f, 0.0f);
+	TigerTeam.DefaultAttitude = EHarmoniaTeamAttitude::Hostile;
+	RegisterTeam(TigerTeam);
+	TeamFriendlyFireMap.Add(TigerTeam.TeamID, true); // 호랑이끼리 공격 가능
 
-	// Set default relationships
-	MakeTeamsEnemies(PlayerTeam, EnemyTeam);
+	// Create Magpie monster team (까치)
+	FHarmoniaTeamIdentification MagpieTeam;
+	MagpieTeam.TeamID = FGameplayTag::RequestGameplayTag(FName("Team.Monster.Magpie"));
+	MagpieTeam.TeamName = FText::FromString(TEXT("Magpies"));
+	MagpieTeam.TeamColor = FLinearColor(0.2f, 0.2f, 0.2f);
+	MagpieTeam.DefaultAttitude = EHarmoniaTeamAttitude::Hostile;
+	RegisterTeam(MagpieTeam);
+	TeamFriendlyFireMap.Add(MagpieTeam.TeamID, false); // 까치끼리 공격 불가
+
+	// Create Generic monster team
+	FHarmoniaTeamIdentification GenericMonsterTeam;
+	GenericMonsterTeam.TeamID = FGameplayTag::RequestGameplayTag(FName("Team.Monster.Generic"));
+	GenericMonsterTeam.TeamName = FText::FromString(TEXT("Monsters"));
+	GenericMonsterTeam.TeamColor = FLinearColor::Red;
+	GenericMonsterTeam.DefaultAttitude = EHarmoniaTeamAttitude::Hostile;
+	RegisterTeam(GenericMonsterTeam);
+
+	// Default Relationships
+	MakeTeamsEnemies(PlayerTeam, TigerTeam);
+	MakeTeamsEnemies(PlayerTeam, MagpieTeam);
+	MakeTeamsEnemies(PlayerTeam, GenericMonsterTeam);
+	MakeTeamsEnemies(TigerTeam, MagpieTeam);
 }
 
 // ============================================================================
@@ -89,8 +126,8 @@ bool UHarmoniaTeamManagementSubsystem::RegisterTeam(const FHarmoniaTeamIdentific
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("HarmoniaTeamManagementSubsystem: Registered team %s (ID: %d)"),
-		*TeamID.TeamName.ToString(), TeamID.TeamNumericID);
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaTeamManagementSubsystem: Registered team %s (Tag: %s)"),
+		*TeamID.TeamName.ToString(), *TeamID.TeamID.ToString());
 
 	return true;
 }
@@ -152,6 +189,87 @@ void UHarmoniaTeamManagementSubsystem::LoadTeamConfigs(const TArray<UHarmoniaTea
 	{
 		LoadTeamConfig(Config);
 	}
+}
+
+void UHarmoniaTeamManagementSubsystem::LoadTeamSetup(UHarmoniaTeamSetupData* TeamSetupData, bool bClearExisting)
+{
+	if (!TeamSetupData)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("HarmoniaTeamManagementSubsystem: LoadTeamSetup called with null data"));
+		return;
+	}
+
+	if (bClearExisting)
+	{
+		ClearAllTeams();
+	}
+
+	// Register all teams
+	for (const FHarmoniaTeamSetupEntry& Entry : TeamSetupData->Teams)
+	{
+		if (Entry.TeamID.IsValid())
+		{
+			RegisterTeam(Entry.TeamID, Entry.TeamConfig);
+
+			// Store FriendlyFire setting
+			if (Entry.TeamID.TeamID.IsValid())
+			{
+				TeamFriendlyFireMap.Add(Entry.TeamID.TeamID, Entry.bAllowFriendlyFire);
+			}
+		}
+	}
+
+	// Set all relationships
+	for (const FHarmoniaTeamRelationshipEntry& RelEntry : TeamSetupData->Relationships)
+	{
+		if (!RelEntry.TeamA.IsValid() || !RelEntry.TeamB.IsValid())
+		{
+			continue;
+		}
+
+		// Find team identifications by tag
+		FHarmoniaTeamIdentification TeamA, TeamB;
+		bool bFoundA = false, bFoundB = false;
+
+		for (const FHarmoniaTeamSetupEntry& Entry : TeamSetupData->Teams)
+		{
+			if (Entry.TeamID.TeamID == RelEntry.TeamA)
+			{
+				TeamA = Entry.TeamID;
+				bFoundA = true;
+			}
+			if (Entry.TeamID.TeamID == RelEntry.TeamB)
+			{
+				TeamB = Entry.TeamID;
+				bFoundB = true;
+			}
+			if (bFoundA && bFoundB) break;
+		}
+
+		if (bFoundA && bFoundB)
+		{
+			if (RelEntry.bBidirectional)
+			{
+				SetMutualRelationship(TeamA, TeamB, RelEntry.Relationship);
+			}
+			else
+			{
+				SetTeamRelationship(TeamA, TeamB, RelEntry.Relationship);
+			}
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaTeamManagementSubsystem: Loaded team setup with %d teams and %d relationships"),
+		TeamSetupData->Teams.Num(), TeamSetupData->Relationships.Num());
+}
+
+bool UHarmoniaTeamManagementSubsystem::DoesTeamAllowFriendlyFire(FGameplayTag TeamTag) const
+{
+	if (const bool* bAllowFF = TeamFriendlyFireMap.Find(TeamTag))
+	{
+		return *bAllowFF;
+	}
+	return false; // Default: no friendly fire
 }
 
 // ============================================================================
@@ -488,25 +606,11 @@ TArray<AActor*> UHarmoniaTeamManagementSubsystem::GetEnemiesOf(AActor* Actor, fl
 // Utility Functions
 // ============================================================================
 
-int32 UHarmoniaTeamManagementSubsystem::GenerateUniqueTeamID()
-{
-	return NextNumericTeamID++;
-}
-
 FHarmoniaTeamIdentification UHarmoniaTeamManagementSubsystem::CreateTeamID(FGameplayTag TeamTag, FText TeamName)
 {
 	FHarmoniaTeamIdentification TeamID;
 	TeamID.TeamID = TeamTag;
-	TeamID.TeamNumericID = GenerateUniqueTeamID();
 	TeamID.TeamName = TeamName.IsEmpty() ? FText::FromString(TeamTag.ToString()) : TeamName;
-	return TeamID;
-}
-
-FHarmoniaTeamIdentification UHarmoniaTeamManagementSubsystem::CreateTeamIDFromNumeric(int32 NumericID, FText TeamName)
-{
-	FHarmoniaTeamIdentification TeamID;
-	TeamID.TeamNumericID = NumericID;
-	TeamID.TeamName = TeamName.IsEmpty() ? FText::FromString(FString::Printf(TEXT("Team %d"), NumericID)) : TeamName;
 	return TeamID;
 }
 
@@ -520,7 +624,6 @@ void UHarmoniaTeamManagementSubsystem::ClearAllTeams()
 {
 	RegisteredTeams.Empty();
 	RelationshipMatrix.Empty();
-	NextNumericTeamID = 1;
 	UE_LOG(LogTemp, Log, TEXT("HarmoniaTeamManagementSubsystem: Cleared all teams"));
 }
 
@@ -534,9 +637,8 @@ void UHarmoniaTeamManagementSubsystem::DebugPrintTeams() const
 	for (const auto& Pair : RegisteredTeams)
 	{
 		const FHarmoniaTeamIdentification& TeamID = Pair.Key;
-		UE_LOG(LogTemp, Log, TEXT("Team: %s (Numeric ID: %d, Tag: %s)"),
+		UE_LOG(LogTemp, Log, TEXT("Team: %s (Tag: %s)"),
 			*TeamID.TeamName.ToString(),
-			TeamID.TeamNumericID,
 			*TeamID.TeamID.ToString());
 	}
 	UE_LOG(LogTemp, Log, TEXT("======================================"));
@@ -571,7 +673,7 @@ FHarmoniaTeamIdentification UHarmoniaTeamManagementSubsystem::CreateFaction(FTex
 	FLinearColor TeamColor)
 {
 	FHarmoniaTeamIdentification NewFaction;
-	NewFaction.TeamNumericID = GenerateUniqueTeamID();
+	// 팩션은 동적으로 생성되므로 태그가 없을 수 있음 - TeamName으로 식별
 	NewFaction.TeamName = FactionName;
 	NewFaction.TeamColor = TeamColor;
 	NewFaction.DefaultAttitude = DefaultAttitude;
@@ -579,8 +681,8 @@ FHarmoniaTeamIdentification UHarmoniaTeamManagementSubsystem::CreateFaction(FTex
 	// Register the faction
 	RegisterTeam(NewFaction);
 
-	UE_LOG(LogTemp, Log, TEXT("HarmoniaTeamManagementSubsystem: Created faction '%s' (ID: %d)"),
-		*FactionName.ToString(), NewFaction.TeamNumericID);
+	UE_LOG(LogTemp, Log, TEXT("HarmoniaTeamManagementSubsystem: Created faction '%s'"),
+		*FactionName.ToString());
 
 	return NewFaction;
 }

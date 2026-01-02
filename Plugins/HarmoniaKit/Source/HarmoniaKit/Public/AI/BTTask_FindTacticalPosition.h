@@ -18,7 +18,7 @@
  * - Task will find optimal tactical position and move there
  * - Completes when monster reaches tactical position
  */
-UCLASS()
+UCLASS(Blueprintable, meta = (DisplayName = "Find Tactical Position"))
 class HARMONIAKIT_API UBTTask_FindTacticalPosition : public UBTTaskNode
 {
 	GENERATED_BODY()

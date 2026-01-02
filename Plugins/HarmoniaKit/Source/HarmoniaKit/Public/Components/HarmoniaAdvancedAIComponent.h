@@ -164,14 +164,8 @@ public:
 
 public:
 	// ============================================================================
-	// Combo System
+	// Combo System (Deprecated - combos now handled within Abilities)
 	// ============================================================================
-
-	/**
-	 * Start a combo chain with an attack
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Advanced AI|Combat")
-	void StartCombo(const FHarmoniaMonsterAttackPattern& AttackPattern);
 
 	/**
 	 * Try to continue combo with next attack
@@ -225,21 +219,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Advanced AI|Tactical")
 	bool HasHighGroundAdvantage(const FVector& MyLocation, const FVector& TargetLocation, float MinHeightAdvantage = 100.0f) const;
 
-	// ============================================================================
-	// Enhanced Attack Selection
-	// ============================================================================
-
-	/**
-	 * Select attack with context awareness (health, position, emotion)
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Advanced AI|Combat")
-	FHarmoniaMonsterAttackPattern SelectContextualAttack(AActor* Target, const TArray<FHarmoniaMonsterAttackPattern>& AvailableAttacks);
-
-	/**
-	 * Calculate attack priority based on context
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Advanced AI|Combat")
-	float CalculateAttackPriority(const FHarmoniaMonsterAttackPattern& AttackPattern, AActor* Target) const;
+	// Enhanced Attack Selection (Deprecated - handled by BT + Abilities)
 
 protected:
 	// ============================================================================

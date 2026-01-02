@@ -14,7 +14,7 @@
  * - Updates distance to target
  * - Updates monster state based on situation
  */
-UCLASS()
+UCLASS(Blueprintable, meta = (DisplayName = "Update Monster State"))
 class HARMONIAKIT_API UBTService_UpdateMonsterState : public UBTService
 {
 	GENERATED_BODY()

@@ -97,24 +97,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|UI")
 	FText BossTitle;
 
-	// ============================================================================
-	// Phase Stat Modifier Effects (SetByCaller)
-	// ============================================================================
-
-	/**
-	 * Gameplay Effect class for phase-based attack power modifier.
-	 * Must use SetByCaller with tag "Stat.Combat.AttackPower" for magnitude.
-	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Phase|Effects")
-	TSubclassOf<UGameplayEffect> PhaseAttackPowerModifierEffect;
-
-	/**
-	 * Gameplay Effect class for phase-based defense modifier.
-	 * Must use SetByCaller with tag "Stat.Combat.Defense" for magnitude.
-	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Phase|Effects")
-	TSubclassOf<UGameplayEffect> PhaseDefenseModifierEffect;
-
 	/**
 	 * Boss music to play during encounter
 	 */
@@ -154,10 +136,10 @@ public:
 	virtual void EndBossEncounter();
 
 	/**
-	 * Get available attacks for current phase
+	 * Get active abilities for current phase (BT uses this to select attacks)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Boss|Combat")
-	TArray<FHarmoniaMonsterAttackPattern> GetCurrentPhaseAttacks() const;
+	TArray<TSubclassOf<UGameplayAbility>> GetActiveAbilities() const;
 
 protected:
 	// ============================================================================
@@ -265,12 +247,6 @@ protected:
 	 */
 	UPROPERTY(Transient)
 	TObjectPtr<UAudioComponent> BossMusicComponent = nullptr;
-
-	/**
-	 * Motion Warping component for leap attacks
-	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Movement")
-	TObjectPtr<UMotionWarpingComponent> MotionWarpingComponent = nullptr;
 
 	/**
 	 * Timer handle for phase transition

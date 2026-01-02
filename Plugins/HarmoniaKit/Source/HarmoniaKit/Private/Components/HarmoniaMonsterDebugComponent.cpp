@@ -213,14 +213,10 @@ void UHarmoniaMonsterDebugComponent::DrawPatrolInfo(AHarmoniaMonsterBase* Monste
 		return;
 	}
 
-	// This would require access to AI controller's patrol data
-	// For now, just draw a patrol radius sphere
-	UHarmoniaMonsterData* MonsterData = IHarmoniaMonsterInterface::Execute_GetMonsterData(Monster);
-	if (MonsterData && MonsterData->PatrolRadius > 0.0f)
-	{
-		FVector HomeLocation = Monster->GetActorLocation(); // Simplified
-		DrawDebugSphere(GetWorld(), HomeLocation, MonsterData->PatrolRadius, 16, FColor::Cyan, false, 0.0f, 0, 1.0f);
-	}
+	// Draw a default patrol radius sphere (patrol is now configured in BT, not MonsterData)
+	float PatrolRadius = 500.0f; // Default patrol radius
+	FVector HomeLocation = Monster->GetActorLocation(); // Simplified
+	DrawDebugSphere(GetWorld(), HomeLocation, PatrolRadius, 16, FColor::Cyan, false, 0.0f, 0, 1.0f);
 }
 
 void UHarmoniaMonsterDebugComponent::DrawHealthBar(AHarmoniaMonsterBase* Monster, const FVector& DrawLocation)
@@ -274,48 +270,10 @@ void UHarmoniaMonsterDebugComponent::DrawFaction(AHarmoniaMonsterBase* Monster, 
 		return;
 	}
 
-	const FHarmoniaFactionSettings& Faction = MonsterData->FactionSettings;
+	// Use TeamID instead of FactionSettings
+	FString TeamText = FString::Printf(TEXT("Team: %s (Tag: %s)"), 
+		*MonsterData->TeamID.TeamName.ToString(), 
+		*MonsterData->TeamID.TeamID.ToString());
 
-	FString FactionName = TEXT("Unknown");
-	switch (Faction.Faction)
-	{
-	case EHarmoniaMonsterFaction::Neutral:
-		FactionName = TEXT("Neutral");
-		break;
-	case EHarmoniaMonsterFaction::PlayerHostile:
-		FactionName = TEXT("Hostile");
-		break;
-	case EHarmoniaMonsterFaction::PlayerFriendly:
-		FactionName = TEXT("Friendly");
-		break;
-	case EHarmoniaMonsterFaction::Monster1:
-		FactionName = TEXT("Monster 1");
-		break;
-	case EHarmoniaMonsterFaction::Monster2:
-		FactionName = TEXT("Monster 2");
-		break;
-	case EHarmoniaMonsterFaction::Monster3:
-		FactionName = TEXT("Monster 3");
-		break;
-	case EHarmoniaMonsterFaction::Monster4:
-		FactionName = TEXT("Monster 4");
-		break;
-	default:
-		FactionName = TEXT("Custom");
-		break;
-	}
-
-	FString FactionText = FString::Printf(TEXT("Faction: %s"), *FactionName);
-	FColor FactionColor = FColor::Cyan;
-
-	if (Faction.Faction == EHarmoniaMonsterFaction::PlayerHostile)
-	{
-		FactionColor = FColor::Red;
-	}
-	else if (Faction.Faction == EHarmoniaMonsterFaction::PlayerFriendly)
-	{
-		FactionColor = FColor::Green;
-	}
-
-	DrawDebugString(GetWorld(), DrawLocation, FactionText, nullptr, FactionColor, 0.0f, true, TextScale * 0.7f);
+	DrawDebugString(GetWorld(), DrawLocation, TeamText, nullptr, FColor::Cyan, 0.0f, true, TextScale * 0.7f);
 }

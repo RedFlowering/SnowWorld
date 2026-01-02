@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Snow Game Studio.
+// Copyright 2025 Snow Game Studio.
 
 #include "Monsters/HarmoniaBossMonster.h"
 #include "AbilitySystemComponent.h"
@@ -17,8 +17,7 @@
 AHarmoniaBossMonster::AHarmoniaBossMonster(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	// Motion Warping for leap attacks
-	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
+	// MotionWarpingComponent is created in parent AHarmoniaMonsterBase
 }
 
 void AHarmoniaBossMonster::BeginPlay()
@@ -168,21 +167,11 @@ void AHarmoniaBossMonster::EndBossEncounter()
 	UE_LOG(LogTemp, Log, TEXT("Boss Encounter Ended: %s"), *GetMonsterName_Implementation().ToString());
 }
 
-TArray<FHarmoniaMonsterAttackPattern> AHarmoniaBossMonster::GetCurrentPhaseAttacks() const
+TArray<TSubclassOf<UGameplayAbility>> AHarmoniaBossMonster::GetActiveAbilities() const
 {
-	FHarmoniaBossPhase CurrentPhase = GetCurrentPhaseData();
-	if (CurrentPhase.PhaseAttacks.Num() > 0)
-	{
-		return CurrentPhase.PhaseAttacks;
-	}
-
-	// Fallback to base attacks if no phase-specific attacks
-	if (MonsterData)
-	{
-		return MonsterData->AttackPatterns;
-	}
-
-	return TArray<FHarmoniaMonsterAttackPattern>();
+	// NOTE: ActiveAbilities는 이제 PatternComponent에서 관리합니다.
+	// BT에서는 PatternComponent::GetAvailablePatterns()를 사용하세요.
+	return TArray<TSubclassOf<UGameplayAbility>>();
 }
 
 // ============================================================================
@@ -242,39 +231,6 @@ void AHarmoniaBossMonster::ChangeToPhase(int32 NewPhaseIndex)
 	// Start phase transition
 	bInPhaseTransition = true;
 
-	// Make boss invulnerable during transition if configured
-	if (NewPhaseData.bInvulnerableDuringTransition && AbilitySystemComponent)
-	{
-		// Add invulnerability tag (you'd need to define this tag in your project)
-		// FGameplayTag InvulnerabilityTag = FGameplayTag::RequestGameplayTag(FName("Status.Invulnerable"));
-		// AbilitySystemComponent->AddLooseGameplayTag(InvulnerabilityTag);
-	}
-
-	// Play transition animation
-	PlayPhaseTransitionAnimation(NewPhaseData);
-
-	// Spawn transition VFX - Particle System
-	if (NewPhaseData.TransitionEffect)
-	{
-		UGameplayStatics::SpawnEmitterAtLocation(
-			GetWorld(),
-			NewPhaseData.TransitionEffect,
-			GetActorLocation(),
-			GetActorRotation()
-		);
-	}
-
-	// Spawn transition VFX - Niagara
-	if (NewPhaseData.TransitionNiagaraEffect)
-	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			GetWorld(),
-			NewPhaseData.TransitionNiagaraEffect,
-			GetActorLocation(),
-			GetActorRotation()
-		);
-	}
-
 	// Update phase index
 	CurrentPhaseIndex = NewPhaseIndex;
 
@@ -286,234 +242,36 @@ void AHarmoniaBossMonster::ChangeToPhase(int32 NewPhaseIndex)
 		NewPhaseIndex,
 		*NewPhaseData.PhaseName.ToString());
 
-	// Calculate transition duration (use override if set, otherwise use montage length)
-	float TransitionDuration = NewPhaseData.TransitionDuration > 0.0f
-		? NewPhaseData.TransitionDuration
-		: (NewPhaseData.TransitionMontage ? NewPhaseData.TransitionMontage->GetPlayLength() : 1.0f);
-
-	GetWorld()->GetTimerManager().SetTimer(
-		PhaseTransitionTimerHandle,
-		this,
-		&AHarmoniaBossMonster::OnPhaseTransitionComplete,
-		TransitionDuration,
-		false
-	);
+	// NOTE: 페이즈 전환 연출, GE, 어빌리티 부여/제거, BT 변경 등은
+	// PatternComponent에서 ExecutePhaseTransitionPattern()으로 처리합니다.
+	// 여기서는 즉시 페이즈 전환 완료 처리
+	bInPhaseTransition = false;
 }
 
 void AHarmoniaBossMonster::ApplyPhaseEffects(const FHarmoniaBossPhase& PhaseData)
 {
-	if (!AbilitySystemComponent)
-	{
-		return;
-	}
-
-	// Remove previous phase effects
-	RemovePreviousPhaseEffects();
-
-	// Remove specified abilities
-	for (TSubclassOf<class ULyraGameplayAbility> AbilityClass : PhaseData.AbilitiesToRemove)
-	{
-		if (UClass* AbilityClassPtr = AbilityClass.Get())
-		{
-			FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(AbilityClassPtr);
-			if (Spec)
-			{
-				AbilitySystemComponent->ClearAbility(Spec->Handle);
-			}
-		}
-	}
-
-	// Grant phase abilities
-	for (TSubclassOf<class ULyraGameplayAbility> AbilityClass : PhaseData.PhaseAbilities)
-	{
-		if (UClass* AbilityClassPtr = AbilityClass.Get())
-		{
-			FGameplayAbilitySpec AbilitySpec(AbilityClassPtr, MonsterLevel, INDEX_NONE, this);
-			FGameplayAbilitySpecHandle Handle = AbilitySystemComponent->GiveAbility(AbilitySpec);
-			GrantedAbilityHandles.Add(Handle);
-		}
-	}
-
-	// Apply gameplay tags
-	if (PhaseData.PhaseTags.Num() > 0)
-	{
-		AbilitySystemComponent->AddLooseGameplayTags(PhaseData.PhaseTags);
-	}
-
-	// Remove specified tags
-	if (PhaseData.TagsToRemove.Num() > 0)
-	{
-		AbilitySystemComponent->RemoveLooseGameplayTags(PhaseData.TagsToRemove);
-	}
-
-	// Apply new phase effects
-	for (TSubclassOf<UGameplayEffect> EffectClass : PhaseData.PhaseEffects)
-	{
-		if (EffectClass)
-		{
-			FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
-			EffectContext.AddSourceObject(this);
-
-			FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, MonsterLevel, EffectContext);
-			if (SpecHandle.IsValid())
-			{
-				FActiveGameplayEffectHandle ActiveHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-				ActivePhaseEffects.Add(ActiveHandle);
-			}
-		}
-	}
-
-	// Apply movement speed multiplier
-	if (PhaseData.MovementSpeedMultiplier != 1.0f)
-	{
-		if (GetCharacterMovement())
-		{
-			float BaseSpeed = MonsterData->BaseStats.BaseMovementSpeed;
-			GetCharacterMovement()->MaxWalkSpeed = BaseSpeed * PhaseData.MovementSpeedMultiplier;
-		}
-	}
-
-	// Apply damage multiplier via gameplay effect (using SetByCaller)
-	if (PhaseData.DamageMultiplier != 1.0f && AttributeSet && PhaseAttackPowerModifierEffect)
-	{
-		// Get current attack power to calculate percentage bonus
-		float CurrentAttackPower = AttributeSet->GetAttackPower();
-		float BonusAmount = CurrentAttackPower * (PhaseData.DamageMultiplier - 1.0f);
-
-		if (BonusAmount != 0.0f)
-		{
-			// Create spec from the configured GE class (which uses SetByCaller)
-			FGameplayEffectContextHandle DamageContext = AbilitySystemComponent->MakeEffectContext();
-			DamageContext.AddSourceObject(this);
-			FGameplayEffectSpecHandle DamageSpecHandle = AbilitySystemComponent->MakeOutgoingSpec(PhaseAttackPowerModifierEffect, MonsterLevel, DamageContext);
-			if (DamageSpecHandle.IsValid())
-			{
-				// Set the actual magnitude via SetByCaller
-				DamageSpecHandle.Data->SetSetByCallerMagnitude(HarmoniaGameplayTags::Stat_Combat_AttackPower, BonusAmount);
-				
-				FActiveGameplayEffectHandle ActiveHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*DamageSpecHandle.Data.Get());
-				ActivePhaseEffects.Add(ActiveHandle);
-			}
-		}
-	}
-	else if (PhaseData.DamageMultiplier != 1.0f && !PhaseAttackPowerModifierEffect)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[%s] DamageMultiplier is set but PhaseAttackPowerModifierEffect is not configured!"), *GetName());
-	}
-
-	// Apply defense multiplier via gameplay effect (using SetByCaller)
-	if (PhaseData.DefenseMultiplier != 1.0f && AttributeSet && PhaseDefenseModifierEffect)
-	{
-		// Get current defense to calculate percentage bonus
-		float CurrentDefense = AttributeSet->GetDefense();
-		float BonusAmount = CurrentDefense * (PhaseData.DefenseMultiplier - 1.0f);
-
-		if (BonusAmount != 0.0f)
-		{
-			// Create spec from the configured GE class (which uses SetByCaller)
-			FGameplayEffectContextHandle DefenseContext = AbilitySystemComponent->MakeEffectContext();
-			DefenseContext.AddSourceObject(this);
-			FGameplayEffectSpecHandle DefenseSpecHandle = AbilitySystemComponent->MakeOutgoingSpec(PhaseDefenseModifierEffect, MonsterLevel, DefenseContext);
-			if (DefenseSpecHandle.IsValid())
-			{
-				// Set the actual magnitude via SetByCaller
-				DefenseSpecHandle.Data->SetSetByCallerMagnitude(HarmoniaGameplayTags::Stat_Combat_Defense, BonusAmount);
-				
-				FActiveGameplayEffectHandle ActiveHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*DefenseSpecHandle.Data.Get());
-				ActivePhaseEffects.Add(ActiveHandle);
-			}
-		}
-	}
-	else if (PhaseData.DefenseMultiplier != 1.0f && !PhaseDefenseModifierEffect)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[%s] DefenseMultiplier is set but PhaseDefenseModifierEffect is not configured!"), *GetName());
-	}
+	// NOTE: 어빌리티 부여/제거, GE, 태그 등은 이제 PatternComponent에서 관리합니다.
+	// 페이즈 전환 패턴(bIsPhaseTransitionPattern=true)에서 처리하세요.
 }
 
 void AHarmoniaBossMonster::RemovePreviousPhaseEffects()
 {
-	if (!AbilitySystemComponent)
-	{
-		return;
-	}
-
-	// Remove previous phase effects
-	for (FActiveGameplayEffectHandle& EffectHandle : ActivePhaseEffects)
-	{
-		if (EffectHandle.IsValid())
-		{
-			AbilitySystemComponent->RemoveActiveGameplayEffect(EffectHandle);
-		}
-	}
-	ActivePhaseEffects.Empty();
-
-	// Remove previous phase abilities
-	for (FGameplayAbilitySpecHandle& AbilityHandle : GrantedAbilityHandles)
-	{
-		if (AbilityHandle.IsValid())
-		{
-			AbilitySystemComponent->ClearAbility(AbilityHandle);
-		}
-	}
-	GrantedAbilityHandles.Empty();
-
-	// Remove previous phase tags
-	if (MonsterData && MonsterData->bIsBoss && CurrentPhaseIndex >= 0)
-	{
-		if (CurrentPhaseIndex < MonsterData->BossPhases.Num())
-		{
-			const FHarmoniaBossPhase& OldPhase = MonsterData->BossPhases[CurrentPhaseIndex];
-			if (OldPhase.PhaseTags.Num() > 0)
-			{
-				AbilitySystemComponent->RemoveLooseGameplayTags(OldPhase.PhaseTags);
-			}
-		}
-	}
+	// NOTE: PatternComponent::RemovePatternEffects()로 대체되었습니다.
 }
 
 void AHarmoniaBossMonster::PlayPhaseTransitionAnimation(const FHarmoniaBossPhase& PhaseData)
 {
-	if (PhaseData.TransitionMontage)
-	{
-		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-		{
-			AnimInstance->Montage_Play(PhaseData.TransitionMontage);
-		}
-	}
+	// NOTE: 페이즈 전환 애니메이션은 PatternComponent에서 TransitionMontage로 처리합니다.
 }
 
 void AHarmoniaBossMonster::OnPhaseTransitionComplete()
 {
 	bInPhaseTransition = false;
-
-	// Remove invulnerability if it was applied
-	const FHarmoniaBossPhase& CurrentPhase = GetCurrentPhaseData();
-	if (CurrentPhase.bInvulnerableDuringTransition && AbilitySystemComponent)
-	{
-		// Remove invulnerability tag
-		// FGameplayTag InvulnerabilityTag = FGameplayTag::RequestGameplayTag(FName("Status.Invulnerable"));
-		// AbilitySystemComponent->RemoveLooseGameplayTag(InvulnerabilityTag);
-	}
-
-	// Apply phase effects
-	ApplyPhaseEffects(CurrentPhase);
-
-	// Update behavior tree if phase has custom BT
-	UpdatePhaseBehaviorTree();
 }
 
 void AHarmoniaBossMonster::UpdatePhaseBehaviorTree()
 {
-	const FHarmoniaBossPhase& CurrentPhase = GetCurrentPhaseData();
-
-	if (CurrentPhase.PhaseBehaviorTree)
-	{
-		// Switch to phase-specific behavior tree
-		if (AAIController* AIController = Cast<AAIController>(GetController()))
-		{
-			AIController->RunBehaviorTree(CurrentPhase.PhaseBehaviorTree);
-		}
-	}
+	// NOTE: BT 변경은 PatternComponent::PatternBehaviorTree로 처리합니다.
 }
 
 void AHarmoniaBossMonster::PlayBossMusic()

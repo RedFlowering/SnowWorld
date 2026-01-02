@@ -59,17 +59,10 @@ struct HARMONIAKIT_API FHarmoniaTeamIdentification
 
 	/**
 	 * Team ID (using GameplayTag for flexibility)
-	 * Examples: Team.Player, Team.Monster.Goblin, Team.Monster.Undead, Team.NPC.Guard
+	 * Examples: Team.Player, Team.Monster, Team.NPC.Guard
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Team")
 	FGameplayTag TeamID;
-
-	/**
-	 * Team numeric ID (for efficient network replication and comparison)
-	 * 0 = No team, 1+ = Team ID
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Team")
-	int32 TeamNumericID = 0;
 
 	/**
 	 * Team display name
@@ -90,15 +83,13 @@ struct HARMONIAKIT_API FHarmoniaTeamIdentification
 	EHarmoniaTeamAttitude DefaultAttitude = EHarmoniaTeamAttitude::Neutral;
 
 	FHarmoniaTeamIdentification()
-		: TeamNumericID(0)
-		, TeamColor(FLinearColor::White)
+		: TeamColor(FLinearColor::White)
 		, DefaultAttitude(EHarmoniaTeamAttitude::Neutral)
 	{
 	}
 
-	FHarmoniaTeamIdentification(const FGameplayTag& InTeamID, int32 InNumericID)
+	FHarmoniaTeamIdentification(const FGameplayTag& InTeamID)
 		: TeamID(InTeamID)
-		, TeamNumericID(InNumericID)
 		, TeamColor(FLinearColor::White)
 		, DefaultAttitude(EHarmoniaTeamAttitude::Neutral)
 	{
@@ -109,7 +100,7 @@ struct HARMONIAKIT_API FHarmoniaTeamIdentification
 	 */
 	bool IsValid() const
 	{
-		return TeamID.IsValid() || TeamNumericID > 0;
+		return TeamID.IsValid();
 	}
 
 	/**
@@ -117,13 +108,6 @@ struct HARMONIAKIT_API FHarmoniaTeamIdentification
 	 */
 	bool IsSameTeam(const FHarmoniaTeamIdentification& Other) const
 	{
-		// Prefer numeric comparison for efficiency
-		if (TeamNumericID > 0 && Other.TeamNumericID > 0)
-		{
-			return TeamNumericID == Other.TeamNumericID;
-		}
-
-		// Fall back to tag comparison
 		return TeamID.IsValid() && TeamID == Other.TeamID;
 	}
 
@@ -143,9 +127,9 @@ struct HARMONIAKIT_API FHarmoniaTeamIdentification
 	/**
 	 * Get hash for use in maps
 	 */
-	friend uint32 GetTypeHash(const FHarmoniaTeamIdentification& TeamID)
+	friend uint32 GetTypeHash(const FHarmoniaTeamIdentification& TeamIdentification)
 	{
-		return TeamID.TeamNumericID > 0 ? GetTypeHash(TeamID.TeamNumericID) : GetTypeHash(TeamID.TeamID);
+		return GetTypeHash(TeamIdentification.TeamID);
 	}
 };
 

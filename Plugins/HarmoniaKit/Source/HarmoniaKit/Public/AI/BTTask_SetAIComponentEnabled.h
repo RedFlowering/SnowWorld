@@ -12,7 +12,7 @@ class UHarmoniaBaseAIComponent;
  * Behavior Tree Task to enable/disable a Harmonia AI Component
  * This allows BT to control when specific AI components are active
  */
-UCLASS()
+UCLASS(Blueprintable, meta = (DisplayName = "Set AI Component Enabled"))
 class HARMONIAKIT_API UBTTask_SetAIComponentEnabled : public UBTTaskNode
 {
 	GENERATED_BODY()

@@ -53,15 +53,8 @@ EBTNodeResult::Type UBTTask_MonsterPatrol::ExecuteTask(UBehaviorTreeComponent& O
 	float PatrolRadius = PatrolRadiusOverride;
 	if (PatrolRadius <= 0.0f)
 	{
-		UHarmoniaMonsterData* MonsterData = IHarmoniaMonsterInterface::Execute_GetMonsterData(Monster);
-		if (MonsterData)
-		{
-			PatrolRadius = MonsterData->PatrolRadius;
-		}
-		else
-		{
-			PatrolRadius = 500.0f; // Default
-		}
+		// PatrolRadius is now configured in BT, not in MonsterData
+		PatrolRadius = 500.0f; // Default
 	}
 
 	// If no patrol radius, just stay at home

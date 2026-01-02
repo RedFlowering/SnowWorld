@@ -117,6 +117,10 @@
     {
       "Name": "MissNoHit",
       "Enabled": true
+    },
+    {
+      "Name": "MotionWarping",
+      "Enabled": true
     }
   ]
 }

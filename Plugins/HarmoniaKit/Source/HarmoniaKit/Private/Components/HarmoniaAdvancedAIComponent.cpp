@@ -158,27 +158,8 @@ void UHarmoniaAdvancedAIComponent::ApplyEmotionModifiers(EHarmoniaMonsterEmotion
 }
 
 // ============================================================================
-// Combo System
+// Combo System (Deprecated - now in Ability)
 // ============================================================================
-
-void UHarmoniaAdvancedAIComponent::StartCombo(const FHarmoniaMonsterAttackPattern& AttackPattern)
-{
-	HARMONIA_REQUIRE_SERVER(this);
-
-	if (!AttackPattern.bCanStartCombo || AttackPattern.ComboFollowUps.Num() == 0)
-	{
-		ComboState.Reset();
-		return;
-	}
-
-	ComboState.CurrentAttackID = AttackPattern.AttackID;
-	ComboState.AvailableFollowUps = AttackPattern.ComboFollowUps;
-	ComboState.ComboWindowRemaining = AttackPattern.ComboWindow;
-	ComboState.ComboCount = 1;
-
-	UE_LOG(LogHarmoniaAI, Log, TEXT("%s started combo with %s (%d follow-ups available)"),
-		*GetOwner()->GetName(), *AttackPattern.AttackID.ToString(), AttackPattern.ComboFollowUps.Num());
-}
 
 bool UHarmoniaAdvancedAIComponent::TryContinueCombo(FName& OutNextAttackID)
 {
@@ -336,113 +317,6 @@ bool UHarmoniaAdvancedAIComponent::HasHighGroundAdvantage(const FVector& MyLocat
 {
 	float HeightDiff = MyLocation.Z - TargetLocation.Z;
 	return HeightDiff >= MinHeightAdvantage;
-}
-
-// ============================================================================
-// Enhanced Attack Selection
-// ============================================================================
-
-FHarmoniaMonsterAttackPattern UHarmoniaAdvancedAIComponent::SelectContextualAttack(AActor* Target, const TArray<FHarmoniaMonsterAttackPattern>& AvailableAttacks)
-{
-	if (AvailableAttacks.Num() == 0)
-	{
-		return FHarmoniaMonsterAttackPattern();
-	}
-
-	// Calculate priority for each attack
-	TArray<TPair<float, int32>> AttackPriorities;
-	for (int32 i = 0; i < AvailableAttacks.Num(); ++i)
-	{
-		float Priority = CalculateAttackPriority(AvailableAttacks[i], Target);
-		AttackPriorities.Add(TPair<float, int32>(Priority, i));
-	}
-
-	// Sort by priority
-	AttackPriorities.Sort([](const TPair<float, int32>& A, const TPair<float, int32>& B)
-	{
-		return A.Key > B.Key;
-	});
-
-	// Weighted random selection from top 3
-	int32 TopCount = FMath::Min(3, AttackPriorities.Num());
-	float TotalWeight = 0.0f;
-	for (int32 i = 0; i < TopCount; ++i)
-	{
-		TotalWeight += AttackPriorities[i].Key;
-	}
-
-	float RandomValue = FMath::FRandRange(0.0f, TotalWeight);
-	float CurrentWeight = 0.0f;
-
-	for (int32 i = 0; i < TopCount; ++i)
-	{
-		CurrentWeight += AttackPriorities[i].Key;
-		if (RandomValue <= CurrentWeight)
-		{
-			return AvailableAttacks[AttackPriorities[i].Value];
-		}
-	}
-
-	// Fallback to highest priority
-	return AvailableAttacks[AttackPriorities[0].Value];
-}
-
-float UHarmoniaAdvancedAIComponent::CalculateAttackPriority(const FHarmoniaMonsterAttackPattern& AttackPattern, AActor* Target) const
-{
-	float Priority = AttackPattern.SelectionWeight;
-
-	if (!Target)
-	{
-		return Priority;
-	}
-
-	// Health-based priority
-	float TargetHealthPercent = GetTargetHealthPercent(Target);
-	if (TargetHealthPercent > 0.75f)
-	{
-		Priority *= AttackPattern.HighHealthPriority;
-	}
-	else if (TargetHealthPercent > 0.25f)
-	{
-		Priority *= AttackPattern.MediumHealthPriority;
-	}
-	else
-	{
-		Priority *= AttackPattern.LowHealthPriority;
-	}
-
-	// Tactical position bonus
-	if (TacticalState.bInOptimalPosition)
-	{
-		Priority *= AttackPattern.TacticalPositionBonus;
-	}
-
-	// Emotion modifiers
-	if (EmotionState.CurrentEmotion == EHarmoniaMonsterEmotion::Enraged)
-	{
-		// Prefer high damage attacks when enraged
-		Priority *= 1.2f;
-	}
-	else if (EmotionState.CurrentEmotion == EHarmoniaMonsterEmotion::Fearful)
-	{
-		// Prefer long-range or defensive attacks when fearful
-		if (AttackPattern.MinRange > 300.0f)
-		{
-			Priority *= 1.5f;
-		}
-	}
-
-	// Combo priority
-	if (bEnableCombos && ComboState.IsActive())
-	{
-		// Check if this attack is a valid combo follow-up
-		if (ComboState.AvailableFollowUps.Contains(AttackPattern.AttackID))
-		{
-			Priority *= 3.0f; // Heavily favor combo continuations
-		}
-	}
-
-	return FMath::Max(0.1f, Priority);
 }
 
 // ============================================================================

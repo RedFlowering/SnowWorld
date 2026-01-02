@@ -17,7 +17,7 @@
  * - Task will move monster to formation position relative to squad leader
  * - Completes when monster reaches formation position (or has no squad)
  */
-UCLASS()
+UCLASS(Blueprintable, meta = (DisplayName = "Maintain Squad Formation"))
 class HARMONIAKIT_API UBTTask_MaintainSquadFormation : public UBTTaskNode
 {
 	GENERATED_BODY()

@@ -14,7 +14,7 @@ UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Character_Status_Aiming);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHarmoniaMantlingEnded);
 
 class UHarmoniaCharacterMovementComponent;
-class UHarmoniaLockOnTargetingComponent;
+class UHarmoniaLockOnComponent;
 class UHarmoniaHealthComponent;
 class UMotionWarpingComponent;
 
@@ -116,7 +116,7 @@ protected:
 	TObjectPtr<UHarmoniaCharacterMovementComponent> HarmoniaCharacterMovement = nullptr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Harmonia Character|Combat")
-	TObjectPtr<UHarmoniaLockOnTargetingComponent> LockOnComponent = nullptr;
+	TObjectPtr<UHarmoniaLockOnComponent> LockOnComponent = nullptr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Harmonia Character|Health")
 	TObjectPtr<UHarmoniaHealthComponent> HarmoniaHealthComponent = nullptr;
@@ -126,7 +126,7 @@ protected:
 
 public:
 	UFUNCTION(BlueprintPure, Category = "Harmonia Character|Combat")
-	UHarmoniaLockOnTargetingComponent* GetLockOnComponent() const { return LockOnComponent; }
+	UHarmoniaLockOnComponent* GetLockOnComponent() const { return LockOnComponent; }
 
 	UFUNCTION(BlueprintPure, Category = "Harmonia Character|Health")
 	UHarmoniaHealthComponent* GetHarmoniaHealthComponent() const { return HarmoniaHealthComponent; }

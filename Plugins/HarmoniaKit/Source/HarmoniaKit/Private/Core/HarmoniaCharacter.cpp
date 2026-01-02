@@ -2,7 +2,7 @@
 
 #include "Core/HarmoniaCharacter.h"
 #include "Core/HarmoniaCharacterMovementComponent.h"
-#include "Core/HarmoniaLockOnTargetingComponent.h"
+#include "Components/HarmoniaLockOnComponent.h"
 #include "Core/HarmoniaHealthComponent.h"
 #include "AbilitySystem/LyraAbilitySystemComponent.h"
 #include "Settings/AlsCharacterSettings.h"
@@ -19,7 +19,7 @@ AHarmoniaCharacter::AHarmoniaCharacter(const FObjectInitializer& ObjectInitializ
 		.SetDefaultSubobjectClass<UHarmoniaHealthComponent>(TEXT("HealthComponent")))
 {
 	HarmoniaCharacterMovement = Cast<UHarmoniaCharacterMovementComponent>(GetCharacterMovement());
-	LockOnComponent = CreateDefaultSubobject<UHarmoniaLockOnTargetingComponent>(TEXT("LockOnComponent"));
+	LockOnComponent = CreateDefaultSubobject<UHarmoniaLockOnComponent>(TEXT("LockOnComponent"));
 	HarmoniaHealthComponent = Cast<UHarmoniaHealthComponent>(GetHealthComponent());
 	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
 }

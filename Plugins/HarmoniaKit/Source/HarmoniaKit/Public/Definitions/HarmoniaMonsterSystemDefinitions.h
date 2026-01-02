@@ -381,183 +381,28 @@ struct HARMONIAKIT_API FHarmoniaMonsterStats
 };
 
 /**
- * Monster Attack Pattern
- * Defines a single attack that a monster can perform
- */
-USTRUCT(BlueprintType)
-struct HARMONIAKIT_API FHarmoniaMonsterAttackPattern
-{
-	GENERATED_BODY()
-
-	// Attack identifier
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	FName AttackID = NAME_None;
-
-	// Display name
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	FText AttackName;
-
-	// Attack animation montage
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TObjectPtr<UAnimMontage> AttackMontage = nullptr;
-
-	// Gameplay ability to activate for this attack
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
-	TSubclassOf<UGameplayAbility> AttackAbility;
-
-	// Minimum range for this attack
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	float MinRange = 0.0f;
-
-	// Maximum range for this attack
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	float MaxRange = 200.0f;
-
-	// Cooldown between uses
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	float Cooldown = 2.0f;
-
-	// Weight for random attack selection (higher = more likely)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	int32 SelectionWeight = 1;
-
-	// Required monster state to use this attack
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	EHarmoniaMonsterState RequiredState = EHarmoniaMonsterState::Combat;
-
-	// Gameplay tags required to use this attack
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
-	FGameplayTagContainer RequiredTags;
-
-	// Gameplay tags that block this attack
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
-	FGameplayTagContainer BlockedTags;
-
-	// ============================================================================
-	// Advanced Attack Selection
-	// ============================================================================
-
-	// Priority modifier when target health is high (> 75%)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced|Context", meta = (ClampMin = "0.0", ClampMax = "10.0"))
-	float HighHealthPriority = 1.0f;
-
-	// Priority modifier when target health is medium (25% - 75%)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced|Context", meta = (ClampMin = "0.0", ClampMax = "10.0"))
-	float MediumHealthPriority = 1.0f;
-
-	// Priority modifier when target health is low (< 25%)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced|Context", meta = (ClampMin = "0.0", ClampMax = "10.0"))
-	float LowHealthPriority = 1.0f;
-
-	// Whether this attack can start a combo
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced|Combo")
-	bool bCanStartCombo = false;
-
-	// Follow-up attacks for combo chains (AttackIDs)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced|Combo")
-	TArray<FName> ComboFollowUps;
-
-	// Time window to chain into combo (in seconds)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced|Combo", meta = (ClampMin = "0.1", ClampMax = "5.0"))
-	float ComboWindow = 2.0f;
-
-	// Whether this attack requires cover
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced|Tactical")
-	bool bRequiresCover = false;
-
-	// Whether this attack requires high ground
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced|Tactical")
-	bool bRequiresHighGround = false;
-
-	// Priority bonus when in optimal tactical position
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced|Tactical", meta = (ClampMin = "0.0", ClampMax = "5.0"))
-	float TacticalPositionBonus = 1.0f;
-};
-
-/**
  * Boss Phase Data
  * Defines a phase for boss monsters
+ * 
+ * NOTE: Phase는 HP 임계값 기반 상태 전이만 정의합니다.
+ * 공격 패턴, 어빌리티, 전환 연출 등은 UHarmoniaBossPatternComponent에서 관리합니다.
  */
 USTRUCT(BlueprintType)
 struct HARMONIAKIT_API FHarmoniaBossPhase
 {
 	GENERATED_BODY()
 
-	// Phase identifier
+	/** Phase identifier */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase")
 	FName PhaseID = NAME_None;
 
-	// Phase name
+	/** Phase name */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase")
 	FText PhaseName;
 
-	// Health percentage to trigger this phase (1.0 = 100%, 0.5 = 50%)
+	/** Health percentage to trigger this phase (1.0 = 100%, 0.5 = 50%) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float HealthThreshold = 1.0f;
-
-	// Phase transition montage
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TObjectPtr<UAnimMontage> TransitionMontage = nullptr;
-
-	// Transition duration override (0 = use montage length)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation", meta = (ClampMin = "0.0", ClampMax = "10.0"))
-	float TransitionDuration = 0.0f;
-
-	// Particle effect to spawn during phase transition
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX")
-	TObjectPtr<UParticleSystem> TransitionEffect = nullptr;
-
-	// Niagara effect to spawn during phase transition
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX")
-	TObjectPtr<class UNiagaraSystem> TransitionNiagaraEffect = nullptr;
-
-	// Attacks available in this phase
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	TArray<FHarmoniaMonsterAttackPattern> PhaseAttacks;
-
-	// Abilities to grant when entering this phase
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	TArray<TSubclassOf<class ULyraGameplayAbility>> PhaseAbilities;
-
-	// Abilities to remove when entering this phase
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	TArray<TSubclassOf<class ULyraGameplayAbility>> AbilitiesToRemove;
-
-	// Gameplay effects to apply when entering this phase
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
-	TArray<TSubclassOf<UGameplayEffect>> PhaseEffects;
-
-	// Gameplay tags to apply during this phase
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
-	FGameplayTagContainer PhaseTags;
-
-	// Gameplay tags to remove when entering this phase
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
-	FGameplayTagContainer TagsToRemove;
-
-	// Behavior tree to use in this phase (optional)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-	TObjectPtr<UBehaviorTree> PhaseBehaviorTree = nullptr;
-
-	// Movement speed multiplier for this phase
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase|Multipliers")
-	float MovementSpeedMultiplier = 1.0f;
-
-	// Attack speed multiplier for this phase
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase|Multipliers")
-	float AttackSpeedMultiplier = 1.0f;
-
-	// Damage multiplier for this phase
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase|Multipliers", meta = (ClampMin = "0.1", ClampMax = "10.0"))
-	float DamageMultiplier = 1.0f;
-
-	// Defense multiplier for this phase (lower = more damage taken)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase|Multipliers", meta = (ClampMin = "0.1", ClampMax = "10.0"))
-	float DefenseMultiplier = 1.0f;
-
-	// Whether boss is invulnerable during transition
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Phase")
-	bool bInvulnerableDuringTransition = true;
 };
 
 // ============================================================================
@@ -624,69 +469,28 @@ public:
 	TObjectPtr<UTexture2D> MonsterIcon = nullptr;
 
 	// ============================================================================
-	// Stats & Combat
+	// Stats
 	// ============================================================================
 
-	// Base stats
+	/** Base stats */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stats")
 	FHarmoniaMonsterStats BaseStats;
 
-	// Aggro type
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
-	EHarmoniaMonsterAggroType AggroType = EHarmoniaMonsterAggroType::Neutral;
+	// ============================================================================
+	// Team
+	// ============================================================================
 
-	// Faction settings (determines allies and enemies) - LEGACY SYSTEM
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Faction (Legacy)")
-	FHarmoniaFactionSettings FactionSettings;
-
-	/**
-	 * Team identification (NEW SYSTEM - preferred over legacy faction)
-	 * Leave invalid to use legacy faction system
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Team")
+	/** Team identification */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Team")
 	FHarmoniaTeamIdentification TeamID;
-
-	/**
-	 * Whether to use new team system (false = use legacy faction system)
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Team")
-	bool bUseTeamSystem = true;
-
-	// Aggro range (how far the monster can detect players)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
-	float AggroRange = 1000.0f;
-
-	// Attack range (how close monster needs to be to attack)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
-	float AttackRange = 200.0f;
-
-	// Retreat health percentage (when to run away, 0 = never)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float RetreatHealthThreshold = 0.0f;
-
-	// ============================================================================
-	// Attacks
-	// ============================================================================
-
-	// Available attack patterns
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	TArray<FHarmoniaMonsterAttackPattern> AttackPatterns;
 
 	// ============================================================================
 	// AI Behavior
 	// ============================================================================
 
-	// Behavior tree to use
+	/** Behavior tree to use */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
 	TObjectPtr<UBehaviorTree> BehaviorTree = nullptr;
-
-	// Patrol radius (0 = no patrol)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
-	float PatrolRadius = 500.0f;
-
-	// Wait time between patrol points
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
-	float PatrolWaitTime = 3.0f;
 
 	// ============================================================================
 	// Loot & Rewards

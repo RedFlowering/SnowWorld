@@ -13,17 +13,20 @@
 #include "Components/HarmoniaAdvancedAIComponent.h"
 #include "Components/HarmoniaAILODComponent.h"
 #include "System/HarmoniaTeamManagementSubsystem.h"
+#include "MotionWarpingComponent.h"
+#include "Core/HarmoniaHealthComponent.h"
 
 AHarmoniaMonsterBase::AHarmoniaMonsterBase(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+	: Super(ObjectInitializer
+		.SetDefaultSubobjectClass<UHarmoniaHealthComponent>(TEXT("HealthComponent")))
 {
-	// Create ability system component
-	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
-	AbilitySystemComponent->SetIsReplicated(true);
-	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
-
-	// Create attribute set
+	// ASC comes from ALyraCharacter via PawnExtension - no need to create here
+	
+	// Create attribute set (monster-specific stats)
 	AttributeSet = CreateDefaultSubobject<UHarmoniaAttributeSet>(TEXT("AttributeSet"));
+
+	// Motion Warping for leap attacks
+	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
 
 	// Create Threat Component for aggro management
 	ThreatComponent = CreateDefaultSubobject<UHarmoniaThreatComponent>(TEXT("ThreatComponent"));
@@ -80,16 +83,6 @@ void AHarmoniaMonsterBase::Tick(float DeltaTime)
 	{
 		UpdateAnimationState();
 	}
-
-	// Update attack cooldowns
-	TArray<FName> CooldownKeys;
-	AttackCooldowns.GetKeys(CooldownKeys);
-
-	for (const FName& AttackID : CooldownKeys)
-	{
-		float& Cooldown = AttackCooldowns[AttackID];
-		Cooldown = FMath::Max(0.0f, Cooldown - DeltaTime);
-	}
 }
 
 void AHarmoniaMonsterBase::PossessedBy(AController* NewController)
@@ -97,7 +90,8 @@ void AHarmoniaMonsterBase::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 
 	// Initialize ability system when possessed
-	if (AbilitySystemComponent && !AbilitySystemComponent->IsOwnerActorAuthoritative())
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (ASC && !ASC->IsOwnerActorAuthoritative())
 	{
 		InitializeAbilitySystem();
 	}
@@ -112,15 +106,6 @@ void AHarmoniaMonsterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	DOREPLIFETIME_CONDITION(AHarmoniaMonsterBase, MonsterLevel, COND_InitialOnly);
 	DOREPLIFETIME(AHarmoniaMonsterBase, CurrentState);
 	DOREPLIFETIME(AHarmoniaMonsterBase, CurrentTarget);
-
-	// [BANDWIDTH OPTIMIZATION] TeamIdentification only needs to replicate once at spawn
-	// Team usually doesn't change during gameplay
-	DOREPLIFETIME_CONDITION(AHarmoniaMonsterBase, TeamIdentification, COND_InitialOnly);
-}
-
-UAbilitySystemComponent* AHarmoniaMonsterBase::GetAbilitySystemComponent() const
-{
-	return AbilitySystemComponent;
 }
 
 // ============================================================================
@@ -148,10 +133,6 @@ FText AHarmoniaMonsterBase::GetMonsterName_Implementation() const
 
 EHarmoniaMonsterFaction AHarmoniaMonsterBase::GetFaction_Implementation() const
 {
-	if (MonsterData)
-	{
-		return MonsterData->FactionSettings.Faction;
-	}
 	return EHarmoniaMonsterFaction::PlayerHostile;
 }
 
@@ -355,19 +336,11 @@ void AHarmoniaMonsterBase::SpawnLoot_Implementation(const TArray<FHarmoniaLootTa
 
 EHarmoniaMonsterAggroType AHarmoniaMonsterBase::GetAggroType_Implementation() const
 {
-	if (MonsterData)
-	{
-		return MonsterData->AggroType;
-	}
 	return EHarmoniaMonsterAggroType::Neutral;
 }
 
 float AHarmoniaMonsterBase::GetAggroRange_Implementation() const
 {
-	if (MonsterData)
-	{
-		return MonsterData->AggroRange;
-	}
 	return 1000.0f;
 }
 
@@ -438,7 +411,8 @@ void AHarmoniaMonsterBase::InitializeMonster(UHarmoniaMonsterData* InMonsterData
 
 void AHarmoniaMonsterBase::ApplyLevelScaling()
 {
-	if (!MonsterData || !AttributeSet || !AbilitySystemComponent)
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!MonsterData || !AttributeSet || !ASC)
 	{
 		return;
 	}
@@ -451,14 +425,14 @@ void AHarmoniaMonsterBase::ApplyLevelScaling()
 	float ScaledDefense = Stats.GetScaledDefense(MonsterLevel);
 
 	// Set attributes directly (or use GameplayEffects for better integration)
-	AbilitySystemComponent->SetNumericAttributeBase(AttributeSet->GetMaxHealthAttribute(), ScaledMaxHealth);
-	AbilitySystemComponent->SetNumericAttributeBase(AttributeSet->GetHealthAttribute(), ScaledMaxHealth);
-	AbilitySystemComponent->SetNumericAttributeBase(AttributeSet->GetAttackPowerAttribute(), ScaledAttackPower);
-	AbilitySystemComponent->SetNumericAttributeBase(AttributeSet->GetDefenseAttribute(), ScaledDefense);
-	AbilitySystemComponent->SetNumericAttributeBase(AttributeSet->GetCriticalChanceAttribute(), Stats.CriticalChance);
-	AbilitySystemComponent->SetNumericAttributeBase(AttributeSet->GetCriticalDamageAttribute(), Stats.CriticalDamage);
-	AbilitySystemComponent->SetNumericAttributeBase(AttributeSet->GetMovementSpeedAttribute(), Stats.BaseMovementSpeed);
-	AbilitySystemComponent->SetNumericAttributeBase(AttributeSet->GetAttackSpeedAttribute(), Stats.BaseAttackSpeed);
+	ASC->SetNumericAttributeBase(AttributeSet->GetMaxHealthAttribute(), ScaledMaxHealth);
+	ASC->SetNumericAttributeBase(AttributeSet->GetHealthAttribute(), ScaledMaxHealth);
+	ASC->SetNumericAttributeBase(AttributeSet->GetAttackPowerAttribute(), ScaledAttackPower);
+	ASC->SetNumericAttributeBase(AttributeSet->GetDefenseAttribute(), ScaledDefense);
+	ASC->SetNumericAttributeBase(AttributeSet->GetCriticalChanceAttribute(), Stats.CriticalChance);
+	ASC->SetNumericAttributeBase(AttributeSet->GetCriticalDamageAttribute(), Stats.CriticalDamage);
+	ASC->SetNumericAttributeBase(AttributeSet->GetMovementSpeedAttribute(), Stats.BaseMovementSpeed);
+	ASC->SetNumericAttributeBase(AttributeSet->GetAttackSpeedAttribute(), Stats.BaseAttackSpeed);
 }
 
 TScriptInterface<IHarmoniaMonsterAnimationInterface> AHarmoniaMonsterBase::GetMonsterAnimationInterface() const
@@ -509,120 +483,6 @@ void AHarmoniaMonsterBase::PlayDeathAnimation()
 	}
 }
 
-bool AHarmoniaMonsterBase::PerformAttack(FName AttackID)
-{
-	if (!MonsterData || IsDead_Implementation())
-	{
-		return false;
-	}
-
-	// Check cooldown
-	if (AttackCooldowns.Contains(AttackID) && AttackCooldowns[AttackID] > 0.0f)
-	{
-		return false;
-	}
-
-	// Find attack pattern
-	const FHarmoniaMonsterAttackPattern* AttackPattern = MonsterData->AttackPatterns.FindByPredicate([AttackID](const FHarmoniaMonsterAttackPattern& Pattern)
-	{
-		return Pattern.AttackID == AttackID;
-	});
-
-	if (!AttackPattern)
-	{
-		return false;
-	}
-
-	// Check state requirement
-	if (AttackPattern->RequiredState != EHarmoniaMonsterState::Combat && CurrentState != AttackPattern->RequiredState)
-	{
-		return false;
-	}
-
-	// Play animation
-	if (AttackPattern->AttackMontage)
-	{
-		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-		{
-			AnimInstance->Montage_Play(AttackPattern->AttackMontage);
-		}
-	}
-
-	// Activate ability if specified
-	if (AttackPattern->AttackAbility && AbilitySystemComponent)
-	{
-		FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(AttackPattern->AttackAbility);
-		if (Spec)
-		{
-			AbilitySystemComponent->TryActivateAbility(Spec->Handle);
-		}
-	}
-
-	// Set cooldown
-	AttackCooldowns.Add(AttackID, AttackPattern->Cooldown);
-
-	return true;
-}
-
-FHarmoniaMonsterAttackPattern AHarmoniaMonsterBase::SelectRandomAttack() const
-{
-	if (!MonsterData || MonsterData->AttackPatterns.Num() == 0)
-	{
-		return FHarmoniaMonsterAttackPattern();
-	}
-
-	// Filter available attacks (not on cooldown, state requirements met)
-	TArray<FHarmoniaMonsterAttackPattern> AvailableAttacks;
-	int32 TotalWeight = 0;
-
-	for (const FHarmoniaMonsterAttackPattern& Pattern : MonsterData->AttackPatterns)
-	{
-		// Check cooldown
-		if (AttackCooldowns.Contains(Pattern.AttackID) && AttackCooldowns[Pattern.AttackID] > 0.0f)
-		{
-			continue;
-		}
-
-		// Check state
-		if (Pattern.RequiredState != EHarmoniaMonsterState::Combat && CurrentState != Pattern.RequiredState)
-		{
-			continue;
-		}
-
-		// Check distance if we have a target
-		if (CurrentTarget)
-		{
-			float DistanceToTarget = FVector::Dist(GetActorLocation(), CurrentTarget->GetActorLocation());
-			if (DistanceToTarget < Pattern.MinRange || DistanceToTarget > Pattern.MaxRange)
-			{
-				continue;
-			}
-		}
-
-		AvailableAttacks.Add(Pattern);
-		TotalWeight += Pattern.SelectionWeight;
-	}
-
-	if (AvailableAttacks.Num() == 0)
-	{
-		return FHarmoniaMonsterAttackPattern();
-	}
-
-	// Weighted random selection
-	int32 RandomValue = FMath::RandRange(0, TotalWeight - 1);
-	int32 CurrentWeight = 0;
-
-	for (const FHarmoniaMonsterAttackPattern& Pattern : AvailableAttacks)
-	{
-		CurrentWeight += Pattern.SelectionWeight;
-		if (RandomValue < CurrentWeight)
-		{
-			return Pattern;
-		}
-	}
-
-	return AvailableAttacks[0];
-}
 
 // ============================================================================
 // Protected Functions
@@ -669,12 +529,16 @@ void AHarmoniaMonsterBase::OnDamageReceived(AActor* EffectInstigator, AActor* Ef
 
 void AHarmoniaMonsterBase::InitializeAbilitySystem()
 {
-	if (!AbilitySystemComponent || !AttributeSet)
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC || !AttributeSet)
 	{
 		return;
 	}
 
-	AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	ASC->InitAbilityActorInfo(this, this);
+
+	// Register AttributeSet with ASC
+	ASC->AddAttributeSetSubobject(AttributeSet.Get());
 
 	// Bind to attribute changes
 	AttributeSet->OnHealthChanged.AddUObject(this, &AHarmoniaMonsterBase::OnHealthChanged);
@@ -684,20 +548,8 @@ void AHarmoniaMonsterBase::InitializeAbilitySystem()
 
 void AHarmoniaMonsterBase::GrantAbilities()
 {
-	if (!AbilitySystemComponent || !MonsterData || !HasAuthority())
-	{
-		return;
-	}
-
-	// Grant abilities from attack patterns
-	for (const FHarmoniaMonsterAttackPattern& Pattern : MonsterData->AttackPatterns)
-	{
-		if (Pattern.AttackAbility)
-		{
-			FGameplayAbilitySpec AbilitySpec(Pattern.AttackAbility, MonsterLevel, INDEX_NONE, this);
-			AbilitySystemComponent->GiveAbility(AbilitySpec);
-		}
-	}
+	// Abilities are now granted via AbilitySet or per-phase in boss phases
+	// This function is left for compatibility with subclasses
 }
 
 void AHarmoniaMonsterBase::UpdateAnimationState()
@@ -741,9 +593,9 @@ void AHarmoniaMonsterBase::HandleDeathCleanup()
 	}
 
 	// Cancel all abilities
-	if (AbilitySystemComponent)
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
 	{
-		AbilitySystemComponent->CancelAllAbilities();
+		ASC->CancelAllAbilities();
 	}
 }
 
@@ -753,90 +605,13 @@ void AHarmoniaMonsterBase::DestroyCorpse()
 }
 
 // ============================================================================
-// Gameplay Ability Integration
-// ============================================================================
-
-bool AHarmoniaMonsterBase::ActivateAttackAbility(FName AttackID)
-{
-	if (!MonsterData || !AbilitySystemComponent || IsDead_Implementation())
-	{
-		return false;
-	}
-
-	// Check cooldown
-	if (AttackCooldowns.Contains(AttackID) && AttackCooldowns[AttackID] > 0.0f)
-	{
-		return false;
-	}
-
-	// Find attack pattern
-	const FHarmoniaMonsterAttackPattern* AttackPattern = MonsterData->AttackPatterns.FindByPredicate([AttackID](const FHarmoniaMonsterAttackPattern& Pattern)
-	{
-		return Pattern.AttackID == AttackID;
-	});
-
-	if (!AttackPattern || !AttackPattern->AttackAbility)
-	{
-		return false;
-	}
-
-	// Check state requirement
-	if (AttackPattern->RequiredState != EHarmoniaMonsterState::Combat && CurrentState != AttackPattern->RequiredState)
-	{
-		return false;
-	}
-
-	// Find and activate the ability
-	FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(AttackPattern->AttackAbility);
-	if (!Spec)
-	{
-		return false;
-	}
-
-	bool bSuccess = AbilitySystemComponent->TryActivateAbility(Spec->Handle);
-
-	if (bSuccess)
-	{
-		// Set cooldown
-		AttackCooldowns.Add(AttackID, AttackPattern->Cooldown);
-	}
-
-	return bSuccess;
-}
-
-bool AHarmoniaMonsterBase::IsAttackOnCooldown(FName AttackID) const
-{
-	if (AttackCooldowns.Contains(AttackID))
-	{
-		return AttackCooldowns[AttackID] > 0.0f;
-	}
-	return false;
-}
-
-// ============================================================================
 // IHarmoniaTeamAgentInterface Implementation
 // ============================================================================
 
 FHarmoniaTeamIdentification AHarmoniaMonsterBase::GetTeamID_Implementation() const
 {
-	// If using legacy faction system, convert to team ID
-	if (bUseLegacyFactionSystem && MonsterData)
-	{
-		// Convert legacy faction to numeric team ID
-		FHarmoniaTeamIdentification LegacyTeamID;
-		LegacyTeamID.TeamNumericID = static_cast<int32>(MonsterData->FactionSettings.Faction) + 1000; // Offset to avoid conflict
-		LegacyTeamID.TeamName = FText::FromString(UEnum::GetValueAsString(MonsterData->FactionSettings.Faction));
-		return LegacyTeamID;
-	}
-
-	// Use new team system
-	if (TeamIdentification.IsValid())
-	{
-		return TeamIdentification;
-	}
-
-	// Fall back to team from monster data
-	if (MonsterData && MonsterData->TeamID.IsValid())
+	// Use MonsterData.TeamID as the source of truth
+	if (MonsterData)
 	{
 		return MonsterData->TeamID;
 	}
@@ -846,8 +621,8 @@ FHarmoniaTeamIdentification AHarmoniaMonsterBase::GetTeamID_Implementation() con
 
 void AHarmoniaMonsterBase::SetTeamID_Implementation(const FHarmoniaTeamIdentification& NewTeamID)
 {
-	TeamIdentification = NewTeamID;
-	bUseLegacyFactionSystem = false;
+	// Team is determined by MonsterData - runtime changes not supported
+	// To change team, use a different MonsterData asset
 }
 
 EHarmoniaTeamRelationship AHarmoniaMonsterBase::GetRelationshipWith_Implementation(AActor* OtherActor) const
@@ -928,56 +703,4 @@ bool AHarmoniaMonsterBase::IsEnemyWith_Implementation(AActor* OtherActor) const
 
 	EHarmoniaTeamRelationship Relationship = Execute_GetRelationshipWith(this, OtherActor);
 	return Relationship == EHarmoniaTeamRelationship::Enemy;
-}
-
-// ============================================================================
-// IGenericTeamAgentInterface Implementation (Unreal's Standard Team System)
-// ============================================================================
-
-FGenericTeamId AHarmoniaMonsterBase::GetGenericTeamId() const
-{
-	// Convert our team ID to Unreal's FGenericTeamId
-	FHarmoniaTeamIdentification HarmoniaTeam = Execute_GetTeamID(this);
-
-	if (HarmoniaTeam.IsValid() && HarmoniaTeam.TeamNumericID > 0)
-	{
-		// Use numeric ID for Unreal's team system
-		// FGenericTeamId supports values 0-255
-		uint8 GenericTeamID = static_cast<uint8>(HarmoniaTeam.TeamNumericID % 256);
-		return FGenericTeamId(GenericTeamID);
-	}
-
-	// Return NoTeam if no valid team
-	return FGenericTeamId::NoTeam;
-}
-
-void AHarmoniaMonsterBase::SetGenericTeamId(const FGenericTeamId& TeamID)
-{
-	// Convert Unreal's FGenericTeamId to our team system
-	if (TeamID != FGenericTeamId::NoTeam)
-	{
-		FHarmoniaTeamIdentification NewTeamID;
-		NewTeamID.TeamNumericID = TeamID.GetId();
-		NewTeamID.TeamName = FText::FromString(FString::Printf(TEXT("Team %d"), TeamID.GetId()));
-		Execute_SetTeamID(this, NewTeamID);
-	}
-}
-
-ETeamAttitude::Type AHarmoniaMonsterBase::GetTeamAttitudeTowards(const AActor& Other) const
-{
-	// Convert our relationship system to Unreal's ETeamAttitude
-	EHarmoniaTeamRelationship Relationship = Execute_GetRelationshipWith(this, const_cast<AActor*>(&Other));
-
-	switch (Relationship)
-	{
-	case EHarmoniaTeamRelationship::Ally:
-		return ETeamAttitude::Friendly;
-
-	case EHarmoniaTeamRelationship::Enemy:
-		return ETeamAttitude::Hostile;
-
-	case EHarmoniaTeamRelationship::Neutral:
-	default:
-		return ETeamAttitude::Neutral;
-	}
 }

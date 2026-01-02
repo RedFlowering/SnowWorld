@@ -10,6 +10,7 @@
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Navigation/PathFollowingComponent.h"
+#include "Navigation/CrowdFollowingComponent.h"
 
 AHarmoniaMonsterAIController::AHarmoniaMonsterAIController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -178,34 +179,15 @@ float AHarmoniaMonsterAIController::GetDistanceToTarget() const
 
 bool AHarmoniaMonsterAIController::RequestAttack(FName AttackID)
 {
-	if (!ControlledMonster)
-	{
-		return false;
-	}
-
-	// If no attack specified, select random
-	if (AttackID == NAME_None)
-	{
-		AttackID = SelectBestAttack();
-	}
-
-	if (AttackID == NAME_None)
-	{
-		return false;
-	}
-
-	return ControlledMonster->PerformAttack(AttackID);
+	// This function is deprecated - use Behavior Tree with BTTask_MonsterAttack instead
+	UE_LOG(LogTemp, Warning, TEXT("RequestAttack is deprecated. Use BTTask_MonsterAttack with AbilityClass."));
+	return false;
 }
 
 FName AHarmoniaMonsterAIController::SelectBestAttack() const
 {
-	if (!ControlledMonster)
-	{
-		return NAME_None;
-	}
-
-	FHarmoniaMonsterAttackPattern BestAttack = ControlledMonster->SelectRandomAttack();
-	return BestAttack.AttackID;
+	// This function is deprecated - attack selection is now handled by Behavior Tree
+	return NAME_None;
 }
 
 // ============================================================================
@@ -219,17 +201,8 @@ FVector AHarmoniaMonsterAIController::GetRandomPatrolLocation() const
 		return FVector::ZeroVector;
 	}
 
-	UHarmoniaMonsterData* MonsterData = IHarmoniaMonsterInterface::Execute_GetMonsterData(ControlledMonster);
-	if (!MonsterData)
-	{
-		return HomeLocation;
-	}
-
-	float PatrolRadius = MonsterData->PatrolRadius;
-	if (PatrolRadius <= 0.0f)
-	{
-		return HomeLocation;
-	}
+	// Default patrol radius (now configured in BT, not in MonsterData)
+	float PatrolRadius = 500.0f;
 
 	// Generate random point around home location
 	FVector RandomOffset = FMath::VRand() * FMath::FRandRange(0.0f, PatrolRadius);

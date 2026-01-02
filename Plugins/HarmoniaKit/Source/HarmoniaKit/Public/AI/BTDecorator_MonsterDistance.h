@@ -25,7 +25,7 @@ enum class EMonsterDistanceComparison : uint8
  * Checks distance between monster and target
  * Useful for attack range checks, retreat conditions, etc.
  */
-UCLASS()
+UCLASS(Blueprintable, meta = (DisplayName = "Monster Distance"))
 class HARMONIAKIT_API UBTDecorator_MonsterDistance : public UBTDecorator
 {
 	GENERATED_BODY()

@@ -12,7 +12,7 @@
  * Finds the best target for the monster to attack
  * Uses Threat System for prioritization
  */
-UCLASS()
+UCLASS(Blueprintable, meta = (DisplayName = "Monster Find Target"))
 class HARMONIAKIT_API UBTTask_MonsterFindTarget : public UBTTaskNode
 {
 	GENERATED_BODY()

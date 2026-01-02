@@ -10,7 +10,7 @@
  * Behavior Tree task for pursuing a fleeing target
  * More aggressive than standard MoveTo - ignores acceptance radius until very close
  */
-UCLASS()
+UCLASS(Blueprintable, meta = (DisplayName = "Pursue Target"))
 class HARMONIAKIT_API UBTTask_PursueTarget : public UBTTaskNode
 {
 	GENERATED_BODY()

@@ -21,7 +21,7 @@
  * - Reduces pathfinding frequency for distant targets
  * - Adapts acceptable radius based on LOD level
  */
-UCLASS()
+UCLASS(Blueprintable, meta = (DisplayName = "Async Move To"))
 class HARMONIAKIT_API UBTTask_AsyncMoveTo : public UBTTask_MoveTo
 {
 	GENERATED_BODY()

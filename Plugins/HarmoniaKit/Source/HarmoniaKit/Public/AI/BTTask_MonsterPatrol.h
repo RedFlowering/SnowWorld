@@ -11,7 +11,7 @@
  *
  * Moves monster to a random patrol point within patrol radius
  */
-UCLASS()
+UCLASS(Blueprintable, meta = (DisplayName = "Monster Patrol"))
 class HARMONIAKIT_API UBTTask_MonsterPatrol : public UBTTaskNode
 {
 	GENERATED_BODY()

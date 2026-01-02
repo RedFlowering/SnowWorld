@@ -11,7 +11,7 @@
  * Decorator that evaluates combat advantage against a target
  * Uses TerritoryDisputeComponent to determine if monster should engage, flee, or pursue
  */
-UCLASS()
+UCLASS(Blueprintable, meta = (DisplayName = "Evaluate Combat Advantage"))
 class HARMONIAKIT_API UBTDecorator_EvaluateCombatAdvantage : public UBTDecorator
 {
 	GENERATED_BODY()

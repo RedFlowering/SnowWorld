@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AIController.h"
+#include "DetourCrowdAIController.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Monsters/HarmoniaMonsterInterface.h"
 #include "HarmoniaMonsterAIController.generated.h"
@@ -25,10 +25,11 @@ class AHarmoniaMonsterBase;
  * - Behavior tree integration
  * - Target selection and tracking
  * - Aggro management
+ * - Detour Crowd avoidance (monsters avoid collisions with each other)
  * - Compatible with all monster types (humanoid, creature, mechanical, etc.)
  */
 UCLASS()
-class HARMONIAKIT_API AHarmoniaMonsterAIController : public AAIController
+class HARMONIAKIT_API AHarmoniaMonsterAIController : public ADetourCrowdAIController
 {
 	GENERATED_BODY()
 

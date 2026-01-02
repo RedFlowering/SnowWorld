@@ -8,6 +8,7 @@
 #include "HarmoniaTeamManagementSubsystem.generated.h"
 
 class UHarmoniaTeamConfigData;
+class UHarmoniaTeamSetupData;
 
 /**
  * Wrapper struct for nested TMap value
@@ -46,7 +47,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTeamRegisteredDelegate,
  * - Team relationship management (ally, neutral, enemy)
  * - Friend-or-foe identification between actors
  * - Team-based targeting and combat logic
- * - Supports both tag-based and numeric team IDs
+ * - Tag-based team IDs (FGameplayTag)
  *
  * Usage:
  * 1. Register teams using RegisterTeam() or load from UHarmoniaTeamConfigData
@@ -110,6 +111,14 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Team Management")
 	void LoadTeamConfigs(const TArray<UHarmoniaTeamConfigData*>& TeamConfigs);
+
+	/**
+	 * Load team setup from data asset (teams + relationships)
+	 * @param TeamSetupData The setup data to load
+	 * @param bClearExisting If true, clears existing teams before loading
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Team Management")
+	void LoadTeamSetup(UHarmoniaTeamSetupData* TeamSetupData, bool bClearExisting = false);
 
 	// ============================================================================
 	// Team Relationship Management
@@ -252,22 +261,10 @@ public:
 	// ============================================================================
 
 	/**
-	 * Generate unique numeric team ID
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Team Management|Utility")
-	int32 GenerateUniqueTeamID();
-
-	/**
 	 * Create team identification from tag
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Team Management|Utility")
 	FHarmoniaTeamIdentification CreateTeamID(FGameplayTag TeamTag, FText TeamName = FText::GetEmpty());
-
-	/**
-	 * Create team identification from numeric ID
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Team Management|Utility")
-	FHarmoniaTeamIdentification CreateTeamIDFromNumeric(int32 NumericID, FText TeamName = FText::GetEmpty());
 
 	/**
 	 * Reset all team relationships to default
@@ -404,9 +401,6 @@ protected:
 	UPROPERTY()
 	TMap<FHarmoniaTeamIdentification, FHarmoniaTeamRelationshipMap> RelationshipMatrix;
 
-	/** Next available numeric team ID */
-	int32 NextNumericTeamID = 1;
-
 	// ============================================================================
 	// Helper Functions
 	// ============================================================================
@@ -418,7 +412,32 @@ protected:
 		const FHarmoniaTeamIdentification& TargetTeam) const;
 
 	/**
-	 * Initialize default teams (Player, Neutral, etc.)
+	 * Initialize default teams from DefaultTeamSetup or fallback to hardcoded
 	 */
 	void InitializeDefaultTeams();
+
+public:
+	// ============================================================================
+	// Configuration
+	// ============================================================================
+
+	/**
+	 * Default team setup data asset to load on initialization
+	 * Set this in Project Settings or via code before initialization
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Team Management|Configuration")
+	TSoftObjectPtr<UHarmoniaTeamSetupData> DefaultTeamSetup;
+
+	/**
+	 * Map of team FriendlyFire settings
+	 * Populated from TeamSetupData or TeamConfigData
+	 */
+	UPROPERTY()
+	TMap<FGameplayTag, bool> TeamFriendlyFireMap;
+
+	/**
+	 * Check if a team allows friendly fire
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Team Management")
+	bool DoesTeamAllowFriendlyFire(FGameplayTag TeamTag) const;
 };

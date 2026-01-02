@@ -12,7 +12,7 @@ class UHarmoniaBaseAIComponent;
  * Behavior Tree Service to sync AI Component state to Blackboard
  * This allows BT to react to AI component state changes
  */
-UCLASS()
+UCLASS(Blueprintable, meta = (DisplayName = "Sync AI Component To Blackboard"))
 class HARMONIAKIT_API UBTService_SyncAIComponentToBlackboard : public UBTService
 {
 	GENERATED_BODY()

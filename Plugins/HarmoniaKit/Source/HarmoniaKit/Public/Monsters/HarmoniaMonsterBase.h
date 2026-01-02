@@ -3,21 +3,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
-#include "AbilitySystemInterface.h"
-#include "GenericTeamAgentInterface.h"
+#include "Character/LyraCharacter.h"
 #include "Monsters/HarmoniaMonsterInterface.h"
 #include "Definitions/HarmoniaMonsterSystemDefinitions.h"
 #include "Definitions/HarmoniaTeamSystemDefinitions.h"
 #include "HarmoniaMonsterBase.generated.h"
 
-class UAbilitySystemComponent;
-class UHarmoniaAttributeSet;
 class UHarmoniaMonsterData;
 class UHarmoniaLootTableData;
 class UHarmoniaThreatComponent;
 class UHarmoniaAdvancedAIComponent;
 class UHarmoniaAILODComponent;
+class UMotionWarpingComponent;
+class UHarmoniaAttributeSet;
 struct FGameplayEffectSpec;
 
 /**
@@ -46,7 +44,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMonsterStateChangedDelegate, EHa
  * - Unreal's standard IGenericTeamAgentInterface integration
  */
 UCLASS(Blueprintable)
-class HARMONIAKIT_API AHarmoniaMonsterBase : public ACharacter, public IAbilitySystemInterface, public IHarmoniaMonsterInterface, public IHarmoniaTeamAgentInterface, public IGenericTeamAgentInterface
+class HARMONIAKIT_API AHarmoniaMonsterBase : public ALyraCharacter, public IHarmoniaMonsterInterface, public IHarmoniaTeamAgentInterface
 {
 	GENERATED_BODY()
 
@@ -60,10 +58,6 @@ public:
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	//~End of AActor interface
-
-	//~IAbilitySystemInterface
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-	//~End of IAbilitySystemInterface
 
 	//~IHarmoniaMonsterInterface
 	virtual UHarmoniaMonsterData* GetMonsterData_Implementation() const override;
@@ -97,12 +91,6 @@ public:
 	virtual bool IsEnemyWith_Implementation(AActor* OtherActor) const override;
 	//~End of IHarmoniaTeamAgentInterface
 
-	//~IGenericTeamAgentInterface (Unreal's standard team system)
-	virtual FGenericTeamId GetGenericTeamId() const override;
-	virtual void SetGenericTeamId(const FGenericTeamId& TeamID) override;
-	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
-	//~End of IGenericTeamAgentInterface
-
 	// ============================================================================
 	// Monster Configuration
 	// ============================================================================
@@ -130,20 +118,6 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster|Loot")
 	float LootLuckModifier = 0.0f;
-
-	/**
-	 * Team identification (for friend-or-foe identification)
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster|Team", Replicated, meta = (ExposeOnSpawn = "true"))
-	FHarmoniaTeamIdentification TeamIdentification;
-
-	/**
-	 * Whether to use legacy faction system (backward compatibility)
-	 * If true, uses EHarmoniaMonsterFaction from MonsterData
-	 * If false, uses TeamIdentification
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster|Team")
-	bool bUseLegacyFactionSystem = false;
 
 	// ============================================================================
 	// Monster State
@@ -211,47 +185,23 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Monster")
 	virtual void PlayDeathAnimation();
 
-	/**
-	 * Perform attack by ID (deprecated - use ActivateAttackAbility instead)
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Monster|Combat", meta = (DeprecatedFunction, DeprecationMessage = "Use ActivateAttackAbility instead"))
-	virtual bool PerformAttack(FName AttackID);
-
-	/**
-	 * Activate attack ability by ID
-	 * Uses Gameplay Ability System
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Monster|Combat")
-	virtual bool ActivateAttackAbility(FName AttackID);
-
-	/**
-	 * Select random attack from available attacks
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Monster|Combat")
-	virtual FHarmoniaMonsterAttackPattern SelectRandomAttack() const;
-
-	/**
-	 * Check if an attack is currently on cooldown
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Monster|Combat")
-	bool IsAttackOnCooldown(FName AttackID) const;
-
 protected:
 	// ============================================================================
 	// Components
 	// ============================================================================
 
 	/**
-	 * Ability System Component
-	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities")
-	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent = nullptr;
-
-	/**
-	 * Attribute Set
+	 * Attribute Set (monster-specific attributes)
+	 * Note: ASC comes from ALyraCharacter via PawnExtension
 	 */
 	UPROPERTY()
 	TObjectPtr<UHarmoniaAttributeSet> AttributeSet = nullptr;
+
+	/**
+	 * Motion Warping Component (for leap attacks)
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Monster|Movement")
+	TObjectPtr<UMotionWarpingComponent> MotionWarpingComponent = nullptr;
 
 	/**
 	 * Threat Component (for MMO-style aggro management)
@@ -286,12 +236,6 @@ protected:
 	 * Whether death sequence has started
 	 */
 	bool bDeathStarted = false;
-
-	/**
-	 * Attack cooldown timers (keyed by attack ID)
-	 */
-	UPROPERTY(Transient)
-	TMap<FName, float> AttackCooldowns;
 
 	// ============================================================================
 	// Replication Callbacks

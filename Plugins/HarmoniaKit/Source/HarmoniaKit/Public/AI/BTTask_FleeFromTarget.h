@@ -10,7 +10,7 @@
  * Behavior Tree task for fleeing from a target
  * Uses TerritoryDisputeComponent to calculate flee location
  */
-UCLASS()
+UCLASS(Blueprintable, meta = (DisplayName = "Flee From Target"))
 class HARMONIAKIT_API UBTTask_FleeFromTarget : public UBTTaskNode
 {
 	GENERATED_BODY()
