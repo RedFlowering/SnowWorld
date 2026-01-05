@@ -3,7 +3,9 @@
 #include "AI/BTTask_ExecutePattern.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "BehaviorTree/BehaviorTree.h"
 #include "Components/HarmoniaMonsterPatternComponent.h"
+#include "Monsters/HarmoniaMonsterInterface.h"
 
 UBTTask_ExecutePattern::UBTTask_ExecutePattern()
 {
@@ -13,18 +15,17 @@ UBTTask_ExecutePattern::UBTTask_ExecutePattern()
 	bCreateNodeInstance = true;
 }
 
+void UBTTask_ExecutePattern::InitializeFromAsset(UBehaviorTree& Asset)
+{
+	Super::InitializeFromAsset(Asset);
+}
+
 EBTNodeResult::Type UBTTask_ExecutePattern::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	// Check if task is enabled
 	if (!bTaskEnabled)
 	{
 		return EBTNodeResult::Succeeded;
-	}
-
-	if (PatternName.IsNone())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("BTTask_ExecutePattern: PatternName is not set!"));
-		return EBTNodeResult::Failed;
 	}
 
 	AAIController* AIController = OwnerComp.GetAIOwner();
@@ -43,21 +44,36 @@ EBTNodeResult::Type UBTTask_ExecutePattern::ExecuteTask(UBehaviorTreeComponent& 
 	UHarmoniaMonsterPatternComponent* PatternComp = GetPatternComponent(Pawn);
 	if (!PatternComp)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BTTask_ExecutePattern: No MonsterPatternComponent found on %s"), *Pawn->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecutePattern: No MonsterPatternComponent found on %s"), *Pawn->GetName());
 		return EBTNodeResult::Failed;
 	}
 
-	// Check if pattern is available
-	if (!PatternComp->IsPatternAvailable(PatternName))
+	// If already executing a pattern, wait for it to complete
+	if (PatternComp->IsExecutingPattern())
 	{
-		// Pattern on cooldown or blocked
+		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecutePattern: Already executing pattern, waiting..."));
+		return EBTNodeResult::InProgress;
+	}
+
+	// Get target from monster directly using interface
+	AActor* Target = IHarmoniaMonsterInterface::Execute_GetCurrentTarget(Pawn);
+	if (!Target)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecutePattern: Monster has no current target"));
 		return EBTNodeResult::Failed;
 	}
 
-	// Execute pattern
-	bool bPatternStarted = PatternComp->ExecutePattern(PatternName);
+	// Execute contextual pattern based on category
+	UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecutePattern: Starting pattern, Category=%d, Target=%s"), 
+		static_cast<int32>(TargetCategory), *Target->GetName());
+	
+	bool bPatternStarted = PatternComp->ExecuteContextualPattern(TargetCategory, Target);
+
 	if (!bPatternStarted)
 	{
+		// No matching pattern found for category and conditions
+		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecutePattern: No pattern found for category %d"), 
+			static_cast<int32>(TargetCategory));
 		return EBTNodeResult::Failed;
 	}
 
@@ -66,7 +82,6 @@ EBTNodeResult::Type UBTTask_ExecutePattern::ExecuteTask(UBehaviorTreeComponent& 
 	// If we should wait for completion, subscribe to completion event
 	if (bWaitForCompletion)
 	{
-		// Note: Dynamic delegates use AddDynamic, handled via polling in TickTask
 		return EBTNodeResult::InProgress;
 	}
 
@@ -88,8 +103,8 @@ void UBTTask_ExecutePattern::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 
 	if (ElapsedTime >= MaxWaitTime)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BTTask_ExecutePattern: Pattern '%s' timed out after %.1f seconds"), 
-			*PatternName.ToString(), MaxWaitTime);
+		UE_LOG(LogTemp, Warning, TEXT("BTTask_ExecutePattern: Category %d timed out after %.1f seconds"), 
+			static_cast<int32>(TargetCategory), MaxWaitTime);
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		return;
 	}
@@ -116,14 +131,17 @@ FString UBTTask_ExecutePattern::GetStaticDescription() const
 {
 	FString Description = Super::GetStaticDescription();
 
-	if (!PatternName.IsNone())
+	FString CategoryName;
+	switch (TargetCategory)
 	{
-		Description += FString::Printf(TEXT("\nPattern: %s"), *PatternName.ToString());
+		case EPatternCategory::Attack: CategoryName = TEXT("Attack"); break;
+		case EPatternCategory::Defense: CategoryName = TEXT("Defense"); break;
+		case EPatternCategory::Evasion: CategoryName = TEXT("Evasion"); break;
+		case EPatternCategory::Movement: CategoryName = TEXT("Movement"); break;
+		default: CategoryName = TEXT("Unknown"); break;
 	}
-	else
-	{
-		Description += TEXT("\nPattern: None");
-	}
+
+	Description += FString::Printf(TEXT("\nCategory: %s"), *CategoryName);
 
 	if (bWaitForCompletion)
 	{

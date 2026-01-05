@@ -1,9 +1,8 @@
 ﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "AI/BTTask_FleeFromTarget.h"
-#include "BehaviorTree/BlackboardComponent.h"
-#include "BehaviorTree/Blackboard/BlackboardKeyType_Object.h"
 #include "AIController.h"
+#include "AI/HarmoniaMonsterAIController.h"
 #include "NavigationSystem.h"
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "Components/HarmoniaTerritoryDisputeComponent.h"
@@ -12,8 +11,6 @@ UBTTask_FleeFromTarget::UBTTask_FleeFromTarget()
 {
 	NodeName = "Flee From Target";
 	bNotifyTick = false;
-
-	TargetKey.AddObjectFilter(this, GET_MEMBER_NAME_CHECKED(UBTTask_FleeFromTarget, TargetKey), AActor::StaticClass());
 }
 
 EBTNodeResult::Type UBTTask_FleeFromTarget::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -30,9 +27,13 @@ EBTNodeResult::Type UBTTask_FleeFromTarget::ExecuteTask(UBehaviorTreeComponent& 
 		return EBTNodeResult::Failed;
 	}
 
-	// Get target to flee from
-	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
-	AActor* Target = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetKey.SelectedKeyName));
+	// Get target from AI Controller
+	AActor* Target = nullptr;
+	AHarmoniaMonsterAIController* MonsterAI = Cast<AHarmoniaMonsterAIController>(AIController);
+	if (MonsterAI)
+	{
+		Target = MonsterAI->GetCurrentTarget();
+	}
 
 	if (!Target)
 	{
@@ -83,7 +84,6 @@ EBTNodeResult::Type UBTTask_FleeFromTarget::ExecuteTask(UBehaviorTreeComponent& 
 	EPathFollowingRequestResult::Type MoveResult = AIController->MoveToLocation(FleeLocation, 50.0f);
 
 	// Check if move request was accepted (not failed)
-	// Note: Failed = 0, AlreadyAtGoal = 1, RequestSuccessful = 2
 	if (MoveResult != 0)  // 0 = Failed
 	{
 		return EBTNodeResult::Succeeded;
@@ -94,5 +94,5 @@ EBTNodeResult::Type UBTTask_FleeFromTarget::ExecuteTask(UBehaviorTreeComponent& 
 
 FString UBTTask_FleeFromTarget::GetStaticDescription() const
 {
-	return FString::Printf(TEXT("Flee from %s (Distance: %.0f)"), *TargetKey.SelectedKeyName.ToString(), FleeDistance);
+	return FString::Printf(TEXT("Flee from Target (Distance: %.0f)"), FleeDistance);
 }

@@ -23,9 +23,10 @@ UBTService_OptimizedMonsterUpdate::UBTService_OptimizedMonsterUpdate()
 	RandomDeviation = 0.05f;
 
 	bNotifyTick = true;
-	bNotifyBecomeRelevant = true;
+	bNotifyBecomeRelevant = false;  // Not using OnBecomeRelevant
+	bNotifyCeaseRelevant = false;   // Not using OnCeaseRelevant
 
-	bOnlyUpdateInCombat = true;
+	bOnlyUpdateInCombat = false;  // Changed to false for debugging
 	bUseLODSystem = true;
 	bEnableCaching = true;
 	MaxCacheAge = 0.5f;
@@ -101,6 +102,11 @@ FString UBTService_OptimizedMonsterUpdate::GetStaticDescription() const
 		bUseLODSystem ? TEXT("On") : TEXT("Off"),
 		bEnableCaching ? TEXT("On") : TEXT("Off"),
 		bOnlyUpdateInCombat ? TEXT("Yes") : TEXT("No"));
+}
+
+uint16 UBTService_OptimizedMonsterUpdate::GetInstanceMemorySize() const
+{
+	return sizeof(FBTOptimizedMonsterUpdateMemory);
 }
 
 // ============================================================================

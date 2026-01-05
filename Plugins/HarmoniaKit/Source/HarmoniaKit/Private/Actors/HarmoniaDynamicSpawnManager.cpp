@@ -1,7 +1,7 @@
 ﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Actors/HarmoniaDynamicSpawnManager.h"
-#include "Actors/HarmoniaMonsterSpawner.h"
+#include "Actors/HarmoniaMonsterTrigger.h"
 #include "System/HarmoniaTimeWeatherManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
@@ -77,7 +77,7 @@ void AHarmoniaDynamicSpawnManager::EndPlay(const EEndPlayReason::Type EndPlayRea
 		TimeWeatherManager->OnWeatherChanged.RemoveDynamic(this, &AHarmoniaDynamicSpawnManager::OnWeatherChanged);
 	}
 
-	ManagedSpawners.Empty();
+	ManagedTriggers.Empty();
 	CurrentWaveMonsters.Empty();
 }
 
@@ -93,21 +93,21 @@ void AHarmoniaDynamicSpawnManager::Tick(float DeltaTime)
 
 void AHarmoniaDynamicSpawnManager::FindSpawnersInLevel()
 {
-	TArray<AActor*> FoundSpawners;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHarmoniaMonsterSpawner::StaticClass(), FoundSpawners);
+	TArray<AActor*> FoundTriggers;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHarmoniaMonsterTrigger::StaticClass(), FoundTriggers);
 
-	ManagedSpawners.Empty();
+	ManagedTriggers.Empty();
 
-	for (AActor* Actor : FoundSpawners)
+	for (AActor* Actor : FoundTriggers)
 	{
-		AHarmoniaMonsterSpawner* Spawner = Cast<AHarmoniaMonsterSpawner>(Actor);
-		if (Spawner)
+		AHarmoniaMonsterTrigger* Trigger = Cast<AHarmoniaMonsterTrigger>(Actor);
+		if (Trigger)
 		{
-			ManagedSpawners.Add(Spawner);
+			ManagedTriggers.Add(Trigger);
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("DynamicSpawnManager found %d spawners"), ManagedSpawners.Num());
+	UE_LOG(LogTemp, Log, TEXT("DynamicSpawnManager found %d triggers"), ManagedTriggers.Num());
 }
 
 void AHarmoniaDynamicSpawnManager::ApplySpawnModifiers()
@@ -129,17 +129,17 @@ void AHarmoniaDynamicSpawnManager::ApplySpawnModifiers()
 		CurrentMonsterCountMultiplier *= Modifier.MonsterCountMultiplier;
 	}
 
-	// Apply to spawners
-	for (AHarmoniaMonsterSpawner* Spawner : ManagedSpawners)
+	// Apply to triggers
+	for (AHarmoniaMonsterTrigger* Trigger : ManagedTriggers)
 	{
-		if (!Spawner)
+		if (!Trigger)
 		{
 			continue;
 		}
 
 		// Adjust spawn intervals and counts
-		// This is a simplified version - actual implementation would depend on spawner API
-		// Spawner->SetSpawnRateMultiplier(CurrentSpawnRateMultiplier);
+		// This is a simplified version - actual implementation would depend on trigger API
+		// Trigger->SetSpawnRateMultiplier(CurrentSpawnRateMultiplier);
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("Spawn modifiers applied: Rate x%.2f, Count x%.2f"),
@@ -323,11 +323,11 @@ void AHarmoniaDynamicSpawnManager::SpawnWaveMonsters(const FHarmoniaWaveConfig& 
 		return; // All monsters spawned
 	}
 
-	// Use first spawner for wave spawning
-	if (ManagedSpawners.Num() > 0 && ManagedSpawners[0])
+	// Use first trigger for wave spawning
+	if (ManagedTriggers.Num() > 0 && ManagedTriggers[0])
 	{
-		// Trigger spawner
-		// ManagedSpawners[0]->SpawnMonster();
+		// Activate trigger for wave spawning
+		// ManagedTriggers[0]->SpawnMonster();
 	}
 
 	WaveSpawnIndex++;

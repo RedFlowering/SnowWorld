@@ -8,7 +8,7 @@
 #include "HarmoniaCheckpointSubsystem.generated.h"
 
 class AHarmoniaCrystalResonator;
-class AHarmoniaMonsterSpawner;
+class AHarmoniaMonsterTrigger;
 class APlayerController;
 
 /**
@@ -231,16 +231,16 @@ public:
 	// ============================================================================
 
 	/**
-	 * 몬스터 스포너 등록 (공명 시 리셋용)
+	 * 몬스터 트리거 등록 (공명 시 리셋용)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Checkpoint")
-	void RegisterMonsterSpawner(AHarmoniaMonsterSpawner* Spawner);
+	void RegisterMonsterTrigger(AHarmoniaMonsterTrigger* Trigger);
 
 	/**
-	 * 몬스터 스포너 등록 해제
+	 * 몬스터 트리거 등록 해제
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Checkpoint")
-	void UnregisterMonsterSpawner(AHarmoniaMonsterSpawner* Spawner);
+	void UnregisterMonsterTrigger(AHarmoniaMonsterTrigger* Trigger);
 
 	/**
 	 * 모든 적 리스폰 (공명 시 호출)
@@ -345,7 +345,7 @@ private:
 	/** 공명 타이머 핸들 (PlayerController -> TimerHandle) */
 	TMap<APlayerController*, FTimerHandle> ResonanceTimerHandles;
 
-	/** 등록된 몬스터 스포너들 */
+	/** 등록된 몬스터 트리거들 */
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<AHarmoniaMonsterSpawner>> RegisteredSpawners;
+	TArray<TObjectPtr<AHarmoniaMonsterTrigger>> RegisteredTriggers;
 };

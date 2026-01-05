@@ -20,7 +20,7 @@ AHarmoniaMonsterBase::AHarmoniaMonsterBase(const FObjectInitializer& ObjectIniti
 	: Super(ObjectInitializer
 		.SetDefaultSubobjectClass<UHarmoniaHealthComponent>(TEXT("HealthComponent")))
 {
-	// ASC comes from ALyraCharacter via PawnExtension - no need to create here
+	// ASC comes from ALyraCharacterWithAbilities - self-owned, no PawnData required
 	
 	// Create attribute set (monster-specific stats)
 	AttributeSet = CreateDefaultSubobject<UHarmoniaAttributeSet>(TEXT("AttributeSet"));

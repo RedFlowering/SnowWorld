@@ -8,7 +8,7 @@
 
 /**
  * ECircleDirection
- * ?í˜• ?´ë™ ë°©í–¥
+ * Circle direction enum
  */
 UENUM(BlueprintType)
 enum class ECircleDirection : uint8
@@ -21,13 +21,8 @@ enum class ECircleDirection : uint8
 /**
  * UBTTask_CircleAroundTarget
  *
- * ?€ê²?ì£¼ìœ„ë¥??í˜•?¼ë¡œ ?´ë™?˜ëŠ” BT Task?…ë‹ˆ??
- * ë³´ìŠ¤ê°€ ?ˆê°œ ?ì—???Œë ˆ?´ì–´ë¥??„í˜‘?ìœ¼ë¡??Œì•„?¤ë‹ˆë©??¼ë???ì¤????¬ìš©?©ë‹ˆ??
- *
- * ?¬ìš©ë²?
- * - TargetKey: ì¤‘ì‹¬?????€ê²?(?Œë ˆ?´ì–´)
- * - CircleRadius: ?ì˜ ë°˜ê²½
- * - Duration: ì§€???œê°„ (0 = ë¬´í•œ)
+ * BT Task that circles around a target.
+ * Gets target automatically from HarmoniaMonsterAIController.
  */
 UCLASS(Blueprintable, meta = (DisplayName = "Circle Around Target"))
 class HARMONIAKIT_API UBTTask_CircleAroundTarget : public UBTTask_BlueprintBase
@@ -45,72 +40,65 @@ public:
 	virtual FString GetStaticDescription() const override;
 	//~End of UBTTaskNode interface
 
-protected:
-	// ==========================================================================
-	// Configuration
-	// ==========================================================================
+	/** Helper to get target from AIController */
+	AActor* GetTargetActor(UBehaviorTreeComponent& OwnerComp) const;
 
-	/** Task ?œì„±???¬ë? */
+protected:
+	/** Task enabled */
 	UPROPERTY(EditAnywhere, Category = "Task Control")
 	bool bTaskEnabled = true;
 
-	/** ì¤‘ì‹¬?????€ê²?(Blackboard ?? */
-	UPROPERTY(EditAnywhere, Category = "Blackboard")
-	FBlackboardKeySelector TargetKey;
-
-	/** ?ì˜ ë°˜ê²½ */
+	/** Circle radius */
 	UPROPERTY(EditAnywhere, Category = "Circle", meta = (ClampMin = "100.0"))
 	float CircleRadius = 500.0f;
 
-	/** ?´ë™ ?ë„ (cm/s) */
+	/** Move speed (cm/s) */
 	UPROPERTY(EditAnywhere, Category = "Circle", meta = (ClampMin = "50.0"))
 	float MoveSpeed = 400.0f;
 
-	/** ?Œì „ ë°©í–¥ */
+	/** Circle direction */
 	UPROPERTY(EditAnywhere, Category = "Circle")
 	ECircleDirection CircleDirection = ECircleDirection::Random;
 
-	/** ì§€???œê°„ (0 = ë¬´í•œ, ?¸ë??ì„œ ì¤‘ë‹¨?´ì•¼ ?? */
+	/** Duration (0 = infinite) */
 	UPROPERTY(EditAnywhere, Category = "Circle", meta = (ClampMin = "0.0"))
 	float Duration = 5.0f;
 
-	/** ?€ê²?ë°©í–¥????ƒ ë°”ë¼ë³¼ì? ?¬ë? */
+	/** Face target while circling */
 	UPROPERTY(EditAnywhere, Category = "Circle")
 	bool bFaceTarget = true;
 
-	/** ë°˜ê²½ ? ì? ?¤ì°¨ ?ˆìš© ë²”ìœ„ */
+	/** Radius tolerance */
 	UPROPERTY(EditAnywhere, Category = "Circle")
 	float RadiusTolerance = 100.0f;
 
-	/** ?¥ì• ë¬??Œí”¼ ?œì„±??*/
+	/** Avoid obstacles */
 	UPROPERTY(EditAnywhere, Category = "Circle|Avoidance")
 	bool bAvoidObstacles = true;
 
-	/** ?¥ì• ë¬?ê°ì? ë²”ìœ„ */
+	/** Obstacle detection range */
 	UPROPERTY(EditAnywhere, Category = "Circle|Avoidance", meta = (EditCondition = "bAvoidObstacles"))
 	float ObstacleDetectionRange = 200.0f;
 
 private:
-	/** ?„ì¬ ë°©í–¥ (1 = ?œê³„, -1 = ë°˜ì‹œê³? */
+	/** Get actual direction (1 = CW, -1 = CCW) */
 	int32 GetActualDirection() const;
 };
 
 /**
- * Task ?¸ìŠ¤?´ìŠ¤ ë©”ëª¨ë¦?
+ * Task node memory
  */
 struct FBTCircleAroundTargetMemory
 {
-	/** ê²½ê³¼ ?œê°„ */
+	/** Elapsed time */
 	float ElapsedTime = 0.0f;
 
-	/** ?„ì¬ ê°ë„ (?¼ë””?? */
+	/** Current angle (radians) */
 	float CurrentAngle = 0.0f;
 
-	/** ? íƒ??ë°©í–¥ (Random????ê²°ì •?? */
+	/** Selected direction (for Random) */
 	int32 SelectedDirection = 1;
 
-	/** ?œì‘ ??ì´ˆê¸°?”ë¨ */
+	/** Initialized flag */
 	bool bInitialized = false;
 };
-
-

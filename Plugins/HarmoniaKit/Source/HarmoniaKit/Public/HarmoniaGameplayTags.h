@@ -558,4 +558,24 @@ namespace HarmoniaGameplayTags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Body_LeftHand);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Body_RightFoot);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tracer_Body_LeftFoot);
+
+	// ============================================================
+	// Monster State Tags (AI Pattern System)
+	// ============================================================
+
+	// Basic States
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Monster_Idle);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Monster_InCombat);
+
+	// Action States (auto-managed by PatternComponent)
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Monster_Attacking);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Monster_Defending);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Monster_Evading);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Monster_Moving);
+
+	// Special States
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Monster_Groggy);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Monster_Groggy_Recoverable);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Monster_Groggy_Execution);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Monster_Dead);
 }

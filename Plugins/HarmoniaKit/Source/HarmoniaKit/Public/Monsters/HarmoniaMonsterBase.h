@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Character/LyraCharacter.h"
+#include "Character/LyraCharacterWithAbilities.h"
 #include "Monsters/HarmoniaMonsterInterface.h"
 #include "Definitions/HarmoniaMonsterSystemDefinitions.h"
 #include "Definitions/HarmoniaTeamSystemDefinitions.h"
@@ -44,7 +44,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMonsterStateChangedDelegate, EHa
  * - Unreal's standard IGenericTeamAgentInterface integration
  */
 UCLASS(Blueprintable)
-class HARMONIAKIT_API AHarmoniaMonsterBase : public ALyraCharacter, public IHarmoniaMonsterInterface, public IHarmoniaTeamAgentInterface
+class HARMONIAKIT_API AHarmoniaMonsterBase : public ALyraCharacterWithAbilities, public IHarmoniaMonsterInterface, public IHarmoniaTeamAgentInterface
 {
 	GENERATED_BODY()
 

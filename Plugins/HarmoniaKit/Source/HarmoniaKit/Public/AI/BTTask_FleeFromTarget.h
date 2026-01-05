@@ -8,7 +8,7 @@
 
 /**
  * Behavior Tree task for fleeing from a target
- * Uses TerritoryDisputeComponent to calculate flee location
+ * Gets target automatically from HarmoniaMonsterAIController.
  */
 UCLASS(Blueprintable, meta = (DisplayName = "Flee From Target"))
 class HARMONIAKIT_API UBTTask_FleeFromTarget : public UBTTask_BlueprintBase
@@ -22,10 +22,6 @@ public:
 	virtual FString GetStaticDescription() const override;
 
 protected:
-	/** Blackboard key for the target to flee from */
-	UPROPERTY(EditAnywhere, Category = "Blackboard")
-	FBlackboardKeySelector TargetKey;
-
 	/** Minimum distance to flee */
 	UPROPERTY(EditAnywhere, Category = "Flee")
 	float FleeDistance = 2000.0f;
@@ -34,5 +30,3 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Flee")
 	bool bUseTerritoryDisputeComponent = true;
 };
-
-

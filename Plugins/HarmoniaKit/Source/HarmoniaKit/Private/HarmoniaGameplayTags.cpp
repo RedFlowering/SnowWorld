@@ -559,6 +559,26 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Body_RightFoot, "Tracer.Body.RightFoot", "Right foot body tracer for kicks");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Tracer_Body_LeftFoot, "Tracer.Body.LeftFoot", "Left foot body tracer for kicks");
 
+	// ============================================================
+	// Monster State Tags (AI Pattern System)
+	// ============================================================
+
+	// Basic States
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Monster_Idle, "State.Monster.Idle", "Monster is idle, not in combat");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Monster_InCombat, "State.Monster.InCombat", "Monster is in combat");
+
+	// Action States (auto-managed by PatternComponent)
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Monster_Attacking, "State.Monster.Attacking", "Monster is executing an attack pattern");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Monster_Defending, "State.Monster.Defending", "Monster is executing a defense pattern");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Monster_Evading, "State.Monster.Evading", "Monster is executing an evasion pattern");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Monster_Moving, "State.Monster.Moving", "Monster is executing a movement pattern");
+
+	// Special States
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Monster_Groggy, "State.Monster.Groggy", "Monster is in groggy state");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Monster_Groggy_Recoverable, "State.Monster.Groggy.Recoverable", "Monster groggy - will recover");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Monster_Groggy_Execution, "State.Monster.Groggy.Execution", "Monster groggy - execution available");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Monster_Dead, "State.Monster.Dead", "Monster is dead");
+
 	FGameplayTag FindTagByString(const FString& TagString, bool bMatchPartialString)
 	{
 		const UGameplayTagsManager& Manager = UGameplayTagsManager::Get();

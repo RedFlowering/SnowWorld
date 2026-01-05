@@ -2,8 +2,8 @@
 
 #include "AI/BTTask_PursueTarget.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "BehaviorTree/Blackboard/BlackboardKeyType_Object.h"
 #include "AIController.h"
+#include "AI/HarmoniaMonsterAIController.h"
 #include "Monsters/HarmoniaMonsterBase.h"
 #include "Components/HarmoniaTerritoryDisputeComponent.h"
 
@@ -11,8 +11,7 @@ UBTTask_PursueTarget::UBTTask_PursueTarget()
 {
 	NodeName = "Pursue Target";
 	bNotifyTick = false;
-
-	TargetKey.AddObjectFilter(this, GET_MEMBER_NAME_CHECKED(UBTTask_PursueTarget, TargetKey), AActor::StaticClass());
+	bCreateNodeInstance = true; // Need instance for move callback
 }
 
 EBTNodeResult::Type UBTTask_PursueTarget::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -29,9 +28,13 @@ EBTNodeResult::Type UBTTask_PursueTarget::ExecuteTask(UBehaviorTreeComponent& Ow
 		return EBTNodeResult::Failed;
 	}
 
-	// Get target to pursue
-	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
-	AActor* Target = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetKey.SelectedKeyName));
+	// Get target from AI Controller
+	AActor* Target = nullptr;
+	AHarmoniaMonsterAIController* MonsterAI = Cast<AHarmoniaMonsterAIController>(AIController);
+	if (MonsterAI)
+	{
+		Target = MonsterAI->GetCurrentTarget();
+	}
 
 	if (!Target)
 	{
@@ -40,6 +43,7 @@ EBTNodeResult::Type UBTTask_PursueTarget::ExecuteTask(UBehaviorTreeComponent& Ow
 
 	// Check distance
 	float Distance = FVector::Dist(Monster->GetActorLocation(), Target->GetActorLocation());
+	
 	if (Distance > MaxPursuitDistance)
 	{
 		// Too far to pursue
@@ -64,20 +68,70 @@ EBTNodeResult::Type UBTTask_PursueTarget::ExecuteTask(UBehaviorTreeComponent& Ow
 		}
 	}
 
+	// Cache owner component for callback
+	CachedOwnerComp = &OwnerComp;
+
+	// Bind to move completed delegate
+	AIController->ReceiveMoveCompleted.AddDynamic(this, &UBTTask_PursueTarget::OnMoveCompleted);
+
 	// Move to target
 	EPathFollowingRequestResult::Type MoveResult = AIController->MoveToActor(Target, AcceptanceRadius);
 
-	// Check if move request was accepted (not failed)
-	// Note: Failed = 0, AlreadyAtGoal = 1, RequestSuccessful = 2
-	if (MoveResult != 0)  // 0 = Failed
+	if (MoveResult == EPathFollowingRequestResult::Failed)
 	{
+		AIController->ReceiveMoveCompleted.RemoveDynamic(this, &UBTTask_PursueTarget::OnMoveCompleted);
+		return EBTNodeResult::Failed;
+	}
+
+	if (MoveResult == EPathFollowingRequestResult::AlreadyAtGoal)
+	{
+		AIController->ReceiveMoveCompleted.RemoveDynamic(this, &UBTTask_PursueTarget::OnMoveCompleted);
 		return EBTNodeResult::Succeeded;
 	}
 
-	return EBTNodeResult::Failed;
+	// Store request ID
+	if (AIController->GetPathFollowingComponent())
+	{
+		CurrentMoveRequestID = AIController->GetPathFollowingComponent()->GetCurrentRequestId();
+	}
+	
+	// Return InProgress - will complete when OnMoveCompleted is called
+	return EBTNodeResult::InProgress;
+}
+
+EBTNodeResult::Type UBTTask_PursueTarget::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+	AAIController* AIController = OwnerComp.GetAIOwner();
+	if (AIController)
+	{
+		// Stop movement
+		AIController->StopMovement();
+		AIController->ReceiveMoveCompleted.RemoveDynamic(this, &UBTTask_PursueTarget::OnMoveCompleted);
+	}
+
+	return EBTNodeResult::Aborted;
+}
+
+void UBTTask_PursueTarget::OnMoveCompleted(FAIRequestID RequestID, EPathFollowingResult::Type Result)
+{
+	if (!CachedOwnerComp.IsValid())
+	{
+		return;
+	}
+
+	// Unbind delegate
+	AAIController* AIController = CachedOwnerComp->GetAIOwner();
+	if (AIController)
+	{
+		AIController->ReceiveMoveCompleted.RemoveDynamic(this, &UBTTask_PursueTarget::OnMoveCompleted);
+	}
+
+	// Finish the task
+	const bool bSuccess = (Result == EPathFollowingResult::Success);
+	FinishLatentTask(*CachedOwnerComp.Get(), bSuccess ? EBTNodeResult::Succeeded : EBTNodeResult::Failed);
 }
 
 FString UBTTask_PursueTarget::GetStaticDescription() const
 {
-	return FString::Printf(TEXT("Pursue %s (Max Distance: %.0f)"), *TargetKey.SelectedKeyName.ToString(), MaxPursuitDistance);
+	return FString::Printf(TEXT("Pursue Target (Max Distance: %.0f)"), MaxPursuitDistance);
 }

@@ -1,8 +1,8 @@
 // Copyright 2025 Snow Game Studio.
 
 #include "AI/BTTask_CircleAroundTarget.h"
-#include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
+#include "AI/HarmoniaMonsterAIController.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "NavigationSystem.h"
@@ -12,9 +12,24 @@ UBTTask_CircleAroundTarget::UBTTask_CircleAroundTarget()
 	NodeName = "Circle Around Target";
 	bNotifyTick = true;
 	bCreateNodeInstance = true;
+}
 
-	// Blackboard 키 필터
-	TargetKey.AddObjectFilter(this, GET_MEMBER_NAME_CHECKED(UBTTask_CircleAroundTarget, TargetKey), AActor::StaticClass());
+AActor* UBTTask_CircleAroundTarget::GetTargetActor(UBehaviorTreeComponent& OwnerComp) const
+{
+	AAIController* AIController = OwnerComp.GetAIOwner();
+	if (!AIController)
+	{
+		return nullptr;
+	}
+
+	// Get target from AI Controller
+	AHarmoniaMonsterAIController* MonsterAI = Cast<AHarmoniaMonsterAIController>(AIController);
+	if (MonsterAI)
+	{
+		return MonsterAI->GetCurrentTarget();
+	}
+
+	return nullptr;
 }
 
 EBTNodeResult::Type UBTTask_CircleAroundTarget::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -36,28 +51,22 @@ EBTNodeResult::Type UBTTask_CircleAroundTarget::ExecuteTask(UBehaviorTreeCompone
 		return EBTNodeResult::Failed;
 	}
 
-	UBlackboardComponent* Blackboard = OwnerComp.GetBlackboardComponent();
-	if (!Blackboard)
-	{
-		return EBTNodeResult::Failed;
-	}
-
-	AActor* TargetActor = Cast<AActor>(Blackboard->GetValueAsObject(TargetKey.SelectedKeyName));
+	AActor* TargetActor = GetTargetActor(OwnerComp);
 	if (!TargetActor)
 	{
 		return EBTNodeResult::Failed;
 	}
 
-	// 메모리 초기화
+	// Initialize memory
 	FBTCircleAroundTargetMemory* Memory = reinterpret_cast<FBTCircleAroundTargetMemory*>(NodeMemory);
 	Memory->ElapsedTime = 0.0f;
 	Memory->bInitialized = true;
 
-	// 현재 위치에서 시작 각도 계산
+	// Calculate starting angle from current position
 	FVector ToOwner = Pawn->GetActorLocation() - TargetActor->GetActorLocation();
 	Memory->CurrentAngle = FMath::Atan2(ToOwner.Y, ToOwner.X);
 
-	// 방향 결정
+	// Determine direction
 	if (CircleDirection == ECircleDirection::Random)
 	{
 		Memory->SelectedDirection = FMath::RandBool() ? 1 : -1;
@@ -87,15 +96,14 @@ void UBTTask_CircleAroundTarget::TickTask(UBehaviorTreeComponent& OwnerComp, uin
 		return;
 	}
 
-	UBlackboardComponent* Blackboard = OwnerComp.GetBlackboardComponent();
-	AActor* TargetActor = Blackboard ? Cast<AActor>(Blackboard->GetValueAsObject(TargetKey.SelectedKeyName)) : nullptr;
+	AActor* TargetActor = GetTargetActor(OwnerComp);
 	if (!TargetActor)
 	{
 		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
 		return;
 	}
 
-	// 시간 체크
+	// Check time
 	Memory->ElapsedTime += DeltaSeconds;
 	if (Duration > 0.0f && Memory->ElapsedTime >= Duration)
 	{
@@ -103,11 +111,11 @@ void UBTTask_CircleAroundTarget::TickTask(UBehaviorTreeComponent& OwnerComp, uin
 		return;
 	}
 
-	// 각도 업데이트 (초당 각속도 계산)
+	// Update angle (angular velocity calculation)
 	float AngularVelocity = MoveSpeed / CircleRadius; // rad/s
 	Memory->CurrentAngle += AngularVelocity * Memory->SelectedDirection * DeltaSeconds;
 
-	// 목표 위치 계산
+	// Calculate desired location
 	FVector TargetLocation = TargetActor->GetActorLocation();
 	FVector DesiredLocation = TargetLocation + FVector(
 		FMath::Cos(Memory->CurrentAngle) * CircleRadius,
@@ -115,11 +123,11 @@ void UBTTask_CircleAroundTarget::TickTask(UBehaviorTreeComponent& OwnerComp, uin
 		0.0f
 	);
 
-	// 현재 위치에서 목표까지 방향
+	// Direction from current location to target
 	FVector CurrentLocation = Pawn->GetActorLocation();
 	FVector MoveDirection = (DesiredLocation - CurrentLocation).GetSafeNormal2D();
 
-	// 장애물 회피
+	// Obstacle avoidance
 	if (bAvoidObstacles)
 	{
 		FHitResult Hit;
@@ -128,17 +136,17 @@ void UBTTask_CircleAroundTarget::TickTask(UBehaviorTreeComponent& OwnerComp, uin
 		
 		if (Pawn->GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
 		{
-			// 장애물 감지 시 반대 방향으로
+			// Reverse direction on obstacle detection
 			Memory->SelectedDirection *= -1;
 		}
 	}
 
-	// 이동 명령
+	// Movement command
 	if (ACharacter* Character = Cast<ACharacter>(Pawn))
 	{
 		Character->AddMovementInput(MoveDirection, 1.0f);
 
-		// 타겟 방향 바라보기
+		// Face target
 		if (bFaceTarget)
 		{
 			FVector LookDirection = (TargetLocation - CurrentLocation).GetSafeNormal2D();
@@ -153,7 +161,7 @@ void UBTTask_CircleAroundTarget::TickTask(UBehaviorTreeComponent& OwnerComp, uin
 	}
 	else
 	{
-		// 이동 명령 (MoveToLocation 사용)
+		// Use MoveToLocation for non-characters
 		AIController->MoveToLocation(DesiredLocation, 50.0f, false);
 	}
 }
@@ -182,8 +190,7 @@ FString UBTTask_CircleAroundTarget::GetStaticDescription() const
 	default: DirectionStr = TEXT("Random"); break;
 	}
 
-	return FString::Printf(TEXT("Circle around %s\nRadius: %.0f, Speed: %.0f, Dir: %s"),
-		*TargetKey.SelectedKeyName.ToString(),
+	return FString::Printf(TEXT("Circle around Target\nRadius: %.0f, Speed: %.0f, Dir: %s"),
 		CircleRadius,
 		MoveSpeed,
 		*DirectionStr);

@@ -7,7 +7,7 @@
 #include "System/HarmoniaTimeWeatherManager.h"
 #include "HarmoniaDynamicSpawnManager.generated.h"
 
-class AHarmoniaMonsterSpawner;
+class AHarmoniaMonsterTrigger;
 class UHarmoniaMonsterData;
 
 /**
@@ -135,9 +135,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dynamic Spawn")
 	TArray<FHarmoniaSpawnModifier> SpawnModifiers;
 
-	/** Spawners to manage */
+	/** Triggers to manage */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dynamic Spawn")
-	TArray<AHarmoniaMonsterSpawner*> ManagedSpawners;
+	TArray<AHarmoniaMonsterTrigger*> ManagedTriggers;
 
 	/** Auto-find spawners in level */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dynamic Spawn")

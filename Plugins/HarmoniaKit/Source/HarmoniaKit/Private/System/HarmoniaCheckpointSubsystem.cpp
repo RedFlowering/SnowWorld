@@ -2,7 +2,7 @@
 
 #include "System/HarmoniaCheckpointSubsystem.h"
 #include "Actors/HarmoniaCrystalResonator.h"
-#include "Actors/HarmoniaMonsterSpawner.h"
+#include "Actors/HarmoniaMonsterTrigger.h"
 #include "System/HarmoniaSaveGameSubsystem.h"
 #include "Player/LyraPlayerController.h"
 #include "Player/LyraPlayerState.h"
@@ -48,7 +48,7 @@ void UHarmoniaCheckpointSubsystem::Deinitialize()
 	CheckpointDataMap.Empty();
 	PlayerLastCheckpoints.Empty();
 	ResonatingPlayers.Empty();
-	RegisteredSpawners.Empty();
+	RegisteredTriggers.Empty();
 
 	Super::Deinitialize();
 }
@@ -710,21 +710,21 @@ bool UHarmoniaCheckpointSubsystem::RespawnPlayerAtLastCheckpoint(APlayerControll
 // Monster Respawn
 // ============================================================================
 
-void UHarmoniaCheckpointSubsystem::RegisterMonsterSpawner(AHarmoniaMonsterSpawner* Spawner)
+void UHarmoniaCheckpointSubsystem::RegisterMonsterTrigger(AHarmoniaMonsterTrigger* Trigger)
 {
-	if (Spawner && !RegisteredSpawners.Contains(Spawner))
+	if (Trigger && !RegisteredTriggers.Contains(Trigger))
 	{
-		RegisteredSpawners.Add(Spawner);
-		UE_LOG(LogTemp, Log, TEXT("RegisterMonsterSpawner: Registered spawner"));
+		RegisteredTriggers.Add(Trigger);
+		UE_LOG(LogTemp, Log, TEXT("RegisterMonsterTrigger: Registered trigger"));
 	}
 }
 
-void UHarmoniaCheckpointSubsystem::UnregisterMonsterSpawner(AHarmoniaMonsterSpawner* Spawner)
+void UHarmoniaCheckpointSubsystem::UnregisterMonsterTrigger(AHarmoniaMonsterTrigger* Trigger)
 {
-	if (Spawner)
+	if (Trigger)
 	{
-		RegisteredSpawners.Remove(Spawner);
-		UE_LOG(LogTemp, Log, TEXT("UnregisterMonsterSpawner: Unregistered spawner"));
+		RegisteredTriggers.Remove(Trigger);
+		UE_LOG(LogTemp, Log, TEXT("UnregisterMonsterTrigger: Unregistered trigger"));
 	}
 }
 
@@ -732,24 +732,18 @@ int32 UHarmoniaCheckpointSubsystem::RespawnAllEnemies()
 {
 	int32 TotalRespawned = 0;
 
-	for (AHarmoniaMonsterSpawner* Spawner : RegisteredSpawners)
+	for (AHarmoniaMonsterTrigger* Trigger : RegisteredTriggers)
 	{
-		if (Spawner && Spawner->IsValidLowLevel())
+		if (Trigger && Trigger->IsValidLowLevel())
 		{
 			// Remove existing monsters
-			Spawner->DespawnAllMonsters();
+			Trigger->DespawnAllMonsters();
 
-			// Spawn new monsters
-			// Respawn based on spawner mode
-			if (Spawner->SpawnMode == EHarmoniaSpawnMode::Respawn || Spawner->SpawnMode == EHarmoniaSpawnMode::OnBeginPlay)
+			// Spawn new monsters based on trigger mode
+			if (Trigger->SpawnMode == EHarmoniaMonsterSpawnMode::Respawn || Trigger->SpawnMode == EHarmoniaMonsterSpawnMode::OnBeginPlay)
 			{
-				for (int32 i = 0; i < Spawner->MaxTotalMonsters; ++i)
-				{
-					if (Spawner->SpawnMonster())
-					{
-						TotalRespawned++;
-					}
-				}
+				Trigger->SpawnAllMonsters();
+				TotalRespawned += Trigger->GetActiveMonsterCount();
 			}
 		}
 	}

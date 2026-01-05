@@ -24,10 +24,13 @@ AHarmoniaMonsterAIController::AHarmoniaMonsterAIController(const FObjectInitiali
 	{
 		SightConfig->SightRadius = 2000.0f;
 		SightConfig->LoseSightRadius = 2500.0f;
-		SightConfig->PeripheralVisionAngleDegrees = 90.0f;
+		SightConfig->PeripheralVisionAngleDegrees = 360.0f;  // 360 degree vision
+		// Detect ALL actors regardless of team affiliation
 		SightConfig->DetectionByAffiliation.bDetectEnemies = true;
 		SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
-		SightConfig->DetectionByAffiliation.bDetectFriendlies = false;
+		SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
+		// Auto succeed for visibility checks
+		SightConfig->AutoSuccessRangeFromLastSeenLocation = 500.0f;
 
 		GetPerceptionComponent()->ConfigureSense(*SightConfig);
 		GetPerceptionComponent()->SetDominantSense(SightConfig->GetSenseImplementation());
@@ -75,6 +78,20 @@ void AHarmoniaMonsterAIController::OnPossess(APawn* InPawn)
 		// Store home location
 		HomeLocation = ControlledMonster->GetActorLocation();
 
+		// Bind perception events (re-bind in case constructor binding failed)
+		if (GetPerceptionComponent())
+		{
+			GetPerceptionComponent()->OnPerceptionUpdated.RemoveDynamic(this, &AHarmoniaMonsterAIController::OnPerceptionUpdated);
+			GetPerceptionComponent()->OnPerceptionUpdated.AddDynamic(this, &AHarmoniaMonsterAIController::OnPerceptionUpdated);
+			
+			GetPerceptionComponent()->OnTargetPerceptionUpdated.RemoveDynamic(this, &AHarmoniaMonsterAIController::OnTargetPerceptionUpdated);
+			GetPerceptionComponent()->OnTargetPerceptionUpdated.AddDynamic(this, &AHarmoniaMonsterAIController::OnTargetPerceptionUpdated);
+			
+		}
+		else
+		{
+		}
+
 		// Start behavior tree
 		StartBehaviorTree();
 	}
@@ -94,8 +111,8 @@ void AHarmoniaMonsterAIController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// Validate current target
-	if (!IsTargetValid())
+	// Validate current target (only if we have one)
+	if (GetCurrentTarget() && !IsTargetValid())
 	{
 		ClearTarget();
 	}

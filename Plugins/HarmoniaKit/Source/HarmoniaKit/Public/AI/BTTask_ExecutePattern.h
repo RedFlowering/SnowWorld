@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/Tasks/BTTask_BlueprintBase.h"
+#include "Components/HarmoniaMonsterPatternComponent.h"
 #include "BTTask_ExecutePattern.generated.h"
 
 class UHarmoniaMonsterPatternComponent;
@@ -11,12 +12,8 @@ class UHarmoniaMonsterPatternComponent;
 /**
  * UBTTask_ExecutePattern
  *
- * Behavior Tree task that executes a named pattern from MonsterPatternComponent
- * 
- * Usage:
- * - Add to behavior tree and specify PatternName
- * - Pattern abilities are defined in MonsterPatternComponent
- * - Task will execute the pattern and optionally wait for completion
+ * Behavior Tree task that executes a contextual pattern based on category.
+ * Patterns are filtered by distance, height, and direction conditions automatically.
  */
 UCLASS(Blueprintable, meta = (DisplayName = "Execute Pattern"))
 class HARMONIAKIT_API UBTTask_ExecutePattern : public UBTTask_BlueprintBase
@@ -31,6 +28,7 @@ public:
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 	virtual EBTNodeResult::Type AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	virtual FString GetStaticDescription() const override;
+	virtual void InitializeFromAsset(UBehaviorTree& Asset) override;
 	//~End of UBTTaskNode interface
 
 protected:
@@ -41,10 +39,11 @@ protected:
 	bool bTaskEnabled = true;
 
 	/**
-	 * Name of the pattern to execute (must match a pattern in MonsterPatternComponent)
+	 * Pattern category to execute (Attack, Defense, Evasion, Movement)
+	 * Patterns matching this category and current conditions will be selected
 	 */
 	UPROPERTY(EditAnywhere, Category = "Pattern")
-	FName PatternName;
+	EPatternCategory TargetCategory = EPatternCategory::Attack;
 
 	/**
 	 * Wait for pattern completion before succeeding
@@ -69,5 +68,3 @@ private:
 	/** Get or cache the pattern component */
 	UHarmoniaMonsterPatternComponent* GetPatternComponent(AActor* Owner);
 };
-
-

@@ -6,6 +6,7 @@
 #include "GameplayTagContainer.h"
 #include "GameplayAbilitySpec.h"
 #include "ActiveGameplayEffectHandle.h"
+#include "AbilitySystemComponent.h"
 #include "HarmoniaMonsterPatternComponent.generated.h"
 
 class AHarmoniaMonsterBase;
@@ -31,6 +32,28 @@ enum class EMonsterPatternExecutionMode : uint8
 };
 
 /**
+ * Pattern category for contextual selection
+ */
+UENUM(BlueprintType)
+enum class EPatternCategory : uint8
+{
+	Attack      UMETA(DisplayName = "Attack"),
+	Defense     UMETA(DisplayName = "Defense"),
+	Evasion     UMETA(DisplayName = "Evasion"),
+	Movement    UMETA(DisplayName = "Movement")
+};
+
+/**
+ * Direction requirement for pattern execution
+ */
+UENUM(BlueprintType)
+enum class EPatternDirectionRequirement : uint8
+{
+	Any             UMETA(DisplayName = "Any Direction"),
+	FacingTarget    UMETA(DisplayName = "Facing Target ±90°")
+};
+
+/**
  * FMonsterAttackPattern
  *
  * Attack pattern configuration. Each pattern can contain multiple abilities
@@ -50,6 +73,48 @@ struct FMonsterAttackPattern
 	/** Description for designers */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Info")
 	FText PatternDescription;
+
+	// ===== Category =====
+
+	/** Pattern category for contextual selection */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Category")
+	EPatternCategory PatternCategory = EPatternCategory::Attack;
+
+	// ===== Contextual Conditions =====
+
+	/** Minimum distance to target (0 = no minimum) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Contextual", meta = (ClampMin = "0.0"))
+	float MinDistance = 0.0f;
+
+	/** Maximum distance to target (0 = no limit) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Contextual", meta = (ClampMin = "0.0", DisplayName = "Max Distance (0 = No Limit)"))
+	float MaxDistance = 0.0f;
+
+	/** Minimum height difference (negative = target below) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Contextual")
+	float MinHeightDifference = -10000.0f;
+
+	/** Maximum height difference (positive = target above) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Contextual")
+	float MaxHeightDifference = 10000.0f;
+
+	/** Direction requirement */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Contextual")
+	EPatternDirectionRequirement DirectionRequirement = EPatternDirectionRequirement::Any;
+
+	// ===== Counter Options (Defense only) =====
+
+	/** Trigger counter attack after successful defense */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Counter")
+	bool bTriggerCounterOnSuccess = false;
+
+	/** Chance to trigger counter (0.0 - 1.0) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Counter", meta = (EditCondition = "bTriggerCounterOnSuccess", ClampMin = "0.0", ClampMax = "1.0"))
+	float CounterChance = 0.5f;
+
+	/** Pattern index to execute as counter */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Counter", meta = (EditCondition = "bTriggerCounterOnSuccess", ClampMin = "0"))
+	int32 CounterPatternIndex = 0;
 
 	// ===== Ability Execution =====
 
@@ -73,7 +138,7 @@ struct FMonsterAttackPattern
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Execution", meta = (ClampMin = "0.0", ClampMax = "10.0"))
 	float RepeatDelay = 1.0f;
 
-	// ===== Conditions =====
+	// ===== Tag Conditions =====
 
 	/** Gameplay tags required to execute this pattern */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern|Conditions")
@@ -208,6 +273,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Monster|Pattern")
 	bool ExecuteRandomPattern();
 
+	/** Execute pattern by index in current phase's pattern list */
+	UFUNCTION(BlueprintCallable, Category = "Monster|Pattern")
+	bool ExecutePatternByIndex(int32 PatternIndex);
+
+	/** Get pattern count for current phase */
+	UFUNCTION(BlueprintPure, Category = "Monster|Pattern")
+	int32 GetPatternCount() const;
+
 	/** Stop current pattern execution */
 	UFUNCTION(BlueprintCallable, Category = "Monster|Pattern")
 	void StopCurrentPattern();
@@ -216,9 +289,58 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Monster|Pattern")
 	bool IsPatternAvailable(FName PatternName) const;
 
+	/** Check if pattern is available by index */
+	UFUNCTION(BlueprintPure, Category = "Monster|Pattern")
+	bool IsPatternAvailableByIndex(int32 PatternIndex) const;
+
 	/** Get all available patterns for current phase */
 	UFUNCTION(BlueprintPure, Category = "Monster|Pattern")
 	TArray<FName> GetAvailablePatterns() const;
+
+	//~=============================================================================
+	// Contextual Pattern Execution
+	//~=============================================================================
+
+	/** Execute a pattern based on category and current context (distance, height, direction) */
+	UFUNCTION(BlueprintCallable, Category = "Monster|Pattern")
+	bool ExecuteContextualPattern(EPatternCategory Category, AActor* Target);
+
+	/** Get patterns that match category and current context */
+	UFUNCTION(BlueprintPure, Category = "Monster|Pattern")
+	TArray<int32> GetAvailablePatternsForCategory(EPatternCategory Category, AActor* Target) const;
+
+	/** Evaluate if pattern conditions are met for target */
+	bool EvaluatePatternConditions(const FMonsterAttackPattern& Pattern, AActor* Target) const;
+
+	/** Get distance to target */
+	UFUNCTION(BlueprintPure, Category = "Monster|Pattern")
+	float GetDistanceToTarget(AActor* Target) const;
+
+	/** Get height difference to target (positive = target above) */
+	UFUNCTION(BlueprintPure, Category = "Monster|Pattern")
+	float GetHeightDifferenceToTarget(AActor* Target) const;
+
+	/** Check if facing target within angle tolerance */
+	UFUNCTION(BlueprintPure, Category = "Monster|Pattern")
+	bool IsFacingTarget(AActor* Target, float AngleTolerance = 90.0f) const;
+
+	//~=============================================================================
+	// State Tag Management
+	//~=============================================================================
+
+	/** Apply pattern state tag based on category */
+	void ApplyPatternStateTag(EPatternCategory Category);
+
+	/** Remove pattern state tag based on category */
+	void RemovePatternStateTag(EPatternCategory Category);
+
+	/** Set combat state (in combat or idle) */
+	UFUNCTION(BlueprintCallable, Category = "Monster|Pattern")
+	void SetCombatState(bool bInCombat);
+
+	/** Set groggy state */
+	UFUNCTION(BlueprintCallable, Category = "Monster|Pattern")
+	void SetGroggyState(bool bGroggy, bool bRecoverable = true);
 
 	//~=============================================================================
 	// Phase Management
@@ -320,6 +442,9 @@ protected:
 	UFUNCTION()
 	void OnStartMontageComplete();
 
+	/** Called when the currently executing ability ends */
+	void OnAbilityEnded(const FAbilityEndedData& AbilityEndedData);
+
 public:
 	/** Broadcast when pattern execution starts */
 	UPROPERTY(BlueprintAssignable, Category = "Monster|Pattern")
@@ -335,7 +460,7 @@ public:
 
 protected:
 	/** Phase configurations (use descending HealthThreshold order) */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Monster|Phase")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster|Phase")
 	TArray<FMonsterPhasePatterns> Phases;
 
 	/** Current phase index */
@@ -386,4 +511,10 @@ protected:
 	/** Active gameplay effect handles from patterns */
 	UPROPERTY()
 	TArray<FActiveGameplayEffectHandle> ActivePatternEffects;
+
+	/** Handle for ability ended delegate */
+	FDelegateHandle AbilityEndedDelegateHandle;
+
+	/** Count of pending abilities that need to complete */
+	int32 PendingAbilityCount = 0;
 };

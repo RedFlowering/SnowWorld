@@ -3,7 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BehaviorTree/Services/BTService_BlueprintBase.h"
+#include "BehaviorTree/BTService.h"
+#include "BehaviorTree/BehaviorTreeTypes.h"
 #include "BTService_OptimizedMonsterUpdate.generated.h"
 
 /**
@@ -69,8 +70,8 @@ struct FBTCachedQueryResult
  * - Caches blackboard reads/writes
  * - Only activates when needed
  */
-UCLASS(Blueprintable, meta = (DisplayName = "Optimized Monster Update"))
-class HARMONIAKIT_API UBTService_OptimizedMonsterUpdate : public UBTService_BlueprintBase
+UCLASS(meta = (DisplayName = "Optimized Monster Update"))
+class HARMONIAKIT_API UBTService_OptimizedMonsterUpdate : public UBTService
 {
 	GENERATED_BODY()
 
@@ -81,6 +82,7 @@ public:
 	virtual void InitializeFromAsset(UBehaviorTree& Asset) override;
 	virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 	virtual FString GetStaticDescription() const override;
+	virtual uint16 GetInstanceMemorySize() const override;
 	//~End of UBTService interface
 
 protected:
