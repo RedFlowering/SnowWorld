@@ -14,14 +14,12 @@ bool UBTDecorator_IsFacingTarget::CalculateRawConditionValue(UBehaviorTreeCompon
 	AAIController* AIController = OwnerComp.GetAIOwner();
 	if (!AIController)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] IsFacingTarget: No AIController"));
 		return false;
 	}
 
 	APawn* Pawn = AIController->GetPawn();
 	if (!Pawn)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] IsFacingTarget: No Pawn"));
 		return false;
 	}
 
@@ -35,7 +33,6 @@ bool UBTDecorator_IsFacingTarget::CalculateRawConditionValue(UBehaviorTreeCompon
 
 	if (!Target)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] IsFacingTarget: No Target"));
 		return false;
 	}
 
@@ -45,12 +42,8 @@ bool UBTDecorator_IsFacingTarget::CalculateRawConditionValue(UBehaviorTreeCompon
 	float DotProduct = FVector::DotProduct(Forward, ToTarget);
 	float AngleDegrees = FMath::RadiansToDegrees(FMath::Acos(FMath::Clamp(DotProduct, -1.0f, 1.0f)));
 	float HalfTolerance = AngleTolerance / 2.0f;
-	bool bResult = AngleDegrees <= HalfTolerance;
-
-	UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] IsFacingTarget: Angle=%.1f, Tolerance=%.1f, Result=%d"), 
-		AngleDegrees, HalfTolerance, bResult);
 	
-	return bResult;
+	return AngleDegrees <= HalfTolerance;
 }
 
 FString UBTDecorator_IsFacingTarget::GetStaticDescription() const

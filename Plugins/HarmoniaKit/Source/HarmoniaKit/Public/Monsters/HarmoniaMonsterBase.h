@@ -16,6 +16,7 @@ class UHarmoniaAdvancedAIComponent;
 class UHarmoniaAILODComponent;
 class UMotionWarpingComponent;
 class UHarmoniaAttributeSet;
+class UHarmoniaCharacterMovementComponent;
 struct FGameplayEffectSpec;
 
 /**
@@ -185,6 +186,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Monster")
 	virtual void PlayDeathAnimation();
 
+	/**
+	 * Get the Harmonia Character Movement Component
+	 */
+	UFUNCTION(BlueprintPure, Category = "Monster|Movement")
+	UHarmoniaCharacterMovementComponent* GetHarmoniaCharacterMovement() const { return HarmoniaCharacterMovement; }
+
 protected:
 	// ============================================================================
 	// Components
@@ -202,6 +209,12 @@ protected:
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Monster|Movement")
 	TObjectPtr<UMotionWarpingComponent> MotionWarpingComponent = nullptr;
+
+	/**
+	 * Harmonia Character Movement Component (for leaping, custom movement)
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster|Movement")
+	TObjectPtr<UHarmoniaCharacterMovementComponent> HarmoniaCharacterMovement = nullptr;
 
 	/**
 	 * Threat Component (for MMO-style aggro management)

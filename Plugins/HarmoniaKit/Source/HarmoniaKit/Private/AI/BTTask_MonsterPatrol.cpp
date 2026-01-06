@@ -29,21 +29,18 @@ EBTNodeResult::Type UBTTask_MonsterPatrol::ExecuteTask(UBehaviorTreeComponent& O
 	AHarmoniaMonsterAIController* AIController = Cast<AHarmoniaMonsterAIController>(OwnerComp.GetAIOwner());
 	if (!AIController)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] MonsterPatrol: No AIController"));
 		return EBTNodeResult::Failed;
 	}
 
 	AHarmoniaMonsterBase* Monster = Cast<AHarmoniaMonsterBase>(AIController->GetPawn());
 	if (!Monster)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] MonsterPatrol: No Monster Pawn"));
 		return EBTNodeResult::Failed;
 	}
 
 	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
 	if (!BlackboardComp)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] MonsterPatrol: No Blackboard"));
 		return EBTNodeResult::Failed;
 	}
 
@@ -53,7 +50,6 @@ EBTNodeResult::Type UBTTask_MonsterPatrol::ExecuteTask(UBehaviorTreeComponent& O
 	{
 		HomeLocation = AIController->GetHomeLocation();
 	}
-	UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] MonsterPatrol: HomeLocation = %s"), *HomeLocation.ToString());
 
 	// Determine patrol radius
 	float PatrolRadius = PatrolRadiusOverride;
@@ -81,16 +77,7 @@ EBTNodeResult::Type UBTTask_MonsterPatrol::ExecuteTask(UBehaviorTreeComponent& O
 		if (bFound)
 		{
 			PatrolLocation = NavLocation.Location;
-			UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] MonsterPatrol: Found nav point at %s"), *PatrolLocation.ToString());
 		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] MonsterPatrol: No nav point found in radius %.0f"), PatrolRadius);
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] MonsterPatrol: No NavSystem"));
 	}
 
 	// Fallback: random offset from home
@@ -99,7 +86,6 @@ EBTNodeResult::Type UBTTask_MonsterPatrol::ExecuteTask(UBehaviorTreeComponent& O
 		FVector RandomOffset = FMath::VRand() * FMath::FRandRange(0.0f, PatrolRadius);
 		RandomOffset.Z = 0.0f;
 		PatrolLocation = HomeLocation + RandomOffset;
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] MonsterPatrol: Using fallback location %s"), *PatrolLocation.ToString());
 	}
 
 	// Store patrol location in blackboard
@@ -107,7 +93,6 @@ EBTNodeResult::Type UBTTask_MonsterPatrol::ExecuteTask(UBehaviorTreeComponent& O
 
 	// Move to patrol location
 	bool bSuccess = AIController->MoveToPatrolLocation(PatrolLocation);
-	UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] MonsterPatrol: MoveToPatrolLocation = %s"), bSuccess ? TEXT("true") : TEXT("false"));
 
 	return bSuccess ? EBTNodeResult::InProgress : EBTNodeResult::Failed;
 }
@@ -129,7 +114,6 @@ void UBTTask_MonsterPatrol::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* N
 	if (Status == EPathFollowingStatus::Idle)
 	{
 		// Movement completed (reached destination or stopped)
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] MonsterPatrol: Movement completed"));
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}
 	else if (Status == EPathFollowingStatus::Moving)
@@ -139,7 +123,6 @@ void UBTTask_MonsterPatrol::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* N
 	else
 	{
 		// Movement failed or was aborted
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] MonsterPatrol: Movement status = %d"), static_cast<int32>(Status));
 		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
 	}
 }

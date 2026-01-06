@@ -5,6 +5,7 @@
 #include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "Animation/HarmoniaMonsterAnimationInterface.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Core/HarmoniaCharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
 #include "Components/CapsuleComponent.h"
@@ -15,11 +16,16 @@
 #include "System/HarmoniaTeamManagementSubsystem.h"
 #include "MotionWarpingComponent.h"
 #include "Core/HarmoniaHealthComponent.h"
+#include "Character/LyraCharacter.h"
 
 AHarmoniaMonsterBase::AHarmoniaMonsterBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer
+		.SetDefaultSubobjectClass<UHarmoniaCharacterMovementComponent>(ALyraCharacter::CharacterMovementComponentName)
 		.SetDefaultSubobjectClass<UHarmoniaHealthComponent>(TEXT("HealthComponent")))
 {
+	// Cache HarmoniaCharacterMovementComponent
+	HarmoniaCharacterMovement = Cast<UHarmoniaCharacterMovementComponent>(GetCharacterMovement());
+	
 	// ASC comes from ALyraCharacterWithAbilities - self-owned, no PawnData required
 	
 	// Create attribute set (monster-specific stats)

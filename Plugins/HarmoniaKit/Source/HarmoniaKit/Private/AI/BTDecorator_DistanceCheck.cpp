@@ -14,14 +14,12 @@ bool UBTDecorator_DistanceCheck::CalculateRawConditionValue(UBehaviorTreeCompone
 	AAIController* AIController = OwnerComp.GetAIOwner();
 	if (!AIController)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] DistanceCheck: No AIController"));
 		return false;
 	}
 
 	APawn* Pawn = AIController->GetPawn();
 	if (!Pawn)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] DistanceCheck: No Pawn"));
 		return false;
 	}
 
@@ -35,7 +33,6 @@ bool UBTDecorator_DistanceCheck::CalculateRawConditionValue(UBehaviorTreeCompone
 
 	if (!Target)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] DistanceCheck: No Target"));
 		return false;
 	}
 
@@ -44,12 +41,8 @@ bool UBTDecorator_DistanceCheck::CalculateRawConditionValue(UBehaviorTreeCompone
 	// Check minimum distance
 	bool bPassedMin = (MinDistance <= 0.0f || Distance >= MinDistance);
 	bool bPassedMax = (MaxDistance <= 0.0f || Distance <= MaxDistance);
-	bool bResult = bPassedMin && bPassedMax;
 
-	UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] DistanceCheck: Distance=%.1f, Range=[%.0f-%.0f], PassMin=%d, PassMax=%d, Result=%d"), 
-		Distance, MinDistance, MaxDistance, bPassedMin, bPassedMax, bResult);
-
-	return bResult;
+	return bPassedMin && bPassedMax;
 }
 
 FString UBTDecorator_DistanceCheck::GetStaticDescription() const

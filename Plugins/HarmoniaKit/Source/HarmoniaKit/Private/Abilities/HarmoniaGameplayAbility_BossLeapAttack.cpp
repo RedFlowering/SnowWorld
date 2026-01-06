@@ -76,6 +76,7 @@ void UHarmoniaGameplayAbility_BossLeapAttack::ActivateAbility(const FGameplayAbi
 	UHarmoniaCharacterMovementComponent* MoveComp = GetHarmoniaMovementComponent();
 	if (!MoveComp)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("BossLeapAttack: No HarmoniaCharacterMovementComponent"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
@@ -131,15 +132,49 @@ void UHarmoniaGameplayAbility_BossLeapAttack::ActivateAbility(const FGameplayAbi
 				FOnMontageBlendingOutStarted BlendOutDelegate;
 				BlendOutDelegate.BindUObject(this, &UHarmoniaGameplayAbility_BossLeapAttack::OnMontageBlendingOut);
 
-				AnimInstance->Montage_Play(LeapMontage);
-				AnimInstance->Montage_SetEndDelegate(EndDelegate, LeapMontage);
-				AnimInstance->Montage_SetBlendingOutDelegate(BlendOutDelegate, LeapMontage);
+				float PlayResult = AnimInstance->Montage_Play(LeapMontage);
+				if (PlayResult > 0.0f)
+				{
+					AnimInstance->Montage_SetEndDelegate(EndDelegate, LeapMontage);
+					AnimInstance->Montage_SetBlendingOutDelegate(BlendOutDelegate, LeapMontage);
+				}
+				else
+				{
+					// Montage failed to play - use timer fallback
+					if (UWorld* World = GetWorld())
+					{
+						FTimerHandle TimerHandle;
+						World->GetTimerManager().SetTimer(
+							TimerHandle,
+							FTimerDelegate::CreateWeakLambda(this, [this, Handle, ActorInfo, ActivationInfo]()
+							{
+								EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+							}),
+							LeapDuration,
+							false
+						);
+					}
+				}
 			}
 		}
 	}
-
-	UE_LOG(LogTemp, Log, TEXT("BossLeapAttack: Target=%s, Distance=%.2f, Duration=%.2f"), 
-		*CachedTargetLocation.ToString(), Distance, LeapDuration);
+	else
+	{
+		// No montage - use timer fallback
+		if (UWorld* World = GetWorld())
+		{
+			FTimerHandle TimerHandle;
+			World->GetTimerManager().SetTimer(
+				TimerHandle,
+				FTimerDelegate::CreateWeakLambda(this, [this, Handle, ActorInfo, ActivationInfo]()
+				{
+					EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+				}),
+				LeapDuration,
+				false
+			);
+		}
+	}
 }
 
 void UHarmoniaGameplayAbility_BossLeapAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
@@ -184,6 +219,7 @@ void UHarmoniaGameplayAbility_BossLeapAttack::OnMontageBlendingOut(UAnimMontage*
 	ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
 	if (!Character)
 	{
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, bInterrupted);
 		return;
 	}
 
@@ -203,14 +239,13 @@ void UHarmoniaGameplayAbility_BossLeapAttack::OnMontageBlendingOut(UAnimMontage*
 
 				AnimInstance->Montage_Play(LandingAttackMontage);
 				AnimInstance->Montage_SetEndDelegate(EndDelegate, LandingAttackMontage);
-
-				UE_LOG(LogTemp, Log, TEXT("BossLeapAttack: Playing landing attack montage"));
 				return; // Don't end ability yet, wait for landing montage
 			}
 		}
 	}
 
-	// No landing montage, ability can end
+	// No landing montage or failed to play - END ABILITY NOW!
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
 FVector UHarmoniaGameplayAbility_BossLeapAttack::GetLeapTargetLocation() const

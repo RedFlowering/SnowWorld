@@ -64,6 +64,7 @@ void UHarmoniaGameplayAbility_LeapAttack::ActivateAbility(
 	UHarmoniaCharacterMovementComponent* MoveComp = GetHarmoniaMovementComponent();
 	if (!MoveComp)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("LeapAttack: No HarmoniaMovementComponent"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
@@ -125,9 +126,23 @@ void UHarmoniaGameplayAbility_LeapAttack::ActivateAbility(
 			}
 		}
 	}
-
-	UE_LOG(LogTemp, Log, TEXT("LeapAttack: Target=%s, Distance=%.2f, Duration=%.2f"), 
-		*CachedTargetLocation.ToString(), Distance, LeapDuration);
+	else
+	{
+		// No montage - end ability after leap duration using timer
+		if (UWorld* World = GetWorld())
+		{
+			FTimerHandle TimerHandle;
+			World->GetTimerManager().SetTimer(
+				TimerHandle,
+				FTimerDelegate::CreateWeakLambda(this, [this, Handle, ActorInfo, ActivationInfo]()
+				{
+					EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+				}),
+				LeapDuration,
+				false
+			);
+		}
+	}
 }
 
 void UHarmoniaGameplayAbility_LeapAttack::EndAbility(

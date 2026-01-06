@@ -38,6 +38,7 @@ UENUM(BlueprintType)
 enum class EPatternCategory : uint8
 {
 	Attack      UMETA(DisplayName = "Attack"),
+	LeapAttack  UMETA(DisplayName = "Leap Attack"),
 	Defense     UMETA(DisplayName = "Defense"),
 	Evasion     UMETA(DisplayName = "Evasion"),
 	Movement    UMETA(DisplayName = "Movement")
@@ -285,6 +286,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Monster|Pattern")
 	void StopCurrentPattern();
 
+	/** Force reset pattern state (emergency recovery for stuck patterns) */
+	UFUNCTION(BlueprintCallable, Category = "Monster|Pattern")
+	void ForceResetPattern();
+
 	/** Check if pattern is available for execution */
 	UFUNCTION(BlueprintPure, Category = "Monster|Pattern")
 	bool IsPatternAvailable(FName PatternName) const;
@@ -381,6 +386,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Monster|Pattern")
 	float GetPatternCooldownRemaining(FName PatternName) const;
 
+	/** Check if any pattern is available for the given category (-1 for any category) */
+	UFUNCTION(BlueprintPure, Category = "Monster|Pattern")
+	bool HasAnyAvailablePattern(int32 Category = -1) const;
+
+	/** Get the shortest remaining cooldown time across all patterns */
+	UFUNCTION(BlueprintPure, Category = "Monster|Pattern")
+	float GetShortestCooldownRemaining(int32 Category = -1) const;
+
 protected:
 	/** Get patterns for current phase (C++ only) */
 	const FMonsterPhasePatterns* GetCurrentPhasePatterns() const;
@@ -412,6 +425,9 @@ protected:
 
 	/** Update cooldowns */
 	void UpdateCooldowns(float DeltaTime);
+
+	/** Handle ability activation failure - proceed to next ability or complete pattern */
+	void HandleAbilityActivationFailure();
 
 	//~=============================================================================
 	// Effects Application

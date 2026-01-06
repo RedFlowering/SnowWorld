@@ -44,14 +44,13 @@ EBTNodeResult::Type UBTTask_ExecutePattern::ExecuteTask(UBehaviorTreeComponent& 
 	UHarmoniaMonsterPatternComponent* PatternComp = GetPatternComponent(Pawn);
 	if (!PatternComp)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecutePattern: No MonsterPatternComponent found on %s"), *Pawn->GetName());
 		return EBTNodeResult::Failed;
 	}
 
 	// If already executing a pattern, wait for it to complete
 	if (PatternComp->IsExecutingPattern())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecutePattern: Already executing pattern, waiting..."));
+		PatternStartTime = OwnerComp.GetWorld()->GetTimeSeconds();
 		return EBTNodeResult::InProgress;
 	}
 
@@ -59,21 +58,14 @@ EBTNodeResult::Type UBTTask_ExecutePattern::ExecuteTask(UBehaviorTreeComponent& 
 	AActor* Target = IHarmoniaMonsterInterface::Execute_GetCurrentTarget(Pawn);
 	if (!Target)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecutePattern: Monster has no current target"));
 		return EBTNodeResult::Failed;
 	}
 
 	// Execute contextual pattern based on category
-	UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecutePattern: Starting pattern, Category=%d, Target=%s"), 
-		static_cast<int32>(TargetCategory), *Target->GetName());
-	
 	bool bPatternStarted = PatternComp->ExecuteContextualPattern(TargetCategory, Target);
 
 	if (!bPatternStarted)
 	{
-		// No matching pattern found for category and conditions
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecutePattern: No pattern found for category %d"), 
-			static_cast<int32>(TargetCategory));
 		return EBTNodeResult::Failed;
 	}
 
@@ -103,8 +95,14 @@ void UBTTask_ExecutePattern::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 
 	if (ElapsedTime >= MaxWaitTime)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BTTask_ExecutePattern: Category %d timed out after %.1f seconds"), 
-			static_cast<int32>(TargetCategory), MaxWaitTime);
+		UE_LOG(LogTemp, Warning, TEXT("BTTask_ExecutePattern: TIMEOUT after %.1f seconds - forcing reset"), MaxWaitTime);
+		
+		// Force reset the pattern component so other patterns can execute
+		if (CachedPatternComponent.IsValid())
+		{
+			CachedPatternComponent->ForceResetPattern();
+		}
+		
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		return;
 	}
@@ -135,6 +133,7 @@ FString UBTTask_ExecutePattern::GetStaticDescription() const
 	switch (TargetCategory)
 	{
 		case EPatternCategory::Attack: CategoryName = TEXT("Attack"); break;
+		case EPatternCategory::LeapAttack: CategoryName = TEXT("Leap Attack"); break;
 		case EPatternCategory::Defense: CategoryName = TEXT("Defense"); break;
 		case EPatternCategory::Evasion: CategoryName = TEXT("Evasion"); break;
 		case EPatternCategory::Movement: CategoryName = TEXT("Movement"); break;

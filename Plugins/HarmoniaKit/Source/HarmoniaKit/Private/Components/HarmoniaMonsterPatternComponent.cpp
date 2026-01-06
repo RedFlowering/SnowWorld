@@ -141,6 +141,36 @@ void UHarmoniaMonsterPatternComponent::StopCurrentPattern()
 	CompletePatternExecution();
 }
 
+void UHarmoniaMonsterPatternComponent::ForceResetPattern()
+{
+	UE_LOG(LogTemp, Warning, TEXT("ForceResetPattern: Forcing pattern state reset"));
+	
+	// Clear all timers
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(AbilityDelayTimerHandle);
+		GetWorld()->GetTimerManager().ClearTimer(RepeatDelayTimerHandle);
+	}
+	
+	// Unbind ability ended delegate
+	if (AbilityEndedDelegateHandle.IsValid() && MonsterOwner)
+	{
+		if (UAbilitySystemComponent* ASC = MonsterOwner->GetAbilitySystemComponent())
+		{
+			ASC->OnAbilityEnded.Remove(AbilityEndedDelegateHandle);
+		}
+		AbilityEndedDelegateHandle.Reset();
+	}
+	
+	// Force reset all state
+	bIsExecutingPattern = false;
+	CurrentPatternName = NAME_None;
+	CurrentAbilityIndex = 0;
+	CurrentRepeatCount = 0;
+	PendingAbilityCount = 0;
+	ActivePattern = FMonsterAttackPattern();
+}
+
 bool UHarmoniaMonsterPatternComponent::IsPatternAvailable(FName PatternName) const
 {
 	const FMonsterAttackPattern* Pattern = GetPatternConfig(PatternName);
@@ -191,7 +221,6 @@ const FMonsterPhasePatterns* UHarmoniaMonsterPatternComponent::GetCurrentPhasePa
 {
 	if (!MonsterOwner)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] GetCurrentPhasePatterns: No MonsterOwner"));
 		return nullptr;
 	}
 	
@@ -203,9 +232,6 @@ const FMonsterPhasePatterns* UHarmoniaMonsterPatternComponent::GetCurrentPhasePa
 	{
 		CurrentPhase = BossMonster->GetCurrentPhase();
 	}
-	
-	UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] GetCurrentPhasePatterns: Phases.Num=%d, CurrentPhaseIndex=%d"), 
-		Phases.Num(), CurrentPhaseIndex);
 	
 	if (Phases.IsValidIndex(CurrentPhaseIndex)) 
 	{ 
@@ -226,6 +252,60 @@ float UHarmoniaMonsterPatternComponent::GetPatternCooldownRemaining(FName Patter
 	return Cooldown ? *Cooldown : 0.0f;
 }
 
+bool UHarmoniaMonsterPatternComponent::HasAnyAvailablePattern(int32 Category) const
+{
+	const FMonsterPhasePatterns* CurrentPhaseData = GetCurrentPhasePatterns();
+	if (!CurrentPhaseData)
+	{
+		return false;
+	}
+
+	for (const FMonsterAttackPattern& Pattern : CurrentPhaseData->AttackPatterns)
+	{
+		// Check category if specified (-1 means any)
+		if (Category >= 0 && static_cast<int32>(Pattern.PatternCategory) != Category)
+		{
+			continue;
+		}
+
+		if (CanExecutePattern(Pattern))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+float UHarmoniaMonsterPatternComponent::GetShortestCooldownRemaining(int32 Category) const
+{
+	float ShortestCooldown = TNumericLimits<float>::Max();
+	bool bFoundAny = false;
+
+	const FMonsterPhasePatterns* CurrentPhaseData = GetCurrentPhasePatterns();
+	if (!CurrentPhaseData)
+	{
+		return 0.0f;
+	}
+
+	for (const FMonsterAttackPattern& Pattern : CurrentPhaseData->AttackPatterns)
+	{
+		// Check category if specified (-1 means any)
+		if (Category >= 0 && static_cast<int32>(Pattern.PatternCategory) != Category)
+		{
+			continue;
+		}
+
+		float RemainingCooldown = GetPatternCooldownRemaining(Pattern.PatternName);
+		if (RemainingCooldown > 0.0f && RemainingCooldown < ShortestCooldown)
+		{
+			ShortestCooldown = RemainingCooldown;
+			bFoundAny = true;
+		}
+	}
+
+	return bFoundAny ? ShortestCooldown : 0.0f;
+}
+
 
 //~=============================================================================
 // Pattern Execution Implementation
@@ -233,12 +313,8 @@ float UHarmoniaMonsterPatternComponent::GetPatternCooldownRemaining(FName Patter
 
 void UHarmoniaMonsterPatternComponent::StartPatternExecution(const FMonsterAttackPattern& Pattern)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] StartPatternExecution: '%s', Abilities=%d, Cooldown=%.1f"),
-		*Pattern.PatternName.ToString(), Pattern.PatternAbilities.Num(), Pattern.Cooldown);
-
 	if (bIsExecutingPattern && !Pattern.bCanBeInterrupted)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] StartPatternExecution: Already executing and can't interrupt"));
 		return;
 	}
 
@@ -370,32 +446,26 @@ void UHarmoniaMonsterPatternComponent::ExecuteAbilityAtIndex(int32 AbilityIndex)
 {
 	if (!MonsterOwner)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecuteAbilityAtIndex: No MonsterOwner"));
 		return;
 	}
 
 	if (!ActivePattern.PatternAbilities.IsValidIndex(AbilityIndex))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecuteAbilityAtIndex: Invalid index %d"), AbilityIndex);
 		return;
 	}
 
 	UAbilitySystemComponent* ASC = MonsterOwner->GetAbilitySystemComponent();
 	if (!ASC)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecuteAbilityAtIndex: No ASC on %s"), *MonsterOwner->GetName());
 		return;
 	}
 
 	TSubclassOf<ULyraGameplayAbility> AbilityClass = ActivePattern.PatternAbilities[AbilityIndex];
 	if (!AbilityClass)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecuteAbilityAtIndex: AbilityClass is null"));
+		HandleAbilityActivationFailure();
 		return;
 	}
-
-	UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecuteAbilityAtIndex: Trying to activate '%s'"), 
-		*AbilityClass->GetName());
 
 	// Bind to ability ended callback (only once per pattern)
 	if (!AbilityEndedDelegateHandle.IsValid())
@@ -410,7 +480,6 @@ void UHarmoniaMonsterPatternComponent::ExecuteAbilityAtIndex(int32 AbilityIndex)
 	if (Spec)
 	{
 		bSuccess = ASC->TryActivateAbility(Spec->Handle);
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecuteAbilityAtIndex: Existing ability, TryActivate=%d"), bSuccess);
 	}
 	else
 	{
@@ -418,7 +487,6 @@ void UHarmoniaMonsterPatternComponent::ExecuteAbilityAtIndex(int32 AbilityIndex)
 		FGameplayAbilitySpec TempSpec(AbilityClass, 1, INDEX_NONE, MonsterOwner);
 		FGameplayAbilitySpecHandle Handle = ASC->GiveAbility(TempSpec);
 		bSuccess = ASC->TryActivateAbility(Handle);
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecuteAbilityAtIndex: Granted temp ability, TryActivate=%d"), bSuccess);
 		
 		// Track temporarily granted abilities for cleanup
 		TemporarilyGrantedAbilities.Add(Handle);
@@ -430,17 +498,14 @@ void UHarmoniaMonsterPatternComponent::ExecuteAbilityAtIndex(int32 AbilityIndex)
 	}
 	else
 	{
-		// Ability failed to activate, proceed to next step
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecuteAbilityAtIndex: Ability failed to activate, proceeding"));
+		// Ability failed to activate - proceed to next step or complete pattern
+		HandleAbilityActivationFailure();
 	}
 }
 
 void UHarmoniaMonsterPatternComponent::CompletePatternExecution()
 {
 	FName CompletedPattern = CurrentPatternName;
-
-	UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] CompletePatternExecution: '%s', Cooldown=%.1f"), 
-		*CompletedPattern.ToString(), ActivePattern.Cooldown);
 
 	// Unbind ability ended delegate
 	if (AbilityEndedDelegateHandle.IsValid() && MonsterOwner)
@@ -494,9 +559,6 @@ void UHarmoniaMonsterPatternComponent::OnAbilityEnded(const FAbilityEndedData& A
 
 	// Decrement pending ability count
 	PendingAbilityCount = FMath::Max(0, PendingAbilityCount - 1);
-
-	UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] OnAbilityEnded: Ability ended, PendingCount=%d, CurrentIndex=%d, TotalAbilities=%d"),
-		PendingAbilityCount, CurrentAbilityIndex, ActivePattern.PatternAbilities.Num());
 
 	// If there are still pending abilities, wait for them
 	if (PendingAbilityCount > 0)
@@ -555,21 +617,18 @@ bool UHarmoniaMonsterPatternComponent::CanExecutePattern(const FMonsterAttackPat
 {
 	if (!MonsterOwner)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] CanExecutePattern: No MonsterOwner"));
 		return false;
 	}
 
 	// Check if pattern is on cooldown
 	if (IsPatternOnCooldown(Pattern.PatternName))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] CanExecutePattern: '%s' is on cooldown"), *Pattern.PatternName.ToString());
 		return false;
 	}
 
 	// Check if currently executing and can't interrupt
 	if (bIsExecutingPattern && !Pattern.bCanBeInterrupted)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] CanExecutePattern: Currently executing pattern, cant interrupt"));
 		return false;
 	}
 
@@ -581,7 +640,6 @@ bool UHarmoniaMonsterPatternComponent::CanExecutePattern(const FMonsterAttackPat
 		{
 			if (!ASC->HasAllMatchingGameplayTags(Pattern.RequiredTags))
 			{
-				UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] CanExecutePattern: Missing required tags"));
 				return false;
 			}
 		}
@@ -590,7 +648,6 @@ bool UHarmoniaMonsterPatternComponent::CanExecutePattern(const FMonsterAttackPat
 		{
 			if (ASC->HasAnyMatchingGameplayTags(Pattern.BlockedByTags))
 			{
-				UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] CanExecutePattern: Blocked by tags"));
 				return false;
 			}
 		}
@@ -681,6 +738,63 @@ void UHarmoniaMonsterPatternComponent::OnAbilityDelayComplete()
 void UHarmoniaMonsterPatternComponent::OnRepeatDelayComplete()
 {
 	ExecuteNextAbility();
+}
+
+void UHarmoniaMonsterPatternComponent::HandleAbilityActivationFailure()
+{
+	// This function handles the case when an ability fails to activate
+	// Without this, the pattern would get stuck forever with bIsExecutingPattern = true
+	
+	// Check if there are more abilities in the current sequence
+	if (CurrentAbilityIndex < ActivePattern.PatternAbilities.Num())
+	{
+		// More abilities to try - proceed to next one
+		if (ActivePattern.AbilityDelay > 0.0f && GetWorld())
+		{
+			GetWorld()->GetTimerManager().SetTimer(
+				AbilityDelayTimerHandle,
+				this,
+				&UHarmoniaMonsterPatternComponent::OnAbilityDelayComplete,
+				ActivePattern.AbilityDelay,
+				false
+			);
+		}
+		else
+		{
+			ExecuteNextAbility();
+		}
+	}
+	else if (PendingAbilityCount == 0)
+	{
+		// No more abilities and nothing pending - handle repeat or complete
+		CurrentRepeatCount++;
+		if (CurrentRepeatCount < ActivePattern.RepeatCount)
+		{
+			// Need to repeat pattern
+			CurrentAbilityIndex = 0;
+			
+			if (ActivePattern.RepeatDelay > 0.0f && GetWorld())
+			{
+				GetWorld()->GetTimerManager().SetTimer(
+					RepeatDelayTimerHandle,
+					this,
+					&UHarmoniaMonsterPatternComponent::OnRepeatDelayComplete,
+					ActivePattern.RepeatDelay,
+					false
+				);
+			}
+			else
+			{
+			ExecuteNextAbility();
+			}
+		}
+		else
+		{
+			// Pattern complete
+			CompletePatternExecution();
+		}
+	}
+	// If some abilities are still pending, just wait for them
 }
 
 //~=============================================================================
@@ -955,21 +1069,13 @@ bool UHarmoniaMonsterPatternComponent::ExecuteContextualPattern(EPatternCategory
 {
     if (!MonsterOwner || !Target)
     {
-        UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecuteContextualPattern: MonsterOwner=%s, Target=%s"),
-            MonsterOwner ? TEXT("Valid") : TEXT("nullptr"),
-            Target ? TEXT("Valid") : TEXT("nullptr"));
         return false;
     }
-
-    UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecuteContextualPattern: Phases.Num=%d, CurrentPhaseIndex=%d"),
-        Phases.Num(), CurrentPhaseIndex);
 
     // Get patterns matching category and conditions
     TArray<int32> AvailableIndices = GetAvailablePatternsForCategory(Category, Target);
     if (AvailableIndices.Num() == 0)
     {
-        UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] ExecuteContextualPattern: No available patterns for category %d"),
-            static_cast<int32>(Category));
         return false;
     }
 
@@ -1019,42 +1125,31 @@ TArray<int32> UHarmoniaMonsterPatternComponent::GetAvailablePatternsForCategory(
     const FMonsterPhasePatterns* CurrentPhaseData = GetCurrentPhasePatterns();
     if (!CurrentPhaseData)
     {
-        UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] GetAvailablePatternsForCategory: No CurrentPhaseData"));
         return AvailableIndices;
     }
-
-    UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] GetAvailablePatternsForCategory: Checking %d patterns for category %d"), 
-        CurrentPhaseData->AttackPatterns.Num(), static_cast<int32>(Category));
 
     for (int32 i = 0; i < CurrentPhaseData->AttackPatterns.Num(); ++i)
     {
         const FMonsterAttackPattern& Pattern = CurrentPhaseData->AttackPatterns[i];
         
-        UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI]   Pattern[%d] '%s': Category=%d"), 
-            i, *Pattern.PatternName.ToString(), static_cast<int32>(Pattern.PatternCategory));
-
         // Check category match
         if (Pattern.PatternCategory != Category)
         {
-            UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI]     -> Category mismatch (expected %d)"), static_cast<int32>(Category));
             continue;
         }
 
         // Check if pattern can be executed (cooldown, tags, etc.)
         if (!CanExecutePattern(Pattern))
         {
-            UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI]     -> CanExecutePattern failed"));
             continue;
         }
 
         // Check contextual conditions
         if (!EvaluatePatternConditions(Pattern, Target))
         {
-            UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI]     -> EvaluatePatternConditions failed"));
             continue;
         }
 
-        UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI]     -> AVAILABLE!"));
         AvailableIndices.Add(i);
     }
 
@@ -1065,7 +1160,6 @@ bool UHarmoniaMonsterPatternComponent::EvaluatePatternConditions(const FMonsterA
 {
     if (!MonsterOwner || !Target)
     {
-        UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] EvaluatePatternConditions: No Owner or Target"));
         return false;
     }
 
@@ -1073,12 +1167,10 @@ bool UHarmoniaMonsterPatternComponent::EvaluatePatternConditions(const FMonsterA
     float Distance = GetDistanceToTarget(Target);
     if (Pattern.MinDistance > 0.0f && Distance < Pattern.MinDistance)
     {
-        UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] EvaluatePatternConditions: Distance %.1f < MinDistance %.1f"), Distance, Pattern.MinDistance);
         return false;
     }
     if (Pattern.MaxDistance > 0.0f && Distance > Pattern.MaxDistance)
     {
-        UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] EvaluatePatternConditions: Distance %.1f > MaxDistance %.1f"), Distance, Pattern.MaxDistance);
         return false;
     }
 
@@ -1086,8 +1178,6 @@ bool UHarmoniaMonsterPatternComponent::EvaluatePatternConditions(const FMonsterA
     float HeightDiff = GetHeightDifferenceToTarget(Target);
     if (HeightDiff < Pattern.MinHeightDifference || HeightDiff > Pattern.MaxHeightDifference)
     {
-        UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] EvaluatePatternConditions: HeightDiff %.1f not in [%.1f, %.1f]"), 
-            HeightDiff, Pattern.MinHeightDifference, Pattern.MaxHeightDifference);
         return false;
     }
 
@@ -1096,7 +1186,6 @@ bool UHarmoniaMonsterPatternComponent::EvaluatePatternConditions(const FMonsterA
     {
         if (!IsFacingTarget(Target, 90.0f))
         {
-            UE_LOG(LogTemp, Warning, TEXT("[HARMONIA_AI] EvaluatePatternConditions: Not facing target"));
             return false;
         }
     }
