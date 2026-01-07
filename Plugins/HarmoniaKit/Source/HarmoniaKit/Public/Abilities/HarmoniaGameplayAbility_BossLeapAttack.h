@@ -13,18 +13,24 @@ class UAnimMontage;
 /**
  * UHarmoniaGameplayAbility_BossLeapAttack
  *
- * 보스 전용 도약 공격 어빌리티
- * - Motion Warping을 사용한 타겟 추적 도약
- * - CustomMovementMode(Leaping)를 사용한 포물선 이동
+ * 보스 전용 점프 대쉬 공격 어빌리티 (2단계 공격)
  * 
- * 동작 순서:
- * 1. LeapMontage 재생 시작 (도약 시작 애니메이션)
- * 2. StartLeaping() 호출로 캐릭터 이동 시작
- * 3. 공중 체류 시간 = 몽타주 길이로 결정
- * 4. 착지 시 LandingAttackMontage 재생 (옵션)
- * 5. 착지 위치는 모션워핑으로 타겟 방향 조정
+ * === 동작 패턴 ===
+ * Phase 1: 점프 (위로 도약)
+ *   - JumpMontage 재생
+ *   - 설정된 JumpAngle로 상승
+ *   - JumpHeight까지 상승 후 Phase 2로 전환
  * 
- * NOTE: 도약 중 이동은 몽타주의 루트모션이 아닌 CustomMovement로 처리됨
+ * Phase 2: 대쉬 공격 (타겟에게 돌진)
+ *   - DashAttackMontage 재생
+ *   - Motion Warping으로 타겟 추적
+ *   - 타겟에게 빠르게 접근하면서 공격
+ * 
+ * === Motion Warping ===
+ * - Phase 2에서 'AttackTarget' 워프 타겟 사용
+ * - AddOrUpdateWarpTargetFromComponent로 실시간 추적
+ * 
+ * @see AnimNotifyState_MotionWarping (Warp Target Name = "AttackTarget")
  */
 UCLASS(BlueprintType, Blueprintable)
 class HARMONIAKIT_API UHarmoniaGameplayAbility_BossLeapAttack : public UHarmoniaGameplayAbility_Boss
@@ -42,21 +48,34 @@ protected:
 	//~End of UGameplayAbility interface
 
 	//~=============================================================================
+	// Phase Transitions
+	//~=============================================================================
+
+	/** Start Phase 1: Jump up */
+	void StartJumpPhase();
+
+	/** Start Phase 2: Dash attack towards target */
+	void StartDashAttackPhase();
+
+	/** Setup Motion Warping target for dash attack phase */
+	void SetupMotionWarpingTarget();
+
+	//~=============================================================================
 	// Montage Callbacks
 	//~=============================================================================
 
 	UFUNCTION()
-	void OnMontageCompleted(UAnimMontage* Montage, bool bInterrupted);
+	void OnJumpMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted);
 
 	UFUNCTION()
-	void OnMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted);
+	void OnDashAttackMontageCompleted(UAnimMontage* Montage, bool bInterrupted);
 
 	//~=============================================================================
 	// Helper Functions
 	//~=============================================================================
 
-	/** Get target location for leap (from AIController blackboard) */
-	FVector GetLeapTargetLocation() const;
+	/** Get target actor from AI Blackboard */
+	AActor* GetTargetActor() const;
 
 	/** Get movement component */
 	UHarmoniaCharacterMovementComponent* GetHarmoniaMovementComponent() const;
@@ -66,46 +85,66 @@ protected:
 
 public:
 	//~=============================================================================
-	// Leap Settings (블루프린트에서 편집 가능)
+	// Jump Phase Settings (Phase 1)
 	//~=============================================================================
 
-	/** 도약 각도 (도, 0=수평, 90=수직) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Leap", meta = (ClampMin = "15.0", ClampMax = "75.0"))
-	float LeapAngle = 45.0f;
+	/** 점프 각도 (도, 0=수평, 90=수직) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Leap|Jump", meta = (ClampMin = "30.0", ClampMax = "90.0"))
+	float JumpAngle = 70.0f;
 
-	/** 최소 도약 거리 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Leap")
-	float MinLeapDistance = 200.0f;
+	/** 점프 높이 (위로 얼마나 올라갈지) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Leap|Jump")
+	float JumpHeight = 400.0f;
 
-	/** 최대 도약 거리 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Leap")
-	float MaxLeapDistance = 1500.0f;
+	/** 점프 시간 (Phase 1 지속 시간) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Leap|Jump")
+	float JumpDuration = 0.5f;
 
-	/** 타겟 앞 착지 오프셋 (타겟 위치에서 이 거리만큼 앞에 착지) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Leap")
-	float TargetLocationOffset = 150.0f;
-
-	/** 착지 데미지 배율 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Leap")
-	float LandingDamageMultiplier = 1.5f;
+	/** 점프 몽타주 (Phase 1) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Leap|Animation")
+	TObjectPtr<UAnimMontage> JumpMontage = nullptr;
 
 	//~=============================================================================
-	// Animation (블루프린트에서 편집 가능)
+	// Dash Attack Phase Settings (Phase 2)
 	//~=============================================================================
 
-	/** 도약 몽타주 (공중 체류 시간 = 이 몽타주 길이) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Animation")
-	TObjectPtr<UAnimMontage> LeapMontage = nullptr;
+	/** 대쉬 속도 (타겟 방향 이동 속도) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Leap|DashAttack")
+	float DashSpeed = 2000.0f;
 
-	/** 착지 공격 몽타주 (옵션, 착지 후 추가 공격) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Animation")
-	TObjectPtr<UAnimMontage> LandingAttackMontage = nullptr;
+	/** 최대 대쉬 거리 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Leap|DashAttack")
+	float MaxDashDistance = 1500.0f;
 
-	// NOTE: Rotation is handled by Motion Warping AnimNotifyState in the montages
-	// - For players: LockOnComponent sets the warp target
-	// - For AI: BT sets TargetActor, MotionWarpingComponent handles rotation
+	/** 타겟 앞에서 멈출 거리 (타겟 위에 착지하지 않도록) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Leap|DashAttack")
+	float TargetStopDistance = 100.0f;
+
+	/** 대쉬 공격 몽타주 (Phase 2) - Motion Warping 포함 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Leap|Animation")
+	TObjectPtr<UAnimMontage> DashAttackMontage = nullptr;
+
+	//~=============================================================================
+	// Motion Warping Settings
+	//~=============================================================================
+
+	/** Motion Warping target name (must match AnimNotifyState) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Leap|Motion Warping")
+	FName WarpTargetName = FName("AttackTarget");
+
+	/** Whether to enable motion warping during dash attack */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Leap|Motion Warping")
+	bool bEnableMotionWarping = true;
 
 protected:
-	/** Cached target location for this leap */
-	FVector CachedTargetLocation;
+	/** Current attack phase */
+	UPROPERTY(Transient)
+	int32 CurrentPhase = 0;
+
+	/** Cached target actor */
+	UPROPERTY(Transient)
+	TWeakObjectPtr<AActor> CachedTargetActor;
+
+	/** Timer for phase transition */
+	FTimerHandle PhaseTransitionTimerHandle;
 };

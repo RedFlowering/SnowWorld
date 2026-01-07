@@ -2,6 +2,7 @@
 
 #include "Abilities/HarmoniaGameplayAbility_MeleeAttack.h"
 #include "Components/HarmoniaMeleeCombatComponent.h"
+#include "Components/HarmoniaLockOnComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "Animation/AnimMontage.h"
@@ -11,6 +12,7 @@
 #include "GameplayCueManager.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "HarmoniaGameplayTags.h"
+#include "MotionWarpingComponent.h"
 
 UHarmoniaGameplayAbility_MeleeAttack::UHarmoniaGameplayAbility_MeleeAttack(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -210,6 +212,9 @@ void UHarmoniaGameplayAbility_MeleeAttack::PerformMeleeAttack()
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		return;
 	}
+
+	// Setup Motion Warping target from LockOn component
+	SetupMotionWarpingTarget();
 
 	// Get the current combo step to get montage section name
 	FHarmoniaComboAttackStep CurrentStep;
@@ -679,5 +684,57 @@ void UHarmoniaGameplayAbility_MeleeAttack::ServerReleaseChargeAttack_Implementat
 	if (bIsCharging)
 	{
 		ReleaseChargeAttack();
+	}
+}
+
+void UHarmoniaGameplayAbility_MeleeAttack::SetupMotionWarpingTarget()
+{
+	if (!bEnableMotionWarping)
+	{
+		return;
+	}
+
+	AActor* AvatarActor = GetAvatarActorFromActorInfo();
+	if (!AvatarActor)
+	{
+		return;
+	}
+
+	// Get Motion Warping Component from the player character
+	UMotionWarpingComponent* WarpComp = AvatarActor->FindComponentByClass<UMotionWarpingComponent>();
+	if (!WarpComp)
+	{
+		return;
+	}
+
+	// Get target from LockOn component
+	AActor* TargetActor = nullptr;
+	if (UHarmoniaLockOnComponent* LockOnComp = AvatarActor->FindComponentByClass<UHarmoniaLockOnComponent>())
+	{
+		if (LockOnComp->IsLockedOn())
+		{
+			TargetActor = LockOnComp->GetCurrentTarget();
+		}
+	}
+
+	if (!TargetActor)
+	{
+		// No lock-on target, remove any existing warp target
+		WarpComp->RemoveWarpTarget(WarpTargetName);
+		return;
+	}
+
+	// Use component tracking for automatic target following during animation
+	// This will update the warp target position every frame as the target moves
+	if (USceneComponent* TargetRoot = TargetActor->GetRootComponent())
+	{
+		WarpComp->AddOrUpdateWarpTargetFromComponent(
+			WarpTargetName,
+			TargetRoot,
+			NAME_None,  // No specific bone, use root component (Warp to Feet Location handles height)
+			true,       // Follow rotation as well
+			FVector::ZeroVector,  // Location offset
+			FRotator::ZeroRotator // Rotation offset
+		);
 	}
 }

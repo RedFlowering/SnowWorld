@@ -88,8 +88,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Attack")
 	bool bEndAbilityOnMontageComplete = true;
 
-	// NOTE: Rotation is handled by Motion Warping AnimNotifyState in the montage
-	// - For players: LockOnComponent sets the warp target
-	// - For AI: BT sets TargetActor, MotionWarpingComponent handles rotation
+	/** Motion Warping target name to use in AnimNotifyState_MotionWarping */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Attack|Motion Warping")
+	FName WarpTargetName = FName("AttackTarget");
+
+	/** Whether to enable motion warping towards target during attack */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Attack|Motion Warping")
+	bool bEnableMotionWarping = true;
+
+protected:
+	/** Setup motion warping target from AI Blackboard TargetActor */
+	virtual void SetupMotionWarpingTarget();
 };
 

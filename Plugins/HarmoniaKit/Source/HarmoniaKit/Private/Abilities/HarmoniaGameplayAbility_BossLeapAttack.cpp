@@ -12,11 +12,15 @@
 UHarmoniaGameplayAbility_BossLeapAttack::UHarmoniaGameplayAbility_BossLeapAttack(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	LeapAngle = 45.0f;
-	MinLeapDistance = 200.0f;
-	MaxLeapDistance = 1500.0f;
-	TargetLocationOffset = 150.0f;
-	LandingDamageMultiplier = 1.5f;
+	// Phase 1: Jump settings
+	JumpAngle = 70.0f;
+	JumpHeight = 400.0f;
+	JumpDuration = 0.5f;
+
+	// Phase 2: Dash Attack settings
+	DashSpeed = 2000.0f;
+	MaxDashDistance = 1500.0f;
+	TargetStopDistance = 100.0f;
 }
 
 bool UHarmoniaGameplayAbility_BossLeapAttack::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
@@ -26,13 +30,13 @@ bool UHarmoniaGameplayAbility_BossLeapAttack::CanActivateAbility(const FGameplay
 		return false;
 	}
 
-	// Check if leap montage is set
-	if (!LeapMontage)
+	// Need at least one montage
+	if (!JumpMontage && !DashAttackMontage)
 	{
 		return false;
 	}
 
-	// Check distance to target
+	// Check if target exists
 	APawn* OwnerPawn = Cast<APawn>(ActorInfo->AvatarActor.Get());
 	if (OwnerPawn)
 	{
@@ -42,14 +46,18 @@ bool UHarmoniaGameplayAbility_BossLeapAttack::CanActivateAbility(const FGameplay
 			UBlackboardComponent* BlackboardComp = AIController->GetBlackboardComponent();
 			if (BlackboardComp)
 			{
-				AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(FName("TargetActor")));
-				if (TargetActor)
+				// Note: AI Controller sets "Target", not "TargetActor"
+				AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(FName("Target")));
+				if (!TargetActor)
 				{
-					float Distance = FVector::Dist(OwnerPawn->GetActorLocation(), TargetActor->GetActorLocation());
-					if (Distance < MinLeapDistance || Distance > MaxLeapDistance)
-					{
-						return false;
-					}
+					return false; // No target
+				}
+
+				// Optional: Check distance if needed
+				float Distance = FVector::Dist(OwnerPawn->GetActorLocation(), TargetActor->GetActorLocation());
+				if (Distance > MaxDashDistance * 2.0f)
+				{
+					return false; // Too far
 				}
 			}
 		}
@@ -66,120 +74,23 @@ void UHarmoniaGameplayAbility_BossLeapAttack::ActivateAbility(const FGameplayAbi
 		return;
 	}
 
-	ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
-	if (!Character)
-	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-		return;
-	}
+	// Cache target actor
+	CachedTargetActor = GetTargetActor();
 
-	UHarmoniaCharacterMovementComponent* MoveComp = GetHarmoniaMovementComponent();
-	if (!MoveComp)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("BossLeapAttack: No HarmoniaCharacterMovementComponent"));
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-		return;
-	}
-
-	// Cache target location
-	CachedTargetLocation = GetLeapTargetLocation();
-
-	// Clamp distance
-	FVector StartLocation = Character->GetActorLocation();
-	FVector ToTarget = CachedTargetLocation - StartLocation;
-	float Distance = ToTarget.Size2D();
-
-	if (Distance < MinLeapDistance)
-	{
-		// Too close, use minimum distance in forward direction
-		CachedTargetLocation = StartLocation + Character->GetActorForwardVector() * MinLeapDistance;
-	}
-	else if (Distance > MaxLeapDistance)
-	{
-		// Too far, clamp to max distance
-		FVector Direction = ToTarget.GetSafeNormal2D();
-		CachedTargetLocation = StartLocation + Direction * MaxLeapDistance;
-		CachedTargetLocation.Z = StartLocation.Z;
-	}
-
-	// Apply target offset (land in front of target, not on top)
-	if (TargetLocationOffset > 0.0f)
-	{
-		FVector Direction = (CachedTargetLocation - StartLocation).GetSafeNormal2D();
-		CachedTargetLocation -= Direction * TargetLocationOffset;
-	}
-
-	// Calculate leap duration from montage length
-	float LeapDuration = 1.0f;
-	if (LeapMontage)
-	{
-		LeapDuration = LeapMontage->GetPlayLength();
-	}
-
-	// Start leaping (CustomMovementMode)
-	MoveComp->StartLeaping(CachedTargetLocation, LeapAngle, LeapDuration);
-
-	// Play montage
-	if (LeapMontage)
-	{
-		if (USkeletalMeshComponent* Mesh = Character->GetMesh())
-		{
-			if (UAnimInstance* AnimInstance = Mesh->GetAnimInstance())
-			{
-				FOnMontageEnded EndDelegate;
-				EndDelegate.BindUObject(this, &UHarmoniaGameplayAbility_BossLeapAttack::OnMontageCompleted);
-
-				FOnMontageBlendingOutStarted BlendOutDelegate;
-				BlendOutDelegate.BindUObject(this, &UHarmoniaGameplayAbility_BossLeapAttack::OnMontageBlendingOut);
-
-				float PlayResult = AnimInstance->Montage_Play(LeapMontage);
-				if (PlayResult > 0.0f)
-				{
-					AnimInstance->Montage_SetEndDelegate(EndDelegate, LeapMontage);
-					AnimInstance->Montage_SetBlendingOutDelegate(BlendOutDelegate, LeapMontage);
-				}
-				else
-				{
-					// Montage failed to play - use timer fallback
-					if (UWorld* World = GetWorld())
-					{
-						FTimerHandle TimerHandle;
-						World->GetTimerManager().SetTimer(
-							TimerHandle,
-							FTimerDelegate::CreateWeakLambda(this, [this, Handle, ActorInfo, ActivationInfo]()
-							{
-								EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
-							}),
-							LeapDuration,
-							false
-						);
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		// No montage - use timer fallback
-		if (UWorld* World = GetWorld())
-		{
-			FTimerHandle TimerHandle;
-			World->GetTimerManager().SetTimer(
-				TimerHandle,
-				FTimerDelegate::CreateWeakLambda(this, [this, Handle, ActorInfo, ActivationInfo]()
-				{
-					EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
-				}),
-				LeapDuration,
-				false
-			);
-		}
-	}
+	// Start Phase 1: Jump
+	CurrentPhase = 1;
+	StartJumpPhase();
 }
 
 void UHarmoniaGameplayAbility_BossLeapAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	// Stop leaping if still in progress
+	// Clear timer
+	if (AActor* Avatar = GetAvatarActorFromActorInfo())
+	{
+		Avatar->GetWorldTimerManager().ClearTimer(PhaseTransitionTimerHandle);
+	}
+
+	// Stop any custom movement
 	if (UHarmoniaCharacterMovementComponent* MoveComp = GetHarmoniaMovementComponent())
 	{
 		if (MoveComp->IsLeaping())
@@ -188,95 +99,261 @@ void UHarmoniaGameplayAbility_BossLeapAttack::EndAbility(const FGameplayAbilityS
 		}
 	}
 
+	CurrentPhase = 0;
+	CachedTargetActor.Reset();
+
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UHarmoniaGameplayAbility_BossLeapAttack::OnMontageCompleted(UAnimMontage* Montage, bool bInterrupted)
+//~=============================================================================
+// Phase 1: Jump
+//~=============================================================================
+
+void UHarmoniaGameplayAbility_BossLeapAttack::StartJumpPhase()
 {
-	// LandingAttackMontage가 끝나면 어빌리티 종료
-	// LeapMontage Blend Out 시점에서 LandingAttackMontage 시작하므로
-	// 여기서는 LandingAttackMontage 완료 여부 체크
-	if (Montage == LandingAttackMontage || !LandingAttackMontage)
+	ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+	if (!Character)
 	{
-		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, bInterrupted);
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+		return;
+	}
+
+	UHarmoniaCharacterMovementComponent* MoveComp = GetHarmoniaMovementComponent();
+
+	// Calculate jump target (upward from current position)
+	FVector StartLocation = Character->GetActorLocation();
+	FVector JumpDirection = FRotator(JumpAngle, Character->GetActorRotation().Yaw, 0.0f).Vector();
+	FVector JumpTarget = StartLocation + JumpDirection * JumpHeight;
+
+	// Start jump movement if movement component supports it
+	if (MoveComp)
+	{
+		// Use leaping with short distance for upward jump
+		MoveComp->StartLeaping(JumpTarget, JumpAngle, JumpDuration);
+	}
+
+	// Play jump montage
+	if (JumpMontage)
+	{
+		if (USkeletalMeshComponent* Mesh = Character->GetMesh())
+		{
+			if (UAnimInstance* AnimInstance = Mesh->GetAnimInstance())
+			{
+				FOnMontageBlendingOutStarted BlendOutDelegate;
+				BlendOutDelegate.BindUObject(this, &UHarmoniaGameplayAbility_BossLeapAttack::OnJumpMontageBlendingOut);
+
+				float PlayResult = AnimInstance->Montage_Play(JumpMontage);
+				if (PlayResult > 0.0f)
+				{
+					AnimInstance->Montage_SetBlendingOutDelegate(BlendOutDelegate, JumpMontage);
+					return; // Wait for montage blend out to transition to Phase 2
+				}
+			}
+		}
+	}
+
+	// No montage or failed to play - use timer for phase transition
+	if (AActor* Avatar = GetAvatarActorFromActorInfo())
+	{
+		Avatar->GetWorldTimerManager().SetTimer(
+			PhaseTransitionTimerHandle,
+			this,
+			&UHarmoniaGameplayAbility_BossLeapAttack::StartDashAttackPhase,
+			JumpDuration,
+			false
+		);
 	}
 }
 
-void UHarmoniaGameplayAbility_BossLeapAttack::OnMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted)
+void UHarmoniaGameplayAbility_BossLeapAttack::OnJumpMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted)
 {
-	// LeapMontage 블렌드 아웃 시점 = 착지 시점
-	if (Montage != LeapMontage)
+	if (Montage != JumpMontage)
 	{
 		return;
 	}
 
-	// Stop leaping movement
-	if (UHarmoniaCharacterMovementComponent* MoveComp = GetHarmoniaMovementComponent())
+	if (bInterrupted)
 	{
-		MoveComp->StopLeaping();
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+		return;
 	}
+
+	// Transition to Phase 2
+	StartDashAttackPhase();
+}
+
+//~=============================================================================
+// Phase 2: Dash Attack
+//~=============================================================================
+
+void UHarmoniaGameplayAbility_BossLeapAttack::StartDashAttackPhase()
+{
+	CurrentPhase = 2;
 
 	ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
 	if (!Character)
 	{
-		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, bInterrupted);
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		return;
 	}
 
-	// NOTE: Rotation is handled by Motion Warping AnimNotifyState in LandingAttackMontage
-	// - For players: LockOnComponent sets the warp target
-	// - For AI: BT sets TargetActor, MotionWarpingComponent handles rotation
+	UHarmoniaCharacterMovementComponent* MoveComp = GetHarmoniaMovementComponent();
 
-	// Play landing attack montage if set
-	if (LandingAttackMontage)
+	// Stop previous movement
+	if (MoveComp && MoveComp->IsLeaping())
+	{
+		MoveComp->StopLeaping();
+	}
+
+	// Setup Motion Warping target BEFORE playing montage
+	SetupMotionWarpingTarget();
+
+	// Calculate dash target (towards target actor)
+	AActor* TargetActor = CachedTargetActor.Get();
+	if (TargetActor && MoveComp)
+	{
+		FVector CurrentLocation = Character->GetActorLocation();
+		FVector TargetLocation = TargetActor->GetActorLocation();
+		
+		// Stop before reaching target
+		FVector Direction = (TargetLocation - CurrentLocation).GetSafeNormal();
+		FVector DashTarget = TargetLocation - Direction * TargetStopDistance;
+		
+		// Calculate dash duration based on distance and speed
+		float Distance = FVector::Dist(CurrentLocation, DashTarget);
+		Distance = FMath::Min(Distance, MaxDashDistance);
+		float DashDuration = Distance / DashSpeed;
+		DashDuration = FMath::Max(DashDuration, 0.3f); // Minimum duration
+
+		// Start dash movement (descending towards target)
+		// Use negative angle for descending
+		MoveComp->StartLeaping(DashTarget, -30.0f, DashDuration);
+	}
+
+	// Play dash attack montage
+	if (DashAttackMontage)
 	{
 		if (USkeletalMeshComponent* Mesh = Character->GetMesh())
 		{
 			if (UAnimInstance* AnimInstance = Mesh->GetAnimInstance())
 			{
 				FOnMontageEnded EndDelegate;
-				EndDelegate.BindUObject(this, &UHarmoniaGameplayAbility_BossLeapAttack::OnMontageCompleted);
+				EndDelegate.BindUObject(this, &UHarmoniaGameplayAbility_BossLeapAttack::OnDashAttackMontageCompleted);
 
-				AnimInstance->Montage_Play(LandingAttackMontage);
-				AnimInstance->Montage_SetEndDelegate(EndDelegate, LandingAttackMontage);
-				return; // Don't end ability yet, wait for landing montage
+				float PlayResult = AnimInstance->Montage_Play(DashAttackMontage);
+				if (PlayResult > 0.0f)
+				{
+					AnimInstance->Montage_SetEndDelegate(EndDelegate, DashAttackMontage);
+					return; // Wait for montage completion
+				}
 			}
 		}
 	}
 
-	// No landing montage or failed to play - END ABILITY NOW!
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+	// No montage - end ability after a short delay
+	if (AActor* Avatar = GetAvatarActorFromActorInfo())
+	{
+		float FallbackDuration = 0.5f;
+		Avatar->GetWorldTimerManager().SetTimer(
+			PhaseTransitionTimerHandle,
+			FTimerDelegate::CreateWeakLambda(this, [this]()
+			{
+				EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+			}),
+			FallbackDuration,
+			false
+		);
+	}
 }
 
-FVector UHarmoniaGameplayAbility_BossLeapAttack::GetLeapTargetLocation() const
+void UHarmoniaGameplayAbility_BossLeapAttack::OnDashAttackMontageCompleted(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (Montage != DashAttackMontage)
+	{
+		return;
+	}
+
+	// Stop movement
+	if (UHarmoniaCharacterMovementComponent* MoveComp = GetHarmoniaMovementComponent())
+	{
+		if (MoveComp->IsLeaping())
+		{
+			MoveComp->StopLeaping();
+		}
+	}
+
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, bInterrupted);
+}
+
+//~=============================================================================
+// Motion Warping
+//~=============================================================================
+
+void UHarmoniaGameplayAbility_BossLeapAttack::SetupMotionWarpingTarget()
+{
+	if (!bEnableMotionWarping)
+	{
+		return;
+	}
+
+	AActor* AvatarActor = GetAvatarActorFromActorInfo();
+	if (!AvatarActor)
+	{
+		return;
+	}
+
+	UMotionWarpingComponent* WarpComp = GetMotionWarpingComponent();
+	if (!WarpComp)
+	{
+		return;
+	}
+
+	AActor* TargetActor = CachedTargetActor.Get();
+	if (!TargetActor)
+	{
+		return;
+	}
+
+	// Use component tracking for automatic target following during dash
+	if (USceneComponent* TargetRoot = TargetActor->GetRootComponent())
+	{
+		WarpComp->AddOrUpdateWarpTargetFromComponent(
+			WarpTargetName,
+			TargetRoot,
+			NAME_None,  // No specific bone (Warp to Feet Location handles height)
+			true,       // Follow rotation as well
+			FVector::ZeroVector,  // Location offset
+			FRotator::ZeroRotator // Rotation offset
+		);
+	}
+}
+
+//~=============================================================================
+// Helper Functions
+//~=============================================================================
+
+AActor* UHarmoniaGameplayAbility_BossLeapAttack::GetTargetActor() const
 {
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (!OwnerPawn)
 	{
-		return FVector::ZeroVector;
+		return nullptr;
 	}
 
 	AAIController* AIController = Cast<AAIController>(OwnerPawn->GetController());
 	if (!AIController)
 	{
-		return OwnerPawn->GetActorLocation();
+		return nullptr;
 	}
 
 	UBlackboardComponent* BlackboardComp = AIController->GetBlackboardComponent();
 	if (!BlackboardComp)
 	{
-		return OwnerPawn->GetActorLocation();
+		return nullptr;
 	}
 
-	AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(FName("TargetActor")));
-	if (!TargetActor)
-	{
-		return OwnerPawn->GetActorLocation();
-	}
-
-	// Calculate landing position (offset from target)
-	FVector Direction = (OwnerPawn->GetActorLocation() - TargetActor->GetActorLocation()).GetSafeNormal();
-	return TargetActor->GetActorLocation() + Direction * TargetLocationOffset;
+	// Note: AI Controller sets "Target", not "TargetActor"
+	return Cast<AActor>(BlackboardComp->GetValueAsObject(FName("Target")));
 }
 
 UHarmoniaCharacterMovementComponent* UHarmoniaGameplayAbility_BossLeapAttack::GetHarmoniaMovementComponent() const

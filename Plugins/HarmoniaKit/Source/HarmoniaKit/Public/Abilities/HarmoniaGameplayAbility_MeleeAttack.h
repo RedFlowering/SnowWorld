@@ -158,6 +158,21 @@ protected:
 	/** Last time ultimate attack was used (for cooldown check) */
 	float LastUltimateUseTime = -9999.0f;
 
+	// ============================================================================
+	// Motion Warping
+	// ============================================================================
+
+	/** Motion Warping target name to use in AnimNotifyState_MotionWarping */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Attack|Motion Warping")
+	FName WarpTargetName = FName("AttackTarget");
+
+	/** Whether to enable motion warping towards target during attack */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Attack|Motion Warping")
+	bool bEnableMotionWarping = true;
+
+	/** Setup motion warping target from LockOn component */
+	void SetupMotionWarpingTarget();
+
 private:
 	/** Get melee combat component from owner */
 	UHarmoniaMeleeCombatComponent* GetMeleeCombatComponent() const;

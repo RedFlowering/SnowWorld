@@ -3,6 +3,9 @@
 #include "Abilities/HarmoniaGameplayAbility_BossAttack.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Animation/AnimMontage.h"
+#include "MotionWarpingComponent.h"
+#include "AIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 UHarmoniaGameplayAbility_BossAttack::UHarmoniaGameplayAbility_BossAttack(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -31,9 +34,8 @@ void UHarmoniaGameplayAbility_BossAttack::ActivateAbility(
 		return;
 	}
 
-	// NOTE: Rotation is handled by Motion Warping AnimNotifyState in the montage
-	// - For players: LockOnComponent sets the warp target
-	// - For AI: BT sets TargetActor in Blackboard, which is used by MotionWarpingComponent
+	// Setup Motion Warping target before playing montage
+	SetupMotionWarpingTarget();
 
 	// Play montage
 	UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
@@ -91,4 +93,65 @@ void UHarmoniaGameplayAbility_BossAttack::OnMontageBlendOut()
 {
 	// Optional: 블렌드 아웃 시 처리
 	// 일반적으로 OnMontageCompleted에서 처리하므로 여기서는 아무것도 하지 않음
+}
+
+void UHarmoniaGameplayAbility_BossAttack::SetupMotionWarpingTarget()
+{
+	if (!bEnableMotionWarping)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BossAttack: Motion Warping disabled for %s"), *GetName());
+		return;
+	}
+
+	AActor* AvatarActor = GetAvatarActorFromActorInfo();
+	if (!AvatarActor)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BossAttack: No Avatar Actor for %s"), *GetName());
+		return;
+	}
+
+	// Get Motion Warping Component from the boss
+	UMotionWarpingComponent* WarpComp = AvatarActor->FindComponentByClass<UMotionWarpingComponent>();
+	if (!WarpComp)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BossAttack: No MotionWarpingComponent on %s"), *AvatarActor->GetName());
+		return;
+	}
+
+	// Get target from AI Blackboard
+	AActor* TargetActor = nullptr;
+	if (APawn* Pawn = Cast<APawn>(AvatarActor))
+	{
+		if (AAIController* AIController = Cast<AAIController>(Pawn->GetController()))
+		{
+			if (UBlackboardComponent* BB = AIController->GetBlackboardComponent())
+			{
+				// Note: AI Controller sets "Target", not "TargetActor"
+				TargetActor = Cast<AActor>(BB->GetValueAsObject(TEXT("Target")));
+			}
+		}
+	}
+
+	if (!TargetActor)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BossAttack: No TargetActor in Blackboard for %s"), *GetName());
+		return;
+	}
+
+	// Use component tracking for automatic target following during animation
+	// This will update the warp target position every frame as the target moves
+	if (USceneComponent* TargetRoot = TargetActor->GetRootComponent())
+	{
+		WarpComp->AddOrUpdateWarpTargetFromComponent(
+			WarpTargetName,
+			TargetRoot,
+			NAME_None,  // No specific bone, use root component (Warp to Feet Location handles height)
+			true,       // Follow rotation as well
+			FVector::ZeroVector,  // Location offset
+			FRotator::ZeroRotator // Rotation offset
+		);
+		
+		UE_LOG(LogTemp, Log, TEXT("BossAttack: Motion Warping target set to %s (WarpTargetName: %s)"), 
+			*TargetActor->GetName(), *WarpTargetName.ToString());
+	}
 }
