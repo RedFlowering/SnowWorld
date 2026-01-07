@@ -205,6 +205,27 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Defense")
 	bool CanDodge() const;
 
+	// ============================================================================
+	// Dodge Animation (BlendSpace support with fallback)
+	// ============================================================================
+
+	/**
+	 * Set dodge direction for BlendSpace animation
+	 * Automatically finds and sets direction on AnimInstance (ALS Interface -> LyraAnimInstance fallback)
+	 * @param DirectionX Left(-1) to Right(+1)
+	 * @param DirectionY Backward(-1) to Forward(+1)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Dodge")
+	void SetDodgeDirection(float DirectionX, float DirectionY);
+
+	/** Clear dodge direction and reset AnimInstance dodge state */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Dodge")
+	void ClearDodgeDirection();
+
+	/** Get current dodge direction (for BlendSpace) */
+	UFUNCTION(BlueprintPure, Category = "Melee Combat|Dodge")
+	FVector2D GetDodgeDirection() const { return CurrentDodgeDirection; }
+
 	/**
 	 * Check if attacker is within defense angle (front arc)
 	 * @param AttackerLocation World location of the attacker
@@ -448,6 +469,10 @@ protected:
 	/** Actors hit during current attack window (prevents duplicate hits) */
 	UPROPERTY(Transient)
 	TSet<TObjectPtr<AActor>> HitActorsThisAttack;
+
+	/** Current dodge direction (local space: X = Right, Y = Forward) */
+	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|Dodge")
+	FVector2D CurrentDodgeDirection = FVector2D::ZeroVector;
 
 	// ============================================================================
 	// Charge Attack State (updated by GA for debug display)

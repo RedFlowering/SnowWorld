@@ -19,6 +19,8 @@
 #include "GameFramework/PlayerState.h"
 #include "Camera/CameraShakeBase.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Animation/IHarmoniaDodgeAnimInterface.h"
 #include "Net/UnrealNetwork.h"
 
 namespace HarmoniaCombatASC
@@ -830,20 +832,106 @@ bool UHarmoniaMeleeCombatComponent::CanParry() const
 
 bool UHarmoniaMeleeCombatComponent::CanDodge() const
 {
-	if (bIsAttacking || DefenseState == EHarmoniaDefenseState::Stunned)
+	// Check if attacking
+	if (bIsAttacking)
 	{
+		UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Dodge] Failed: Currently attacking"));
 		return false;
 	}
 
+	// Check if stunned
+	if (DefenseState == EHarmoniaDefenseState::Stunned)
+	{
+		UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Dodge] Failed: Currently stunned"));
+		return false;
+	}
+
+	// Check if grounded
+	if (const ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner()))
+	{
+		if (const UCharacterMovementComponent* MovementComp = OwnerCharacter->GetCharacterMovement())
+		{
+			if (!MovementComp->IsMovingOnGround())
+			{
+				UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Dodge] Failed: Not on ground (IsFalling=%d, MovementMode=%d)"),
+					MovementComp->IsFalling(), static_cast<int32>(MovementComp->MovementMode));
+				return false;
+			}
+		}
+	}
+
+	// Check stamina
 	if (const UHarmoniaAttributeSet* AttributeSet = GetAttributeSet())
 	{
-		if (AttributeSet->GetStamina() < DefaultDodgeConfig.StaminaCost)
+		const float CurrentStamina = AttributeSet->GetStamina();
+		const float RequiredStamina = DefaultDodgeConfig.StaminaCost;
+		if (CurrentStamina < RequiredStamina)
 		{
+			UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Dodge] Failed: Not enough stamina (Current=%.1f, Required=%.1f)"),
+				CurrentStamina, RequiredStamina);
 			return false;
 		}
 	}
 
+	UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Dodge] Success: All conditions passed"));
 	return true;
+}
+
+// ============================================================================
+// Dodge Animation (BlendSpace support with interface)
+// ============================================================================
+
+void UHarmoniaMeleeCombatComponent::SetDodgeDirection(float DirectionX, float DirectionY)
+{
+	CurrentDodgeDirection = FVector2D(FMath::Clamp(DirectionX, -1.0f, 1.0f), FMath::Clamp(DirectionY, -1.0f, 1.0f));
+
+	// Find AnimInstance and set dodge params via interface
+	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+	if (!OwnerCharacter || !OwnerCharacter->GetMesh())
+	{
+		return;
+	}
+
+	UAnimInstance* AnimInstance = OwnerCharacter->GetMesh()->GetAnimInstance();
+	if (!AnimInstance)
+	{
+		return;
+	}
+
+	// Use IHarmoniaDodgeAnimInterface (works with HarmoniaAnimInstance, custom ALS implementations, etc.)
+	if (AnimInstance->Implements<UHarmoniaDodgeAnimInterface>())
+	{
+		IHarmoniaDodgeAnimInterface::Execute_SetDodgeDirection(AnimInstance, CurrentDodgeDirection.X, CurrentDodgeDirection.Y);
+		UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Dodge] Set direction via IHarmoniaDodgeAnimInterface: X=%.2f, Y=%.2f"),
+			CurrentDodgeDirection.X, CurrentDodgeDirection.Y);
+	}
+	else
+	{
+		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[Dodge] AnimInstance does not implement IHarmoniaDodgeAnimInterface. Use UHarmoniaAnimInstance or implement the interface."));
+	}
+}
+
+void UHarmoniaMeleeCombatComponent::ClearDodgeDirection()
+{
+	CurrentDodgeDirection = FVector2D::ZeroVector;
+
+	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+	if (!OwnerCharacter || !OwnerCharacter->GetMesh())
+	{
+		return;
+	}
+
+	UAnimInstance* AnimInstance = OwnerCharacter->GetMesh()->GetAnimInstance();
+	if (!AnimInstance)
+	{
+		return;
+	}
+
+	if (AnimInstance->Implements<UHarmoniaDodgeAnimInterface>())
+	{
+		IHarmoniaDodgeAnimInterface::Execute_ClearDodgeDirection(AnimInstance);
+		UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Dodge] Cleared direction via IHarmoniaDodgeAnimInterface"));
+	}
 }
 
 // ============================================================================

@@ -7,6 +7,8 @@
 #include "HarmoniaGameplayAbility_Dodge.generated.h"
 
 class UHarmoniaMeleeCombatComponent;
+class UBlendSpace;
+class ULyraAnimInstance;
 
 /**
  * Dodge roll type based on equipment load
@@ -21,14 +23,14 @@ enum class EDodgeRollType : uint8
 
 /**
  * Dodge Gameplay Ability
- * Roll/dash to avoid attacks
+ * Roll/dash to avoid attacks with 8-directional BlendSpace support
  *
  * Features:
- * - Direction-based movement
+ * - 8-directional movement via BlendSpace (with fallback montage)
  * - I-frames (invincibility frames)
  * - Stamina consumption
  * - Equipment load affects roll type (Light/Medium/Heavy)
- * - Can attack after dodge
+ * - Custom velocity-based movement (not Impulse)
  *
  * @see Docs/HarmoniaKit_Complete_Documentation.md Section 17.3.1 for tag configuration
  */
@@ -58,9 +60,21 @@ protected:
 	void OnMontageInterrupted();
 
 protected:
-	/** Dodge/roll animation */
+	// ============================================================================
+	// Animation Configuration
+	// ============================================================================
+
+	/** Dodge montage (uses Motion Warping for directional movement) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Animation")
 	TObjectPtr<UAnimMontage> DodgeMontage;
+
+	/** Motion Warping target name (set in montage's MotionWarping notify) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Animation")
+	FName DodgeWarpTargetName = FName("DodgeTarget");
+
+	/** Whether to use Motion Warping for dodge direction (requires MotionWarpingComponent) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dodge|Animation")
+	bool bUseMotionWarping = true;
 
 	// ============================================================================
 	// Light Roll (0-30% Equipment Load)
@@ -147,14 +161,37 @@ private:
 	/** Get dodge parameters for current roll type */
 	void GetDodgeParameters(float& OutDistance, float& OutDuration, float& OutIFrameStart, float& OutIFrameDuration, float& OutStaminaCost) const;
 
+	/** Calculate dodge direction based on player input (returns normalized local direction) */
+	FVector2D CalculateDodgeDirection(const ACharacter* Character) const;
+
+	/** Calculate world-space dodge velocity based on direction and distance */
+	FVector CalculateDodgeVelocity(const ACharacter* Character, const FVector2D& LocalDirection) const;
+
+	/** Apply custom dodge velocity to movement component */
+	void ApplyDodgeVelocity(ACharacter* Character, const FVector& Velocity);
+
+	/** Clear dodge velocity and restore normal movement */
+	void ClearDodgeVelocity();
+
+	/** Setup Motion Warping target for directional dodge */
+	void SetupMotionWarpingTarget(ACharacter* Character, const FVector2D& Direction);
+
 	/** Start i-frames */
 	void StartIFrames();
 
 	/** End i-frames */
 	void EndIFrames();
 
+	/** Dodge movement tick handler */
+	void OnDodgeMovementTick();
+
+	/** End dodge movement */
+	void OnDodgeMovementEnd();
+
 	FTimerHandle IFrameStartTimerHandle;
 	FTimerHandle IFrameEndTimerHandle;
+	FTimerHandle DodgeMovementTimerHandle;
+	FTimerHandle DodgeEndTimerHandle;
 
 	/** Current dodge parameters (set during activation) */
 	float CurrentDodgeDistance;
@@ -162,4 +199,13 @@ private:
 	float CurrentIFrameStartTime;
 	float CurrentIFrameDuration;
 	float CurrentStaminaCost;
+
+	/** Current dodge direction (local space: X = Right, Y = Forward) */
+	FVector2D CurrentDodgeDirection;
+
+	/** Current dodge velocity (world space) */
+	FVector CurrentDodgeVelocity;
+
+	/** Cached character for dodge movement */
+	TWeakObjectPtr<ACharacter> CachedCharacter;
 };
