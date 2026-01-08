@@ -67,6 +67,50 @@ namespace HarmoniaCombatASC
 			}
 		}
 
+		// 4) 자식 액터인 경우: 부모 액터 체인에서 ASC 검색
+		// (ChildActor, 히트박스, 무기 컴포넌트 등이 별도 액터로 구현된 경우)
+		AActor* ParentActor = Actor->GetAttachParentActor();
+		while (ParentActor)
+		{
+			// 부모가 IAbilitySystemInterface를 구현한 경우
+			if (IAbilitySystemInterface* ParentASI = Cast<IAbilitySystemInterface>(ParentActor))
+			{
+				if (UAbilitySystemComponent* ParentASC = ParentASI->GetAbilitySystemComponent())
+				{
+					return ParentASC;
+				}
+			}
+
+			// 부모에 ASC 컴포넌트가 직접 붙어있는 경우
+			if (UAbilitySystemComponent* ParentDirectASC = ParentActor->FindComponentByClass<UAbilitySystemComponent>())
+			{
+				return ParentDirectASC;
+			}
+
+			// 다음 부모로 이동
+			ParentActor = ParentActor->GetAttachParentActor();
+		}
+
+		// 5) Owner 액터에서 검색 (ChildActorComponent 등의 경우)
+		if (AActor* OwnerActor = Actor->GetOwner())
+		{
+			if (OwnerActor != Actor)
+			{
+				if (IAbilitySystemInterface* OwnerASI = Cast<IAbilitySystemInterface>(OwnerActor))
+				{
+					if (UAbilitySystemComponent* OwnerASC = OwnerASI->GetAbilitySystemComponent())
+					{
+						return OwnerASC;
+					}
+				}
+
+				if (UAbilitySystemComponent* OwnerDirectASC = OwnerActor->FindComponentByClass<UAbilitySystemComponent>())
+				{
+					return OwnerDirectASC;
+				}
+			}
+		}
+
 		return nullptr;
 	}
 }
@@ -489,6 +533,9 @@ void UHarmoniaMeleeCombatComponent::StartAttack(EHarmoniaAttackType InAttackType
 {
 	bIsAttacking = true;
 
+	// 새 공격 시작 시 히트 추적 초기화
+	HitActorsThisAttack.Empty();
+
 	if (CurrentAttackType != InAttackType)
 	{
 		CurrentComboIndex = 0;
@@ -645,13 +692,22 @@ void UHarmoniaMeleeCombatComponent::ApplyDamageToTarget(AActor* TargetActor, con
 	AActor* Owner = GetOwner();
 	if (!Owner || !TargetActor || TargetActor == Owner)
 	{
-		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[ApplyDamage] Early return: Invalid Owner or Target"));
 		return;
 	}
 
+	if (!Cast<APawn>(TargetActor))
+	{
+		return;
+	}
+
+	if (HitActorsThisAttack.Contains(TargetActor))
+	{
+		return;
+	}
+	HitActorsThisAttack.Add(TargetActor);
+
 	if (!Owner->HasAuthority())
 	{
-		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[ApplyDamage] Early return: No authority"));
 		return;
 	}
 
@@ -665,7 +721,8 @@ void UHarmoniaMeleeCombatComponent::ApplyDamageToTarget(AActor* TargetActor, con
 	UAbilitySystemComponent* TargetASC = HarmoniaCombatASC::ResolveASCFromActor(TargetActor);
 	if (!TargetASC)
 	{
-		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[ApplyDamage] Early return: No TargetASC"));
+		// Pawn인데 ASC가 없는 경우는 설정 문제이므로 Warning 유지
+		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[ApplyDamage] Early return: No TargetASC for Pawn (%s)"), *GetNameSafe(TargetActor));
 		return;
 	}
 
