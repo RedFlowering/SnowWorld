@@ -2,6 +2,7 @@
 
 #include "Core/HarmoniaCharacterMovementComponent.h"
 #include "Core/HarmoniaCharacter.h"
+#include "HarmoniaLogCategories.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "Net/UnrealNetwork.h"
 #include "AlsCharacterMovementComponent.h"
@@ -17,11 +18,6 @@ void UHarmoniaCharacterMovementComponent::BeginPlay()
 	Super::BeginPlay();
 
 	OwnerCharacter = Cast<AHarmoniaCharacter>(CharacterOwner);
-
-	if (!OwnerCharacter)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Not Found Owner Harmonia Character!"));
-	}
 }
 
 void UHarmoniaCharacterMovementComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -65,8 +61,6 @@ EHarmoniaCustomMovementMode UHarmoniaCharacterMovementComponent::GetCustomMoveme
 void UHarmoniaCharacterMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
 {
 	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
-
-	UE_LOG(LogTemp, Log, TEXT("Movement Mode Changed: NewMode = %d, CustomMode = %d"), MovementMode, CustomMovementMode);
 }
 
 void UHarmoniaCharacterMovementComponent::MoveSmooth(const FVector& InVelocity, float DeltaTime, FStepDownResult* StepDownResult /*= nullptr*/)
@@ -123,6 +117,9 @@ void UHarmoniaCharacterMovementComponent::PhysCustom(const float DeltaTime, int3
 	case EHarmoniaCustomMovementMode::MOVE_Leaping:
 		PhysLeaping(DeltaTime);
 		break;
+	case EHarmoniaCustomMovementMode::MOVE_Knockback:
+		PhysKnockback(DeltaTime);
+		break;
 	case EHarmoniaCustomMovementMode::MOVE_None:
 	default:
 		Super::PhysCustom(DeltaTime, IterationsCount);
@@ -150,7 +147,7 @@ void UHarmoniaCharacterMovementComponent::StartLeaping(FVector TargetLocation, f
 
 	SetMovementMode(MOVE_Custom, static_cast<uint8>(EHarmoniaCustomMovementMode::MOVE_Leaping));
 
-	UE_LOG(LogTemp, Log, TEXT("StartLeaping: Target=%s, Duration=%.2f, ArcHeight=%.2f"), 
+	UE_LOG(LogHarmoniaCombat, Log, TEXT("StartLeaping: Target=%s, Duration=%.2f, ArcHeight=%.2f"), 
 		*LeapTargetLocation.ToString(), LeapDuration, LeapArcHeight);
 }
 
@@ -162,7 +159,7 @@ void UHarmoniaCharacterMovementComponent::StopLeaping()
 		LeapDuration = 0.0f;
 		LeapArcHeight = 0.0f;
 		
-		UE_LOG(LogTemp, Log, TEXT("StopLeaping"));
+		UE_LOG(LogHarmoniaCombat, Log, TEXT("StopLeaping"));
 	}
 }
 
@@ -213,3 +210,89 @@ void UHarmoniaCharacterMovementComponent::PhysLeaping(float DeltaTime)
 	// Update velocity for animation
 	Velocity = Delta / DeltaTime;
 }
+
+// ============================================================================
+// Knockback Movement
+// ============================================================================
+
+void UHarmoniaCharacterMovementComponent::StartKnockback(FVector Direction, float Speed, float Duration)
+{
+	if (!CharacterOwner || Duration <= 0.0f || Speed <= 0.0f)
+	{
+		return;
+	}
+
+	KnockbackDirection = Direction.GetSafeNormal();
+	KnockbackSpeed = Speed;
+	KnockbackDuration = Duration;
+	KnockbackElapsedTime = 0.0f;
+
+	SetMovementMode(MOVE_Custom, static_cast<uint8>(EHarmoniaCustomMovementMode::MOVE_Knockback));
+
+	UE_LOG(LogHarmoniaCombat, Log, TEXT("StartKnockback: Direction=%s, Speed=%.2f, Duration=%.2f"), 
+		*KnockbackDirection.ToString(), KnockbackSpeed, KnockbackDuration);
+}
+
+void UHarmoniaCharacterMovementComponent::StopKnockback()
+{
+	if (IsKnockback())
+	{
+		KnockbackElapsedTime = 0.0f;
+		KnockbackDuration = 0.0f;
+		KnockbackSpeed = 0.0f;
+		KnockbackDirection = FVector::ZeroVector;
+
+		// Transition back to walking
+		SetMovementMode(MOVE_Walking);
+		
+		UE_LOG(LogHarmoniaCombat, Log, TEXT("StopKnockback"));
+	}
+}
+
+bool UHarmoniaCharacterMovementComponent::IsKnockback() const
+{
+	return MovementMode == MOVE_Custom && 
+		   CustomMovementMode == static_cast<uint8>(EHarmoniaCustomMovementMode::MOVE_Knockback);
+}
+
+void UHarmoniaCharacterMovementComponent::PhysKnockback(float DeltaTime)
+{
+	if (!CharacterOwner || !UpdatedComponent)
+	{
+		StopKnockback();
+		return;
+	}
+
+	KnockbackElapsedTime += DeltaTime;
+
+	// Duration check
+	if (KnockbackElapsedTime >= KnockbackDuration)
+	{
+		StopKnockback();
+		return;
+	}
+
+	// Calculate knockback velocity with deceleration (easing out)
+	float Alpha = KnockbackElapsedTime / KnockbackDuration;
+	float SpeedMultiplier = 1.0f - (Alpha * Alpha); // Quadratic ease-out
+	FVector KnockbackVelocity = KnockbackDirection * KnockbackSpeed * SpeedMultiplier;
+
+	// Keep knockback horizontal only (no gravity during knockback)
+	KnockbackVelocity.Z = 0.0f;
+
+	// Use SafeMove for collision detection
+	FVector Delta = KnockbackVelocity * DeltaTime;
+	
+	FHitResult Hit;
+	SafeMoveUpdatedComponent(Delta, UpdatedComponent->GetComponentQuat(), true, Hit);
+
+	// Handle collision - slide along surface
+	if (Hit.bBlockingHit)
+	{
+		SlideAlongSurface(Delta, 1.0f - Hit.Time, Hit.Normal, Hit, true);
+	}
+
+	// Update velocity for animation system
+	Velocity = KnockbackVelocity;
+}
+

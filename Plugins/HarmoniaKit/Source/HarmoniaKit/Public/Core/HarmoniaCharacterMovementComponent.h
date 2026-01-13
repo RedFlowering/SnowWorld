@@ -24,7 +24,8 @@ UENUM()
 enum class EHarmoniaCustomMovementMode : uint8
 {
 	MOVE_None				UMETA(DisplayName = "None"),
-	MOVE_Leaping			UMETA(DisplayName = "Leaping"),	// 도약 중 (포물선 이동)
+	MOVE_Leaping			UMETA(DisplayName = "Leaping"),		// 도약 중 (포물선 이동)
+	MOVE_Knockback			UMETA(DisplayName = "Knockback"),	// 넉백 중 (직선 이동)
 };
 
 UCLASS(Config = Game)
@@ -84,6 +85,27 @@ protected:
 	/** Physics update for leaping movement */
 	virtual void PhysLeaping(float DeltaTime);
 
+	// ============================================================================
+	// Knockback Movement
+	// ============================================================================
+
+public:
+	/** Start knockback in specified direction */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Movement|Knockback")
+	void StartKnockback(FVector Direction, float Speed, float Duration);
+
+	/** Stop knockback and transition to walking */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Movement|Knockback")
+	void StopKnockback();
+
+	/** Check if currently in knockback */
+	UFUNCTION(BlueprintPure, Category = "Harmonia|Movement|Knockback")
+	bool IsKnockback() const;
+
+protected:
+	/** Physics update for knockback movement */
+	virtual void PhysKnockback(float DeltaTime);
+
 protected:
 	UPROPERTY()
 	TObjectPtr<AHarmoniaCharacter> OwnerCharacter = nullptr;
@@ -96,4 +118,10 @@ protected:
 	float LeapArcHeight = 0.0f;
 	float LeapDuration = 0.0f;
 	float LeapElapsedTime = 0.0f;
+
+	// Knockback state
+	FVector KnockbackDirection;
+	float KnockbackSpeed = 0.0f;
+	float KnockbackDuration = 0.0f;
+	float KnockbackElapsedTime = 0.0f;
 };

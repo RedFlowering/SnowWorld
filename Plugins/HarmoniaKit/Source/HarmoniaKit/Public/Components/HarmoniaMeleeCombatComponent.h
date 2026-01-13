@@ -15,7 +15,7 @@ class UHarmoniaEquipmentComponent;
 class UDataTable;
 
 /** Delegate broadcast when attack is blocked. Damage is the incoming damage before reduction. */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBlockedAttackSignature, AActor*, Attacker, float, Damage);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnBlockedAttackSignature, AActor*, Attacker, float, Damage, FVector, ImpactPoint);
 
 /**
  * Melee Combat Component
@@ -236,7 +236,7 @@ public:
 
 	/** Process blocked attack */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Defense")
-	void OnAttackBlocked(AActor* Attacker, float Damage);
+	void OnAttackBlocked(AActor* Attacker, float Damage, const FVector& ImpactPoint);
 
 	/** Delegate broadcast when attack is blocked (for ability to handle stamina cost) */
 	UPROPERTY(BlueprintAssignable, Category = "Melee Combat|Defense")
@@ -253,8 +253,49 @@ public:
 	void OnParrySuccess(AActor* Attacker);
 
 	// ============================================================================
-	// Riposte System
+	// Parry System (AnimNotifyState_ParryableWindow integration)
 	// ============================================================================
+
+	/**
+	 * Register an attacker as parryable during their attack
+	 * Called by AnimNotifyState_ParryableWindow::NotifyBegin
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Parry")
+	void RegisterParryableAttacker(AActor* Attacker, float MontageStartTime, const FHarmoniaParryConfig& Config);
+
+	/**
+	 * Update the end time of parry window
+	 * Called by AnimNotifyState_ParryableWindow::NotifyEnd
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Parry")
+	void UpdateParryableEndTime(AActor* Attacker, float MontageEndTime);
+
+	/**
+	 * Unregister an attacker from parryable state
+	 * Called by AnimNotifyState_ParryableWindow::NotifyEnd
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Parry")
+	void UnregisterParryableAttacker(AActor* Attacker);
+
+	/**
+	 * Attempt to parry an incoming attack
+	 * Called from ApplyDamageToTarget on the TARGET's combat component
+	 * @param Attacker The attacking actor
+	 * @param HitLocation The impact location (for effects)
+	 * @return true if parry was successful, damage should be blocked
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Parry")
+	bool TryParry(AActor* Attacker, const FVector& HitLocation);
+
+	/**
+	 * Execute parry success effects
+	 * - Knockback (MovementComponent velocity)
+	 * - GameplayCue (particles + sound)
+	 * - Camera shake
+	 * - Defender reward GE (stamina recovery)
+	 * - Attacker Poise damage GE (groggy buildup)
+	 */
+	void ExecuteParrySuccess(AActor* Attacker, const FVector& ImpactPoint, const FHarmoniaParryConfig& Config);
 
 	/** Can currently riposte? */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Riposte")
@@ -299,6 +340,10 @@ public:
 	// ============================================================================
 	// Damage Processing
 	// ============================================================================
+
+	/** Reset hit tracking for a new attack (call at start of each attack window) */
+	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Damage")
+	void ResetHitTracking();
 
 	/** Apply damage to target actor */
 	UFUNCTION(BlueprintCallable, Category = "Melee Combat|Damage")
@@ -374,9 +419,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Combat|Defense")
 	FHarmoniaDefenseConfig DefaultDefenseConfig;
 
-	/** Default dodge configuration */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Combat|Dodge")
-	FHarmoniaDodgeConfig DefaultDodgeConfig;
+	// Note: DefaultDodgeConfig was removed. All dodge settings are now in GA_Dodge.
 
 	/** Default riposte configuration */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Melee Combat|Riposte")
@@ -469,6 +512,39 @@ protected:
 	/** Actors hit during current attack window (prevents duplicate hits) */
 	UPROPERTY(Transient)
 	TSet<TObjectPtr<AActor>> HitActorsThisAttack;
+
+	// ============================================================================
+	// Parry Tracking (for AnimNotifyState_ParryableWindow)
+	// ============================================================================
+
+	/** Parryable attacker tracking info */
+	struct FParryableAttackerInfo
+	{
+		FHarmoniaParryConfig ParryConfig;
+		float ParryWindowStartTime = 0.0f;
+		float ParryWindowEndTime = 0.0f;
+		float RegistrationTime = 0.0f;
+		bool bParrySucceeded = false;
+	};
+
+	/** Currently parryable attackers (key = attacker actor) - DEPRECATED: Use ASC tags instead */
+	TMap<TWeakObjectPtr<AActor>, FParryableAttackerInfo> ParryableAttackers;
+
+	/** Default parry config (used when ASC tag-based parry is successful) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee Combat|Parry")
+	FHarmoniaParryConfig DefaultParryConfig;
+
+	/** Current parry config set by AnimNotifyState_ParryableWindow (for this attack) */
+	FHarmoniaParryConfig CurrentParryConfig;
+
+public:
+	/** Set current parry config (called by AnimNotifyState_ParryableWindow) */
+	void SetCurrentParryConfig(const FHarmoniaParryConfig& Config) { CurrentParryConfig = Config; }
+
+	/** Get current parry config (returns CurrentParryConfig if set, otherwise DefaultParryConfig) */
+	const FHarmoniaParryConfig& GetCurrentParryConfig() const { return CurrentParryConfig.ParryVFX ? CurrentParryConfig : DefaultParryConfig; }
+
+protected:
 
 	/** Current dodge direction (local space: X = Right, Y = Forward) */
 	UPROPERTY(BlueprintReadOnly, Category = "Melee Combat|Dodge")

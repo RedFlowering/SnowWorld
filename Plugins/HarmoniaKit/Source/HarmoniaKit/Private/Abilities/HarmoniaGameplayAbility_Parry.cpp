@@ -2,10 +2,12 @@
 
 #include "Abilities/HarmoniaGameplayAbility_Parry.h"
 #include "Components/HarmoniaMeleeCombatComponent.h"
+#include "HarmoniaLogCategories.h"
 #include "AbilitySystemComponent.h"
 #include "GameFramework/Character.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "TimerManager.h"
+#include "HarmoniaGameplayTags.h"
 
 UHarmoniaGameplayAbility_Parry::UHarmoniaGameplayAbility_Parry(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -35,12 +37,7 @@ bool UHarmoniaGameplayAbility_Parry::CanActivateAbility(
 	{
 		if (!MeleeComp->CanParry())
 		{
-			return false;
-		}
-
-		// Check stamina
-		if (!MeleeComp->HasEnoughStamina(ParryStaminaCost))
-		{
+			UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Parry] CanActivate FAIL: CanParry() false"));
 			return false;
 		}
 	}
@@ -62,17 +59,16 @@ void UHarmoniaGameplayAbility_Parry::ActivateAbility(
 
 	MeleeCombatComponent = GetMeleeCombatComponent();
 
-	// Consume stamina
-	if (MeleeCombatComponent)
-	{
-		MeleeCombatComponent->ConsumeStamina(ParryStaminaCost);
-	}
+	UE_LOG(LogHarmoniaCombat, Log, TEXT("[Parry] Activated - Window: %.2fs"), ParryWindowDuration);
 
-	// Set defense state
+	// Note: Stamina cost is handled by Cost Gameplay Effect Class (set in BP)
+
+	// Set defense state and add Parrying tag
 	if (MeleeCombatComponent)
 	{
 		MeleeCombatComponent->SetDefenseState(EHarmoniaDefenseState::Parrying);
 	}
+	// Note: State.Combat.Parrying tag is automatically added by ActivationOwnedTags (set in BP)
 
 	// Start parry window timer
 	if (UWorld* World = GetWorld())
@@ -124,6 +120,9 @@ void UHarmoniaGameplayAbility_Parry::EndAbility(
 	{
 		MeleeCombatComponent->SetDefenseState(EHarmoniaDefenseState::None);
 	}
+	// Note: State.Combat.Parrying tag is automatically removed when ability ends (ActivationOwnedTags)
+
+	UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Parry] EndAbility - Cancelled: %s"), bWasCancelled ? TEXT("Yes") : TEXT("No"));
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

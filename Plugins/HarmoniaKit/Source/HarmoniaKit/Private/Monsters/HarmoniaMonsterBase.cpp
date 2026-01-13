@@ -410,6 +410,25 @@ void AHarmoniaMonsterBase::InitializeMonster(UHarmoniaMonsterData* InMonsterData
 		GetCharacterMovement()->MaxWalkSpeed = ScaledSpeed;
 	}
 
+	// Apply default effects (e.g., PoiseRecovery)
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (ASC && MonsterData->DefaultEffects.Num() > 0)
+	{
+		for (const TSubclassOf<UGameplayEffect>& EffectClass : MonsterData->DefaultEffects)
+		{
+			if (EffectClass)
+			{
+				FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+				FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(EffectClass, 1.0f, Context);
+				if (Spec.IsValid())
+				{
+					ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+					UE_LOG(LogTemp, Log, TEXT("Monster applied default effect: %s"), *GetNameSafe(EffectClass));
+				}
+			}
+		}
+	}
+
 	bInitialized = true;
 
 	UE_LOG(LogTemp, Log, TEXT("Monster initialized: %s (Level %d)"), *GetMonsterName_Implementation().ToString(), MonsterLevel);

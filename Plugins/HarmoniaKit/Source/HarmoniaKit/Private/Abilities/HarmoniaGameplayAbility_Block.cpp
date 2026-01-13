@@ -2,10 +2,13 @@
 
 #include "Abilities/HarmoniaGameplayAbility_Block.h"
 #include "Components/HarmoniaMeleeCombatComponent.h"
+#include "Components/HarmoniaEquipmentComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystem/HarmoniaAttributeSet.h"
 #include "GameFramework/Character.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
+#include "NiagaraFunctionLibrary.h"
+#include "System/HarmoniaSoundCacheSubsystem.h"
 
 UHarmoniaGameplayAbility_Block::UHarmoniaGameplayAbility_Block(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -138,21 +141,97 @@ void UHarmoniaGameplayAbility_Block::OnMontageInterrupted()
 	}
 }
 
-void UHarmoniaGameplayAbility_Block::OnBlockHit(AActor* Attacker, float IncomingDamage)
+void UHarmoniaGameplayAbility_Block::OnBlockHit(AActor* Attacker, float IncomingDamage, FVector ImpactPoint)
 {
 	if (!IsActive())
 	{
 		return;
 	}
 
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (!Avatar)
+	{
+		return;
+	}
+
 	// Apply stamina cost GE when successfully blocking an attack
-	// The GE handles all stamina cost calculation
 	if (BlockHitStaminaCostEffectClass)
 	{
 		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(BlockHitStaminaCostEffectClass, GetAbilityLevel());
 		if (SpecHandle.IsValid())
 		{
 			ApplyGameplayEffectSpecToOwner(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, SpecHandle);
+		}
+	}
+
+	// === 1. VFX at weapon socket closest to impact ===
+	if (BlockVFX)
+	{
+		FVector VFXLocation = ImpactPoint; // Default to impact point
+		FRotator VFXRotation = FRotator::ZeroRotator;
+
+		// Try to find closest weapon socket for more realistic spark placement
+		if (UHarmoniaEquipmentComponent* EquipComp = Avatar->FindComponentByClass<UHarmoniaEquipmentComponent>())
+		{
+			if (USkeletalMeshComponent* WeaponMesh = EquipComp->GetEquippedMeshComponent(EEquipmentSlot::MainHand))
+			{
+				TArray<FName> SocketNames = WeaponMesh->GetAllSocketNames();
+				float ClosestDistSq = FLT_MAX;
+				FName ClosestSocket = NAME_None;
+
+				for (const FName& SocketName : SocketNames)
+				{
+					FVector SocketLocation = WeaponMesh->GetSocketLocation(SocketName);
+					float DistSq = FVector::DistSquared(SocketLocation, ImpactPoint);
+					if (DistSq < ClosestDistSq)
+					{
+						ClosestDistSq = DistSq;
+						ClosestSocket = SocketName;
+					}
+				}
+
+				if (ClosestSocket != NAME_None)
+				{
+					VFXLocation = WeaponMesh->GetSocketLocation(ClosestSocket);
+					VFXRotation = WeaponMesh->GetSocketRotation(ClosestSocket);
+				}
+			}
+		}
+
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			BlockVFX,
+			VFXLocation,
+			VFXRotation,
+			BlockVFXScale,
+			true,
+			true,
+			ENCPoolMethod::AutoRelease
+		);
+	}
+
+	// === 2. Sound from equipped weapon ===
+	if (UHarmoniaEquipmentComponent* EquipComp = Avatar->FindComponentByClass<UHarmoniaEquipmentComponent>())
+	{
+		FGameplayTag BlockSoundTag = EquipComp->GetMainHandCombatSoundTag(ECombatSoundType::Block);
+		if (BlockSoundTag.IsValid())
+		{
+			if (UHarmoniaSoundCacheSubsystem* SoundSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UHarmoniaSoundCacheSubsystem>())
+			{
+				SoundSubsystem->PlaySoundAtLocationByTag(Avatar, BlockSoundTag, ImpactPoint);
+			}
+		}
+	}
+
+	// === 3. Camera shake ===
+	if (BlockCameraShakeClass)
+	{
+		if (APawn* OwnerPawn = Cast<APawn>(Avatar))
+		{
+			if (APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController()))
+			{
+				PC->ClientStartCameraShake(BlockCameraShakeClass);
+			}
 		}
 	}
 }

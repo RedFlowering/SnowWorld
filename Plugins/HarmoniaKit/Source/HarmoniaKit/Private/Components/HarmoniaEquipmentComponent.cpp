@@ -398,6 +398,36 @@ FGameplayTag UHarmoniaEquipmentComponent::GetOffHandWeaponTypeTag() const
 	return FGameplayTag(); // Empty tag for no offhand weapon
 }
 
+FGameplayTag UHarmoniaEquipmentComponent::GetMainHandCombatSoundTag(ECombatSoundType SoundType) const
+{
+	FHarmoniaEquipmentData EquipmentData;
+	if (GetEquipmentDataForSlot(EEquipmentSlot::MainHand, EquipmentData))
+	{
+		switch (SoundType)
+		{
+		case ECombatSoundType::Parry:
+			return EquipmentData.ParrySounds.GetRandomSoundTag();
+		case ECombatSoundType::Block:
+			return EquipmentData.BlockSounds.GetRandomSoundTag();
+		case ECombatSoundType::Swing:
+			return EquipmentData.SwingSounds.GetRandomSoundTag();
+		case ECombatSoundType::Hit:
+			return EquipmentData.HitSounds.GetRandomSoundTag();
+		}
+	}
+	
+	return FGameplayTag(); // Empty tag if not found
+}
+
+USkeletalMeshComponent* UHarmoniaEquipmentComponent::GetEquippedMeshComponent(EEquipmentSlot Slot) const
+{
+	if (const USkeletalMeshComponent* const* MeshPtr = EquipmentMeshes.Find(Slot))
+	{
+		return const_cast<USkeletalMeshComponent*>(*MeshPtr);
+	}
+	return nullptr;
+}
+
 // ============================================================================
 // Durability
 // ============================================================================
@@ -937,7 +967,7 @@ void UHarmoniaEquipmentComponent::ApplyVisualMesh(const FHarmoniaEquipmentData& 
 	EquipmentMeshComponent->Rename(*FString::Printf(TEXT("EquipmentMesh_%d"), static_cast<int32>(EquipmentData.EquipmentSlot)));
 
 	EquipmentMeshComponent->RegisterComponent();
-	EquipmentMeshes.Add(EquipmentMeshComponent);
+	EquipmentMeshes.Add(EquipmentData.EquipmentSlot, EquipmentMeshComponent);
 
 	// Initialize MnhTracer source component for socket-based tracers
 	// Only SkeletalMeshSockets and StaticMeshSockets need the weapon mesh as SourceComponent
@@ -965,15 +995,13 @@ void UHarmoniaEquipmentComponent::ApplyVisualMesh(const FHarmoniaEquipmentData& 
 void UHarmoniaEquipmentComponent::RemoveVisualMesh(EEquipmentSlot Slot)
 {
 	// Find and remove mesh component for this slot
-	for (int32 i = EquipmentMeshes.Num() - 1; i >= 0; --i)
+	if (USkeletalMeshComponent** MeshPtr = EquipmentMeshes.Find(Slot))
 	{
-		USkeletalMeshComponent* MeshComponent = EquipmentMeshes[i];
-		if (MeshComponent && MeshComponent->GetName().Contains(FString::Printf(TEXT("EquipmentMesh_%d"), static_cast<int32>(Slot))))
+		if (*MeshPtr)
 		{
-			MeshComponent->DestroyComponent();
-			EquipmentMeshes.RemoveAt(i);
-			break;
+			(*MeshPtr)->DestroyComponent();
 		}
+		EquipmentMeshes.Remove(Slot);
 	}
 }
 
@@ -1054,11 +1082,11 @@ USkeletalMeshComponent* UHarmoniaEquipmentComponent::GetOwnerMesh() const
 void UHarmoniaEquipmentComponent::OnRep_EquippedItems()
 {
 	// Clear existing visual meshes to avoid duplicates
-	for (USkeletalMeshComponent* MeshComponent : EquipmentMeshes)
+	for (auto& Pair : EquipmentMeshes)
 	{
-		if (MeshComponent)
+		if (Pair.Value)
 		{
-			MeshComponent->DestroyComponent();
+			Pair.Value->DestroyComponent();
 		}
 	}
 	EquipmentMeshes.Empty();

@@ -23,7 +23,6 @@ namespace HarmoniaGameplayTags
 
 	// State Tags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Combat_Attacking);
-	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Combat_ComboWindow);
 
 	// Event Tags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Attack_ComboNext);
@@ -61,6 +60,16 @@ namespace HarmoniaGameplayTags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Healing);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_StaminaRecovery);
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(SetByCaller_DamageMultiplier);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(SetByCaller_PoiseDamage);
+
+	// Parry System Tags
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Combat_ParrySuccess);
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Parry_Success);
+	
+	// Combat State Tags (for Parry/Block detection)
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Combat_Parryable);  // 공격자: 패링 가능 구간
+	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Combat_Parrying);   // 방어자: 패링 시도 중
+
 
 	// ============================================================
 	// Hit Reaction System Tags
@@ -197,11 +206,6 @@ namespace HarmoniaGameplayTags
 
 	// State Tags
 	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Dodging);
-	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_State_Dodging);
-	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_State_Attacking);
-	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_State_Blocking);
-	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_State_Parrying);
-	HARMONIAKIT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_State_Invulnerable);
 
 	// ============================================================
 	// Roll System Tags

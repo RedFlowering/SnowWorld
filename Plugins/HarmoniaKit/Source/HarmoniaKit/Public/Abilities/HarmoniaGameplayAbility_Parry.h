@@ -48,10 +48,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Parry")
 	float ParryWindowDuration = 0.2f;
 
-	/** Stamina cost for parry attempt */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Parry")
-	float ParryStaminaCost = 10.0f;
-
 	/** Cached melee combat component */
 	UPROPERTY()
 	TObjectPtr<UHarmoniaMeleeCombatComponent> MeleeCombatComponent;

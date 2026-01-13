@@ -11,6 +11,7 @@
 
 class UGameplayEffect;
 class UGameplayCueSet;
+class UNiagaraSystem;
 
 // ============================================================================
 // Enums
@@ -718,107 +719,130 @@ struct HARMONIAKIT_API FHarmoniaComboAttackSequence : public FTableRowBase
 
 /**
  * Defense Configuration
- * Defines blocking/parrying properties
+ * Defines blocking/parrying CAPABILITIES only
+ * Execution details (stamina costs, montages, VFX) are managed by GA_Parry and GA_Block
  */
 USTRUCT(BlueprintType)
 struct HARMONIAKIT_API FHarmoniaDefenseConfig
 {
 	GENERATED_BODY()
 
+	// ============================================================================
+	// Block Capabilities
+	// ============================================================================
+
 	// Can block attacks?
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defense")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defense|Block")
 	bool bCanBlock = true;
 
 	// Block damage reduction (0-1)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defense", meta = (EditCondition = "bCanBlock"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defense|Block", meta = (EditCondition = "bCanBlock", ClampMin = "0.0", ClampMax = "1.0"))
 	float BlockDamageReduction = 0.7f;
 
-	// Stamina cost per blocked hit
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defense", meta = (EditCondition = "bCanBlock"))
-	float BlockStaminaCost = 15.0f;
+	// ============================================================================
+	// Parry Capabilities
+	// ============================================================================
 
 	// Can parry attacks?
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defense")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defense|Parry")
 	bool bCanParry = true;
-
-	// Parry window duration (seconds)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defense", meta = (EditCondition = "bCanParry"))
-	float ParryWindowDuration = 0.2f;
-
-	// Stamina cost for parry attempt
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Defense", meta = (EditCondition = "bCanParry"))
-	float ParryStaminaCost = 10.0f;
-
-	// Parry success animation
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TObjectPtr<UAnimMontage> ParrySuccessMontage = nullptr;
-
-	// Parry fail animation
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TObjectPtr<UAnimMontage> ParryFailMontage = nullptr;
-
-	// Block start animation
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TObjectPtr<UAnimMontage> BlockStartMontage = nullptr;
-
-	// Block loop animation
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TObjectPtr<UAnimMontage> BlockLoopMontage = nullptr;
-
-	// Block end animation
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TObjectPtr<UAnimMontage> BlockEndMontage = nullptr;
-
-	// Block hit reaction animation
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TObjectPtr<UAnimMontage> BlockHitMontage = nullptr;
 };
 
 /**
- * Dodge Configuration
- * Defines dodge/roll properties
+ * Parry Success Configuration
+ * Defines effects applied when a parry succeeds
+ * Used by AnimNotifyState_ParryableWindow on monster attack montages
  */
 USTRUCT(BlueprintType)
-struct HARMONIAKIT_API FHarmoniaDodgeConfig
+struct HARMONIAKIT_API FHarmoniaParryConfig
 {
 	GENERATED_BODY()
 
-	// Dodge type (roll, sidestep, backstep)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodge")
-	FName DodgeType = FName("Roll");
+	// ============================================================================
+	// Knockback (MovementComponent Velocity 기반)
+	// ============================================================================
+	
+	/** 방어자 넉백 속도 (cm/s) - 뒤로 밀림 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parry|Knockback")
+	float DefenderKnockbackSpeed = 400.0f;
+	
+	/** 공격자 넉백 속도 (cm/s) - 뒤로 밀림 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parry|Knockback")
+	float AttackerKnockbackSpeed = 600.0f;
+	
+	/** 넉백 Z 성분 (0 = 수평만, 양수 = 약간 위로) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parry|Knockback")
+	float KnockbackZVelocity = 0.0f;  // 0 = horizontal knockback only
+	
+	// ============================================================================
+	// VFX (직접 연결)
+	// ============================================================================
+	
+	/** 패링 성공 VFX (Niagara) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parry|VFX")
+	TObjectPtr<UNiagaraSystem> ParryVFX;
+	
+	/** VFX 스케일 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parry|VFX")
+	FVector ParryVFXScale = FVector(1.0f);
+	
+	// Note: Sound is dynamically generated based on player's weapon type
+	// e.g., Weapon.Type.Sword → Sound.SFX.Weapon.Sword.Parry
+	
+	// ============================================================================
+	// Camera Effects
+	// ============================================================================
+	
+	/** 카메라 쉐이크 사용 여부 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parry|Camera")
+	bool bUseCameraShake = true;
 
-	// Dodge distance
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodge")
-	float DodgeDistance = 400.0f;
-
-	// Dodge duration (seconds)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodge")
-	float DodgeDuration = 0.6f;
-
-	// I-frame start time (seconds into dodge)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodge")
-	float IFrameStartTime = 0.1f;
-
-	// I-frame duration (seconds)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodge")
-	float IFrameDuration = 0.3f;
-
-	// Stamina cost
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina")
-	float StaminaCost = 20.0f;
-
-	// Dodge animation montage
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	TObjectPtr<UAnimMontage> DodgeMontage = nullptr;
-
-	// Can attack immediately after dodge?
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodge")
-	bool bCanAttackAfterDodge = true;
-
-	// Minimum time before can attack after dodge
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodge", meta = (EditCondition = "bCanAttackAfterDodge"))
-	float MinimumAttackDelay = 0.3f;
+	/** 카메라 쉐이크 클래스 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parry|Camera", meta = (EditCondition = "bUseCameraShake"))
+	TSubclassOf<UCameraShakeBase> ParryCameraShakeClass;
+	
+	/** 카메라 쉐이크 강도 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parry|Camera", meta = (EditCondition = "bUseCameraShake"))
+	float ParryCameraShakeScale = 0.8f;
+	
+	// ============================================================================
+	// Hit Stop (히트 스톱 / 임팩트 프리즈)
+	// ============================================================================
+	
+	/** 히트 스톱 사용 여부 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parry|HitStop")
+	bool bUseHitStop = true;
+	
+	/** 히트 스톱 지속 시간 (초) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parry|HitStop", meta = (EditCondition = "bUseHitStop", ClampMin = "0.01", ClampMax = "0.5"))
+	float HitStopDuration = 0.1f;
+	
+	/** 히트 스톱 시 시간 배율 (0 = 완전 정지, 0.1 = 10% 속도) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parry|HitStop", meta = (EditCondition = "bUseHitStop", ClampMin = "0.0", ClampMax = "0.5"))
+	float HitStopTimeDilation = 0.05f;
+	
+	// ============================================================================
+	// Rewards (GE - 방어자)
+	// ============================================================================
+	
+	/** 방어자 보상 GE (스태미나 회복) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parry|Rewards")
+	TSubclassOf<UGameplayEffect> DefenderRewardEffect;
+	
+	// ============================================================================
+	// Groggy (기존 Poise 시스템 활용)
+	// ============================================================================
+	
+	/** 공격자 Poise 데미지 GE (그로기 게이지 축적) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parry|Groggy")
+	TSubclassOf<UGameplayEffect> AttackerPoiseDamageEffect;
+	
+	/** Poise 데미지량 (GE에서 SetByCaller로 사용, 음수로 전달) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parry|Groggy")
+	float PoiseDamageAmount = 20.0f;
 };
+
+// Note: FHarmoniaDodgeConfig was removed. All dodge settings are now in UHarmoniaGameplayAbility_Dodge.
 
 /**
  * Riposte Configuration

@@ -22,6 +22,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Animation/IHarmoniaDodgeAnimInterface.h"
 #include "Net/UnrealNetwork.h"
+#include "NiagaraFunctionLibrary.h"
+#include "System/HarmoniaSoundCacheSubsystem.h"
+#include "Core/HarmoniaCharacterMovementComponent.h"
 
 namespace HarmoniaCombatASC
 {
@@ -32,7 +35,7 @@ namespace HarmoniaCombatASC
 			return nullptr;
 		}
 
-		// 1) Actor가 IAbilitySystemInterface를 구현한 경우(가장 정석)
+		// 1) Try Actor's IAbilitySystemInterface (standard approach)
 		if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(Actor))
 		{
 			if (UAbilitySystemComponent* ASC = ASI->GetAbilitySystemComponent())
@@ -41,13 +44,13 @@ namespace HarmoniaCombatASC
 			}
 		}
 
-		// 2) Actor에 ASC 컴포넌트가 직접 붙어있는 경우
+		// 2) Try Actor's direct ASC component
 		if (UAbilitySystemComponent* DirectASC = Actor->FindComponentByClass<UAbilitySystemComponent>())
 		{
 			return DirectASC;
 		}
 
-		// 3) Lyra 스타일: Pawn(Avatar) -> PlayerState(Owner) 에 ASC가 붙어있는 경우
+		// 3) Lyra pattern: Pawn(Avatar) -> PlayerState(Owner) ASC
 		if (APawn* Pawn = Cast<APawn>(Actor))
 		{
 			if (APlayerState* PS = Pawn->GetPlayerState())
@@ -67,12 +70,13 @@ namespace HarmoniaCombatASC
 			}
 		}
 
-		// 4) 자식 액터인 경우: 부모 액터 체인에서 ASC 검색
-		// (ChildActor, 히트박스, 무기 컴포넌트 등이 별도 액터로 구현된 경우)
+		// 4) Additional fallback: check for any attached ASC
+		// (ChildActor, attached components, etc.)
 		AActor* ParentActor = Actor->GetAttachParentActor();
 		while (ParentActor)
 		{
-			// 부모가 IAbilitySystemInterface를 구현한 경우
+			// Check IAbilitySystemInterface on parent
+
 			if (IAbilitySystemInterface* ParentASI = Cast<IAbilitySystemInterface>(ParentActor))
 			{
 				if (UAbilitySystemComponent* ParentASC = ParentASI->GetAbilitySystemComponent())
@@ -81,17 +85,18 @@ namespace HarmoniaCombatASC
 				}
 			}
 
-			// 부모에 ASC 컴포넌트가 직접 붙어있는 경우
+			// Check ASC component directly on parent
+
 			if (UAbilitySystemComponent* ParentDirectASC = ParentActor->FindComponentByClass<UAbilitySystemComponent>())
 			{
 				return ParentDirectASC;
 			}
 
-			// 다음 부모로 이동
+			// Move up to next parent
 			ParentActor = ParentActor->GetAttachParentActor();
 		}
 
-		// 5) Owner 액터에서 검색 (ChildActorComponent 등의 경우)
+		// 5) Try Owner's ASC (for ChildActorComponent cases)
 		if (AActor* OwnerActor = Actor->GetOwner())
 		{
 			if (OwnerActor != Actor)
@@ -117,16 +122,16 @@ namespace HarmoniaCombatASC
 
 UHarmoniaMeleeCombatComponent::UHarmoniaMeleeCombatComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false; // Tick 없음(필요 시 다시 켜기)
+	PrimaryComponentTick.bCanEverTick = false; // Tick disabled (event-driven updates only)
 
 	// Enable network replication for Client RPCs (e.g., ClientReceiveHitReaction)
 	SetIsReplicatedByDefault(true);
 
-	AttackingTag = HarmoniaGameplayTags::Character_State_Attacking;
-	BlockingTag = HarmoniaGameplayTags::Character_State_Blocking;
-	ParryingTag = HarmoniaGameplayTags::Character_State_Parrying;
-	DodgingTag = HarmoniaGameplayTags::Character_State_Dodging;
-	InvulnerableTag = HarmoniaGameplayTags::Character_State_Invulnerable;
+	AttackingTag = HarmoniaGameplayTags::State_Combat_Attacking;
+	BlockingTag = HarmoniaGameplayTags::State_Dodging;  // Use State_Dodging for now, Blocking tag not defined
+	ParryingTag = HarmoniaGameplayTags::State_Combat_Parrying;
+	DodgingTag = HarmoniaGameplayTags::State_Dodging;
+	InvulnerableTag = HarmoniaGameplayTags::State_Invincible;
 }
 
 void UHarmoniaMeleeCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -188,7 +193,7 @@ FGameplayTag UHarmoniaMeleeCombatComponent::GetCurrentWeaponTypeTag() const
 
 UAbilitySystemComponent* UHarmoniaMeleeCombatComponent::GetAbilitySystemComponent() const
 {
-	// Owner가 Pawn이고 ASC가 PlayerState에 있는 구조까지 커버
+	// If Owner is Pawn, ASC might be on PlayerState
 	return HarmoniaCombatASC::ResolveASCFromActor(GetOwner());
 }
 
@@ -294,7 +299,7 @@ void UHarmoniaMeleeCombatComponent::SetInAttackWindow(bool bInWindow)
 }
 
 // ============================================================================
-// Combo System (기존 로직 유지)
+// Combo System (attack chain management)
 // ============================================================================
 
 int32 UHarmoniaMeleeCombatComponent::GetMaxComboCount() const
@@ -533,7 +538,7 @@ void UHarmoniaMeleeCombatComponent::StartAttack(EHarmoniaAttackType InAttackType
 {
 	bIsAttacking = true;
 
-	// 새 공격 시작 시 히트 추적 초기화
+	// Reset combo state on new attack
 	HitActorsThisAttack.Empty();
 
 	if (CurrentAttackType != InAttackType)
@@ -625,9 +630,9 @@ bool UHarmoniaMeleeCombatComponent::IsDefenseAngleValid(const FVector& AttackerL
 	return AngleDegrees <= HalfDefenseAngle;
 }
 
-void UHarmoniaMeleeCombatComponent::OnAttackBlocked(AActor* Attacker, float Damage)
+void UHarmoniaMeleeCombatComponent::OnAttackBlocked(AActor* Attacker, float Damage, const FVector& ImpactPoint)
 {
-	OnBlockedAttack.Broadcast(Attacker, Damage);
+	OnBlockedAttack.Broadcast(Attacker, Damage, ImpactPoint);
 
 	if (UHarmoniaAttributeSet* AttributeSet = GetAttributeSet())
 	{
@@ -646,7 +651,7 @@ void UHarmoniaMeleeCombatComponent::OnParrySuccess(AActor* Attacker)
 }
 
 // ============================================================================
-// Backstab / Riposte (기존 유지)
+// Backstab / Riposte (positional attacks)
 // ============================================================================
 
 void UHarmoniaMeleeCombatComponent::StartRiposteWindow(AActor* ParriedTargetActor, float Duration)
@@ -687,11 +692,19 @@ void UHarmoniaMeleeCombatComponent::OnRiposteWindowExpired()
 // Damage Processing
 // ============================================================================
 
+
+void UHarmoniaMeleeCombatComponent::ResetHitTracking()
+{
+	HitActorsThisAttack.Empty();
+	UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Combat] HitActorsThisAttack reset for new attack"));
+}
+
 void UHarmoniaMeleeCombatComponent::ApplyDamageToTarget(AActor* TargetActor, const FVector& HitLocation)
 {
 	AActor* Owner = GetOwner();
 	if (!Owner || !TargetActor || TargetActor == Owner)
 	{
+		UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Combat] Early return: Invalid Owner/Target"));
 		return;
 	}
 
@@ -700,36 +713,48 @@ void UHarmoniaMeleeCombatComponent::ApplyDamageToTarget(AActor* TargetActor, con
 		return;
 	}
 
+
 	if (HitActorsThisAttack.Contains(TargetActor))
 	{
-		return;
+		return; // Already hit this actor in current attack
 	}
 	HitActorsThisAttack.Add(TargetActor);
 
 	if (!Owner->HasAuthority())
 	{
+		UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Combat] Early return: No Authority"));
 		return;
 	}
 
 	UAbilitySystemComponent* OwnerASC = GetAbilitySystemComponent();
 	if (!OwnerASC)
 	{
-		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[ApplyDamage] Early return: No OwnerASC"));
+		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[Combat] Early return: No OwnerASC"));
 		return;
 	}
 
 	UAbilitySystemComponent* TargetASC = HarmoniaCombatASC::ResolveASCFromActor(TargetActor);
 	if (!TargetASC)
 	{
-		// Pawn인데 ASC가 없는 경우는 설정 문제이므로 Warning 유지
-		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[ApplyDamage] Early return: No TargetASC for Pawn (%s)"), *GetNameSafe(TargetActor));
+		// Pawn without ASC is unusual - log as warning
+		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[Combat] Early return: No TargetASC for Pawn (%s)"), *GetNameSafe(TargetActor));
 		return;
 	}
 
 	if (TargetASC->HasMatchingGameplayTag(InvulnerableTag))
 	{
-		UE_LOG(LogHarmoniaCombat, Log, TEXT("[ApplyDamage] Target is invulnerable, skipping"));
+		UE_LOG(LogHarmoniaCombat, Log, TEXT("[Combat] Target is invulnerable, skipping"));
 		return;
+	}
+
+	// === Parry Check ===
+	if (UHarmoniaMeleeCombatComponent* TargetCombat = TargetActor->FindComponentByClass<UHarmoniaMeleeCombatComponent>())
+	{
+		if (TargetCombat->TryParry(Owner, HitLocation))
+		{
+			UE_LOG(LogHarmoniaCombat, Log, TEXT("[Combat] PARRY SUCCESS! Damage blocked for %s"), *GetNameSafe(TargetActor));
+			return; // Parry successful - no damage applied
+		}
 	}
 
 	FHarmoniaAttackData AttackData;
@@ -774,17 +799,19 @@ void UHarmoniaMeleeCombatComponent::ApplyDamageToTarget(AActor* TargetActor, con
 		EffectContext.AddHitResult(HitResult);
 	}
 
+	// Debug: Show which DamageEffectClass is being used
 	TSubclassOf<UGameplayEffect> EffectToApply = AttackData.DamageConfig.DamageEffectClass ? AttackData.DamageConfig.DamageEffectClass : DamageEffectClass;
+
 	if (!EffectToApply)
 	{
-		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[ApplyDamage] Early return: No DamageEffectClass"));
+		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[Combat] Early return: No DamageEffectClass!"));
 		return;
 	}
 
 	FGameplayEffectSpecHandle SpecHandle = OwnerASC->MakeOutgoingSpec(EffectToApply, 1.0f, EffectContext);
 	if (!SpecHandle.IsValid())
 	{
-		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[ApplyDamage] Early return: Invalid SpecHandle"));
+		UE_LOG(LogHarmoniaCombat, Warning, TEXT("[Combat] Early return: Invalid SpecHandle"));
 		return;
 	}
 
@@ -871,7 +898,8 @@ bool UHarmoniaMeleeCombatComponent::CanBlock() const
 
 bool UHarmoniaMeleeCombatComponent::CanParry() const
 {
-	if (bIsAttacking || DefenseState != EHarmoniaDefenseState::None)
+	// Only block parry while attacking - riposte window should NOT prevent new parry attempts
+	if (bIsAttacking)
 	{
 		return false;
 	}
@@ -917,18 +945,7 @@ bool UHarmoniaMeleeCombatComponent::CanDodge() const
 		}
 	}
 
-	// Check stamina
-	if (const UHarmoniaAttributeSet* AttributeSet = GetAttributeSet())
-	{
-		const float CurrentStamina = AttributeSet->GetStamina();
-		const float RequiredStamina = DefaultDodgeConfig.StaminaCost;
-		if (CurrentStamina < RequiredStamina)
-		{
-			UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Dodge] Failed: Not enough stamina (Current=%.1f, Required=%.1f)"),
-				CurrentStamina, RequiredStamina);
-			return false;
-		}
-	}
+	// Note: Stamina check is handled by GA_Dodge Cost GE
 
 	UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Dodge] Success: All conditions passed"));
 	return true;
@@ -1134,3 +1151,296 @@ void UHarmoniaMeleeCombatComponent::ServerPlayAttackMontage_Implementation(UAnim
 	// Server receives request from client - broadcast to all clients
 	MulticastPlayAttackMontage(Montage, SectionName);
 }
+
+// ============================================================================
+// Parry System Implementation
+// ============================================================================
+
+void UHarmoniaMeleeCombatComponent::RegisterParryableAttacker(AActor* Attacker, float MontageStartTime, const FHarmoniaParryConfig& Config)
+{
+	if (!Attacker)
+	{
+		return;
+	}
+
+	FParryableAttackerInfo Info;
+	Info.ParryConfig = Config;
+	Info.ParryWindowStartTime = MontageStartTime;
+	Info.ParryWindowEndTime = MontageStartTime + 10.0f; // Will be updated by NotifyEnd
+	Info.RegistrationTime = GetWorld()->GetTimeSeconds();
+	Info.bParrySucceeded = false;
+
+	ParryableAttackers.Add(Attacker, Info);
+
+	UE_LOG(LogHarmoniaCombat, Log, TEXT("[Combat] Attacker registered: %s, StartTime: %.3f"), 
+		*GetNameSafe(Attacker), MontageStartTime);
+}
+
+void UHarmoniaMeleeCombatComponent::UpdateParryableEndTime(AActor* Attacker, float MontageEndTime)
+{
+	if (FParryableAttackerInfo* Info = ParryableAttackers.Find(Attacker))
+	{
+		Info->ParryWindowEndTime = MontageEndTime;
+
+		UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Combat] EndTime updated: %s, Range: %.3f - %.3f"), 
+			*GetNameSafe(Attacker), Info->ParryWindowStartTime, MontageEndTime);
+	}
+}
+
+void UHarmoniaMeleeCombatComponent::UnregisterParryableAttacker(AActor* Attacker)
+{
+	if (ParryableAttackers.Remove(Attacker) > 0)
+	{
+		UE_LOG(LogHarmoniaCombat, Log, TEXT("[Combat] Attacker unregistered: %s"), *GetNameSafe(Attacker));
+	}
+}
+
+bool UHarmoniaMeleeCombatComponent::TryParry(AActor* Attacker, const FVector& HitLocation)
+{
+	AActor* Owner = GetOwner();
+	if (!Owner || !Attacker)
+	{
+		return false;
+	}
+
+	// 1. Check if defender has Parrying tag (ASC check)
+	UAbilitySystemComponent* DefenderASC = GetAbilitySystemComponent();
+	if (!DefenderASC || !DefenderASC->HasMatchingGameplayTag(ParryingTag))
+	{
+		return false;
+	}
+
+	// 2. Check if attacker has Parryable tag (ASC check)
+	UAbilitySystemComponent* AttackerASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Attacker);
+	if (!AttackerASC || !AttackerASC->HasMatchingGameplayTag(HarmoniaGameplayTags::State_Combat_Parryable))
+	{
+		return false;
+	}
+
+	// 3. Defense angle valid? (attacker in front)
+	if (!IsDefenseAngleValid(Attacker->GetActorLocation()))
+	{
+		return false;
+	}
+
+	// === PARRY SUCCESS! ===
+	UE_LOG(LogHarmoniaCombat, Log, TEXT("[Combat] SUCCESS! Defender: %s, Attacker: %s"), 
+		*GetNameSafe(Owner), *GetNameSafe(Attacker));
+
+	// Get ParryConfig from attacker's MeleeCombatComponent (set by AnimNotifyState)
+	FHarmoniaParryConfig ConfigToUse = DefaultParryConfig;
+	if (UHarmoniaMeleeCombatComponent* AttackerMeleeComp = Attacker->FindComponentByClass<UHarmoniaMeleeCombatComponent>())
+	{
+		ConfigToUse = AttackerMeleeComp->GetCurrentParryConfig();
+	}
+
+	ExecuteParrySuccess(Attacker, HitLocation, ConfigToUse);
+	return true;
+}
+
+void UHarmoniaMeleeCombatComponent::ExecuteParrySuccess(AActor* Attacker, const FVector& ImpactPoint, const FHarmoniaParryConfig& Config)
+{
+	AActor* Owner = GetOwner();
+	UAbilitySystemComponent* OwnerASC = GetAbilitySystemComponent();
+	UAbilitySystemComponent* AttackerASC = HarmoniaCombatASC::ResolveASCFromActor(Attacker);
+
+	// Debug: Check if Config has effects set
+	UE_LOG(LogHarmoniaCombat, Log, TEXT("[Combat] ExecuteParrySuccess - VFX: %s, CameraShake: %s, HitStop: %s"),
+		Config.ParryVFX ? TEXT("SET") : TEXT("NULL"),
+		Config.ParryCameraShakeClass ? TEXT("SET") : TEXT("NULL"),
+		Config.bUseHitStop ? TEXT("ON") : TEXT("OFF"));
+
+
+	// === 1. Knockback (using Custom Movement Mode) ===
+	FVector KnockbackDir = Owner->GetActorLocation() - Attacker->GetActorLocation();
+	KnockbackDir.Z = 0.0f;  // Keep knockback horizontal only
+	KnockbackDir = KnockbackDir.GetSafeNormal();
+	const float KnockbackDuration = 0.3f;  // Short knockback duration
+	
+	// Defender knockback (backward - away from attacker)
+	if (ACharacter* OwnerChar = Cast<ACharacter>(Owner))
+	{
+		if (UHarmoniaCharacterMovementComponent* HarmoniaMovement = Cast<UHarmoniaCharacterMovementComponent>(OwnerChar->GetCharacterMovement()))
+		{
+			HarmoniaMovement->StartKnockback(KnockbackDir, Config.DefenderKnockbackSpeed, KnockbackDuration);
+			UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Combat] Defender knockback: Speed=%.1f, Duration=%.2f"), 
+				Config.DefenderKnockbackSpeed, KnockbackDuration);
+		}
+	}
+	
+	// Attacker knockback (backward - away from defender)
+	if (ACharacter* AttackerChar = Cast<ACharacter>(Attacker))
+	{
+		if (UHarmoniaCharacterMovementComponent* HarmoniaMovement = Cast<UHarmoniaCharacterMovementComponent>(AttackerChar->GetCharacterMovement()))
+		{
+			HarmoniaMovement->StartKnockback(-KnockbackDir, Config.AttackerKnockbackSpeed, KnockbackDuration);
+			UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Combat] Attacker knockback: Speed=%.1f, Duration=%.2f"), 
+				Config.AttackerKnockbackSpeed, KnockbackDuration);
+		}
+	}
+
+	// === 2. Calculate effect location (used for VFX and Sound) ===
+	// First try to use ImpactPoint if valid
+	FVector EffectLocation = ImpactPoint;
+	FRotator EffectRotation = KnockbackDir.Rotation();
+	
+	// If ImpactPoint is invalid, try weapon socket
+	if (EffectLocation.IsNearlyZero())
+	{
+		if (UHarmoniaEquipmentComponent* EquipComp = Owner->FindComponentByClass<UHarmoniaEquipmentComponent>())
+		{
+			if (USkeletalMeshComponent* WeaponMesh = EquipComp->GetEquippedMeshComponent(EEquipmentSlot::MainHand))
+			{
+				static const TArray<FName> PreferredSockets = { FName("blade_tip"), FName("blade_mid"), FName("weapon_tip"), FName("fx") };
+				for (const FName& SocketName : PreferredSockets)
+				{
+					if (WeaponMesh->DoesSocketExist(SocketName))
+					{
+						EffectLocation = WeaponMesh->GetSocketLocation(SocketName);
+						EffectRotation = WeaponMesh->GetSocketRotation(SocketName);
+						break;
+					}
+				}
+			}
+		}
+	}
+	
+	// Final fallback: midpoint between attacker and defender
+	if (EffectLocation.IsNearlyZero())
+	{
+		EffectLocation = (Owner->GetActorLocation() + Attacker->GetActorLocation()) * 0.5f;
+		EffectLocation.Z = Owner->GetActorLocation().Z + 80.0f;
+	}
+
+	// === 3. VFX ===
+	if (Config.ParryVFX)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			Config.ParryVFX,
+			EffectLocation,
+			EffectRotation,
+			Config.ParryVFXScale,
+			true,
+			true,
+			ENCPoolMethod::AutoRelease
+		);
+
+		UE_LOG(LogHarmoniaCombat, Log, TEXT("[Combat] VFX spawned: %s at location %s"), 
+			*GetNameSafe(Config.ParryVFX), *EffectLocation.ToString());
+	}
+
+	// === 4. Sound (data-driven from equipment) ===
+	if (UHarmoniaEquipmentComponent* EquipComp = Owner->FindComponentByClass<UHarmoniaEquipmentComponent>())
+	{
+		FGameplayTag ParrySoundTag = EquipComp->GetMainHandCombatSoundTag(ECombatSoundType::Parry);
+		if (ParrySoundTag.IsValid())
+		{
+			if (UHarmoniaSoundCacheSubsystem* SoundSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UHarmoniaSoundCacheSubsystem>())
+			{
+				SoundSubsystem->PlaySoundAtLocationByTag(this, ParrySoundTag, EffectLocation);
+				
+				UE_LOG(LogHarmoniaCombat, Log, TEXT("[Combat] Sound played: %s at %s"), 
+					*ParrySoundTag.ToString(), *EffectLocation.ToString());
+			}
+		}
+		else
+		{
+			UE_LOG(LogHarmoniaCombat, Warning, TEXT("[Combat] No ParrySoundTag set in equipment data"));
+		}
+	}
+
+	// === 3. Camera shake ===
+	if (Config.bUseCameraShake && Config.ParryCameraShakeClass)
+	{
+		if (APawn* OwnerPawn = Cast<APawn>(Owner))
+		{
+			if (APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController()))
+			{
+				PC->ClientStartCameraShake(Config.ParryCameraShakeClass, Config.ParryCameraShakeScale);
+
+				UE_LOG(LogHarmoniaCombat, Log, TEXT("[Combat] CameraShake played: Scale=%.2f"), 
+					Config.ParryCameraShakeScale);
+			}
+		}
+	}
+
+	// === 4. Hit Stop (Time Dilation) ===
+	if (Config.bUseHitStop && Config.HitStopDuration > 0.0f)
+	{
+		UWorld* World = GetWorld();
+		if (World)
+		{
+			// Apply time dilation to both characters
+			if (ACharacter* OwnerChar = Cast<ACharacter>(Owner))
+			{
+				OwnerChar->CustomTimeDilation = Config.HitStopTimeDilation;
+			}
+			if (ACharacter* AttackerChar = Cast<ACharacter>(Attacker))
+			{
+				AttackerChar->CustomTimeDilation = Config.HitStopTimeDilation;
+			}
+
+			// Set timer to restore normal time
+			FTimerHandle HitStopTimerHandle;
+			TWeakObjectPtr<AActor> WeakOwner = Owner;
+			TWeakObjectPtr<AActor> WeakAttacker = Attacker;
+			
+			World->GetTimerManager().SetTimer(
+				HitStopTimerHandle,
+				[WeakOwner, WeakAttacker]()
+				{
+					if (ACharacter* OwnerChar = Cast<ACharacter>(WeakOwner.Get()))
+					{
+						OwnerChar->CustomTimeDilation = 1.0f;
+					}
+					if (ACharacter* AttackerChar = Cast<ACharacter>(WeakAttacker.Get()))
+					{
+						AttackerChar->CustomTimeDilation = 1.0f;
+					}
+				},
+				Config.HitStopDuration,
+				false
+			);
+
+			UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Combat] HitStop applied: Duration=%.3f, TimeDilation=%.2f"), 
+				Config.HitStopDuration, Config.HitStopTimeDilation);
+		}
+	}
+
+	// === 5. Defender reward GE (stamina recovery) ===
+	if (Config.DefenderRewardEffect && OwnerASC)
+	{
+		FGameplayEffectContextHandle Context = OwnerASC->MakeEffectContext();
+		FGameplayEffectSpecHandle Spec = OwnerASC->MakeOutgoingSpec(Config.DefenderRewardEffect, 1.0f, Context);
+		if (Spec.IsValid())
+		{
+			OwnerASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+
+			UE_LOG(LogHarmoniaCombat, Verbose, TEXT("[Combat] Defender reward GE applied: %s"), 
+				*GetNameSafe(Config.DefenderRewardEffect));
+		}
+	}
+
+	// === 6. Attacker Poise damage GE (groggy buildup) ===
+	if (Config.AttackerPoiseDamageEffect && AttackerASC && OwnerASC)
+	{
+		FGameplayEffectContextHandle Context = OwnerASC->MakeEffectContext();
+		FGameplayEffectSpecHandle Spec = OwnerASC->MakeOutgoingSpec(Config.AttackerPoiseDamageEffect, 1.0f, Context);
+		if (Spec.IsValid())
+		{
+			// SetByCaller for Poise damage amount
+			Spec.Data->SetSetByCallerMagnitude(
+				HarmoniaGameplayTags::SetByCaller_PoiseDamage, 
+				Config.PoiseDamageAmount);
+			AttackerASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+
+			UE_LOG(LogHarmoniaCombat, Log, TEXT("[Combat] Attacker Poise damage applied: %.1f"), 
+				Config.PoiseDamageAmount);
+		}
+	}
+
+	// === 7. Start riposte window ===
+	OnParrySuccess(Attacker);
+}
+

@@ -8,6 +8,7 @@
 #include "HarmoniaGameplayAbility_Block.generated.h"
 
 class UHarmoniaMeleeCombatComponent;
+class UNiagaraSystem;
 
 /**
  * Block Gameplay Ability
@@ -42,9 +43,9 @@ protected:
 	void OnMontageInterrupted();
 
 public:
-	/** Called when successfully blocking an attack - applies stamina cost */
+	/** Called when successfully blocking an attack - applies stamina cost and plays effects */
 	UFUNCTION()
-	void OnBlockHit(AActor* Attacker, float IncomingDamage);
+	void OnBlockHit(AActor* Attacker, float IncomingDamage, FVector ImpactPoint);
 
 protected:
 	/** Block animation montage (with Start, Loop, End sections) */
@@ -74,6 +75,22 @@ protected:
 	/** GE applied when successfully blocking an attack (Instant) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block|Cost")
 	TSubclassOf<UGameplayEffect> BlockHitStaminaCostEffectClass;
+
+	// ============================================================================
+	// VFX & Camera Configuration
+	// ============================================================================
+
+	/** VFX to spawn at block impact point */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block|VFX")
+	TObjectPtr<UNiagaraSystem> BlockVFX;
+
+	/** VFX Scale */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block|VFX")
+	FVector BlockVFXScale = FVector(1.0f);
+
+	/** Camera shake on successful block */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block|Camera")
+	TSubclassOf<UCameraShakeBase> BlockCameraShakeClass;
 
 	/** Cached melee combat component */
 	UPROPERTY()

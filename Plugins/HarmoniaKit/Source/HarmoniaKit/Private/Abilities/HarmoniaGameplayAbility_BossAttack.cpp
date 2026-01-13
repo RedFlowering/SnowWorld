@@ -1,4 +1,4 @@
-// Copyright 2025 Snow Game Studio.
+﻿// Copyright 2025 Snow Game Studio.
 
 #include "Abilities/HarmoniaGameplayAbility_BossAttack.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
@@ -6,6 +6,10 @@
 #include "MotionWarpingComponent.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Components/HarmoniaMeleeCombatComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "GameFramework/Character.h"
+#include "HarmoniaLogCategories.h"
 
 UHarmoniaGameplayAbility_BossAttack::UHarmoniaGameplayAbility_BossAttack(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -29,9 +33,18 @@ void UHarmoniaGameplayAbility_BossAttack::ActivateAbility(
 
 	if (!AttackMontage)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BossAttack: No AttackMontage set for %s"), *GetName());
+		UE_LOG(LogHarmoniaCombat, Warning, TEXT("BossAttack: No AttackMontage set for %s"), *GetName());
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 		return;
+	}
+
+	// Reset hit tracking for this new attack
+	if (AActor* AvatarActor = GetAvatarActorFromActorInfo())
+	{
+		if (UHarmoniaMeleeCombatComponent* MeleeCombat = AvatarActor->FindComponentByClass<UHarmoniaMeleeCombatComponent>())
+		{
+			MeleeCombat->ResetHitTracking();
+		}
 	}
 
 	// Setup Motion Warping target before playing montage
@@ -56,7 +69,7 @@ void UHarmoniaGameplayAbility_BossAttack::ActivateAbility(
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BossAttack: Failed to create montage task for %s"), *GetName());
+		UE_LOG(LogHarmoniaCombat, Warning, TEXT("BossAttack: Failed to create montage task for %s"), *GetName());
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 	}
 }
@@ -99,14 +112,14 @@ void UHarmoniaGameplayAbility_BossAttack::SetupMotionWarpingTarget()
 {
 	if (!bEnableMotionWarping)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BossAttack: Motion Warping disabled for %s"), *GetName());
+		UE_LOG(LogHarmoniaCombat, Warning, TEXT("BossAttack: Motion Warping disabled for %s"), *GetName());
 		return;
 	}
 
 	AActor* AvatarActor = GetAvatarActorFromActorInfo();
 	if (!AvatarActor)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BossAttack: No Avatar Actor for %s"), *GetName());
+		UE_LOG(LogHarmoniaCombat, Warning, TEXT("BossAttack: No Avatar Actor for %s"), *GetName());
 		return;
 	}
 
@@ -114,7 +127,7 @@ void UHarmoniaGameplayAbility_BossAttack::SetupMotionWarpingTarget()
 	UMotionWarpingComponent* WarpComp = AvatarActor->FindComponentByClass<UMotionWarpingComponent>();
 	if (!WarpComp)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BossAttack: No MotionWarpingComponent on %s"), *AvatarActor->GetName());
+		UE_LOG(LogHarmoniaCombat, Warning, TEXT("BossAttack: No MotionWarpingComponent on %s"), *AvatarActor->GetName());
 		return;
 	}
 
@@ -134,24 +147,23 @@ void UHarmoniaGameplayAbility_BossAttack::SetupMotionWarpingTarget()
 
 	if (!TargetActor)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BossAttack: No TargetActor in Blackboard for %s"), *GetName());
+		UE_LOG(LogHarmoniaCombat, Warning, TEXT("BossAttack: No TargetActor in Blackboard for %s"), *GetName());
 		return;
 	}
 
 	// Use component tracking for automatic target following during animation
-	// This will update the warp target position every frame as the target moves
+	// The animation's Motion Warping settings (Warp To Feet Location offset) handle the safe distance
 	if (USceneComponent* TargetRoot = TargetActor->GetRootComponent())
 	{
 		WarpComp->AddOrUpdateWarpTargetFromComponent(
 			WarpTargetName,
 			TargetRoot,
-			NAME_None,  // No specific bone, use root component (Warp to Feet Location handles height)
-			true,       // Follow rotation as well
-			FVector::ZeroVector,  // Location offset
-			FRotator::ZeroRotator // Rotation offset
+			NAME_None,              // No specific bone
+			true,                   // Follow component
+			FVector::ZeroVector,    // Location offset
+			FRotator::ZeroRotator   // Rotation offset
 		);
 		
-		UE_LOG(LogTemp, Log, TEXT("BossAttack: Motion Warping target set to %s (WarpTargetName: %s)"), 
-			*TargetActor->GetName(), *WarpTargetName.ToString());
+		UE_LOG(LogHarmoniaCombat, Log, TEXT("BossAttack: Motion Warping target set to %s"), *TargetActor->GetName());
 	}
 }

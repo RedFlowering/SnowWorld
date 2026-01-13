@@ -19,11 +19,8 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Attack_Melee_Combo3, "Ability.Attack.Melee.Combo3", "Third combo attack");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Attack_Melee_Combo4, "Ability.Attack.Melee.Combo4", "Fourth combo attack");
 
-	// ============================================================
 	// State Tags
-	// ============================================================
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Combat_Attacking, "State.Combat.Attacking", "Character is performing an attack");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Combat_ComboWindow, "State.Combat.ComboWindow", "Combo window is active");
 
 	// ============================================================
 	// Event Tags
@@ -63,6 +60,16 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Data_Healing, "Data.Healing", "Healing magnitude for SetByCaller");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Data_StaminaRecovery, "Data.StaminaRecovery", "Stamina recovery magnitude for SetByCaller");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(SetByCaller_DamageMultiplier, "SetByCaller.DamageMultiplier", "Damage multiplier for execution calculation");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(SetByCaller_PoiseDamage, "SetByCaller.PoiseDamage", "Poise damage for parry groggy system");
+
+	// Parry System Tags
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayCue_Combat_ParrySuccess, "GameplayCue.Combat.ParrySuccess", "Parry success visual and sound effect");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_Parry_Success, "GameplayEvent.Parry.Success", "Parry success event");
+	
+	// Combat State Tags (for Parry/Block detection)
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Combat_Parryable, "State.Combat.Parryable", "Attacker is in parryable attack window");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Combat_Parrying, "State.Combat.Parrying", "Defender is actively attempting to parry");
+
 
 	// ============================================================
 	// Hit Reaction System Tags
@@ -197,13 +204,7 @@ namespace HarmoniaGameplayTags
 	// Ability Tags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Dodge, "Ability.Dodge", "Dodge roll ability");
 
-	// State Tags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Dodging, "State.Dodging", "Character is dodging");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_State_Dodging, "Character.State.Dodging", "Character state dodging");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_State_Attacking, "Character.State.Attacking", "Character state attacking");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_State_Blocking, "Character.State.Blocking", "Character state blocking");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_State_Parrying, "Character.State.Parrying", "Character state parrying");
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Character_State_Invulnerable, "Character.State.Invulnerable", "Character state invulnerable");
 
 	// ============================================================
 	// Common Character State Tags
@@ -357,6 +358,13 @@ namespace HarmoniaGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Weapon_Sword, "Sound.SFX.Weapon.Sword", "Sword sound effects");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Weapon_Sword_Swing, "Sound.SFX.Weapon.Sword.Swing", "Sword swing sound");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Weapon_Sword_Hit, "Sound.SFX.Weapon.Sword.Hit", "Sword hit sound");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Weapon_Sword_Parry, "Sound.SFX.Weapon.Sword.Parry", "Sword parry sound");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Weapon_Sword_Block, "Sound.SFX.Weapon.Sword.Block", "Sword block sound");
+	
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Weapon_Bow, "Sound.SFX.Weapon.Bow", "Bow sound effects");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Weapon_Bow_Draw, "Sound.SFX.Weapon.Bow.Draw", "Bow draw sound");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Weapon_Bow_Release, "Sound.SFX.Weapon.Bow.Release", "Bow release sound");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Weapon_Bow_Hit, "Sound.SFX.Weapon.Bow.Hit", "Arrow hit sound");
 
 	// SFX Examples (Footstep)
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Sound_SFX_Footstep, "Sound.SFX.Footstep", "Footstep sound effects");

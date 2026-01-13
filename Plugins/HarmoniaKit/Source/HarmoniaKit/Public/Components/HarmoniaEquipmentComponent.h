@@ -137,6 +137,22 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Harmonia|Equipment")
 	FGameplayTag GetOffHandWeaponTypeTag() const;
 
+	/**
+	 * Get combat sound tag from MainHand equipment
+	 * @param SoundType - Combat sound type (Parry, Block, Swing, Hit)
+	 * @return Random sound tag from configured sounds, or empty if none
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Harmonia|Equipment")
+	FGameplayTag GetMainHandCombatSoundTag(ECombatSoundType SoundType) const;
+
+	/**
+	 * Get spawned mesh component for a specific equipment slot
+	 * @param Slot - Equipment slot
+	 * @return The skeletal mesh component, or nullptr if not equipped
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Harmonia|Equipment")
+	USkeletalMeshComponent* GetEquippedMeshComponent(EEquipmentSlot Slot) const;
+
 	// ============================================================================
 	// Durability
 	// ============================================================================
@@ -344,9 +360,9 @@ private:
 	UPROPERTY()
 	TWeakObjectPtr<UHarmoniaAttributeSet> CachedAttributeSet;
 
-	// Spawned equipment meshes
+	// Spawned equipment meshes (keyed by slot for easy lookup)
 	UPROPERTY()
-	TArray<USkeletalMeshComponent*> EquipmentMeshes;
+	TMap<EEquipmentSlot, USkeletalMeshComponent*> EquipmentMeshes;
 
 	// Active equipment load penalty effect handle
 	FActiveGameplayEffectHandle ActiveEquipLoadPenaltyHandle;

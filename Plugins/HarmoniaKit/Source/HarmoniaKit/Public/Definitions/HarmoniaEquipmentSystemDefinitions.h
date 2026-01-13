@@ -36,6 +36,41 @@ struct FWeaponUltimateGaugeConfig
 	{}
 };
 
+/**
+ * Combat sound types for weapons
+ */
+UENUM(BlueprintType)
+enum class ECombatSoundType : uint8
+{
+	Parry		UMETA(DisplayName = "Parry"),
+	Block		UMETA(DisplayName = "Block"),
+	Swing		UMETA(DisplayName = "Swing"),
+	Hit			UMETA(DisplayName = "Hit")
+};
+
+/**
+ * Sound configuration for a combat sound type
+ * Supports multiple sounds for random selection
+ */
+USTRUCT(BlueprintType)
+struct FCombatSoundConfig
+{
+	GENERATED_BODY()
+
+	/** Sound tags for this combat action (random selection) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (Categories = "Sound"))
+	TArray<FGameplayTag> SoundTags;
+
+	/** Get a random sound tag from the array */
+	FGameplayTag GetRandomSoundTag() const
+	{
+		if (SoundTags.Num() == 0)
+		{
+			return FGameplayTag();
+		}
+		return SoundTags[FMath::RandRange(0, SoundTags.Num() - 1)];
+	}
+};
 
 /**
  * Equipment slot types
@@ -252,6 +287,26 @@ struct FHarmoniaEquipmentData : public FTableRowBase
 
 	// NOTE: MissNoHit tracer configuration moved to separate DataTable
 	// Use DT_WeaponTraceConfig for per-weapon tracer settings
+	
+	// ============================================================================
+	// Combat Sounds (무기별 사운드 - 랜덤 선택 지원)
+	// ============================================================================
+	
+	/** 패링 사운드 (여러 개 등록 시 랜덤 선택) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Sound")
+	FCombatSoundConfig ParrySounds;
+	
+	/** 블락 사운드 (여러 개 등록 시 랜덤 선택) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Sound")
+	FCombatSoundConfig BlockSounds;
+	
+	/** 휘두르기 사운드 (여러 개 등록 시 랜덤 선택) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Sound")
+	FCombatSoundConfig SwingSounds;
+	
+	/** 타격 사운드 (여러 개 등록 시 랜덤 선택, PhysMat은 SoundCacheSubsystem에서 처리) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment|Sound")
+	FCombatSoundConfig HitSounds;
 };
 
 /**
