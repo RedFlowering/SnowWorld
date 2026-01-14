@@ -93,9 +93,6 @@ void UHarmoniaAdvancedAIComponent::TriggerEmotion(EHarmoniaMonsterEmotion Emotio
 
 	// Broadcast event
 	OnEmotionStateChanged.Broadcast(OldEmotion, Emotion);
-
-	UE_LOG(LogHarmoniaAI, Log, TEXT("%s entered %s state (Intensity: %.2f, Duration: %.1fs)"),
-		*GetOwner()->GetName(), *UEnum::GetValueAsString(Emotion), Intensity, Duration);
 }
 
 bool UHarmoniaAdvancedAIComponent::IsInEmotion(EHarmoniaMonsterEmotion Emotion) const

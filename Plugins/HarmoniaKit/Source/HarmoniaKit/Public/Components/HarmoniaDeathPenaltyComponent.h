@@ -33,7 +33,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCurrenciesRecovered, const TArra
  * Component that manages death penalties and currency recovery mechanics
  * Attach to player character to enable souls-like death penalty system
  */
-UCLASS(ClassGroup=(Harmonia), meta=(BlueprintSpawnableComponent))
+UCLASS(ClassGroup=(Harmonia), Blueprintable, meta=(BlueprintSpawnableComponent))
 class HARMONIAKIT_API UHarmoniaDeathPenaltyComponent : public UActorComponent
 {
 	GENERATED_BODY()

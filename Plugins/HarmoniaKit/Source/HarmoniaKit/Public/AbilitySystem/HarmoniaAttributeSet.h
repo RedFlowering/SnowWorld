@@ -176,6 +176,32 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Harmonia|Ultimate")
 	void AdjustUltimateGaugeForNewMax(float NewMaxUltimateGauge);
 
+	/**
+	 * Directly restores health to max value.
+	 * Uses the same pattern as damage application (SetBaseValue + SetCurrentValue).
+	 * This bypasses the HideFromModifiers restriction on Health.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Attributes")
+	void RestoreHealthToMax();
+
+	/**
+	 * Directly restores stamina to max value.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Attributes")
+	void RestoreStaminaToMax();
+
+	/**
+	 * Directly restores mana to max value.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Attributes")
+	void RestoreManaToMax();
+
+	/**
+	 * Directly restores poise to max value.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Harmonia|Attributes")
+	void RestorePoiseToMax();
+
 protected:
 	/**
 	 * Replication callbacks

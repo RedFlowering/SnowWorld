@@ -67,9 +67,6 @@ void UAnimNotifyState_ParryableWindow::BranchingPointNotifyBegin(FBranchingPoint
 		// Reset hit tracking for new attack phase (allows each combo hit to be parried)
 		MeleeComp->ResetHitTracking();
 	}
-		
-	UE_LOG(LogHarmoniaCombat, Log, TEXT("[Parry] Window opened - Attacker: %s, Parryable tag added, HitTracking reset"), 
-		*GetNameSafe(Owner));
 }
 
 void UAnimNotifyState_ParryableWindow::BranchingPointNotifyEnd(FBranchingPointNotifyPayload& BranchingPointPayload)
@@ -97,9 +94,6 @@ void UAnimNotifyState_ParryableWindow::BranchingPointNotifyEnd(FBranchingPointNo
 	if (UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Owner))
 	{
 		ASC->RemoveLooseGameplayTag(HarmoniaGameplayTags::State_Combat_Parryable);
-		
-		UE_LOG(LogHarmoniaCombat, Log, TEXT("[Parry] Window closed - Attacker: %s, Parryable tag removed"), 
-			*GetNameSafe(Owner));
 	}
 
 	CachedOwner = nullptr;

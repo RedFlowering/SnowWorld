@@ -155,32 +155,14 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 		return;
 	}
 
-	// Healing (Lyra Meta)
-	if (Data.EvaluatedData.Attribute == ULyraHealthSet::GetHealingAttribute())
-	{
-		const float LocalHealing = GetHealing();
-		SetHealing(0.0f);
-
-		if (LocalHealing > 0.0f)
-		{
-			const float OldHealth = GetHealth();
-			const float NewHealth = FMath::Clamp(OldHealth + LocalHealing, 0.0f, GetMaxHealth());
-			
-			if (ASC)
-			{
-				ASC->SetNumericAttributeBase(GetHealthAttribute(), NewHealth);
-			}
-
-			OnHealingReceived.Broadcast(Instigator, Causer, &Data.EffectSpec, LocalHealing, OldHealth, NewHealth);
-		}
-		return;
-	}
+	// Note: Healing (LyraHealthSet::GetHealingAttribute()) is handled by 
+	// Super::PostGameplayEffectExecute() via LyraHealthSet, which calls SetHealth() directly.
+	// We DO NOT handle it here to avoid conflicts with the parent class.
 
 	// Damage (Lyra Meta) - Defense already applied in HarmoniaDamageExecution
 	if (Data.EvaluatedData.Attribute == ULyraHealthSet::GetDamageAttribute())
 	{
 		const float LocalDamage = GetDamage();
-		UE_LOG(LogHarmoniaCombat, Log, TEXT("[AttributeSet] Damage attr detected: LocalDamage=%.2f"), LocalDamage);
 		SetDamage(0.0f);
 
 		if (LocalDamage > 0.0f)
@@ -188,12 +170,9 @@ void UHarmoniaAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCa
 			const float OldHealth = GetHealth();
 			const float NewHealth = FMath::Clamp(OldHealth - LocalDamage, 0.0f, GetMaxHealth());
 			
-			UE_LOG(LogHarmoniaCombat, Log, TEXT("[AttributeSet] Health: %.2f -> %.2f"), OldHealth, NewHealth);
-			
 			if (ASC)
 			{
 				ASC->SetNumericAttributeBase(GetHealthAttribute(), NewHealth);
-				UE_LOG(LogHarmoniaCombat, Log, TEXT("[AttributeSet] SetNumericAttributeBase called, Verify=%.2f"), GetHealth());
 			}
 
 			OnDamageReceived.Broadcast(Instigator, Causer, &Data.EffectSpec, LocalDamage, OldHealth, NewHealth);
@@ -586,4 +565,54 @@ void UHarmoniaAttributeSet::AdjustUltimateGaugeForNewMax(float NewMaxUltimateGau
 	const float CurrentRatio = GetUltimateGauge() / CurrentMax;
 	SetMaxUltimateGauge(NewMaxUltimateGauge);
 	SetUltimateGauge(CurrentRatio * NewMaxUltimateGauge);
+}
+
+void UHarmoniaAttributeSet::RestoreHealthToMax()
+{
+	const float MaxHealthValue = GetMaxHealth();
+	const float CurrentHealthValue = GetHealth();
+	
+	if (CurrentHealthValue < MaxHealthValue)
+	{
+		// Use the same pattern as damage application
+		// SetHealth() and ASC->SetNumericAttributeBase() don't work because there are multiple AttributeSets
+		Health.SetBaseValue(MaxHealthValue);
+		Health.SetCurrentValue(MaxHealthValue);
+	}
+}
+
+void UHarmoniaAttributeSet::RestoreStaminaToMax()
+{
+	const float MaxStaminaValue = GetMaxStamina();
+	const float CurrentStaminaValue = GetStamina();
+	
+	if (CurrentStaminaValue < MaxStaminaValue)
+	{
+		Stamina.SetBaseValue(MaxStaminaValue);
+		Stamina.SetCurrentValue(MaxStaminaValue);
+	}
+}
+
+void UHarmoniaAttributeSet::RestoreManaToMax()
+{
+	const float MaxManaValue = GetMaxMana();
+	const float CurrentManaValue = GetMana();
+	
+	if (CurrentManaValue < MaxManaValue)
+	{
+		Mana.SetBaseValue(MaxManaValue);
+		Mana.SetCurrentValue(MaxManaValue);
+	}
+}
+
+void UHarmoniaAttributeSet::RestorePoiseToMax()
+{
+	const float MaxPoiseValue = GetMaxPoise();
+	const float CurrentPoiseValue = GetPoise();
+	
+	if (CurrentPoiseValue < MaxPoiseValue)
+	{
+		Poise.SetBaseValue(MaxPoiseValue);
+		Poise.SetCurrentValue(MaxPoiseValue);
+	}
 }

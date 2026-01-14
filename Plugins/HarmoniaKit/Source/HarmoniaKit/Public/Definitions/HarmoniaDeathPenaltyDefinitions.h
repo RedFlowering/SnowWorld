@@ -258,3 +258,95 @@ struct FHarmoniaDeathPenaltyConfig
 	{
 	}
 };
+
+/**
+ * Master configuration for the entire death system
+ * All features are optional and can be toggled
+ * Follows HarmoniaKit plugin design philosophy
+ */
+USTRUCT(BlueprintType)
+struct FHarmoniaDeathSystemConfig
+{
+	GENERATED_BODY()
+
+	// ============================================================================
+	// Death Animation Settings
+	// ============================================================================
+
+	/** Enable ragdoll physics on death */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death|Animation")
+	bool bEnableRagdoll = true;
+
+	/** Delay before activating ragdoll after death montage (seconds) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death|Animation", meta = (ClampMin = "0.0", EditCondition = "bEnableRagdoll"))
+	float RagdollDelay = 0.1f;
+
+	/** Duration to stay in ragdoll before fade out (seconds) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death|Animation", meta = (ClampMin = "0.0", EditCondition = "bEnableRagdoll"))
+	float RagdollDuration = 2.0f;
+
+	/** Duration of screen fade out on death (seconds) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Death|Animation", meta = (ClampMin = "0.0"))
+	float FadeOutDuration = 1.0f;
+
+	// ============================================================================
+	// Respawn Settings
+	// ============================================================================
+
+	/** Delay after fade before respawn (seconds) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Respawn", meta = (ClampMin = "0.0"))
+	float RespawnDelay = 0.5f;
+
+	/** Duration of screen fade in on respawn (seconds) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Respawn", meta = (ClampMin = "0.0"))
+	float FadeInDuration = 1.0f;
+
+	/** Whether to respawn at last checkpoint */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Respawn")
+	bool bRespawnAtCheckpoint = true;
+
+	/** Whether to auto-save at checkpoint resonance */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Respawn")
+	bool bAutoSaveOnCheckpoint = true;
+
+	// ============================================================================
+	// Penalty Settings (All Optional)
+	// ============================================================================
+
+	/** Enable currency drop on death (Memory Echo spawning) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Penalties")
+	bool bEnableCurrencyDrop = true;
+
+	/** Enable ethereal state penalties after death */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Penalties")
+	bool bEnableEtherealState = true;
+
+	/** Enable consecutive death penalties (stacking max health reduction) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Penalties")
+	bool bEnableConsecutiveDeathPenalty = true;
+
+	/** Enable memory resonance (enemies buffed near dropped currencies) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Penalties")
+	bool bEnableMemoryResonance = true;
+
+	/** Enable time decay of dropped currencies */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Penalties")
+	bool bEnableTimeDecay = true;
+
+	FHarmoniaDeathSystemConfig()
+		: bEnableRagdoll(true)
+		, RagdollDelay(0.1f)
+		, RagdollDuration(2.0f)
+		, FadeOutDuration(1.0f)
+		, RespawnDelay(0.5f)
+		, FadeInDuration(1.0f)
+		, bRespawnAtCheckpoint(true)
+		, bAutoSaveOnCheckpoint(true)
+		, bEnableCurrencyDrop(true)
+		, bEnableEtherealState(true)
+		, bEnableConsecutiveDeathPenalty(true)
+		, bEnableMemoryResonance(true)
+		, bEnableTimeDecay(true)
+	{
+	}
+};

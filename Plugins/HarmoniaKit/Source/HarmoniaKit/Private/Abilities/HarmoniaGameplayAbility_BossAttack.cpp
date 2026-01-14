@@ -163,7 +163,5 @@ void UHarmoniaGameplayAbility_BossAttack::SetupMotionWarpingTarget()
 			FVector::ZeroVector,    // Location offset
 			FRotator::ZeroRotator   // Rotation offset
 		);
-		
-		UE_LOG(LogHarmoniaCombat, Log, TEXT("BossAttack: Motion Warping target set to %s"), *TargetActor->GetName());
 	}
 }

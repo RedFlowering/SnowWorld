@@ -5,6 +5,7 @@
 #include "AbilitySystem/LyraAbilitySystemComponent.h"
 #include "LyraLogChannels.h"
 #include "GameplayEffectExtension.h"
+#include "GameplayTagContainer.h"
 #include "Net/UnrealNetwork.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(HarmoniaHealthComponent)
@@ -105,17 +106,25 @@ void UHarmoniaHealthComponent::HandleHarmoniaMaxHealthChanged(AActor* DamageInst
 
 void UHarmoniaHealthComponent::HandleHarmoniaOutOfHealth(AActor* DamageInstigator, AActor* DamageCauser, const FGameplayEffectSpec* DamageEffectSpec, float DamageMagnitude, float OldValue, float NewValue)
 {
-	// Trigger death flow - same as parent but using HarmoniaAttributeSet context
-	if (AbilitySystemComponent && DamageEffectSpec)
+	// Only trigger death if not already dead
+	if (GetDeathState() != ELyraDeathState::NotDead)
 	{
-		// Use parent's death handling logic
-		// The parent's HandleOutOfHealth will be called if we were using LyraHealthSet
-		// For HarmoniaAttributeSet, we manually trigger death
+		return;
+	}
+
+	// Try to activate GA_Death ability via tag
+	if (AbilitySystemComponent)
+	{
+		FGameplayTagContainer DeathTags;
+		DeathTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Ability.Death")));
 		
-		// Start death sequence if not already dying
-		if (GetDeathState() == ELyraDeathState::NotDead)
+		if (AbilitySystemComponent->TryActivateAbilitiesByTag(DeathTags))
 		{
-			StartDeath();
+			// GA_Death was activated successfully
+			return;
 		}
 	}
+
+	// Fallback: If no GA_Death ability is available, use parent's death handling
+	StartDeath();
 }
